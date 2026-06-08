@@ -16,7 +16,7 @@ declare global {
 }
 
 // === DATA MASTER PERSONEL ===
-const DATA_API_T2 = [
+const DEFAULT_DATA_API_T2 = [
   { name: "Dwisasono Glory Prayoga", phone: "081213138823" },
   { name: "Muh. Syukri", phone: "081296010797" },
   { name: "Erman Tri Basuki", phone: "085292076171" },
@@ -29,7 +29,7 @@ const DATA_API_T2 = [
   { name: "Rio Anang Kriswanto", phone: "081398399043" }
 ];
 
-const DATA_OM_IAS_T2 = [
+const DEFAULT_DATA_OM_IAS_T2 = [
   { name: "Aly Masmudi", phone: "085221344164" },
   { name: "Sayuti", phone: "083804054535" },
   { name: "Harmin Sanjayah", phone: "081803767148" },
@@ -45,19 +45,19 @@ const DATA_OM_IAS_T2 = [
 ];
 
 // === DATA MASTER STORING ===
-const STORING_EQUIPMENTS = ['Access Control', 'X-Ray', 'HHMD', 'ETD', 'WTMD', 'Body Scanner'];
-const STORING_LOC_AC = [
+const DEFAULT_STORING_EQUIPMENTS = ['Access Control', 'X-Ray', 'HHMD', 'ETD', 'WTMD', 'Body Scanner'];
+const DEFAULT_STORING_LOC_AC = [
   'Avio & BL D', 'Avio & BL E', 'Avio & BL F', 'Rampout D', 'Rampout E', 
   'Rampout F', 'Breakdown D, E1, E2 & F', 'Breakdown Umroh', 'Ruang Monitoring E1', 
   'Server Access', 'HBSCP Umroh'
 ];
-const STORING_LOC_DEFAULT = [
+const DEFAULT_STORING_LOC_DEFAULT = [
   'PSCP D', 'PSCP E', 'PSCP F', 'PSCP Umroh', 'SSCP E', 'SSCP F',
   'HBSCP 1.1 -1.6', 'HBSCP 2.1-2.6', 'HBSCP Umroh'
 ];
 
 // === DATA CHECKLIST MASTER (PERALATAN) ===
-const CHECKLIST_DATA = [
+const DEFAULT_CHECKLIST_DATA = [
   {
     type: 'location',
     title: 'PSCP D',
@@ -96,7 +96,7 @@ const CHECKLIST_DATA = [
     title: 'PSCP UMROH',
     summary: 'TOTAL PERALATAN PSCP UMROH',
     categories: [
-      { title: 'A. X-RAY', summaryKey: 'X-RAY', items: ['X-Ray Nuctech CX6040D (No1)', 'X-Ray Smith Heiman HS 6040-2is (No2)', 'X-Ray Nuctech CX6040D (No3)', 'X-Ray Rapiscan 620DV (No4)', 'X-Ray Rapiscan 620DV (No5)', 'X-Ray Rapiscan 620DV (No6)', 'X-Ray Rapiscan 620DV (No7)'] },
+      { title: 'A. X-RAY', summaryKey: 'X-RAY', items: ['X-Ray Nuctech CX6040D (No1)', 'X-Ray Nuctech CX6040D (No2)', 'X-Ray Rapiscan 620DV (No3)', 'X-Ray Rapiscan 620DV (No4)', 'X-Ray Rapiscan 620DV (No5)', 'X-Ray Rapiscan 620DV (No6)'] },
       { title: 'B. WTMD', summaryKey: 'WTMD', items: ['WTMD CEIA HI/PE Multizone (No1)', 'WTMD CEIA HI/PE Multizone (No2)', 'WTMD CEIA HI/PE Multizone (No3)', 'WTMD CEIA HI/PE Multizone (No4)', 'WTMD CEIA HI/PE Multizone (No5)', 'WTMD CEIA HI/PE Multizone (No6)', 'WTMD CEIA HI/PE Multizone (No7)'] },
       { title: 'C. BODY SCANNER', summaryKey: 'BODY SCANNER', items: ['Body Scanner Leidos Provision 2 (No3)', 'Body Scanner Leidos Provision 2 (No5)', 'Body Scanner Leidos Provision 2 (No7)'] },
       { title: 'D. EXPLOSIVE DETECTOR', summaryKey: 'ETD', items: ['ETD Leidos QS-B220'] }
@@ -172,12 +172,12 @@ const CHECKLIST_DATA = [
 
 // === DATA MASTER TAB 6 (TIP) ===
 const TIP_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-const TIP_LEFT_COL = [
+const DEFAULT_TIP_LEFT_COL = [
   { id: 'hbscp', name: 'HBSCP', items: ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6'] },
   { id: 'hbscp_umroh', name: 'HBSCP UMROH', items: ['2.7', '2.8'] },
   { id: 'pscp_d', name: 'PSCP D', items: ['1', '2', '3', '4', '5'] }
 ];
-const TIP_RIGHT_COL = [
+const DEFAULT_TIP_RIGHT_COL = [
   { id: 'pscp_e', name: 'PSCP E', items: ['1', '2', '3', '4', '5'] },
   { id: 'pscp_f', name: 'PSCP F', items: ['1', '2', '3', '4'] },
   { id: 'pscp_umroh', name: 'PSCP UMROH', items: ['1', '2', '3', '4', '5', '6', '7'] },
@@ -186,6 +186,95 @@ const TIP_RIGHT_COL = [
 const TIP_TOTAL_ITEMS = 37;
 
 export default function App() {
+  const loadMasterData = (key, defaultData) => {
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading master data:', e);
+    }
+    return defaultData;
+  };
+
+  const saveMasterData = (key, data) => {
+    localStorage.setItem(key, JSON.stringify(data));
+  };
+
+  // Master Data States
+  const [dataApiT2, setDataApiT2] = useState(() => loadMasterData('master_api_t2', DEFAULT_DATA_API_T2));
+  const [dataOmIasT2, setDataOmIasT2] = useState(() => loadMasterData('master_om_ias_t2', DEFAULT_DATA_OM_IAS_T2));
+  const [storingEquipments, setStoringEquipments] = useState(() => loadMasterData('master_storing_equip', DEFAULT_STORING_EQUIPMENTS));
+  const [storingLocAc, setStoringLocAc] = useState(() => loadMasterData('master_storing_loc_ac', DEFAULT_STORING_LOC_AC));
+  const [storingLocDefault, setStoringLocDefault] = useState(() => loadMasterData('master_storing_loc_default', DEFAULT_STORING_LOC_DEFAULT));
+  const [checklistDataMaster, setChecklistDataMaster] = useState(() => loadMasterData('master_checklist', DEFAULT_CHECKLIST_DATA));
+  const [tipLeftCol, setTipLeftCol] = useState(() => loadMasterData('master_tip_left', DEFAULT_TIP_LEFT_COL));
+  const [tipRightCol, setTipRightCol] = useState(() => loadMasterData('master_tip_right', DEFAULT_TIP_RIGHT_COL));
+
+  // === STATE UNTUK MODAL MASTER DATA ===
+  const [masterModalOpen, setMasterModalOpen] = useState(null); // 'api_t2', 'om_ias_t2', 'storing_equip', 'storing_loc_ac', 'storing_loc_default', 'tip_left', 'tip_right'
+  const [masterModalData, setMasterModalData] = useState([]);
+  
+  const openMasterModal = (type, currentData) => {
+    setMasterModalOpen(type);
+    setMasterModalData(JSON.parse(JSON.stringify(currentData))); // deep copy
+  };
+
+  const closeMasterModal = () => {
+    setMasterModalOpen(null);
+    setMasterModalData([]);
+  };
+
+  const saveCurrentMasterModal = () => {
+    switch (masterModalOpen) {
+      case 'api_t2': setDataApiT2(masterModalData); saveMasterData('master_api_t2', masterModalData); break;
+      case 'om_ias_t2': setDataOmIasT2(masterModalData); saveMasterData('master_om_ias_t2', masterModalData); break;
+      case 'storing_equip': setStoringEquipments(masterModalData); saveMasterData('master_storing_equip', masterModalData); break;
+      case 'storing_loc_ac': setStoringLocAc(masterModalData); saveMasterData('master_storing_loc_ac', masterModalData); break;
+      case 'storing_loc_default': setStoringLocDefault(masterModalData); saveMasterData('master_storing_loc_default', masterModalData); break;
+      case 'tip_left': setTipLeftCol(masterModalData); saveMasterData('master_tip_left', masterModalData); break;
+      case 'tip_right': setTipRightCol(masterModalData); saveMasterData('master_tip_right', masterModalData); break;
+    }
+    closeMasterModal();
+  };
+
+  const resetCurrentMasterModal = () => {
+    if (!window.confirm('Anda yakin ingin mereset data ini ke default bawaan sistem? Data kustom akan hilang.')) return;
+    switch (masterModalOpen) {
+      case 'api_t2': setMasterModalData(DEFAULT_DATA_API_T2); break;
+      case 'om_ias_t2': setMasterModalData(DEFAULT_DATA_OM_IAS_T2); break;
+      case 'storing_equip': setMasterModalData(DEFAULT_STORING_EQUIPMENTS); break;
+      case 'storing_loc_ac': setMasterModalData(DEFAULT_STORING_LOC_AC); break;
+      case 'storing_loc_default': setMasterModalData(DEFAULT_STORING_LOC_DEFAULT); break;
+      case 'tip_left': setMasterModalData(DEFAULT_TIP_LEFT_COL); break;
+      case 'tip_right': setMasterModalData(DEFAULT_TIP_RIGHT_COL); break;
+    }
+  };
+
+  const handleModalDataChange = (index, field, value) => {
+    const newData = [...masterModalData];
+    if (field) {
+      newData[index][field] = value;
+    } else {
+      newData[index] = value; // for array of strings
+    }
+    setMasterModalData(newData);
+  };
+
+  const addModalDataRow = () => {
+    let newItem;
+    if (['api_t2', 'om_ias_t2'].includes(masterModalOpen)) newItem = { name: '', phone: '' };
+    else if (['storing_equip', 'storing_loc_ac', 'storing_loc_default'].includes(masterModalOpen)) newItem = '';
+    else if (['tip_left', 'tip_right'].includes(masterModalOpen)) newItem = { id: `new_${Date.now()}`, name: '', items: [] };
+    setMasterModalData([...masterModalData, newItem]);
+  };
+
+  const removeModalDataRow = (index) => {
+    const newData = [...masterModalData];
+    newData.splice(index, 1);
+    setMasterModalData(newData);
+  };
+
+
   // === STATE UNTUK TAB ===
   const [activeTab, setActiveTab] = useState('perbaikan'); // Mengatur default ke 'perbaikan'
 
@@ -872,7 +961,7 @@ export default function App() {
     const jamMulai = kalibrasiGlobal.waktuMulai || '...';
     const jamSelesai = kalibrasiGlobal.waktuSelesai || '...';
 
-    let msg = `*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*\nHari/Tanggal/Jam : ${formattedDate}/ ${jamMulai} - ${jamSelesai}`;
+    let msg = `*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}`;
 
     kalibrasiEntries.forEach((entry, idx) => {
       if (entry.peralatan.length === 0) return; // Skip if no equipment selected in this entry
@@ -1048,7 +1137,9 @@ export default function App() {
         const nw = img.width * finalScale; const nh = img.height * finalScale;
         const ox = (CELL_SIZE - nw) / 2; const oy = (CELL_SIZE - nh) / 2;
         
-        ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, CELL_SIZE, CELL_SIZE, 16); ctx.clip();
+        ctx.save(); ctx.beginPath();
+        if (ctx.roundRect) { ctx.roundRect(x, y, CELL_SIZE, CELL_SIZE, 16); } else { ctx.rect(x, y, CELL_SIZE, CELL_SIZE); }
+        ctx.clip();
         ctx.drawImage(img, x + ox, y + oy, nw, nh); ctx.restore();
       });
       
@@ -1188,7 +1279,7 @@ export default function App() {
   };
 
   const handleTipToggleAll = () => {
-    const allItems = [...TIP_LEFT_COL, ...TIP_RIGHT_COL].flatMap(cat => cat.items.map(i => ({ catId: cat.id, item: i })));
+    const allItems = [...tipLeftCol, ...tipRightCol].flatMap(cat => cat.items.map(i => ({ catId: cat.id, item: i })));
     const allChecked = allItems.every(({ catId, item }) => {
       const d = tipDataState[`${catId}-${item}`];
       return d && d.checked;
@@ -1233,82 +1324,88 @@ export default function App() {
     }));
   };
 
-  const loadHtml2Canvas = () => {
-    return new Promise((resolve) => {
-      if (window.html2canvas) return resolve(window.html2canvas);
+  const loadHtmlToImage = () => {
+    return new Promise((resolve, reject) => {
+      if (window.htmlToImage) return resolve(window.htmlToImage);
       const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-      script.onload = () => resolve(window.html2canvas);
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js';
+      script.onload = () => resolve(window.htmlToImage);
+      script.onerror = () => reject(new Error('Gagal memuat script gambar'));
       document.head.appendChild(script);
     });
   };
 
   const handleTipShare = async () => {
     const element = document.getElementById('tip-export-area');
+    const grid = document.getElementById('tip-export-grid');
     if (!element) return;
     setIsGeneratingTipImage(true);
 
-    try {
-      const html2canvas = await loadHtml2Canvas();
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        onclone: (clonedDoc) => {
-          const clonedGrid = clonedDoc.getElementById('tip-export-grid');
-          const clonedArea = clonedDoc.getElementById('tip-export-area');
-          if (clonedGrid) {
-            clonedGrid.className = 'grid grid-cols-2 gap-6 w-full';
-            clonedGrid.style.display = 'grid';
-            clonedGrid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
-            clonedGrid.style.gap = '2rem';
-          }
-          if (clonedArea) {
-            clonedArea.style.width = '1000px';
-            clonedArea.style.maxWidth = '1000px';
-            clonedArea.style.margin = '0 auto';
-            clonedArea.style.padding = '40px';
-          }
-        }
-      });
-      
-      canvas.toBlob(async (blob) => {
-        const file = new File([blob], `TIP_Performance_${tipMonth}_${tipYear}.jpg`, { type: 'image/jpeg' });
-        const shareText = `Halo, berikut adalah status laporan TIP Performance bulan ${tipMonth} ${tipYear}.`;
-        
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'Laporan TIP T2',
-              text: shareText
-            });
-            setIsGeneratingTipImage(false);
-            return;
-          } catch (err) {
-            console.error("Share dibatalkan/gagal", err);
-          }
-        }
-        
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `TIP_Performance_${tipMonth}_${tipYear}.jpg`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        const text = encodeURIComponent(shareText + ' (Gambar telah otomatis diunduh)');
-        window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-        setIsGeneratingTipImage(false);
+    const originalGridClass = grid ? grid.className : '';
+    const originalGridStyle = grid ? grid.style.cssText : '';
+    const originalElementStyle = element.style.cssText;
 
-      }, 'image/jpeg', 0.9);
+    try {
+      if (grid) {
+        grid.className = 'grid grid-cols-2 gap-6 w-full';
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+        grid.style.gap = '2rem';
+      }
+      
+      element.style.width = '1000px';
+      element.style.maxWidth = '1000px';
+      element.style.margin = '0 auto';
+      element.style.padding = '40px';
+
+      const htmlToImage = await loadHtmlToImage();
+      await new Promise(r => setTimeout(r, 100)); // biarkan browser me-render UI sesaat
+
+      const blob = await htmlToImage.toBlob(element, { 
+        backgroundColor: '#ffffff',
+        pixelRatio: 2
+      });
+
+      if (!blob) throw new Error('Blob image is empty');
+
+      const file = new File([blob], `TIP_Performance_${tipMonth}_${tipYear}.jpg`, { type: 'image/jpeg' });
+      const shareText = `Halo, berikut adalah status laporan TIP Performance bulan ${tipMonth} ${tipYear}.`;
+      
+      let canShare = false; try { canShare = navigator.canShare && navigator.canShare({ files: [file] }); } catch(e) {} if (canShare) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Laporan TIP T2',
+            text: shareText
+          });
+          return;
+        } catch (err) {
+          console.error('Share dibatalkan/gagal', err);
+        }
+      }
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TIP_Performance_${tipMonth}_${tipYear}.jpg`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      const text = encodeURIComponent(shareText + ' (Gambar telah otomatis diunduh)');
+      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+
     } catch (error) {
-      console.error("Error generating image:", error);
-      alert("Gagal membuat gambar laporan.");
+      console.error('Error generating image:', error);
+      alert('Gagal membuat gambar laporan. Browser mungkin tidak mendukung.');
+    } finally {
+      if (grid) {
+        grid.className = originalGridClass;
+        grid.style.cssText = originalGridStyle;
+      }
+      element.style.cssText = originalElementStyle;
       setIsGeneratingTipImage(false);
     }
   };
-
   const renderTipTable = (columnData) => (
     <table className="w-full border-collapse border-[3px] border-slate-800 bg-white shadow-sm">
       <tbody>
@@ -1385,7 +1482,7 @@ export default function App() {
       const row = { ...newList[index] };
       row[field] = value;
       if (field === 'name') {
-        const dataSource = listName === 'apiList' ? DATA_API_T2 : DATA_OM_IAS_T2;
+        const dataSource = listName === 'apiList' ? dataApiT2 : dataOmIasT2;
         const person = dataSource.find(p => p.name === value);
         row.phone = person ? person.phone : '';
       }
@@ -1418,7 +1515,7 @@ export default function App() {
   const generateBriefingMessage = () => {
     const formattedDate = formatTanggalIndo(briefingData.tanggal);
     const judul = briefingData.jenis === 'Unit' ? '*Giat briefing unit SSES T2*' : '*Briefing MOT T2*';
-    return `${judul}\nTanggal : ${formattedDate}\nShift : ${briefingData.shift}\nLokasi : ${briefingData.lokasi}`;
+    return `${judul}\nHari/Tanggal : ${formattedDate}\nShift : ${briefingData.shift}\nLokasi : ${briefingData.lokasi}`;
   };
 
   const handleBriefingSubmit = async (e) => {
@@ -1429,8 +1526,8 @@ export default function App() {
   // === LOGIKA TAB 4 (STORING) ===
   const getStoringValidLocations = (equipArray) => {
     if (equipArray.length === 0) return [];
-    if (equipArray.includes('Access Control')) return STORING_LOC_AC;
-    let locs = [...STORING_LOC_DEFAULT];
+    if (equipArray.includes('Access Control')) return storingLocAc;
+    let locs = [...storingLocDefault];
     const isOnlyHHMDWTMD = equipArray.length > 0 && equipArray.every(e => e === 'HHMD' || e === 'WTMD');
     if (isOnlyHHMDWTMD) locs.push('Transfer Desk D', 'Transfer Desk E');
     const isOnlyXRay = equipArray.length === 1 && equipArray[0] === 'X-Ray';
@@ -1547,7 +1644,7 @@ Hasil : ${storingData.hasil}`;
     let result = `KEGIATAN STORING PERALATAN SSES T2\n`;
     result += `Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}\n\n`;
 
-    CHECKLIST_DATA.forEach((block) => {
+    checklistDataMaster.forEach((block) => {
       if (block.type === 'location') {
         result += `${block.title}\n`;
         let summaryCounts = {};
@@ -1772,7 +1869,9 @@ Hasil : ${storingData.hasil}`;
           const nw = img.width * finalScale; const nh = img.height * finalScale;
           const ox = (CELL_SIZE - nw) / 2; const oy = (CELL_SIZE - nh) / 2;
           
-          ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, CELL_SIZE, CELL_SIZE, 16); ctx.clip();
+          ctx.save(); ctx.beginPath();
+          if (ctx.roundRect) { ctx.roundRect(x, y, CELL_SIZE, CELL_SIZE, 16); } else { ctx.rect(x, y, CELL_SIZE, CELL_SIZE); }
+          ctx.clip();
           ctx.drawImage(img, x + ox, y + oy, nw, nh); ctx.restore();
         });
         
@@ -1856,17 +1955,23 @@ ${attendanceData.rencanaKegiatan}
 Terima Kasih !!!`;
   };
 
-  const fallbackShare = (message, hasUnsharedPhotos) => {
-    const textArea = document.createElement("textarea");
-    textArea.value = message; document.body.appendChild(textArea); textArea.select();
+  const fallbackShare = async (message, hasUnsharedPhotos) => {
     try {
-      document.execCommand('copy');
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(message);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = message; document.body.appendChild(textArea); textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       setIsCopied(true); setTimeout(() => setIsCopied(false), 2500);
       if (hasUnsharedPhotos) {
         alert("Perangkat ini tidak mendukung pengiriman foto secara otomatis. Teks laporan telah dicopy. Silakan 'Paste' di WhatsApp dan lampirkan foto Anda secara manual.");
       }
-    } catch (err) { console.error("Gagal menyalin teks", err); }
-    document.body.removeChild(textArea);
+    } catch (err) { 
+      console.error("Gagal menyalin teks", err); 
+    }
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
@@ -1880,22 +1985,84 @@ Terima Kasih !!!`;
       else if (photos.length === 1) filesArray = [photos[0].file];
     }
 
-    if (filesArray.length > 0 && navigator.canShare && navigator.canShare({ files: filesArray })) {
-      try {
+    try {
+      if (filesArray.length > 0 && navigator.canShare && navigator.canShare({ files: filesArray })) {
         await navigator.share({ files: filesArray, title: 'Laporan SSES T2', text: message });
         setIsCopied(true); setTimeout(() => setIsCopied(false), 2500);
-      } catch (err) {
-        console.error("Share dibatalkan atau gagal", err);
-        if (err.name !== 'AbortError') fallbackShare(message, true);
+        return;
+      } else if (filesArray.length === 0 && navigator.share) {
+        await navigator.share({ title: 'Laporan SSES T2', text: message });
+        setIsCopied(true); setTimeout(() => setIsCopied(false), 2500);
+        return;
       }
-    } else {
-      fallbackShare(message, filesArray.length > 0);
+    } catch (err) {
+      console.error("Share dibatalkan atau gagal", err);
+      if (err.name === 'AbortError') return;
     }
+    
+    fallbackShare(message, filesArray.length > 0);
   };
+
+  const GOOGLE_SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz191pL-SZ4Zv7FguTY-AfhyShFau3Gt3G5l2ZQfA7FZV8HLx4X3baJhIh50z30Qbcs/exec';
 
   const handleRepairSubmit = async (e) => {
     e.preventDefault();
     if (!formData.peralatan) { alert("Harap pilih peralatan terlebih dahulu!"); return; }
+    if (photos.length > 1 && isGeneratingCollage) { alert("Kolase foto sedang diproses, mohon tunggu sebentar..."); return; }
+    
+    // Background sync to Google Sheets
+    try {
+      let imageBase64 = "";
+      if (photos.length > 1 && collageFile) {
+        // Kolase sudah dikompres oleh canvas, langsung baca
+        imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(collageFile);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = error => reject(error);
+        });
+      } else if (photos.length === 1) {
+        // Foto tunggal dari kamera bisa sangat besar — resize dulu via canvas
+        imageBase64 = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_DIM = 1200;
+            let w = img.width, h = img.height;
+            if (w > MAX_DIM || h > MAX_DIM) {
+              const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
+              w = Math.round(w * ratio);
+              h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.75));
+          };
+          img.onerror = reject;
+          img.src = URL.createObjectURL(photos[0].file);
+        });
+      }
+
+      const payload = {
+        teknisi: formData.teknisi,
+        lokasi: formData.lokasi1 + (formData.lokasi2 ? ' - ' + formData.lokasi2 : ''),
+        peralatan: formData.peralatan,
+        waktu: formData.waktuMulai + ' - ' + formData.waktuSelesai,
+        detailPerbaikan: 'Permasalahan : ' + formData.permasalahan + '\n\nTindak lanjut : ' + formData.tindakLanjut,
+        status: formData.status,
+        imageBase64: imageBase64
+      };
+      
+      fetch(GOOGLE_SHEETS_WEBAPP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify(payload)
+      }).catch(err => console.error("Google Sheets sync error:", err));
+    } catch(err) {
+      console.error("Payload prep error:", err);
+    }
+
     executeShare(generateRepairMessage());
   };
 
@@ -2076,7 +2243,7 @@ Terima Kasih !!!`;
         </div>
       )}
       <p className="text-xs text-slate-500 italic mt-4">
-        *Catatan: Tombol "Share ke WhatsApp" akan mencoba membagikan foto/kolase beserta teks otomatis. Jika browser tidak mendukung, teks akan disalin dan foto dilampirkan manual.
+        *Catatan: Tombol "Share Perbaikan ke WA" akan mencoba membagikan foto/kolase beserta teks otomatis. Jika browser tidak mendukung, teks akan disalin dan foto dilampirkan manual.
       </p>
     </div>
   );
@@ -2369,9 +2536,11 @@ Terima Kasih !!!`;
             <form onSubmit={handleRepairSubmit} className="p-6 sm:p-8 space-y-8">
               {/* Form Laporan */}
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
-                  <FileText className="w-5 h-5 text-blue-600" /> Informasi Laporan
-                </h2>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" /> Informasi Laporan
+                  </h2>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Lokasi</label>
@@ -2463,13 +2632,13 @@ Terima Kasih !!!`;
 
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
                 <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>
-                  {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share ke WhatsApp</>}
+                  {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Perbaikan ke WA</>}
                 </button>
               </div>
 
               <div className="mt-8 border-t border-slate-200 pt-8">
                 <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan (Real-time)
+                  <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Perbaikan (Real-time)
                 </h3>
                 <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
                   <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
@@ -2510,12 +2679,14 @@ Terima Kasih !!!`;
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
-                <User className="w-5 h-5 text-blue-600" /> Personel API T2
-              </h2>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-600" /> Personel API T2
+                  </h2>
+                </div>
               <div className="space-y-3">
                 {attendanceData.apiList.map((row, index) => {
-                  const availableOptions = DATA_API_T2.filter(p => !attendanceData.apiList.some(r => r.name === p.name) || p.name === row.name);
+                  const availableOptions = dataApiT2.filter(p => !attendanceData.apiList.some(r => r.name === p.name) || p.name === row.name);
                   return (
                     <div key={row.id} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-blue-50/50 p-3 rounded-lg border border-blue-100">
                       <select value={row.name} onChange={(e) => handleRowChange('apiList', index, 'name', e.target.value)} className="w-full sm:w-2/5 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
@@ -2542,12 +2713,14 @@ Terima Kasih !!!`;
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
-                <Users className="w-5 h-5 text-blue-600" /> Personel OM IAS T2
-              </h2>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-600" /> Personel OM IAS T2
+                  </h2>
+                </div>
               <div className="space-y-3">
                 {attendanceData.omList.map((row, index) => {
-                  const availableOptions = DATA_OM_IAS_T2.filter(p => !attendanceData.omList.some(r => r.name === p.name) || p.name === row.name);
+                  const availableOptions = dataOmIasT2.filter(p => !attendanceData.omList.some(r => r.name === p.name) || p.name === row.name);
                   return (
                     <div key={row.id} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
                       <select value={row.name} onChange={(e) => handleRowChange('omList', index, 'name', e.target.value)} className="w-full sm:w-2/5 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500 appearance-none">
@@ -2585,6 +2758,39 @@ Terima Kasih !!!`;
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Rencana Kegiatan Harian</label>
                   <textarea name="rencanaKegiatan" required rows="4" value={attendanceData.rencanaKegiatan} onChange={(e) => handleDashChange(e, 'rencanaKegiatan')} onKeyDown={(e) => handleDashKeyDown(e, 'rencanaKegiatan')} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"></textarea>
+                  {(() => {
+                    const pmText = "- Preventive Maintenance & Kalibrasi Perangkat";
+                    const hasPM = attendanceData.rencanaKegiatan.includes(pmText);
+                    return (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (hasPM) {
+                            let newText = attendanceData.rencanaKegiatan.replace('\n' + pmText, '').replace(pmText, '').trim();
+                            setAttendanceData({ ...attendanceData, rencanaKegiatan: newText });
+                          } else {
+                            let newText = attendanceData.rencanaKegiatan.trim();
+                            if (newText.length > 0) newText += '\n';
+                            newText += pmText;
+                            setAttendanceData({ ...attendanceData, rencanaKegiatan: newText });
+                          }
+                        }}
+                        className="mt-2 flex items-center gap-1.5 text-sm font-medium transition-colors"
+                      >
+                        {hasPM ? (
+                          <>
+                            <X className="w-4 h-4 text-red-500" />
+                            <span className="text-red-600 hover:text-red-700">Hapus PM & Kalibrasi</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 text-emerald-500" />
+                            <span className="text-emerald-600 hover:text-emerald-700">Tambahkan PM & Kalibrasi</span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -2597,7 +2803,7 @@ Terima Kasih !!!`;
 
             <div className="mt-8 border-t border-slate-200 pt-8">
               <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Kehadiran
+                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Kehadiran (Real-time)
               </h3>
               <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
                 <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
@@ -2691,7 +2897,7 @@ Terima Kasih !!!`;
 
             <div className="mt-8 border-t border-slate-200 pt-8">
               <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Briefing
+                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Briefing (Real-time)
               </h3>
               <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
                 <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
@@ -2709,9 +2915,11 @@ Terima Kasih !!!`;
         {activeTab === 'storing' && (
           <form onSubmit={handleStoringSubmit} className="p-6 sm:p-8 space-y-8">
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
-                <Box className="w-5 h-5 text-blue-600" /> Detail Kegiatan Storing
-              </h2>
+                <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center border-b pb-2">
+                  <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <Box className="w-5 h-5 text-blue-600" /> Detail Kegiatan Storing
+                  </h2>
+                </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -2734,7 +2942,7 @@ Terima Kasih !!!`;
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Peralatan <span className="text-xs text-slate-400">(Bisa pilih lebih dari 1)</span></label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {STORING_EQUIPMENTS.map(equip => {
+                    {storingEquipments.map(equip => {
                       const isACChecked = storingData.peralatan.includes('Access Control');
                       const isChecked = storingData.peralatan.includes(equip);
                       const isDisabled = isACChecked && equip !== 'Access Control';
@@ -2819,7 +3027,7 @@ Terima Kasih !!!`;
 
             <div className="mt-8 border-t border-slate-200 pt-8">
               <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Storing
+                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Storing (Real-time)
               </h3>
               <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
                 <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
@@ -2886,7 +3094,7 @@ Terima Kasih !!!`;
               </div>
               
               <div className="space-y-6">
-                {CHECKLIST_DATA.map((block, bIdx) => {
+                {checklistDataMaster.map((block, bIdx) => {
                   if (block.type === 'location') {
                     return (
                       <div key={`loc-${bIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -3023,7 +3231,7 @@ Terima Kasih !!!`;
 
             <div className="mt-8 border-t border-slate-200 pt-8">
               <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" /> Preview Hasil Rekap & Perhitungan
+                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Checklist (Real-time)
               </h3>
               <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
                 <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%] max-h-[500px] overflow-y-auto">
@@ -3353,13 +3561,13 @@ Terima Kasih !!!`;
 
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:-translate-y-0.5 text-white'}`}>
-                {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Laporan Kalibrasi ke WA</>}
+                {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Kalibrasi ke WA</>}
               </button>
             </div>
 
             <div className="mt-8 border-t border-slate-200 pt-8">
               <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan PM & Kalibrasi (Real-time)
+                <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Kalibrasi (Real-time)
               </h3>
               <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
                 <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%] max-h-[500px] overflow-y-auto">
@@ -3416,7 +3624,7 @@ Terima Kasih !!!`;
             </div>
 
             {/* Action Bar */}
-            <div className="flex flex-wrap gap-3 items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-wrap gap-3 items-center justify-end bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
               <button 
                 type="button"
                 onClick={handleTipToggleAll}
@@ -3451,7 +3659,7 @@ Terima Kasih !!!`;
                   }`}
                 >
                   {isGeneratingTipImage ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />} 
-                  Bagikan (WA)
+                  Share TIP ke WA
                 </button>
               </div>
             </div>
@@ -3473,10 +3681,10 @@ Terima Kasih !!!`;
                 {/* Tabel Layout: Vertikal di Aplikasi, Bersebelahan saat di-Export */}
                 <div id="tip-export-grid" className="flex flex-col gap-6">
                   <div>
-                    {renderTipTable(TIP_LEFT_COL)}
+                    {renderTipTable(tipLeftCol)}
                   </div>
                   <div>
-                    {renderTipTable(TIP_RIGHT_COL)}
+                    {renderTipTable(tipRightCol)}
                   </div>
                 </div>
 
