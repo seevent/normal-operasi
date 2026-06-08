@@ -398,6 +398,7 @@ export default function App() {
 
   // === STATE BERSAMA (SHARED) ===
   const [isCopied, setIsCopied] = useState(false);
+  const [showGsheetNotif, setShowGsheetNotif] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [collageUrl, setCollageUrl] = useState(null);
@@ -2003,7 +2004,7 @@ Terima Kasih !!!`;
     fallbackShare(message, filesArray.length > 0);
   };
 
-  const GOOGLE_SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz191pL-SZ4Zv7FguTY-AfhyShFau3Gt3G5l2ZQfA7FZV8HLx4X3baJhIh50z30Qbcs/exec';
+  const GOOGLE_SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwx5LuNGpZgnKWiest4AkSoc_4DhWP-KYptZP1K3Sd6ILwux4YjYvijXew807aCWixr/exec';
 
   const handleRepairSubmit = async (e) => {
     e.preventDefault();
@@ -2046,7 +2047,7 @@ Terima Kasih !!!`;
 
       const payload = {
         teknisi: formData.teknisi,
-        lokasi: formData.lokasi1 + (formData.lokasi2 ? ' - ' + formData.lokasi2 : ''),
+        lokasi: formData.peralatan === 'Access Control' ? formData.lokasi1 + formData.lokasi2 : formData.lokasi1 + (formData.lokasi2 ? ` No.${formData.lokasi2}` : ''),
         peralatan: formData.peralatan,
         waktu: formData.waktuMulai + ' - ' + formData.waktuSelesai,
         detailPerbaikan: 'Permasalahan : ' + formData.permasalahan + '\n\nTindak lanjut : ' + formData.tindakLanjut,
@@ -2064,6 +2065,9 @@ Terima Kasih !!!`;
     }
 
     executeShare(generateRepairMessage());
+    
+    setShowGsheetNotif(true);
+    setTimeout(() => setShowGsheetNotif(false), 3000);
   };
 
   const handleAttendanceSubmit = async (e) => {
@@ -2400,7 +2404,15 @@ Terima Kasih !!!`;
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 flex items-center justify-center font-sans">
+    <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 flex items-center justify-center font-sans relative">
+      {/* Notifikasi Top Dropdown Google Sheets */}
+      <div className={`fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none transition-all duration-500 ease-out ${showGsheetNotif ? 'translate-y-6 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="bg-emerald-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-3">
+          <CheckCircle className="w-6 h-6 animate-pulse" /> 
+          Laporan Perbaikan Terkirim ke Google Sheets
+        </div>
+      </div>
+
       <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         
         {/* === HEADER BERSAMA === */}
