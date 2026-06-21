@@ -1,0 +1,523 @@
+import React, { useState } from 'react';
+import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle } from 'lucide-react';
+import { useAppStore } from '../../store/useAppStore';
+import { PhotoUploader, Photo } from '../shared/PhotoUploader';
+import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
+import { generateWA_Perbaikan } from '../../lib/utils/waGenerator';
+import { shareToWhatsApp } from '../../lib/services/shareService';
+import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
+import { supabase } from '../../lib/supabaseClient';
+import { toTitleCase } from '../../lib/data/masterData';
+import { lazy, Suspense } from 'react';
+
+const CollageEditor = lazy(() => import('../shared/CollageEditor').then(m => ({ default: m.CollageEditor })));
+
+export const TabPerbaikan: React.FC = () => {
+  const { isCopied, setIsCopied } = useAppStore();
+
+  const [formData, setFormData] = useState(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const logicalDateObj = new Date(now.getTime());
+    if (currentHour < 8) {
+      logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+    }
+    const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;
+    const localDate = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split('T')[0];
+    return {
+      peralatan: '', lokasi1: '', lokasi2: '', sumberLaporan: 'Avsec', indikasiAwal: '',
+      tanggal: localDate, waktuMulai: '', waktuSelesai: '',
+      lamaPengerjaan: '', teknisi: '', permasalahan: '• ', tindakLanjut: '• ', status: 'Pekerjaan Selesai'
+    };
+  });
+  
+  const [availableTeknisi, setAvailableTeknisi] = useState<{id: string, name: string, unit?: string}[]>([]);
+  const [selectedTeknisi, setSelectedTeknisi] = useState<string[]>([]);
+  const [tipePeralatanOptions, setTipePeralatanOptions] = useState<string[]>([]);
+
+  // Ambil data teknisi dan tipe peralatan dari Supabase
+  React.useEffect(() => {
+    const fetchData = async () => {
+      // 1. Fetch Teknisi
+      const now = new Date();
+      const currentHour = now.getHours();
+      const logicalDateObj = new Date(now.getTime());
+      if (currentHour < 8) {
+        logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+      }
+      const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;
+      const todayStr = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split('T')[0];
+      const isPagi = currentHour >= 8 && currentHour < 20;
+
+      const { data: dataTeknisi } = await supabase
+        .from('jadwal_shift')
+        .select(`id, shift, status_kehadiran, personel:personel_id(nama, unit_kerja(nama))`)
+        .eq('tanggal', todayStr)
+        .eq('status_kehadiran', 'Hadir');
+
+      if (dataTeknisi) {
+        const filteredTeknisi = dataTeknisi.filter((d: any) => {
+          const s = (d.shift || '').toUpperCase();
+          if (isPagi) {
+            return s === 'PS';
+          } else {
+            return s === 'M';
+          }
+        });
+
+        setAvailableTeknisi(filteredTeknisi.map((d: any) => ({
+          id: d.id,
+          name: toTitleCase(d.personel?.nama || ''),
+          unit: d.personel?.unit_kerja?.nama || ''
+        })).filter((t: any) => t.name !== ''));
+      }
+
+      // 2. Fetch Tipe Peralatan
+      const { data: dataTipe } = await supabase
+        .from('tipe_peralatan')
+        .select('nama')
+        .order('nama', { ascending: true });
+        
+      if (dataTipe) {
+        setTipePeralatanOptions(dataTipe.map(d => d.nama));
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Update string 'teknisi' di formData jika checkbox berubah
+  React.useEffect(() => {
+    setFormData(prev => ({ ...prev, teknisi: selectedTeknisi.join(', ') }));
+  }, [selectedTeknisi]);
+
+  const toggleTeknisi = (name: string) => {
+    setSelectedTeknisi(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+  };
+  
+  const [isVerifikasiETD, setIsVerifikasiETD] = useState(false);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [customCollageFile, setCustomCollageFile] = useState<File | null>(null);
+  const [customCollageUrl, setCustomCollageUrl] = useState<string | null>(null);
+
+  // === Handlers ===
+  const handleRepairChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    let newFormData = { ...formData, [name]: value };
+
+    // Jika ubah lokasi 1 atau peralatan, reset lokasi 2
+    if (name === 'lokasi1' || name === 'peralatan') {
+      newFormData.lokasi2 = '';
+    }
+
+    if (name === 'waktuMulai' || name === 'waktuSelesai') {
+      const start = name === 'waktuMulai' ? value : formData.waktuMulai;
+      const end = name === 'waktuSelesai' ? value : formData.waktuSelesai;
+      
+      if (start && end) {
+        const [startH, startM] = start.split(':').map(Number);
+        const [endH, endM] = end.split(':').map(Number);
+        
+        let diff = (endH * 60 + endM) - (startH * 60 + startM);
+        if (diff < 0) diff += 24 * 60; // Lintas hari
+        
+        const hours = Math.floor(diff / 60);
+        const minutes = diff % 60;
+        newFormData.lamaPengerjaan = `${hours > 0 ? `${hours} Jam ` : ''}${minutes} Menit`;
+      }
+    }
+
+    setFormData(newFormData);
+  };
+
+  const handlePeralatanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    const isETD = value === 'ETD Leidos QS-B220';
+    
+    if (!isETD && isVerifikasiETD) {
+      setIsVerifikasiETD(false);
+      setFormData(prev => ({ ...prev, peralatan: value, lokasi2: '', permasalahan: '• ', tindakLanjut: '• ' }));
+    } else {
+      setFormData(prev => ({ ...prev, peralatan: value, lokasi2: '' }));
+    }
+  };
+
+  const handleVerifikasiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setFormData(prev => {
+      const newData = { ...prev };
+      if (checked && newData.peralatan !== 'ETD Leidos QS-B220') {
+        newData.peralatan = 'ETD Leidos QS-B220';
+        newData.lokasi2 = '';
+      }
+      
+      if (checked) {
+        newData.permasalahan = '• Verification Required';
+        newData.tindakLanjut = '• Melakukan Verifikasi Negatif';
+      } else {
+        newData.permasalahan = '• ';
+        newData.tindakLanjut = '• ';
+      }
+      return newData;
+    });
+    setIsVerifikasiETD(checked);
+  };
+
+  const handleBulletChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: string) => {
+    let value = e.target.value;
+    if (!value.startsWith('• ')) {
+      value = '• ' + value.replace(/^•\s*/, '');
+    }
+    value = value.replace(/\n([^•])/g, '\n• $1');
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleBulletKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, field: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      setFormData(prev => ({ ...prev, [field]: prev[field as keyof typeof formData] + '\n• ' }));
+    }
+  };
+
+  // === Photo Handlers ===
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newPhotos = Array.from(e.target.files).map(file => ({
+        id: Date.now() + Math.random(),
+        file,
+        preview: URL.createObjectURL(file),
+        zoom: 1
+      }));
+      setPhotos(prev => [...prev, ...newPhotos]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => {
+      const newPhotos = [...prev];
+      URL.revokeObjectURL(newPhotos[index].preview);
+      newPhotos.splice(index, 1);
+      return newPhotos;
+    });
+  };
+
+  const updatePhotoZoom = (index: number, delta: number) => {
+    setPhotos(prev => {
+      const newPhotos = [...prev];
+      const currentZoom = newPhotos[index].zoom || 1;
+      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      return newPhotos;
+    });
+  };
+
+  const handlePhotoDrop = (e: React.DragEvent | any, targetIndex: number) => {
+    e.preventDefault();
+    const sourceIndexStr = e.dataTransfer?.getData('text/plain');
+    if (!sourceIndexStr) return;
+    
+    const sourceIndex = parseInt(sourceIndexStr, 10);
+    if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
+    
+    setPhotos(prev => {
+      const newPhotos = [...prev];
+      const [movedPhoto] = newPhotos.splice(sourceIndex, 1);
+      newPhotos.splice(targetIndex, 0, movedPhoto);
+      return newPhotos;
+    });
+  };
+
+  // === Submit ===
+  const handleRepairSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    let generatedCollageFile: File | null = customCollageFile;
+    let generatedCollageUrl: string | null = customCollageUrl;
+
+    if (photos.length > 0 && !generatedCollageFile) {
+      // Create fallback grid collage if user didn't use the advanced editor
+      const collageResult = await processPhotosToCollage(photos);
+      if (collageResult) {
+        generatedCollageUrl = collageResult.url;
+        const res = await fetch(collageResult.url);
+        const blob = await res.blob();
+        generatedCollageFile = new File([blob], `Dokumentasi_Perbaikan_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      }
+    }
+
+    const message = generateWA_Perbaikan(formData, isVerifikasiETD);
+    
+    await shareToWhatsApp(message, generatedCollageFile, () => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 3000);
+    });
+
+    if (generatedCollageUrl) {
+      // Optional: Store to global context if needed
+    }
+  };
+
+  return (
+    <div>
+      <div className="bg-blue-50/50 px-6 py-5 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="w-full">
+            <label className="block text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-blue-600" /> Pilihan Peralatan
+            </label>
+            <select required value={formData.peralatan} onChange={handlePeralatanChange} className="w-full px-4 py-3 bg-white border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm cursor-pointer appearance-none">
+              <option value="">-- Pilih Peralatan --</option>
+              {tipePeralatanOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-2 pt-2 sm:pt-7">
+            <input type="checkbox" id="verifikasiETD_tab" checked={isVerifikasiETD} onChange={handleVerifikasiChange} className="w-5 h-5 text-blue-600 bg-white border-blue-300 rounded focus:ring-2 focus:ring-blue-400 cursor-pointer" />
+            <label htmlFor="verifikasiETD_tab" className="text-sm font-bold text-blue-900 cursor-pointer select-none">
+              Verifikasi ETD
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleRepairSubmit} className="p-6 sm:p-8 space-y-8">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center border-b pb-2">
+            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" /> Informasi Laporan
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Lokasi</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                  <select 
+                    name="lokasi1" 
+                    required 
+                    disabled={!formData.peralatan}
+                    value={formData.lokasi1} 
+                    onChange={handleRepairChange} 
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    <option value="">- Pilih Lokasi -</option>
+                    {getGeneralLokasiOptions(formData.peralatan).map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <div className="w-1/3">
+                  {(() => {
+                    const options = getLokasi2Options(formData.lokasi1, [formData.peralatan]);
+                    const isDisabled = options.length === 0 || (options.length === 1 && options[0] === '-');
+                    return (
+                      <select name="lokasi2" value={formData.lokasi2} onChange={handleRepairChange} disabled={isDisabled} className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${isDisabled ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}>
+                        <option value="">- No -</option>
+                        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Sumber Laporan</label>
+              <div className="relative">
+                <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                <input type="text" name="sumberLaporan" required value={formData.sumberLaporan} onChange={handleRepairChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Indikasi Awal</label>
+              <textarea name="indikasiAwal" required={!isVerifikasiETD} disabled={isVerifikasiETD} rows={2} placeholder="Cth: Mesin tidak menyala..." value={formData.indikasiAwal} onChange={handleRepairChange} className={`w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none ${isVerifikasiETD ? 'opacity-60 cursor-not-allowed bg-slate-200 text-slate-500' : ''}`}></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
+            <Clock className="w-5 h-5 text-blue-600" /> Waktu & Pelaksana
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                <input type="date" name="tanggal" required value={formData.tanggal} onChange={handleRepairChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
+              <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
+              <input type="time" name="waktuSelesai" required value={formData.waktuSelesai} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Lama Pengerjaan</label>
+              <input type="text" name="lamaPengerjaan" required readOnly placeholder="Terisi otomatis..." value={formData.lamaPengerjaan} className="w-full px-4 py-2 bg-slate-200 border border-slate-300 rounded-lg outline-none cursor-not-allowed text-slate-600 font-medium select-none" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                Teknisi Bertugas (Otomatis dari Shift)
+                {availableTeknisi.length === 0 && <span className="text-xs text-rose-500 font-normal">*(Tidak ada teknisi hadir/jadwal kosong)</span>}
+              </label>
+              
+              <div className="flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                {(() => {
+                  const apiTeknisi = availableTeknisi.filter(t => t.unit === 'API T2');
+                  const iasTeknisi = availableTeknisi.filter(t => t.unit === 'OM/IAS T2');
+                  const otherTeknisi = availableTeknisi.filter(t => t.unit !== 'API T2' && t.unit !== 'OM/IAS T2');
+
+                  return (
+                    <>
+                      {apiTeknisi.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {apiTeknisi.map(t => (
+                            <label key={t.id} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-100 rounded-md transition-colors">
+                              <input 
+                                type="checkbox" 
+                                checked={selectedTeknisi.includes(t.name)}
+                                onChange={() => toggleTeknisi(t.name)}
+                                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" 
+                              />
+                              <span className="text-sm font-medium text-slate-700 select-none">{t.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {apiTeknisi.length > 0 && (iasTeknisi.length > 0 || otherTeknisi.length > 0) && (
+                        <div className="border-t border-slate-300 border-dashed my-1"></div>
+                      )}
+
+                      {iasTeknisi.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {iasTeknisi.map(t => (
+                            <label key={t.id} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-100 rounded-md transition-colors">
+                              <input 
+                                type="checkbox" 
+                                checked={selectedTeknisi.includes(t.name)}
+                                onChange={() => toggleTeknisi(t.name)}
+                                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500" 
+                              />
+                              <span className="text-sm font-medium text-slate-700 select-none">{t.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {iasTeknisi.length > 0 && otherTeknisi.length > 0 && (
+                        <div className="border-t border-slate-300 border-dashed my-1"></div>
+                      )}
+
+                      {otherTeknisi.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {otherTeknisi.map(t => (
+                            <label key={t.id} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-100 rounded-md transition-colors">
+                              <input 
+                                type="checkbox" 
+                                checked={selectedTeknisi.includes(t.name)}
+                                onChange={() => toggleTeknisi(t.name)}
+                                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" 
+                              />
+                              <span className="text-sm font-medium text-slate-700 select-none">{t.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Teks input fallback jika data belum disinkronisasi */}
+              {availableTeknisi.length === 0 && (
+                <input 
+                  type="text" 
+                  name="teknisi" 
+                  placeholder="Ketik manual nama teknisi jika jadwal kosong..." 
+                  value={formData.teknisi} 
+                  onChange={handleRepairChange} 
+                  className="w-full mt-2 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
+            <AlertCircle className="w-5 h-5 text-blue-600" /> Detail Pengerjaan
+          </h2>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Permasalahan</label>
+            <textarea name="permasalahan" required rows={3} value={formData.permasalahan} onChange={(e) => handleBulletChange(e, 'permasalahan')} onKeyDown={(e) => handleBulletKeyDown(e, 'permasalahan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tindak Lanjut</label>
+            <textarea name="tindakLanjut" required rows={6} value={formData.tindakLanjut} onChange={(e) => handleBulletChange(e, 'tindakLanjut')} onKeyDown={(e) => handleBulletKeyDown(e, 'tindakLanjut')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+            <select name="status" value={formData.status} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
+              <option value="Pekerjaan Selesai">Pekerjaan Selesai</option>
+              <option value="On Progress">On Progress</option>
+              <option value="Menunggu Sparepart">Menunggu Sparepart</option>
+              <option value="Perlu Eskalasi Lanjut">Perlu Eskalasi Lanjut</option>
+            </select>
+          </div>
+        </div>
+
+        <PhotoUploader 
+          photos={photos}
+          onUpload={handlePhotoUpload}
+          onRemove={removePhoto}
+          onZoom={updatePhotoZoom}
+          onDrop={handlePhotoDrop}
+          listType="general"
+          onOpenEditor={() => setIsEditorOpen(true)}
+        />
+
+        {customCollageUrl && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <h3 className="text-sm font-bold text-blue-800 mb-2">Preview Kolase Kustom:</h3>
+            <img src={customCollageUrl} alt="Custom Collage" className="w-full max-w-sm rounded-lg shadow-sm border border-slate-200" />
+            <button type="button" onClick={() => { setCustomCollageUrl(null); setCustomCollageFile(null); }} className="mt-2 text-xs text-red-600 font-semibold hover:text-red-700">Hapus Kolase Kustom</button>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-4 mt-8">
+          <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>
+            {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Perbaikan ke WA</>}
+          </button>
+        </div>
+
+        <div className="mt-8 border-t border-slate-200 pt-8">
+          <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Perbaikan (Real-time)
+          </h3>
+          <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
+            <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
+              {generateWA_Perbaikan(formData, isVerifikasiETD)}
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <Suspense fallback={null}>
+        <CollageEditor 
+          photos={photos} 
+          isOpen={isEditorOpen} 
+          onClose={() => setIsEditorOpen(false)} 
+          onSave={(file, url) => {
+            setCustomCollageFile(file);
+            setCustomCollageUrl(url);
+            setIsEditorOpen(false);
+          }}
+        />
+      </Suspense>
+    </div>
+  );
+};
