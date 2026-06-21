@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import React, { useState, useEffect, Suspense, lazy } from "react";
-import { Users, Loader2, Calendar, User, X, Plus, ClipboardList, CheckCircle, Share2, FileText, Camera, Move, ImagePlus, Cpu, MapPin, Clock, AlertCircle, Box, Hash, Trash2, LayoutGrid, ZoomIn, ZoomOut, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Mail, KeyRound, Database, LogOut, Wrench } from "lucide-react";
+import { Users, Loader2, Calendar, User, X, Plus, ClipboardList, CheckCircle, Share2, FileText, Camera, Move, ImagePlus, Cpu, MapPin, Clock, AlertCircle, Box, Hash, Trash2, LayoutGrid, ZoomIn, ZoomOut, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, Database, Layers, Mail, KeyRound, LogOut, Wrench } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -10,6 +10,13 @@ const useAppStore = create((set) => ({
   isCopied: false,
   setIsCopied: (val) => set({ isCopied: val })
 }));
+const toTitleCase = (str) => {
+  if (!str) return "";
+  return str.replace(
+    /\w\S*/g,
+    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+  );
+};
 const DEFAULT_DATA_API_T2 = [
   { name: "Dwisasono Glory Prayoga", phone: "081213138823" },
   { name: "Muh. Syukri", phone: "081296010797" },
@@ -21,7 +28,7 @@ const DEFAULT_DATA_API_T2 = [
   { name: "Dimas Aria Wiratama", phone: "081296778575" },
   { name: "Dhea Febriani", phone: "087883390219" },
   { name: "Rio Anang Kriswanto", phone: "081398399043" }
-];
+].map((p) => ({ ...p, name: toTitleCase(p.name) }));
 const DEFAULT_DATA_OM_IAS_T2 = [
   { name: "Aly Masmudi", phone: "085221344164" },
   { name: "Sayuti", phone: "083804054535" },
@@ -35,7 +42,7 @@ const DEFAULT_DATA_OM_IAS_T2 = [
   { name: "Rifky Aziz", phone: "085716500615" },
   { name: "Muhammad Agus Sofyan", phone: "085691540333" },
   { name: "Abdul Rifan Sukarno", phone: "083111807154" }
-];
+].map((p) => ({ ...p, name: toTitleCase(p.name) }));
 const DEFAULT_STORING_EQUIPMENTS = ["Access Control", "X-Ray", "HHMD", "ETD", "WTMD", "Body Scanner"];
 const DEFAULT_STORING_LOC_AC = [
   "Avio & BL D",
@@ -45,10 +52,10 @@ const DEFAULT_STORING_LOC_AC = [
   "Rampout E",
   "Rampout F",
   "Breakdown D, E1, E2 & F",
-  "Breakdown Umroh",
+  "Breakdown Umrah",
   "Ruang Monitoring E1",
   "Server Access",
-  "HBSCP Umroh"
+  "HBSCP Umrah"
 ];
 const DEFAULT_STORING_LOC_DEFAULT = [
   "PSCP D",
@@ -59,7 +66,7 @@ const DEFAULT_STORING_LOC_DEFAULT = [
   "SSCP F",
   "HBSCP 1.1 -1.6",
   "HBSCP 2.1-2.6",
-  "HBSCP Umroh"
+  "HBSCP Umrah"
 ];
 const DEFAULT_CHECKLIST_DATA = [
   {
@@ -107,23 +114,21 @@ const DEFAULT_CHECKLIST_DATA = [
     ]
   },
   {
-    type: "group",
-    summary: "TOTAL PERALATAN SSCP E & SSCP F",
-    locations: [
-      {
-        title: "SSCP E",
-        categories: [
-          { title: "A. X-RAY", summaryKey: "X-RAY", items: ["X-Ray Smith Heiman HS 6040-2is"] },
-          { title: "B. WTMD", summaryKey: "WTMD", items: ["WTMD CEIA HI-PE Multizone"] }
-        ]
-      },
-      {
-        title: "SSCP F",
-        categories: [
-          { title: "A. X-RAY", summaryKey: "X-RAY", items: ["X-Ray Rapiscan 620 DV"] },
-          { title: "B. WTMD", summaryKey: "WTMD", items: ["WTMD CEIA HI-PE Multizone"] }
-        ]
-      }
+    type: "location",
+    title: "SSCP E",
+    summary: "TOTAL PERALATAN SSCP E",
+    categories: [
+      { title: "A. X-RAY", summaryKey: "X-RAY", items: ["X-Ray Smith Heiman HS 6040-2is"] },
+      { title: "B. WTMD", summaryKey: "WTMD", items: ["WTMD CEIA HI-PE Multizone"] }
+    ]
+  },
+  {
+    type: "location",
+    title: "SSCP F",
+    summary: "TOTAL PERALATAN SSCP F",
+    categories: [
+      { title: "A. X-RAY", summaryKey: "X-RAY", items: ["X-Ray Rapiscan 620 DV"] },
+      { title: "B. WTMD", summaryKey: "WTMD", items: ["WTMD CEIA HI-PE Multizone"] }
     ]
   },
   {
@@ -188,19 +193,9 @@ const supabaseUrl = "https://mpwemvdedpihlwghdmpa.supabase.co";
 const supabaseAnonKey = "sb_publishable_hzu642LG862DRg0HkvdpZQ_3nLdQ2rw";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const loadMasterData = (key, defaultData) => {
-  if (typeof window === "undefined") return defaultData;
-  try {
-    const saved = localStorage.getItem(key);
-    if (saved) return JSON.parse(saved);
-  } catch (e) {
-    console.error("Error loading master data:", e);
-  }
   return defaultData;
 };
 const saveMasterDataToLocal = (key, data) => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(key, JSON.stringify(data));
-  }
 };
 const saveConfigToSupabase = async (key, data) => {
   try {
@@ -213,49 +208,59 @@ const saveConfigToSupabase = async (key, data) => {
 const useMasterDataStore = create((set, get) => ({
   dataApiT2: loadMasterData("master_api_t2", DEFAULT_DATA_API_T2),
   setDataApiT2: (data) => {
-    saveMasterDataToLocal("master_api_t2", data);
     set({ dataApiT2: data });
   },
   dataOmIasT2: loadMasterData("master_om_ias_t2", DEFAULT_DATA_OM_IAS_T2),
   setDataOmIasT2: (data) => {
-    saveMasterDataToLocal("master_om_ias_t2", data);
     set({ dataOmIasT2: data });
   },
   storingEquipments: loadMasterData("master_storing_equip", DEFAULT_STORING_EQUIPMENTS),
   setStoringEquipments: (data) => {
-    saveMasterDataToLocal("master_storing_equip", data);
     saveConfigToSupabase("master_storing_equip", data);
     set({ storingEquipments: data });
   },
   storingLocAc: loadMasterData("master_storing_loc_ac", DEFAULT_STORING_LOC_AC),
   setStoringLocAc: (data) => {
-    saveMasterDataToLocal("master_storing_loc_ac", data);
     saveConfigToSupabase("master_storing_loc_ac", data);
     set({ storingLocAc: data });
   },
   storingLocDefault: loadMasterData("master_storing_loc_default", DEFAULT_STORING_LOC_DEFAULT),
   setStoringLocDefault: (data) => {
-    saveMasterDataToLocal("master_storing_loc_default", data);
     saveConfigToSupabase("master_storing_loc_default", data);
     set({ storingLocDefault: data });
   },
   checklistDataMaster: loadMasterData("master_checklist", DEFAULT_CHECKLIST_DATA),
   setChecklistDataMaster: (data) => {
-    saveMasterDataToLocal("master_checklist", data);
     saveConfigToSupabase("master_checklist", data);
     set({ checklistDataMaster: data });
   },
   tipLeftCol: loadMasterData("master_tip_left", DEFAULT_TIP_LEFT_COL),
   setTipLeftCol: (data) => {
-    saveMasterDataToLocal("master_tip_left", data);
     saveConfigToSupabase("master_tip_left", data);
     set({ tipLeftCol: data });
   },
   tipRightCol: loadMasterData("master_tip_right", DEFAULT_TIP_RIGHT_COL),
   setTipRightCol: (data) => {
-    saveMasterDataToLocal("master_tip_right", data);
     saveConfigToSupabase("master_tip_right", data);
     set({ tipRightCol: data });
+  },
+  penempatanData: [],
+  setPenempatanData: (data) => set({ penempatanData: data }),
+  jenisPeralatanData: [],
+  setJenisPeralatanData: (data) => set({ jenisPeralatanData: data }),
+  toggleKalibrasiEquipmentDb: async (id, tampil) => {
+    try {
+      const { error } = await supabase.from("jenis_peralatan").update({ tampil_di_kalibrasi: tampil }).eq("id", id);
+      if (!error) {
+        set((state) => ({
+          jenisPeralatanData: state.jenisPeralatanData.map((j) => j.id === id ? { ...j, tampil_di_kalibrasi: tampil } : j)
+        }));
+      } else {
+        console.error("Gagal memperbarui config kalibrasi", error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   },
   masterModalOpen: null,
   setMasterModalOpen: (type) => set({ masterModalOpen: type }),
@@ -328,10 +333,14 @@ const useMasterDataStore = create((set, get) => ({
     }
   },
   handleModalDataChange: (index, field, value) => {
-    const { masterModalData } = get();
+    const { masterModalData, masterModalOpen } = get();
     const newData = [...masterModalData];
     if (field) {
-      newData[index][field] = value;
+      if (field === "name" && (masterModalOpen === "api_t2" || masterModalOpen === "om_ias_t2")) {
+        newData[index][field] = toTitleCase(value);
+      } else {
+        newData[index][field] = value;
+      }
     } else {
       newData[index] = value;
     }
@@ -341,7 +350,7 @@ const useMasterDataStore = create((set, get) => ({
     const { masterModalOpen, masterModalData } = get();
     let newItem;
     if (masterModalOpen === "api_t2" || masterModalOpen === "om_ias_t2") newItem = { name: "", phone: "" };
-    else if (masterModalOpen === "storing_equip" || masterModalOpen === "storing_loc_ac" || masterModalOpen === "storing_loc_default") newItem = "";
+    else if (masterModalOpen === "storing_equip" || masterModalOpen === "storing_loc_ac" || masterModalOpen === "storing_loc_default" || masterModalOpen === "kalibrasi_equip") newItem = "";
     else if (masterModalOpen === "tip_left" || masterModalOpen === "tip_right") newItem = { id: `new_${Date.now()}`, name: "", items: [] };
     set({ masterModalData: [...masterModalData, newItem] });
   },
@@ -360,15 +369,20 @@ const useMasterDataStore = create((set, get) => ({
           titik_lokasi ( nomor )
         `);
       if (error) {
-        console.warn("Gagal memuat data Supabase, menggunakan data lokal/default.", error.message);
+        console.warn("Gagal memuat data Supabase penempatan.", error.message);
       } else if (data && data.length > 0) {
         console.log("✅ Berhasil terhubung ke Supabase! Menemukan", data.length, "data penempatan.");
+        set({ penempatanData: data });
+      }
+      const { data: jenisData, error: jenisError } = await supabase.from("jenis_peralatan").select("id, nama, tampil_di_kalibrasi").order("nama");
+      if (!jenisError && jenisData) {
+        set({ jenisPeralatanData: jenisData });
       }
       const { data: personelData, error: personelError } = await supabase.from("personel").select(`id, nik, nama, no_hp, unit_kerja(nama)`);
       if (!personelError && personelData) {
         console.log("✅ Berhasil mengambil data personel dari Supabase:", personelData.length);
-        const apiT2 = personelData.filter((p) => p.unit_kerja?.nama === "API T2").map((p) => ({ id: p.id, nik: p.nik, name: p.nama, phone: p.no_hp || "" }));
-        const omIasT2 = personelData.filter((p) => p.unit_kerja?.nama === "OM/IAS T2").map((p) => ({ id: p.id, nik: p.nik, name: p.nama, phone: p.no_hp || "" }));
+        const apiT2 = personelData.filter((p) => p.unit_kerja?.nama === "API T2").map((p) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || "" }));
+        const omIasT2 = personelData.filter((p) => p.unit_kerja?.nama === "OM/IAS T2").map((p) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || "" }));
         if (apiT2.length > 0) get().setDataApiT2(apiT2);
         if (omIasT2.length > 0) get().setDataOmIasT2(omIasT2);
       }
@@ -404,94 +418,63 @@ const useMasterDataStore = create((set, get) => ({
     }
   }
 }));
-const getValidXRayModels = (lokasi) => {
-  const allModels = [
-    "Semua X-Ray",
-    "X-Ray Rapiscan 620DV",
-    "X-Ray Rapiscan 628DV",
-    "X-Ray Rapiscan Orion 920DV",
-    "X-Ray Nuctech CX100100D",
-    "X-Ray Nuctech CX6040D",
-    "X-Ray Smith Heiman HS 100100-2is",
-    "X-Ray Smith Heiman HS 6040-2is"
-  ];
-  if (!lokasi) return allModels;
-  const locUpper = lokasi.toUpperCase();
-  const models = ["Semua X-Ray"];
-  if (locUpper.includes("PSCP D")) {
-    models.push("X-Ray Rapiscan 620DV", "X-Ray Smith Heiman HS 6040-2is");
-  } else if (locUpper.includes("PSCP E")) {
-    models.push("X-Ray Rapiscan 620DV");
-  } else if (locUpper.includes("PSCP F")) {
-    models.push("X-Ray Rapiscan 620DV", "X-Ray Rapiscan Orion 920DV");
-  } else if (locUpper.includes("PSCP UMROH")) {
-    models.push("X-Ray Rapiscan 620DV", "X-Ray Nuctech CX6040D");
-  } else if (locUpper.includes("SSCP E")) {
-    models.push("X-Ray Smith Heiman HS 6040-2is");
-  } else if (locUpper.includes("SSCP F")) {
-    models.push("X-Ray Rapiscan 620DV");
-  } else if (locUpper.includes("HBSCP") || locUpper.includes("BEA CUKAI")) {
-    models.push("X-Ray Rapiscan 628DV", "X-Ray Nuctech CX100100D", "X-Ray Smith Heiman HS 100100-2is");
-  } else {
-    return allModels;
+const getValidModels = (lokasi, jenisPeralatan) => {
+  const defaultOption = `Semua ${jenisPeralatan}`;
+  const models = [defaultOption];
+  if (!lokasi) return models;
+  try {
+    const penempatanData = useMasterDataStore.getState().penempatanData || [];
+    const extractedModels = /* @__PURE__ */ new Set();
+    penempatanData.forEach((p) => {
+      if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase() && p.tipe_peralatan?.jenis_peralatan?.nama?.toUpperCase() === jenisPeralatan.toUpperCase()) {
+        if (p.tipe_peralatan?.nama) {
+          extractedModels.add(p.tipe_peralatan.nama);
+        }
+      }
+    });
+    if (extractedModels.size > 0) {
+      return [defaultOption, ...Array.from(extractedModels)];
+    }
+  } catch (error) {
+    console.warn(`Error reading dynamic ${jenisPeralatan} models from relational data`, error);
   }
   return models;
 };
+const getValidXRayModels = (lokasi) => {
+  return getValidModels(lokasi, "X-Ray");
+};
 const getGeneralLokasiOptions = (peralatanType) => {
   if (!peralatanType) return [];
-  if (["ATRS", "Body Scanner Leidos Provision 2", "Body Scanner", "Extension Conveyor"].includes(peralatanType)) {
-    return ["PSCP D", "PSCP E", "PSCP F", "PSCP Umroh"];
-  } else if (peralatanType === "Access Control") {
-    return [
-      "Rampout D",
-      "Rampout E",
-      "Rampout F",
-      "Aviobridge D",
-      "BL D",
-      "Aviobridge E",
-      "BL E",
-      "Aviobridge F",
-      "BL F",
-      "Breakdown D",
-      "Breakdown E1",
-      "Breakdown E2",
-      "Breakdown F",
-      "Breakdown Umroh",
-      "Ruang Monitoring E1",
-      "Server Access",
-      "HBSCP Umroh",
-      "Lift D",
-      "Lift F",
-      "Lift Difable D",
-      "Lift Difable E",
-      "Lift Difable F",
-      "Mainframe E"
-    ];
-  } else if (peralatanType.includes("620DV") || peralatanType.includes("920DV") || peralatanType.includes("6040")) {
-    return ["PSCP D", "PSCP E", "PSCP F", "PSCP Umroh", "SSCP E", "SSCP F"];
-  } else if (peralatanType.includes("628DV") || peralatanType.includes("100100")) {
-    return ["HBSCP", "Xray Bea Cukai Conveyor", "Redline Bea Cukai Arrival F", "Redline Bea Cukai Arrival Umroh"];
-  } else if (peralatanType === "Semua X-Ray" || peralatanType === "X-Ray") {
-    return ["PSCP D", "PSCP E", "PSCP F", "PSCP Umroh", "SSCP E", "SSCP F", "HBSCP", "Xray Bea Cukai Conveyor", "Redline Bea Cukai Arrival F", "Redline Bea Cukai Arrival Umroh"];
-  } else {
-    let opts = ["PSCP D", "PSCP E", "PSCP F", "PSCP Umroh", "SSCP E", "SSCP F", "HBSCP"];
-    if (peralatanType === "WTMD" || peralatanType === "WTMD CEIA") {
-      opts = opts.filter((loc) => loc !== "HBSCP");
-      opts.push("Transfer Desk D", "Transfer Desk E");
-    } else if (peralatanType === "HHMD") {
-      opts = opts.filter((loc) => loc !== "HBSCP");
-      opts.push("Transfer Desk D", "Transfer Desk E");
-    }
-    return opts;
+  const extractedLocs = /* @__PURE__ */ new Set();
+  try {
+    const penempatanData = useMasterDataStore.getState().penempatanData || [];
+    penempatanData.forEach((p) => {
+      const jenisNama = p.tipe_peralatan?.jenis_peralatan?.nama?.toUpperCase() || "";
+      const tipeNama = p.tipe_peralatan?.nama?.toUpperCase() || "";
+      const target = peralatanType.toUpperCase();
+      if (target === "SEMUA X-RAY" || target === "X-RAY") {
+        if (jenisNama === "X-RAY") {
+          if (p.lokasi?.nama) extractedLocs.add(p.lokasi.nama);
+        }
+      } else if (tipeNama === target) {
+        if (p.lokasi?.nama) extractedLocs.add(p.lokasi.nama);
+      } else if (jenisNama === target) {
+        if (p.lokasi?.nama) extractedLocs.add(p.lokasi.nama);
+      }
+    });
+  } catch (error) {
+    console.warn("Error reading dynamic locations from relational data", error);
   }
+  return Array.from(extractedLocs).sort();
 };
-const getIntersectedLocations = (peralatanArray, xrayModelSelected = "Semua X-Ray") => {
+const getIntersectedLocations = (peralatanArray, models = {}) => {
   if (!peralatanArray || peralatanArray.length === 0) return [];
   let validLocs = null;
   for (const equip of peralatanArray) {
     let currentEquipOpts = [];
-    if (equip === "X-Ray") {
-      currentEquipOpts = getGeneralLokasiOptions(xrayModelSelected);
+    const selectedModel = models[equip];
+    if (selectedModel && !selectedModel.startsWith("Semua ")) {
+      currentEquipOpts = getGeneralLokasiOptions(selectedModel);
     } else {
       currentEquipOpts = getGeneralLokasiOptions(equip);
     }
@@ -506,33 +489,36 @@ const getIntersectedLocations = (peralatanArray, xrayModelSelected = "Semua X-Ra
 };
 const getLokasi2Options = (lokasi, peralatanArray = []) => {
   if (!lokasi) return [];
-  const locUpper = lokasi.toUpperCase();
-  if (peralatanArray.includes("Access Control")) {
-    if (locUpper.includes("LIFT") || locUpper.includes("MAINFRAME") || locUpper.includes("SERVER") || locUpper.includes("HBSCP") || locUpper.includes("BREAKDOWN") || locUpper.includes("MONITORING")) {
-      return [];
-    }
+  const extractedNumbers = /* @__PURE__ */ new Set();
+  try {
+    const penempatanData = useMasterDataStore.getState().penempatanData || [];
+    penempatanData.forEach((p) => {
+      if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase()) {
+        if (peralatanArray.length > 0) {
+          const jenisNama = p.tipe_peralatan?.jenis_peralatan?.nama;
+          const tipeNama = p.tipe_peralatan?.nama;
+          if (jenisNama && peralatanArray.includes(jenisNama) || tipeNama && peralatanArray.includes(tipeNama)) {
+            if (p.titik_lokasi?.nomor) extractedNumbers.add(p.titik_lokasi.nomor);
+          }
+        } else {
+          if (p.titik_lokasi?.nomor) extractedNumbers.add(p.titik_lokasi.nomor);
+        }
+      }
+    });
+  } catch (error) {
+    console.warn("Error reading dynamic numbers from relational data", error);
   }
-  if (locUpper.includes("SSCP")) return [];
-  if (locUpper.includes("TRANSFER DESK")) return [];
-  if (locUpper === "PSCP D" || locUpper === "PSCP E") return ["1", "2", "3", "4", "5"];
-  if (locUpper === "PSCP F") return ["1", "2", "3", "4"];
-  if (locUpper === "PSCP UMROH") return ["1", "2", "3", "4", "5", "6", "7"];
-  if (locUpper.includes("BEA CUKAI CONVEYOR")) return ["11", "12", "13", "14", "15", "16", "17", "18"];
-  if (locUpper.includes("REDLINE") || locUpper.includes("RED LINE")) return ["1", "2", "3", "4"];
-  if (locUpper === "HBSCP") return ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"];
-  return ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18"];
+  return Array.from(extractedNumbers).sort((a, b) => {
+    const numA = parseInt(a.replace(/[^0-9]/g, ""), 10);
+    const numB = parseInt(b.replace(/[^0-9]/g, ""), 10);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return a.localeCompare(b);
+  });
 };
 const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) => {
   if (equipArray.length === 0) return [];
   if (equipArray.includes("Access Control")) return storingLocAc;
-  let locs = [...storingLocDefault];
-  const isOnlyHHMDWTMD = equipArray.length > 0 && equipArray.every((e) => e === "HHMD" || e === "WTMD");
-  if (isOnlyHHMDWTMD) locs.push("Transfer Desk D", "Transfer Desk E");
-  const isOnlyXRay = equipArray.length === 1 && equipArray[0] === "X-Ray";
-  if (isOnlyXRay) locs.push("Redline Arrival F", "Redline Arrival Umroh", "X-Ray Custom Conveyor Kedatangan F", "X-Ray Custom Conveyor Kedatangan Umroh");
-  if (equipArray.includes("Body Scanner")) locs = locs.filter((l) => !l.includes("SSCP") && !l.includes("HBSCP"));
-  if (equipArray.includes("HHMD") || equipArray.includes("WTMD")) locs = locs.filter((l) => !l.includes("HBSCP"));
-  return locs;
+  return getIntersectedLocations(equipArray);
 };
 const getStoringValidNumbers = (lokasi) => {
   if (!lokasi.includes("Avio") && !lokasi.includes("Rampout")) return [];
@@ -552,7 +538,7 @@ const generateWA_Perbaikan = (formData, isVerifikasiETD) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
   const dateParts = formData.tanggal ? formData.tanggal.split("-") : ["", "", ""];
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : "";
-  let lokasiFinal = formData.peralatan === "Access Control" ? formData.lokasi1 + formData.lokasi2 : formData.lokasi1 + (formData.lokasi2 ? ` No.${formData.lokasi2}` : "");
+  let lokasiFinal = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== "-" ? formData.peralatan === "Access Control" ? ` ${formData.lokasi2}` : ` No.${formData.lokasi2}` : "");
   const judulLaporan = isVerifikasiETD ? `Laporan Verifikasi ${formData.peralatan}` : `Laporan Perbaikan ${formData.peralatan}`;
   return `${judulLaporan}
 
@@ -760,7 +746,8 @@ const generateWA_Kalibrasi = (kalibrasiGlobal, kalibrasiEntries) => {
   const formattedDate = formatTanggalIndo(kalibrasiGlobal.tanggal);
   const jamMulai = kalibrasiGlobal.waktuMulai || "...";
   const jamSelesai = kalibrasiGlobal.waktuSelesai || "...";
-  let msg = `*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*
+  let msg = `*(Real-time)*
+*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*
 Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}`;
   kalibrasiEntries.forEach((entry) => {
     if (entry.peralatan.length === 0) return;
@@ -794,68 +781,63 @@ Catatan :
     }
     const equipListFormatted = entry.peralatan.map((eq) => {
       if (eq === "X-Ray") return entry.xrayModel === "Semua X-Ray" ? "X-Ray" : entry.xrayModel;
-      if (eq === "WTMD") return entry.wtmdModel;
-      if (eq === "Body Scanner") return entry.bsModel;
-      if (eq === "ETD") return "ETD Leidos QS-B220";
+      if (eq === "WTMD") return entry.wtmdModel === "Semua WTMD" ? "WTMD" : entry.wtmdModel;
+      if (eq === "HHMD") return entry.hhmdModel === "Semua HHMD" ? "HHMD" : entry.hhmdModel;
+      if (eq === "Body Scanner") return entry.bsModel === "Semua Body Scanner" ? "Body Scanner" : entry.bsModel;
+      if (eq === "ETD") return entry.etdModel === "Semua ETD" ? "ETD" : entry.etdModel;
       return eq;
     });
-    let equipString = "-";
-    if (equipListFormatted.length === 1) {
-      equipString = equipListFormatted[0];
-    } else if (equipListFormatted.length > 1) {
-      const lastEquip = equipListFormatted[equipListFormatted.length - 1];
-      const otherEquips = equipListFormatted.slice(0, -1).join(", ");
-      equipString = `${otherEquips} & ${lastEquip}`;
-    }
-    const locString = entry.lokasi1 + (entry.lokasi2 ? ` No.${entry.lokasi2}` : "");
+    const locString = entry.lokasi1 + (entry.lokasi2 && entry.lokasi2 !== "-" ? ` ${entry.lokasi2}` : "");
+    const lokasiStr = locString || "...";
+    const equipString = equipListFormatted.length === 1 ? equipListFormatted[0] : equipListFormatted.length > 1 ? `${equipListFormatted.slice(0, -1).join(", ")} & ${equipListFormatted[equipListFormatted.length - 1]}` : "-";
     msg += `
 
 Peralatan : ${equipString}
-Lokasi : ${locString}
+Lokasi : ${lokasiStr}
 
 Kegiatan :
-- Pembersihan Luar Dalam Perangkat
-- Pemeriksaan Tegangan Power
-- Pemeriksaan Fisik dan Kesesuaian Komponen (Visual Check)
-- Kalibrasi Sensitifitas Perangkat`;
-    msg += `
-
+- Pembersihan ${equipString}
+- Kalibrasi ${equipString}
+   
 Catatan :`;
     if (entry.peralatan.includes("X-Ray")) {
+      const xrayName = entry.xrayModel === "Semua X-Ray" ? "X-Ray" : entry.xrayModel;
       msg += `
-- Parameter X-Ray
-   Generator kV : Vertikal ${entry.xrayKvV || "..."} | Horizontal ${entry.xrayKvH || "..."}
-   Generator mA : Vertikal ${entry.xrayMaV || "..."} | Horizontal ${entry.xrayMaH || "..."}
-   Generator Ontime : Vertikal ${entry.xrayOnV || "..."} | Horizontal ${entry.xrayOnH || "..."}
-   Archive : ${entry.xrayArchive || "..."}`;
+${xrayName}
+- kV : ${entry.xrayKvV || "..."} (v) - ${entry.xrayKvH || "..."} (h)
+- mA : ${entry.xrayMaV || "..."} (v) - ${entry.xrayMaH || "..."} (h)
+- Ontime : ${entry.xrayOnV || "..."} (v) - ${entry.xrayOnH || "..."} (h)
+- Archive : ${entry.xrayArchive || "..."}
+`;
     }
     if (entry.peralatan.includes("WTMD")) {
+      const wtmdName = entry.wtmdModel === "Semua WTMD" ? "WTMD" : entry.wtmdModel;
       msg += `
-- Parameter WTMD
-   Z1 : ${entry.wtmdZ1 || "..."}  Z2 : ${entry.wtmdZ2 || "..."}  Z3 : ${entry.wtmdZ3 || "..."}  Z4 : ${entry.wtmdZ4 || "..."}
-   LC : ${entry.wtmdLc || "..."}  LS : ${entry.wtmdLs || "..."}  UC : ${entry.wtmdUc || "..."}  SE : ${entry.wtmdSe || "..."}  DS : ${entry.wtmdDs || "..."}`;
+${wtmdName}
+- Z1 : ${entry.wtmdZ1 || "..."} - Z2 : ${entry.wtmdZ2 || "..."} - Z3 : ${entry.wtmdZ3 || "..."} - Z4 : ${entry.wtmdZ4 || "..."}
+- LC : ${entry.wtmdLc || "..."} - LS : ${entry.wtmdLs || "..."} - UC : ${entry.wtmdUc || "..."} - SE : ${entry.wtmdSe || "..."} - DS : ${entry.wtmdDs || "..."}
+`;
     }
     if (entry.peralatan.includes("Body Scanner")) {
+      const bsName = entry.bsModel === "Semua Body Scanner" ? "Body Scanner" : entry.bsModel;
       msg += `
-- Parameter Body Scanner
-   Test Tampilan Suspect Item : ${entry.bsSuspect || "..."}
-   Test Monitor : ${entry.bsMonitor || "..."}
-   Test Fungsi Scanning : ${entry.bsScanning || "..."}
-   Test Fungsi Kalibrasi : ${entry.bsCalibration || "..."}`;
+${bsName}
+- Test Tampilan Suspect Item : ${entry.bsSuspect || "Normal"}
+- Test Monitor : ${entry.bsMonitor || "Normal"}
+- Test Fungsi Scanning : ${entry.bsScanning || "Normal"}
+- Test Fungsi Kalibrasi : ${entry.bsCalibration || "Normal"}
+`;
     }
     if (entry.peralatan.includes("ETD")) {
+      const etdName = entry.etdModel === "Semua ETD" ? "ETD" : entry.etdModel;
       msg += `
-- Parameter ETD
-   Sampling Test TNT : ${entry.etdTnt || "..."}
-   Sampling Test PETN : ${entry.etdPetn || "..."}
-   Sampling Test RDX : ${entry.etdRdx || "..."}`;
+${etdName}
+- Sampling Test TNT : ${entry.etdTnt || "Alarm"}
+- Sampling Test PETN : ${entry.etdPetn || "Alarm"}
+- Sampling Test RDX : ${entry.etdRdx || "Alarm"}
+`;
     }
   });
-  msg += `
-
-TERIMA KASIH
-MELANGKAH BERSAMA UNTUK CGK HEBAT
-BERSAMA MELAYANI SEPENUH HATI`;
   return msg;
 };
 const fallbackShare = async (message, hasUnsharedPhotos, setIsCopied) => {
@@ -911,12 +893,19 @@ const TabKehadiran = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [attendanceData, setAttendanceData] = useState(() => {
-    const currentHour = (/* @__PURE__ */ new Date()).getHours();
+    const now = /* @__PURE__ */ new Date();
+    const currentHour = now.getHours();
     const isPagi = currentHour >= 8 && currentHour < 20;
     const shiftValue = isPagi ? "Pagi, 08.00 - 20.00 WIB" : "Malam, 20.00 - 08.00 WIB";
     const kegiatan = isPagi ? "- Monitoring Ops\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Perangkat" : "- Monitoring Ops\n- Storing Peralatan";
+    const logicalDateObj = new Date(now.getTime());
+    if (currentHour < 8) {
+      logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+    }
+    const tzOffset = logicalDateObj.getTimezoneOffset() * 6e4;
+    const localDate = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split("T")[0];
     return {
-      tanggal: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+      tanggal: localDate,
       shift: shiftValue,
       apiList: [],
       omList: [],
@@ -934,12 +923,19 @@ const TabKehadiran = () => {
             personel:personel_id (id, nama, no_hp, unit_kerja(nama))
           `).eq("tanggal", attendanceData.tanggal).neq("shift", "D");
         if (error) throw error;
-        const filteredData = (data || []).filter((d) => d.shift === targetShiftCode);
+        const filteredData = (data || []).filter((d) => {
+          const s = (d.shift || "").toUpperCase();
+          if (targetShiftCode === "PS") {
+            return s === "PS";
+          } else {
+            return s === "M";
+          }
+        });
         const apiRows = filteredData.filter((d) => d.personel?.unit_kerja?.nama === "API T2").map((d) => ({
           id: d.id,
           jadwal_id: d.id,
           personel_id: d.personel?.id,
-          name: d.personel?.nama,
+          name: d.personel?.nama ? toTitleCase(d.personel.nama) : "",
           phone: d.personel?.no_hp || "",
           status: d.status_kehadiran || "Hadir"
         }));
@@ -947,7 +943,7 @@ const TabKehadiran = () => {
           id: d.id,
           jadwal_id: d.id,
           personel_id: d.personel?.id,
-          name: d.personel?.nama,
+          name: d.personel?.nama ? toTitleCase(d.personel.nama) : "",
           phone: d.personel?.no_hp || "",
           status: d.status_kehadiran || "Hadir"
         }));
@@ -1187,7 +1183,7 @@ const TabKehadiran = () => {
       " Tersimpan & Disalin!"
     ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx(Share2, { className: "w-6 h-6" }),
-      " Simpan Status & Share WA"
+      " Share Kehadiran ke WA"
     ] }) }) }),
     /* @__PURE__ */ jsxs("div", { className: "mt-8 border-t border-slate-200 pt-8", children: [
       /* @__PURE__ */ jsxs("h3", { className: "text-sm font-bold text-slate-700 mb-4 flex items-center gap-2", children: [
@@ -1381,41 +1377,70 @@ const processPhotosToCollage = async (photosArray) => {
     }
   });
 };
-const CollageEditor$3 = lazy(() => import("./CollageEditor-DppvZTJV.js").then((m) => ({ default: m.CollageEditor })));
+const CollageEditor$3 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabPerbaikan = () => {
   const { isCopied, setIsCopied } = useAppStore();
-  const [formData, setFormData] = useState({
-    peralatan: "",
-    lokasi1: "",
-    lokasi2: "",
-    sumberLaporan: "Avsec",
-    indikasiAwal: "",
-    tanggal: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-    waktuMulai: "",
-    waktuSelesai: "",
-    lamaPengerjaan: "",
-    teknisi: "",
-    permasalahan: "• ",
-    tindakLanjut: "• ",
-    status: "Pekerjaan Selesai"
+  const [formData, setFormData] = useState(() => {
+    const now = /* @__PURE__ */ new Date();
+    const currentHour = now.getHours();
+    const logicalDateObj = new Date(now.getTime());
+    if (currentHour < 8) {
+      logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+    }
+    const tzOffset = logicalDateObj.getTimezoneOffset() * 6e4;
+    const localDate = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split("T")[0];
+    return {
+      peralatan: "",
+      lokasi1: "",
+      lokasi2: "",
+      sumberLaporan: "Avsec",
+      indikasiAwal: "",
+      tanggal: localDate,
+      waktuMulai: "",
+      waktuSelesai: "",
+      lamaPengerjaan: "",
+      teknisi: "",
+      permasalahan: "• ",
+      tindakLanjut: "• ",
+      status: "Pekerjaan Selesai"
+    };
   });
   const [availableTeknisi, setAvailableTeknisi] = useState([]);
   const [selectedTeknisi, setSelectedTeknisi] = useState([]);
+  const [tipePeralatanOptions, setTipePeralatanOptions] = useState([]);
   React.useEffect(() => {
-    const fetchTeknisi = async () => {
-      const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-      const currentHour = (/* @__PURE__ */ new Date()).getHours();
+    const fetchData = async () => {
+      const now = /* @__PURE__ */ new Date();
+      const currentHour = now.getHours();
+      const logicalDateObj = new Date(now.getTime());
+      if (currentHour < 8) {
+        logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+      }
+      const tzOffset = logicalDateObj.getTimezoneOffset() * 6e4;
+      const todayStr = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split("T")[0];
       const isPagi = currentHour >= 8 && currentHour < 20;
-      const targetShiftCode = isPagi ? "PS" : "M";
-      const { data } = await supabase.from("jadwal_shift").select(`id, personel:personel_id(nama)`).eq("tanggal", todayStr).eq("shift", targetShiftCode).eq("status_kehadiran", "Hadir");
-      if (data) {
-        setAvailableTeknisi(data.map((d) => ({
+      const { data: dataTeknisi } = await supabase.from("jadwal_shift").select(`id, shift, status_kehadiran, personel:personel_id(nama, unit_kerja(nama))`).eq("tanggal", todayStr).eq("status_kehadiran", "Hadir");
+      if (dataTeknisi) {
+        const filteredTeknisi = dataTeknisi.filter((d) => {
+          const s = (d.shift || "").toUpperCase();
+          if (isPagi) {
+            return s === "PS";
+          } else {
+            return s === "M";
+          }
+        });
+        setAvailableTeknisi(filteredTeknisi.map((d) => ({
           id: d.id,
-          name: d.personel?.nama || ""
+          name: toTitleCase(d.personel?.nama || ""),
+          unit: d.personel?.unit_kerja?.nama || ""
         })).filter((t) => t.name !== ""));
       }
+      const { data: dataTipe } = await supabase.from("tipe_peralatan").select("nama").order("nama", { ascending: true });
+      if (dataTipe) {
+        setTipePeralatanOptions(dataTipe.map((d) => d.nama));
+      }
     };
-    fetchTeknisi();
+    fetchData();
   }, []);
   React.useEffect(() => {
     setFormData((prev) => ({ ...prev, teknisi: selectedTeknisi.join(", ") }));
@@ -1454,14 +1479,28 @@ const TabPerbaikan = () => {
     const isETD = value === "ETD Leidos QS-B220";
     if (!isETD && isVerifikasiETD) {
       setIsVerifikasiETD(false);
+      setFormData((prev) => ({ ...prev, peralatan: value, lokasi2: "", permasalahan: "• ", tindakLanjut: "• " }));
+    } else {
+      setFormData((prev) => ({ ...prev, peralatan: value, lokasi2: "" }));
     }
-    setFormData((prev) => ({ ...prev, peralatan: value, lokasi2: "" }));
   };
   const handleVerifikasiChange = (e) => {
     const checked = e.target.checked;
-    if (checked && formData.peralatan !== "ETD Leidos QS-B220") {
-      setFormData((prev) => ({ ...prev, peralatan: "ETD Leidos QS-B220", lokasi2: "" }));
-    }
+    setFormData((prev) => {
+      const newData = { ...prev };
+      if (checked && newData.peralatan !== "ETD Leidos QS-B220") {
+        newData.peralatan = "ETD Leidos QS-B220";
+        newData.lokasi2 = "";
+      }
+      if (checked) {
+        newData.permasalahan = "• Verification Required";
+        newData.tindakLanjut = "• Melakukan Verifikasi Negatif";
+      } else {
+        newData.permasalahan = "• ";
+        newData.tindakLanjut = "• ";
+      }
+      return newData;
+    });
     setIsVerifikasiETD(checked);
   };
   const handleBulletChange = (e, field) => {
@@ -1545,20 +1584,7 @@ const TabPerbaikan = () => {
         ] }),
         /* @__PURE__ */ jsxs("select", { required: true, value: formData.peralatan, onChange: handlePeralatanChange, className: "w-full px-4 py-3 bg-white border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm cursor-pointer appearance-none", children: [
           /* @__PURE__ */ jsx("option", { value: "", children: "-- Pilih Peralatan --" }),
-          /* @__PURE__ */ jsx("option", { value: "X-Ray Rapiscan 620DV", children: "X-Ray Rapiscan 620DV" }),
-          /* @__PURE__ */ jsx("option", { value: "X-Ray Rapiscan 628DV", children: "X-Ray Rapiscan 628DV" }),
-          /* @__PURE__ */ jsx("option", { value: "X-Ray Rapiscan Orion 920DV", children: "X-Ray Rapiscan Orion 920DV" }),
-          /* @__PURE__ */ jsx("option", { value: "X-Ray Nuctech CX100100D", children: "X-Ray Nuctech CX100100D" }),
-          /* @__PURE__ */ jsx("option", { value: "X-Ray Nuctech CX6040D", children: "X-Ray Nuctech CX6040D" }),
-          /* @__PURE__ */ jsx("option", { value: "X-Ray Smith Heiman HS 100100-2is", children: "X-Ray Smith Heiman HS 100100-2is" }),
-          /* @__PURE__ */ jsx("option", { value: "X-Ray Smith Heiman HS 6040-2is", children: "X-Ray Smith Heiman HS 6040-2is" }),
-          /* @__PURE__ */ jsx("option", { value: "WTMD CEIA", children: "WTMD CEIA" }),
-          /* @__PURE__ */ jsx("option", { value: "HHMD", children: "HHMD" }),
-          /* @__PURE__ */ jsx("option", { value: "ETD Leidos QS-B220", children: "ETD Leidos QS-B220" }),
-          /* @__PURE__ */ jsx("option", { value: "Body Scanner Leidos Provision 2", children: "Body Scanner Leidos Provision 2" }),
-          /* @__PURE__ */ jsx("option", { value: "Access Control", children: "Access Control" }),
-          /* @__PURE__ */ jsx("option", { value: "ATRS", children: "ATRS" }),
-          /* @__PURE__ */ jsx("option", { value: "Extension Conveyor", children: "Extension Conveyor" })
+          tipePeralatanOptions.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 pt-2 sm:pt-7", children: [
@@ -1578,15 +1604,30 @@ const TabPerbaikan = () => {
             /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
               /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
                 /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
-                /* @__PURE__ */ jsxs("select", { name: "lokasi1", required: true, value: formData.lokasi1, onChange: handleRepairChange, className: "w-full px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none", children: [
-                  /* @__PURE__ */ jsx("option", { value: "", children: "-- Lokasi --" }),
-                  getGeneralLokasiOptions(formData.peralatan).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-                ] })
+                /* @__PURE__ */ jsxs(
+                  "select",
+                  {
+                    name: "lokasi1",
+                    required: true,
+                    disabled: !formData.peralatan,
+                    value: formData.lokasi1,
+                    onChange: handleRepairChange,
+                    className: "w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed",
+                    children: [
+                      /* @__PURE__ */ jsx("option", { value: "", children: "- Pilih Lokasi -" }),
+                      getGeneralLokasiOptions(formData.peralatan).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+                    ]
+                  }
+                )
               ] }),
-              /* @__PURE__ */ jsx("div", { className: "w-1/3", children: /* @__PURE__ */ jsxs("select", { name: "lokasi2", value: formData.lokasi2, onChange: handleRepairChange, disabled: getLokasi2Options(formData.lokasi1, [formData.peralatan]).length === 0, className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${getLokasi2Options(formData.lokasi1, [formData.peralatan]).length === 0 ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`, children: [
-                /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
-                getLokasi2Options(formData.lokasi1, [formData.peralatan]).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-              ] }) })
+              /* @__PURE__ */ jsx("div", { className: "w-1/3", children: (() => {
+                const options = getLokasi2Options(formData.lokasi1, [formData.peralatan]);
+                const isDisabled = options.length === 0 || options.length === 1 && options[0] === "-";
+                return /* @__PURE__ */ jsxs("select", { name: "lokasi2", value: formData.lokasi2, onChange: handleRepairChange, disabled: isDisabled, className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${isDisabled ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`, children: [
+                  /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
+                  options.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+                ] });
+              })() })
             ] })
           ] }),
           /* @__PURE__ */ jsxs("div", { children: [
@@ -1632,18 +1673,51 @@ const TabPerbaikan = () => {
               "Teknisi Bertugas (Otomatis dari Shift)",
               availableTeknisi.length === 0 && /* @__PURE__ */ jsx("span", { className: "text-xs text-rose-500 font-normal", children: "*(Tidak ada teknisi hadir/jadwal kosong)" })
             ] }),
-            /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200", children: availableTeknisi.map((t) => /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-100 rounded-md transition-colors", children: [
-              /* @__PURE__ */ jsx(
-                "input",
-                {
-                  type: "checkbox",
-                  checked: selectedTeknisi.includes(t.name),
-                  onChange: () => toggleTeknisi(t.name),
-                  className: "w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                }
-              ),
-              /* @__PURE__ */ jsx("span", { className: "text-sm font-medium text-slate-700 select-none", children: t.name })
-            ] }, t.id)) }),
+            /* @__PURE__ */ jsx("div", { className: "flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200", children: (() => {
+              const apiTeknisi = availableTeknisi.filter((t) => t.unit === "API T2");
+              const iasTeknisi = availableTeknisi.filter((t) => t.unit === "OM/IAS T2");
+              const otherTeknisi = availableTeknisi.filter((t) => t.unit !== "API T2" && t.unit !== "OM/IAS T2");
+              return /* @__PURE__ */ jsxs(Fragment, { children: [
+                apiTeknisi.length > 0 && /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-2", children: apiTeknisi.map((t) => /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-100 rounded-md transition-colors", children: [
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "checkbox",
+                      checked: selectedTeknisi.includes(t.name),
+                      onChange: () => toggleTeknisi(t.name),
+                      className: "w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("span", { className: "text-sm font-medium text-slate-700 select-none", children: t.name })
+                ] }, t.id)) }),
+                apiTeknisi.length > 0 && (iasTeknisi.length > 0 || otherTeknisi.length > 0) && /* @__PURE__ */ jsx("div", { className: "border-t border-slate-300 border-dashed my-1" }),
+                iasTeknisi.length > 0 && /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-2", children: iasTeknisi.map((t) => /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-100 rounded-md transition-colors", children: [
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "checkbox",
+                      checked: selectedTeknisi.includes(t.name),
+                      onChange: () => toggleTeknisi(t.name),
+                      className: "w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("span", { className: "text-sm font-medium text-slate-700 select-none", children: t.name })
+                ] }, t.id)) }),
+                iasTeknisi.length > 0 && otherTeknisi.length > 0 && /* @__PURE__ */ jsx("div", { className: "border-t border-slate-300 border-dashed my-1" }),
+                otherTeknisi.length > 0 && /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-2", children: otherTeknisi.map((t) => /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-100 rounded-md transition-colors", children: [
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "checkbox",
+                      checked: selectedTeknisi.includes(t.name),
+                      onChange: () => toggleTeknisi(t.name),
+                      className: "w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("span", { className: "text-sm font-medium text-slate-700 select-none", children: t.name })
+                ] }, t.id)) })
+              ] });
+            })() }),
             availableTeknisi.length === 0 && /* @__PURE__ */ jsx(
               "input",
               {
@@ -1731,10 +1805,11 @@ const TabPerbaikan = () => {
     ) })
   ] });
 };
-const CollageEditor$2 = lazy(() => import("./CollageEditor-DppvZTJV.js").then((m) => ({ default: m.CollageEditor })));
+const CollageEditor$2 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabStoring = () => {
   const { isCopied, setIsCopied } = useAppStore();
-  const { storingEquipments, storingLocAc, storingLocDefault } = useMasterDataStore();
+  const { jenisPeralatanData, storingLocAc, storingLocDefault } = useMasterDataStore();
+  const storingEquipments = Array.from(new Set(jenisPeralatanData.map((j) => j.nama)));
   const [storingData, setStoringData] = useState({
     tanggal: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
     waktuMulai: "",
@@ -1836,11 +1911,11 @@ const TabStoring = () => {
           ] })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "col-span-1", children: [
-          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Jam Mulai" }),
+          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Pukul Mulai" }),
           /* @__PURE__ */ jsx("input", { type: "time", name: "waktuMulai", required: true, value: storingData.waktuMulai, onChange: handleStoringChange, className: "w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "col-span-1", children: [
-          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Jam Selesai" }),
+          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Pukul Selesai" }),
           /* @__PURE__ */ jsx("input", { type: "time", name: "waktuSelesai", required: true, value: storingData.waktuSelesai, onChange: handleStoringChange, className: "w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "col-span-2", children: [
@@ -1889,8 +1964,8 @@ const TabStoring = () => {
                   disabled: storingData.peralatan.length === 0,
                   className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed",
                   children: [
-                    /* @__PURE__ */ jsx("option", { value: "", children: "- Pilih Area -" }),
-                    getStoringValidLocations(storingData.peralatan, storingLocAc, storingLocDefault).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+                    /* @__PURE__ */ jsx("option", { value: "", children: "- Pilih Lokasi -" }),
+                    getStoringValidLocations(storingData.peralatan, storingLocAc).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
                   ]
                 }
               )
@@ -1972,15 +2047,19 @@ const TabStoring = () => {
     ) })
   ] });
 };
-const CollageEditor$1 = lazy(() => import("./CollageEditor-DppvZTJV.js").then((m) => ({ default: m.CollageEditor })));
+const CollageEditor$1 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabKalibrasi = () => {
   const { isCopied, setIsCopied } = useAppStore();
+  const { jenisPeralatanData } = useMasterDataStore();
+  const kalibrasiEquipments = jenisPeralatanData.filter((j) => j.tampil_di_kalibrasi).map((j) => j.nama);
   const createEmptyKalibrasiEntry = () => ({
     id: Date.now() + Math.random(),
     peralatan: [],
     xrayModel: "Semua X-Ray",
-    wtmdModel: "WTMD CEIA",
-    bsModel: "Body Scanner Leidos Provision 2",
+    wtmdModel: "Semua WTMD",
+    hhmdModel: "Semua HHMD",
+    bsModel: "Semua Body Scanner",
+    etdModel: "Semua ETD",
     lokasi1: "",
     lokasi2: "",
     acLokasi: [],
@@ -2340,7 +2419,14 @@ const TabKalibrasi = () => {
       ] })
     ] }),
     /* @__PURE__ */ jsx("div", { className: "space-y-6", children: kalibrasiEntries.map((entry, index) => {
-      const kalibrasiLok1Opts = entry.peralatan.length > 0 ? getIntersectedLocations(entry.peralatan, entry.xrayModel) : [];
+      const modelsObj = {
+        "X-Ray": entry.xrayModel,
+        "WTMD": entry.wtmdModel,
+        "HHMD": entry.hhmdModel,
+        "Body Scanner": entry.bsModel,
+        "ETD": entry.etdModel
+      };
+      const kalibrasiLok1Opts = entry.peralatan.length > 0 ? getIntersectedLocations(entry.peralatan, modelsObj) : [];
       return /* @__PURE__ */ jsxs("div", { className: "bg-white border-2 border-blue-100 rounded-2xl p-5 sm:p-6 space-y-6 shadow-sm relative", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center border-b border-blue-100 pb-3", children: [
           /* @__PURE__ */ jsxs("h3", { className: "font-extrabold text-lg text-blue-900 flex items-center gap-2", children: [
@@ -2368,7 +2454,7 @@ const TabKalibrasi = () => {
               " Peralatan ",
               /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-400 font-normal", children: "(Pilih 1 atau lebih)" })
             ] }),
-            /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3", children: ["X-Ray", "WTMD", "Body Scanner", "HHMD", "ETD", "Access Control"].map((equip) => {
+            kalibrasiEquipments && kalibrasiEquipments.length > 0 ? /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3", children: kalibrasiEquipments.map((equip) => {
               const isACChecked = entry.peralatan.includes("Access Control");
               const isChecked = entry.peralatan.includes(equip);
               const isDisabled = isACChecked && equip !== "Access Control";
@@ -2392,35 +2478,55 @@ const TabKalibrasi = () => {
                 },
                 equip
               );
-            }) })
+            }) }) : /* @__PURE__ */ jsxs("div", { className: "p-4 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg text-sm", children: [
+              /* @__PURE__ */ jsx("p", { className: "font-semibold mb-1", children: "Peralatan Belum Dikonfigurasi!" }),
+              /* @__PURE__ */ jsxs("p", { children: [
+                "Silakan menuju ",
+                /* @__PURE__ */ jsx("b", { children: "Tab Data" }),
+                " ",
+                ">",
+                " ",
+                /* @__PURE__ */ jsx("b", { children: "Config Peralatan Kalibrasi" }),
+                " untuk memilih jenis peralatan yang akan ditampilkan di sini."
+              ] })
+            ] })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "md:col-span-2", children: [
             /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-2", children: [
-              "Area / Lokasi",
+              "Lokasi",
               entry.peralatan.includes("Access Control") && /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-400 font-normal", children: " (Pilih 1 atau lebih)" })
             ] }),
-            entry.peralatan.includes("Access Control") ? /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-2", children: getGeneralLokasiOptions("Access Control").map((loc) => {
-              const isChecked = (entry.acLokasi || []).includes(loc);
-              return /* @__PURE__ */ jsxs(
-                "label",
-                {
-                  className: `flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${isChecked ? "bg-blue-50 border-blue-500 shadow-sm font-semibold" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`,
-                  children: [
-                    /* @__PURE__ */ jsx(
-                      "input",
-                      {
-                        type: "checkbox",
-                        checked: isChecked,
-                        onChange: () => handleKalibrasiAcLokasiToggle(index, loc),
-                        className: "w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                      }
-                    ),
-                    /* @__PURE__ */ jsx("span", { className: "ml-2 text-sm text-slate-700", children: loc })
-                  ]
-                },
-                loc
-              );
-            }) }) : /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+            entry.peralatan.includes("Access Control") ? /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-2", children: (() => {
+              const acOpts = getGeneralLokasiOptions("Access Control");
+              if (acOpts.length === 0) {
+                return /* @__PURE__ */ jsxs("div", { className: "col-span-full p-3 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg text-sm", children: [
+                  /* @__PURE__ */ jsx("p", { className: "font-semibold", children: "Lokasi Access Control belum tersedia." }),
+                  /* @__PURE__ */ jsx("p", { children: "Pastikan data penempatan peralatan Access Control sudah diisi di database." })
+                ] });
+              }
+              return acOpts.map((loc) => {
+                const isChecked = (entry.acLokasi || []).includes(loc);
+                return /* @__PURE__ */ jsxs(
+                  "label",
+                  {
+                    className: `flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${isChecked ? "bg-blue-50 border-blue-500 shadow-sm font-semibold" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`,
+                    children: [
+                      /* @__PURE__ */ jsx(
+                        "input",
+                        {
+                          type: "checkbox",
+                          checked: isChecked,
+                          onChange: () => handleKalibrasiAcLokasiToggle(index, loc),
+                          className: "w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                        }
+                      ),
+                      /* @__PURE__ */ jsx("span", { className: "ml-2 text-sm text-slate-700", children: loc })
+                    ]
+                  },
+                  loc
+                );
+              });
+            })() }) : /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
               /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
                 /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
                 /* @__PURE__ */ jsxs(
@@ -2433,16 +2539,20 @@ const TabKalibrasi = () => {
                     disabled: kalibrasiLok1Opts.length === 0,
                     className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed",
                     children: [
-                      /* @__PURE__ */ jsx("option", { value: "", children: kalibrasiLok1Opts.length === 0 ? "- Pilih Peralatan Dulu -" : "- Pilih Area -" }),
+                      /* @__PURE__ */ jsx("option", { value: "", children: "- Pilih Lokasi -" }),
                       kalibrasiLok1Opts.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
                     ]
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsx("div", { className: "w-1/3", children: /* @__PURE__ */ jsxs("select", { name: "lokasi2", value: entry.lokasi2, onChange: (e) => handleKalibrasiEntryChange(index, e), disabled: getLokasi2Options(entry.lokasi1, entry.peralatan).length === 0, className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${getLokasi2Options(entry.lokasi1, entry.peralatan).length === 0 ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`, children: [
-                /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
-                getLokasi2Options(entry.lokasi1, entry.peralatan).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-              ] }) })
+              /* @__PURE__ */ jsx("div", { className: "w-1/3", children: (() => {
+                const options = getLokasi2Options(entry.lokasi1, entry.peralatan);
+                const isDisabled = options.length === 0 || options.length === 1 && options[0] === "-";
+                return /* @__PURE__ */ jsxs("select", { name: "lokasi2", value: entry.lokasi2, onChange: (e) => handleKalibrasiEntryChange(index, e), disabled: isDisabled, className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${isDisabled ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`, children: [
+                  /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
+                  options.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+                ] });
+              })() })
             ] })
           ] })
         ] }),
@@ -2483,7 +2593,10 @@ const TabKalibrasi = () => {
           ] })
         ] }),
         entry.peralatan.includes("WTMD") && /* @__PURE__ */ jsxs("div", { className: "bg-indigo-50/40 p-4 sm:p-5 rounded-xl border border-indigo-200 space-y-4", children: [
-          /* @__PURE__ */ jsx("h3", { className: "font-bold text-indigo-900 flex items-center gap-2 border-b border-indigo-200 pb-2", children: "🎛️ Parameter WTMD (WTMD CEIA)" }),
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-200 pb-3", children: [
+            /* @__PURE__ */ jsx("h3", { className: "font-bold text-indigo-900 flex items-center gap-2", children: "🎛️ Parameter WTMD" }),
+            /* @__PURE__ */ jsx("select", { name: "wtmdModel", value: entry.wtmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "WTMD").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua WTMD" ? "-- Semua Model WTMD --" : model.replace("WTMD ", "") }, model)) })
+          ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3", children: [
             /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-slate-600 mb-1", children: "Z1" }),
@@ -2523,8 +2636,15 @@ const TabKalibrasi = () => {
             ] })
           ] })
         ] }),
+        entry.peralatan.includes("HHMD") && /* @__PURE__ */ jsx("div", { className: "bg-purple-50/40 p-4 sm:p-5 rounded-xl border border-purple-200 space-y-4", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200 pb-3", children: [
+          /* @__PURE__ */ jsx("h3", { className: "font-bold text-purple-900 flex items-center gap-2", children: "📱 Parameter HHMD" }),
+          /* @__PURE__ */ jsx("select", { name: "hhmdModel", value: entry.hhmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "HHMD").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua HHMD" ? "-- Semua Model HHMD --" : model.replace("HHMD ", "") }, model)) })
+        ] }) }),
         entry.peralatan.includes("Body Scanner") && /* @__PURE__ */ jsxs("div", { className: "bg-emerald-50/40 p-4 sm:p-5 rounded-xl border border-emerald-200 space-y-4", children: [
-          /* @__PURE__ */ jsx("h3", { className: "font-bold text-emerald-900 flex items-center gap-2 border-b border-emerald-200 pb-2", children: "🔍 Parameter Body Scanner (Leidos Prov 2)" }),
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-200 pb-3", children: [
+            /* @__PURE__ */ jsx("h3", { className: "font-bold text-emerald-900 flex items-center gap-2", children: "🔍 Parameter Body Scanner" }),
+            /* @__PURE__ */ jsx("select", { name: "bsModel", value: entry.bsModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "Body Scanner").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua Body Scanner" ? "-- Semua Model Body Scanner --" : model.replace("Body Scanner ", "") }, model)) })
+          ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-slate-600 mb-1", children: "Test Tampilan Suspect Item" }),
@@ -2561,7 +2681,10 @@ const TabKalibrasi = () => {
           ] })
         ] }),
         entry.peralatan.includes("ETD") && /* @__PURE__ */ jsxs("div", { className: "bg-amber-50/40 p-4 sm:p-5 rounded-xl border border-amber-200 space-y-4", children: [
-          /* @__PURE__ */ jsx("h3", { className: "font-bold text-amber-900 flex items-center gap-2 border-b border-amber-200 pb-2", children: "🧪 Parameter ETD (Leidos QS-B220)" }),
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-200 pb-3", children: [
+            /* @__PURE__ */ jsx("h3", { className: "font-bold text-amber-900 flex items-center gap-2", children: "🧪 Parameter ETD" }),
+            /* @__PURE__ */ jsx("select", { name: "etdModel", value: entry.etdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "ETD").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua ETD" ? "-- Semua Model ETD --" : model.replace("ETD ", "") }, model)) })
+          ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-slate-600 mb-1", children: "Sampling Test TNT" }),
@@ -2992,29 +3115,29 @@ const TabTip = () => {
         ) })
       ] })
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row gap-3 items-center w-full bg-white p-4 rounded-xl border border-slate-200 shadow-sm", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col lg:flex-row gap-3 items-stretch lg:items-center w-full bg-white p-4 rounded-xl border border-slate-200 shadow-sm", children: [
       /* @__PURE__ */ jsxs(
         "button",
         {
           type: "button",
           onClick: handleTipToggleAll,
-          className: "w-full sm:w-auto sm:mr-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors border border-slate-300 text-sm",
+          className: "w-full lg:w-auto lg:mr-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors border border-slate-300 text-sm whitespace-nowrap",
           children: [
-            /* @__PURE__ */ jsx(CheckSquare, { className: "w-4 h-4 text-emerald-600" }),
+            /* @__PURE__ */ jsx(CheckSquare, { className: "w-4 h-4 text-emerald-600 shrink-0" }),
             "Checklist / Uncheck Semua"
           ]
         }
       ),
-      /* @__PURE__ */ jsxs("div", { className: "flex gap-3 w-full sm:w-auto", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex gap-3 w-full lg:w-auto flex-col sm:flex-row items-stretch", children: [
         /* @__PURE__ */ jsxs(
           "button",
           {
             type: "button",
             onClick: handleTipSave,
             disabled: !tipUnsavedChanges,
-            className: `flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 font-bold rounded-lg transition-all text-sm ${tipUnsavedChanges ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`,
+            className: `flex-1 flex items-center justify-center gap-2 px-6 py-2.5 font-bold rounded-lg transition-all text-sm whitespace-nowrap ${tipUnsavedChanges ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`,
             children: [
-              /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsx(Save, { className: "w-4 h-4 shrink-0" }),
               " Simpan Progres"
             ]
           }
@@ -3025,9 +3148,9 @@ const TabTip = () => {
             type: "button",
             onClick: handleTipShare,
             disabled: tipUnsavedChanges || isGeneratingTipImage,
-            className: `flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 font-bold rounded-lg transition-all text-sm ${!tipUnsavedChanges && !isGeneratingTipImage ? "bg-[#25D366] hover:bg-[#20b858] text-white shadow-md" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`,
+            className: `flex-1 flex items-center justify-center gap-2 px-6 py-2.5 font-bold rounded-lg transition-all text-sm whitespace-nowrap ${!tipUnsavedChanges && !isGeneratingTipImage ? "bg-[#25D366] hover:bg-[#20b858] text-white shadow-md" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`,
             children: [
-              isGeneratingTipImage ? /* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4 animate-spin" }) : /* @__PURE__ */ jsx(Share2, { className: "w-4 h-4" }),
+              isGeneratingTipImage ? /* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4 animate-spin shrink-0" }) : /* @__PURE__ */ jsx(Share2, { className: "w-4 h-4 shrink-0" }),
               "Share TIP ke WA"
             ]
           }
@@ -3096,14 +3219,14 @@ const TabChecklist = () => {
           ] })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "col-span-1", children: [
-          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Jam Mulai" }),
+          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Pukul Mulai" }),
           /* @__PURE__ */ jsxs("div", { className: "relative", children: [
             /* @__PURE__ */ jsx(Clock, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
             /* @__PURE__ */ jsx("input", { type: "time", name: "waktuMulai", required: true, value: checklistData.waktuMulai, onChange: handleChecklistChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
           ] })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "col-span-1", children: [
-          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Jam Selesai" }),
+          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Pukul Selesai" }),
           /* @__PURE__ */ jsxs("div", { className: "relative", children: [
             /* @__PURE__ */ jsx(Clock, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
             /* @__PURE__ */ jsx("input", { type: "time", name: "waktuSelesai", required: true, value: checklistData.waktuSelesai, onChange: handleChecklistChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
@@ -3246,7 +3369,7 @@ const TabChecklist = () => {
     ] })
   ] });
 };
-const CollageEditor = lazy(() => import("./CollageEditor-DppvZTJV.js").then((m) => ({ default: m.CollageEditor })));
+const CollageEditor = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabBriefing = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [briefingData, setBriefingData] = useState(() => {
@@ -3458,11 +3581,44 @@ const ScheduleUploader = () => {
   const [selectedTahun, setSelectedTahun] = useState((/* @__PURE__ */ new Date()).getFullYear());
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState({ type: null, message: "" });
+  const [historyList, setHistoryList] = useState([]);
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(null);
+  const fetchHistory = async () => {
+    setIsFetchingHistory(true);
+    try {
+      const { data, error } = await supabase.from("jadwal_shift").select("tanggal");
+      if (error) throw error;
+      const counts = {};
+      data?.forEach((row) => {
+        const yyyyMm = row.tanggal.substring(0, 7);
+        counts[yyyyMm] = (counts[yyyyMm] || 0) + 1;
+      });
+      const list = Object.keys(counts).sort((a, b) => b.localeCompare(a)).slice(0, 12).map((ym) => ({ yearMonth: ym, count: counts[ym] }));
+      setHistoryList(list);
+    } catch (err) {
+      console.error("Error fetching history:", err);
+    } finally {
+      setIsFetchingHistory(false);
+    }
+  };
+  useEffect(() => {
+    fetchHistory();
+  }, []);
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
     setUploadStatus({ type: null, message: "" });
+    const yearStr = selectedTahun;
+    const monthStr = String(selectedBulan).padStart(2, "0");
+    const targetYm = `${yearStr}-${monthStr}`;
+    if (historyList.some((h) => h.yearMonth === targetYm)) {
+      setUploadStatus({ type: "error", message: `Jadwal untuk periode ${monthStr}-${yearStr} sudah ada. Harap hapus jadwal tersebut di histori sebelum melakukan upload ulang.` });
+      setIsUploading(false);
+      e.target.value = "";
+      return;
+    }
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
@@ -3512,10 +3668,10 @@ const ScheduleUploader = () => {
           if (!shiftCode || shiftCode === "" || shiftCode === "-" || shiftCode.toLowerCase() === "off") {
             continue;
           }
-          const yearStr = selectedTahun;
-          const monthStr = String(selectedBulan).padStart(2, "0");
+          const yearStr2 = selectedTahun;
+          const monthStr2 = String(selectedBulan).padStart(2, "0");
           const dayStr = String(dateCol.dateNum).padStart(2, "0");
-          const dateString = `${yearStr}-${monthStr}-${dayStr}`;
+          const dateString = `${yearStr2}-${monthStr2}-${dayStr}`;
           shiftsToInsert.push({
             personel_id: personelId,
             tanggal: dateString,
@@ -3530,11 +3686,32 @@ const ScheduleUploader = () => {
       const { error } = await supabase.from("jadwal_shift").upsert(shiftsToInsert, { onConflict: "personel_id, tanggal" });
       if (error) throw new Error("Gagal menyimpan ke database: " + error.message);
       setUploadStatus({ type: "success", message: `Berhasil mengunggah jadwal untuk ${shiftsToInsert.length} shift.` });
+      await fetchHistory();
     } catch (err) {
       setUploadStatus({ type: "error", message: err.message || "Terjadi kesalahan saat memproses Excel." });
     } finally {
       setIsUploading(false);
       e.target.value = "";
+    }
+  };
+  const handleDeleteSchedule = async (yearMonth) => {
+    if (!window.confirm(`Anda yakin ingin menghapus seluruh jadwal untuk periode ${yearMonth}?`)) {
+      return;
+    }
+    setIsDeleting(yearMonth);
+    try {
+      const startDate = `${yearMonth}-01`;
+      const [year, month] = yearMonth.split("-").map(Number);
+      const nextMonthDate = new Date(year, month, 1);
+      const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
+      const { error } = await supabase.from("jadwal_shift").delete().gte("tanggal", startDate).lt("tanggal", nextMonthStr);
+      if (error) throw error;
+      await fetchHistory();
+    } catch (err) {
+      console.error("Failed to delete schedule:", err);
+      alert("Gagal menghapus jadwal dari database.");
+    } finally {
+      setIsDeleting(null);
     }
   };
   return /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-xl shadow-sm border border-slate-200 p-6", children: [
@@ -3588,6 +3765,32 @@ const ScheduleUploader = () => {
         /* @__PURE__ */ jsx("p", { className: "font-bold", children: "Upload Gagal" }),
         /* @__PURE__ */ jsx("p", { className: "text-sm", children: uploadStatus.message })
       ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "mt-8 border-t border-slate-200 pt-8", children: [
+      /* @__PURE__ */ jsxs("h3", { className: "text-md font-bold text-slate-800 flex items-center gap-2 mb-4", children: [
+        /* @__PURE__ */ jsx(Clock, { className: "w-5 h-5 text-blue-600" }),
+        " Histori Upload Jadwal",
+        isFetchingHistory && /* @__PURE__ */ jsx(Loader2, { className: "w-4 h-4 text-blue-500 animate-spin" })
+      ] }),
+      historyList.length === 0 && !isFetchingHistory ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-500 italic", children: "Belum ada histori upload jadwal." }) : /* @__PURE__ */ jsx("div", { className: "space-y-3", children: historyList.map((h) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("p", { className: "font-bold text-slate-700", children: h.yearMonth }),
+          /* @__PURE__ */ jsxs("p", { className: "text-xs text-slate-500", children: [
+            h.count,
+            " data shift"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => handleDeleteSchedule(h.yearMonth),
+            disabled: isDeleting === h.yearMonth,
+            className: "p-2 text-rose-600 hover:bg-rose-100 rounded-md transition-colors disabled:opacity-50",
+            title: "Hapus Jadwal",
+            children: isDeleting === h.yearMonth ? /* @__PURE__ */ jsx(Loader2, { className: "w-5 h-5 animate-spin" }) : /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" })
+          }
+        )
+      ] }, h.yearMonth)) })
     ] })
   ] });
 };
@@ -3619,6 +3822,17 @@ const ChecklistDataEditor = () => {
       setData(newData);
     }
   };
+  const handleMoveBlock = (idx, direction) => {
+    if (direction === "up" && idx > 0) {
+      const newData = [...data];
+      [newData[idx - 1], newData[idx]] = [newData[idx], newData[idx - 1]];
+      setData(newData);
+    } else if (direction === "down" && idx < data.length - 1) {
+      const newData = [...data];
+      [newData[idx], newData[idx + 1]] = [newData[idx + 1], newData[idx]];
+      setData(newData);
+    }
+  };
   const updateBlock = (idx, field, value) => {
     const newData = [...data];
     newData[idx][field] = value;
@@ -3633,9 +3847,19 @@ const ChecklistDataEditor = () => {
         ] }),
         /* @__PURE__ */ jsx("p", { className: "text-slate-500 text-sm mt-1", children: "Edit struktur checklist untuk WhatsApp. Perubahan akan langsung disimpan ke Supabase." })
       ] }),
-      /* @__PURE__ */ jsxs("button", { onClick: handleSave, className: "flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md", children: [
-        /* @__PURE__ */ jsx(Save, { className: "w-5 h-5" }),
-        " Simpan ke Cloud"
+      /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxs("button", { onClick: () => {
+          if (window.confirm("Reset checklist ke default bawaan sistem? Data saat ini di cloud akan tertimpa setelah Anda menekan Simpan ke Cloud.")) {
+            setData(JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_DATA)));
+          }
+        }, className: "flex items-center gap-2 px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-xl transition-all shadow-sm border border-rose-200", children: [
+          /* @__PURE__ */ jsx(RefreshCw, { className: "w-5 h-5" }),
+          " Reset Default"
+        ] }),
+        /* @__PURE__ */ jsxs("button", { onClick: handleSave, className: "flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md", children: [
+          /* @__PURE__ */ jsx(Save, { className: "w-5 h-5" }),
+          " Simpan ke Cloud"
+        ] })
       ] })
     ] }),
     /* @__PURE__ */ jsx("div", { className: "space-y-6", children: data.map((block, bIdx) => /* @__PURE__ */ jsx(
@@ -3643,7 +3867,11 @@ const ChecklistDataEditor = () => {
       {
         block,
         onUpdate: (field, val) => updateBlock(bIdx, field, val),
-        onDelete: () => handleDeleteBlock(bIdx)
+        onDelete: () => handleDeleteBlock(bIdx),
+        onMoveUp: () => handleMoveBlock(bIdx, "up"),
+        onMoveDown: () => handleMoveBlock(bIdx, "down"),
+        isFirst: bIdx === 0,
+        isLast: bIdx === data.length - 1
       },
       bIdx
     )) }),
@@ -3663,7 +3891,7 @@ const ChecklistDataEditor = () => {
     ] })
   ] });
 };
-const BlockEditor = ({ block, onUpdate, onDelete }) => {
+const BlockEditor = ({ block, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }) => {
   const [isOpen, setIsOpen] = useState(false);
   return /* @__PURE__ */ jsxs("div", { className: `border rounded-xl overflow-hidden shadow-sm transition-all ${isOpen ? "border-blue-400 ring-2 ring-blue-50" : "border-slate-300"}`, children: [
     /* @__PURE__ */ jsxs("div", { className: `flex items-center justify-between p-4 cursor-pointer select-none transition-colors ${isOpen ? "bg-blue-50" : "bg-slate-100 hover:bg-slate-200"}`, onClick: () => setIsOpen(!isOpen), children: [
@@ -3675,10 +3903,21 @@ const BlockEditor = ({ block, onUpdate, onDelete }) => {
           block.title || block.summary || "Baru"
         ] })
       ] }),
-      /* @__PURE__ */ jsx("button", { onClick: (e) => {
-        e.stopPropagation();
-        onDelete();
-      }, className: "p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) })
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1", children: [
+        /* @__PURE__ */ jsx("button", { onClick: (e) => {
+          e.stopPropagation();
+          onMoveUp();
+        }, disabled: isFirst, className: `p-2 rounded-lg transition-colors ${isFirst ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`, children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-5 h-5" }) }),
+        /* @__PURE__ */ jsx("button", { onClick: (e) => {
+          e.stopPropagation();
+          onMoveDown();
+        }, disabled: isLast, className: `p-2 rounded-lg transition-colors ${isLast ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`, children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-5 h-5" }) }),
+        /* @__PURE__ */ jsx("div", { className: "w-px h-6 bg-slate-300 mx-1" }),
+        /* @__PURE__ */ jsx("button", { onClick: (e) => {
+          e.stopPropagation();
+          onDelete();
+        }, className: "p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) })
+      ] })
     ] }),
     isOpen && /* @__PURE__ */ jsxs("div", { className: "p-5 bg-white space-y-5 border-t border-slate-200", children: [
       block.type !== "group" && /* @__PURE__ */ jsxs("div", { children: [
@@ -3706,6 +3945,20 @@ const BlockEditor = ({ block, onUpdate, onDelete }) => {
               onUpdate("locations", newLocs);
             } }),
             /* @__PURE__ */ jsx("button", { onClick: () => {
+              if (lIdx > 0) {
+                const newLocs = [...block.locations || []];
+                [newLocs[lIdx - 1], newLocs[lIdx]] = [newLocs[lIdx], newLocs[lIdx - 1]];
+                onUpdate("locations", newLocs);
+              }
+            }, disabled: lIdx === 0, className: `p-2 rounded-lg transition-colors ${lIdx === 0 ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`, children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-5 h-5" }) }),
+            /* @__PURE__ */ jsx("button", { onClick: () => {
+              if (lIdx < (block.locations?.length || 0) - 1) {
+                const newLocs = [...block.locations || []];
+                [newLocs[lIdx], newLocs[lIdx + 1]] = [newLocs[lIdx + 1], newLocs[lIdx]];
+                onUpdate("locations", newLocs);
+              }
+            }, disabled: lIdx === (block.locations?.length || 0) - 1, className: `p-2 rounded-lg transition-colors ${lIdx === (block.locations?.length || 0) - 1 ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`, children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-5 h-5" }) }),
+            /* @__PURE__ */ jsx("button", { onClick: () => {
               const newLocs = [...block.locations || []];
               newLocs.splice(lIdx, 1);
               onUpdate("locations", newLocs);
@@ -3728,6 +3981,20 @@ const BlockEditor = ({ block, onUpdate, onDelete }) => {
               newTerms[tIdx].title = e.target.value;
               onUpdate("terminals", newTerms);
             } }),
+            /* @__PURE__ */ jsx("button", { onClick: () => {
+              if (tIdx > 0) {
+                const newTerms = [...block.terminals || []];
+                [newTerms[tIdx - 1], newTerms[tIdx]] = [newTerms[tIdx], newTerms[tIdx - 1]];
+                onUpdate("terminals", newTerms);
+              }
+            }, disabled: tIdx === 0, className: `p-2 rounded-lg transition-colors ${tIdx === 0 ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`, children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-5 h-5" }) }),
+            /* @__PURE__ */ jsx("button", { onClick: () => {
+              if (tIdx < (block.terminals?.length || 0) - 1) {
+                const newTerms = [...block.terminals || []];
+                [newTerms[tIdx], newTerms[tIdx + 1]] = [newTerms[tIdx + 1], newTerms[tIdx]];
+                onUpdate("terminals", newTerms);
+              }
+            }, disabled: tIdx === (block.terminals?.length || 0) - 1, className: `p-2 rounded-lg transition-colors ${tIdx === (block.terminals?.length || 0) - 1 ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`, children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-5 h-5" }) }),
             /* @__PURE__ */ jsx("button", { onClick: () => {
               const newTerms = [...block.terminals || []];
               newTerms.splice(tIdx, 1);
@@ -3775,13 +4042,672 @@ const CategoryList = ({ categories, onChange }) => {
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsx("button", { onClick: () => {
-        const newCats = [...categories];
-        newCats.splice(cIdx, 1);
-        onChange(newCats);
-      }, className: "p-2 text-rose-500 hover:bg-rose-100 rounded-lg mt-1 transition-colors", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) })
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-1", children: [
+        /* @__PURE__ */ jsx("button", { onClick: () => {
+          if (cIdx > 0) {
+            const newCats = [...categories];
+            [newCats[cIdx - 1], newCats[cIdx]] = [newCats[cIdx], newCats[cIdx - 1]];
+            onChange(newCats);
+          }
+        }, disabled: cIdx === 0, className: `p-2 rounded-lg transition-colors ${cIdx === 0 ? "text-indigo-200" : "text-indigo-500 hover:bg-indigo-100"}`, children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-5 h-5" }) }),
+        /* @__PURE__ */ jsx("button", { onClick: () => {
+          if (cIdx < categories.length - 1) {
+            const newCats = [...categories];
+            [newCats[cIdx], newCats[cIdx + 1]] = [newCats[cIdx + 1], newCats[cIdx]];
+            onChange(newCats);
+          }
+        }, disabled: cIdx === categories.length - 1, className: `p-2 rounded-lg transition-colors ${cIdx === categories.length - 1 ? "text-indigo-200" : "text-indigo-500 hover:bg-indigo-100"}`, children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-5 h-5" }) }),
+        /* @__PURE__ */ jsx("button", { onClick: () => {
+          const newCats = [...categories];
+          newCats.splice(cIdx, 1);
+          onChange(newCats);
+        }, className: "p-2 text-rose-500 hover:bg-rose-100 rounded-lg mt-1 transition-colors", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) })
+      ] })
     ] }, cIdx)),
     /* @__PURE__ */ jsx("button", { onClick: () => onChange([...categories, { title: "", items: [] }]), className: "text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors", children: "+ Tambah Kategori" })
+  ] });
+};
+const AssetMasterLokasi = () => {
+  const [lokasiList, setLokasiList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [formNama, setFormNama] = useState("");
+  const [formKategori, setFormKategori] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editNama, setEditNama] = useState("");
+  const [editKategori, setEditKategori] = useState("");
+  useEffect(() => {
+    loadLokasi();
+  }, []);
+  const loadLokasi = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("lokasi").select("*").order("nama");
+    if (!error && data) {
+      setLokasiList(data);
+    }
+    setLoading(false);
+  };
+  const handleAdd = async () => {
+    if (!formNama.trim()) return alert("Nama lokasi harus diisi!");
+    setLoading(true);
+    const { error } = await supabase.from("lokasi").insert({
+      nama: formNama.trim(),
+      kategori: formKategori.trim() || null
+    });
+    if (!error) {
+      setFormNama("");
+      setFormKategori("");
+      setIsAdding(false);
+      await loadLokasi();
+    } else {
+      alert("Gagal menambah: " + error.message);
+    }
+    setLoading(false);
+  };
+  const handleUpdate = async (id) => {
+    if (!editNama.trim()) return alert("Nama lokasi harus diisi!");
+    setLoading(true);
+    const { error } = await supabase.from("lokasi").update({
+      nama: editNama.trim(),
+      kategori: editKategori.trim() || null
+    }).eq("id", id);
+    if (!error) {
+      setEditingId(null);
+      await loadLokasi();
+    } else {
+      alert("Gagal menyimpan: " + error.message);
+    }
+    setLoading(false);
+  };
+  const handleDelete = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus lokasi ini? Data penempatan yang terkait mungkin akan ikut terhapus atau error.")) return;
+    setLoading(true);
+    const { error } = await supabase.from("lokasi").delete().eq("id", id);
+    if (!error) {
+      await loadLokasi();
+    } else {
+      alert("Gagal menghapus: " + error.message);
+    }
+    setLoading(false);
+  };
+  if (loading && lokasiList.length === 0) {
+    return /* @__PURE__ */ jsx("div", { className: "flex justify-center p-8", children: /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 animate-spin text-blue-500" }) });
+  }
+  return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-4", children: [
+      /* @__PURE__ */ jsxs("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
+        /* @__PURE__ */ jsx(MapPin, { className: "w-5 h-5 text-blue-500" }),
+        " Data Master Lokasi"
+      ] }),
+      !isAdding && /* @__PURE__ */ jsxs("button", { onClick: () => setIsAdding(true), className: "flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors", children: [
+        /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }),
+        " Tambah Lokasi"
+      ] })
+    ] }),
+    isAdding && /* @__PURE__ */ jsxs("div", { className: "bg-blue-50 p-4 rounded-xl border border-blue-200 flex flex-col sm:flex-row gap-3 items-end mb-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "w-full sm:flex-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Nama Lokasi" }),
+        /* @__PURE__ */ jsx("input", { type: "text", value: formNama, onChange: (e) => setFormNama(e.target.value), className: "w-full p-2 border border-blue-200 rounded-lg text-sm", placeholder: "Contoh: SSCP D" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "w-full sm:flex-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Kategori (Opsional)" }),
+        /* @__PURE__ */ jsx("input", { type: "text", value: formKategori, onChange: (e) => setFormKategori(e.target.value), className: "w-full p-2 border border-blue-200 rounded-lg text-sm", placeholder: "Contoh: Terminal 2D" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex gap-2 w-full sm:w-auto", children: [
+        /* @__PURE__ */ jsxs("button", { onClick: handleAdd, className: "flex-1 sm:flex-none flex justify-center items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700", children: [
+          /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }),
+          " Simpan"
+        ] }),
+        /* @__PURE__ */ jsxs("button", { onClick: () => setIsAdding(false), className: "flex-1 sm:flex-none flex justify-center items-center gap-1 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-300", children: [
+          /* @__PURE__ */ jsx(X, { className: "w-4 h-4" }),
+          " Batal"
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden", children: /* @__PURE__ */ jsxs("table", { className: "w-full text-left text-sm", children: [
+      /* @__PURE__ */ jsx("thead", { className: "bg-slate-50 border-b border-slate-200 text-slate-600", children: /* @__PURE__ */ jsxs("tr", { children: [
+        /* @__PURE__ */ jsx("th", { className: "p-3 font-semibold", children: "Nama Lokasi" }),
+        /* @__PURE__ */ jsx("th", { className: "p-3 font-semibold", children: "Kategori" }),
+        /* @__PURE__ */ jsx("th", { className: "p-3 font-semibold text-right", children: "Aksi" })
+      ] }) }),
+      /* @__PURE__ */ jsxs("tbody", { className: "divide-y divide-slate-200", children: [
+        lokasiList.map((loc) => /* @__PURE__ */ jsxs("tr", { className: "hover:bg-slate-50", children: [
+          /* @__PURE__ */ jsx("td", { className: "p-3", children: editingId === loc.id ? /* @__PURE__ */ jsx("input", { type: "text", value: editNama, onChange: (e) => setEditNama(e.target.value), className: "w-full p-1.5 border rounded" }) : /* @__PURE__ */ jsx("span", { className: "font-medium text-slate-800", children: loc.nama }) }),
+          /* @__PURE__ */ jsx("td", { className: "p-3", children: editingId === loc.id ? /* @__PURE__ */ jsx("input", { type: "text", value: editKategori, onChange: (e) => setEditKategori(e.target.value), className: "w-full p-1.5 border rounded" }) : /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: loc.kategori || "-" }) }),
+          /* @__PURE__ */ jsx("td", { className: "p-3 text-right", children: editingId === loc.id ? /* @__PURE__ */ jsxs("div", { className: "flex justify-end gap-2", children: [
+            /* @__PURE__ */ jsx("button", { onClick: () => handleUpdate(loc.id), className: "text-emerald-600 hover:bg-emerald-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }) }),
+            /* @__PURE__ */ jsx("button", { onClick: () => setEditingId(null), className: "text-slate-500 hover:bg-slate-100 p-1.5 rounded", children: /* @__PURE__ */ jsx(X, { className: "w-4 h-4" }) })
+          ] }) : /* @__PURE__ */ jsxs("div", { className: "flex justify-end gap-2", children: [
+            /* @__PURE__ */ jsx("button", { onClick: () => {
+              setEditingId(loc.id);
+              setEditNama(loc.nama);
+              setEditKategori(loc.kategori || "");
+            }, className: "text-blue-600 hover:bg-blue-50 p-1.5 rounded", title: "Edit", children: /* @__PURE__ */ jsx(Edit2, { className: "w-4 h-4" }) }),
+            /* @__PURE__ */ jsx("button", { onClick: () => handleDelete(loc.id), className: "text-red-600 hover:bg-red-50 p-1.5 rounded", title: "Hapus", children: /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" }) })
+          ] }) })
+        ] }, loc.id)),
+        lokasiList.length === 0 && /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 3, className: "p-4 text-center text-slate-500", children: "Belum ada data lokasi." }) })
+      ] })
+    ] }) })
+  ] });
+};
+const AssetMasterPeralatan = () => {
+  const [jenisList, setJenisList] = useState([]);
+  const [tipeList, setTipeList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedJenisId, setSelectedJenisId] = useState(null);
+  const [isAddingJenis, setIsAddingJenis] = useState(false);
+  const [formJenisNama, setFormJenisNama] = useState("");
+  const [editingJenisId, setEditingJenisId] = useState(null);
+  const [editJenisNama, setEditJenisNama] = useState("");
+  const [isAddingTipe, setIsAddingTipe] = useState(false);
+  const [formTipeNama, setFormTipeNama] = useState("");
+  const [editingTipeId, setEditingTipeId] = useState(null);
+  const [editTipeNama, setEditTipeNama] = useState("");
+  useEffect(() => {
+    loadJenis();
+  }, []);
+  useEffect(() => {
+    if (selectedJenisId) {
+      loadTipe(selectedJenisId);
+    } else {
+      setTipeList([]);
+    }
+  }, [selectedJenisId]);
+  const loadJenis = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("jenis_peralatan").select("*").order("nama");
+    if (!error && data) {
+      setJenisList(data);
+    }
+    setLoading(false);
+  };
+  const loadTipe = async (idJenis) => {
+    const { data, error } = await supabase.from("tipe_peralatan").select("*").eq("id_jenis", idJenis).order("nama");
+    if (!error && data) {
+      setTipeList(data);
+    }
+  };
+  const handleAddJenis = async () => {
+    if (!formJenisNama.trim()) return alert("Nama Jenis harus diisi!");
+    setLoading(true);
+    const { error } = await supabase.from("jenis_peralatan").insert({ nama: formJenisNama.trim() });
+    if (!error) {
+      setFormJenisNama("");
+      setIsAddingJenis(false);
+      await loadJenis();
+    } else alert("Gagal: " + error.message);
+    setLoading(false);
+  };
+  const handleUpdateJenis = async (id) => {
+    if (!editJenisNama.trim()) return alert("Nama Jenis harus diisi!");
+    setLoading(true);
+    const { error } = await supabase.from("jenis_peralatan").update({ nama: editJenisNama.trim() }).eq("id", id);
+    if (!error) {
+      setEditingJenisId(null);
+      await loadJenis();
+    } else alert("Gagal: " + error.message);
+    setLoading(false);
+  };
+  const handleDeleteJenis = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus Jenis ini? Tipe dan Penempatan terkait mungkin akan terhapus atau error.")) return;
+    setLoading(true);
+    const { error } = await supabase.from("jenis_peralatan").delete().eq("id", id);
+    if (!error) {
+      if (selectedJenisId === id) setSelectedJenisId(null);
+      await loadJenis();
+    } else alert("Gagal: " + error.message);
+    setLoading(false);
+  };
+  const handleAddTipe = async () => {
+    if (!formTipeNama.trim() || !selectedJenisId) return alert("Nama Tipe harus diisi!");
+    const { error } = await supabase.from("tipe_peralatan").insert({ id_jenis: selectedJenisId, nama: formTipeNama.trim() });
+    if (!error) {
+      setFormTipeNama("");
+      setIsAddingTipe(false);
+      await loadTipe(selectedJenisId);
+    } else alert("Gagal: " + error.message);
+  };
+  const handleUpdateTipe = async (id) => {
+    if (!editTipeNama.trim() || !selectedJenisId) return alert("Nama Tipe harus diisi!");
+    const { error } = await supabase.from("tipe_peralatan").update({ nama: editTipeNama.trim() }).eq("id", id);
+    if (!error) {
+      setEditingTipeId(null);
+      await loadTipe(selectedJenisId);
+    } else alert("Gagal: " + error.message);
+  };
+  const handleDeleteTipe = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus Tipe ini? Penempatan terkait mungkin akan terhapus atau error.")) return;
+    const { error } = await supabase.from("tipe_peralatan").delete().eq("id", id);
+    if (!error && selectedJenisId) {
+      await loadTipe(selectedJenisId);
+    } else alert("Gagal: " + (error?.message || "Unknown error"));
+  };
+  if (loading && jenisList.length === 0) {
+    return /* @__PURE__ */ jsx("div", { className: "flex justify-center p-8", children: /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 animate-spin text-blue-500" }) });
+  }
+  return /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6", children: [
+    /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-4", children: [
+        /* @__PURE__ */ jsxs("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx(Cpu, { className: "w-5 h-5 text-indigo-500" }),
+          " Jenis Peralatan"
+        ] }),
+        !isAddingJenis && /* @__PURE__ */ jsxs("button", { onClick: () => setIsAddingJenis(true), className: "flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors", children: [
+          /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }),
+          " Tambah Jenis"
+        ] })
+      ] }),
+      isAddingJenis && /* @__PURE__ */ jsxs("div", { className: "bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex flex-col gap-3 mb-4", children: [
+        /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-indigo-800", children: "Nama Jenis Peralatan" }),
+        /* @__PURE__ */ jsx("input", { type: "text", value: formJenisNama, onChange: (e) => setFormJenisNama(e.target.value), className: "w-full p-2 border border-indigo-200 rounded-lg text-sm", placeholder: "Contoh: X-Ray" }),
+        /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsxs("button", { onClick: handleAddJenis, className: "flex-1 flex justify-center items-center gap-1 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700", children: [
+            /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }),
+            " Simpan"
+          ] }),
+          /* @__PURE__ */ jsxs("button", { onClick: () => setIsAddingJenis(false), className: "flex-1 flex justify-center items-center gap-1 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-300", children: [
+            /* @__PURE__ */ jsx(X, { className: "w-4 h-4" }),
+            " Batal"
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: /* @__PURE__ */ jsxs("ul", { className: "divide-y divide-slate-200", children: [
+        jenisList.map((jenis) => /* @__PURE__ */ jsxs(
+          "li",
+          {
+            className: `p-3 flex items-center justify-between cursor-pointer transition-colors ${selectedJenisId === jenis.id ? "bg-indigo-50 border-l-4 border-indigo-500" : "hover:bg-slate-50 border-l-4 border-transparent"}`,
+            onClick: (e) => {
+              if (e.target.closest(".actions")) return;
+              setSelectedJenisId(jenis.id);
+            },
+            children: [
+              editingJenisId === jenis.id ? /* @__PURE__ */ jsx("input", { type: "text", value: editJenisNama, onChange: (e) => setEditJenisNama(e.target.value), className: "w-full p-1.5 border rounded text-sm mr-2" }) : /* @__PURE__ */ jsx("span", { className: `font-semibold ${selectedJenisId === jenis.id ? "text-indigo-900" : "text-slate-700"}`, children: jenis.nama }),
+              /* @__PURE__ */ jsx("div", { className: "actions flex justify-end gap-1 shrink-0", children: editingJenisId === jenis.id ? /* @__PURE__ */ jsxs(Fragment, { children: [
+                /* @__PURE__ */ jsx("button", { onClick: () => handleUpdateJenis(jenis.id), className: "text-emerald-600 hover:bg-emerald-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }) }),
+                /* @__PURE__ */ jsx("button", { onClick: () => setEditingJenisId(null), className: "text-slate-500 hover:bg-slate-100 p-1.5 rounded", children: /* @__PURE__ */ jsx(X, { className: "w-4 h-4" }) })
+              ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+                /* @__PURE__ */ jsx("button", { onClick: () => {
+                  setEditingJenisId(jenis.id);
+                  setEditJenisNama(jenis.nama);
+                }, className: "text-blue-600 hover:bg-blue-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Edit2, { className: "w-4 h-4" }) }),
+                /* @__PURE__ */ jsx("button", { onClick: () => handleDeleteJenis(jenis.id), className: "text-red-600 hover:bg-red-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" }) }),
+                /* @__PURE__ */ jsx(ChevronRight, { className: `w-5 h-5 ml-2 ${selectedJenisId === jenis.id ? "text-indigo-500" : "text-slate-300"}` })
+              ] }) })
+            ]
+          },
+          jenis.id
+        )),
+        jenisList.length === 0 && /* @__PURE__ */ jsx("li", { className: "p-4 text-center text-slate-500 text-sm", children: "Belum ada data." })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-4", children: [
+        /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: "Tipe / Model Mesin" }),
+        selectedJenisId && !isAddingTipe && /* @__PURE__ */ jsxs("button", { onClick: () => setIsAddingTipe(true), className: "flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors", children: [
+          /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }),
+          " Tambah Tipe"
+        ] })
+      ] }),
+      !selectedJenisId ? /* @__PURE__ */ jsx("div", { className: "p-8 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm", children: "Pilih Jenis Peralatan di sebelah kiri terlebih dahulu untuk melihat dan mengelola tipe mesinnya." }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+        isAddingTipe && /* @__PURE__ */ jsxs("div", { className: "bg-blue-50 p-4 rounded-xl border border-blue-200 flex flex-col gap-3 mb-4", children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800", children: "Nama Tipe / Model" }),
+          /* @__PURE__ */ jsx("input", { type: "text", value: formTipeNama, onChange: (e) => setFormTipeNama(e.target.value), className: "w-full p-2 border border-blue-200 rounded-lg text-sm", placeholder: "Contoh: Rapiscan 620DV" }),
+          /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+            /* @__PURE__ */ jsxs("button", { onClick: handleAddTipe, className: "flex-1 flex justify-center items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700", children: [
+              /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }),
+              " Simpan"
+            ] }),
+            /* @__PURE__ */ jsxs("button", { onClick: () => setIsAddingTipe(false), className: "flex-1 flex justify-center items-center gap-1 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-300", children: [
+              /* @__PURE__ */ jsx(X, { className: "w-4 h-4" }),
+              " Batal"
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: /* @__PURE__ */ jsxs("ul", { className: "divide-y divide-slate-200", children: [
+          tipeList.map((tipe) => /* @__PURE__ */ jsxs("li", { className: "p-3 flex items-center justify-between hover:bg-slate-50 transition-colors", children: [
+            editingTipeId === tipe.id ? /* @__PURE__ */ jsx("input", { type: "text", value: editTipeNama, onChange: (e) => setEditTipeNama(e.target.value), className: "w-full p-1.5 border rounded text-sm mr-2" }) : /* @__PURE__ */ jsx("span", { className: "font-medium text-slate-700 text-sm", children: tipe.nama }),
+            /* @__PURE__ */ jsx("div", { className: "flex justify-end gap-1 shrink-0", children: editingTipeId === tipe.id ? /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx("button", { onClick: () => handleUpdateTipe(tipe.id), className: "text-emerald-600 hover:bg-emerald-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }) }),
+              /* @__PURE__ */ jsx("button", { onClick: () => setEditingTipeId(null), className: "text-slate-500 hover:bg-slate-100 p-1.5 rounded", children: /* @__PURE__ */ jsx(X, { className: "w-4 h-4" }) })
+            ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx("button", { onClick: () => {
+                setEditingTipeId(tipe.id);
+                setEditTipeNama(tipe.nama);
+              }, className: "text-blue-600 hover:bg-blue-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Edit2, { className: "w-4 h-4" }) }),
+              /* @__PURE__ */ jsx("button", { onClick: () => handleDeleteTipe(tipe.id), className: "text-red-600 hover:bg-red-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" }) })
+            ] }) })
+          ] }, tipe.id)),
+          tipeList.length === 0 && /* @__PURE__ */ jsx("li", { className: "p-4 text-center text-slate-500 text-sm", children: "Belum ada data tipe untuk jenis ini." })
+        ] }) })
+      ] })
+    ] })
+  ] });
+};
+const AssetManager = () => {
+  const { initializeSupabaseData } = useMasterDataStore();
+  const [activeTab, setActiveTab] = useState("penempatan");
+  const [locations, setLocations] = useState([]);
+  const [jenisData, setJenisData] = useState([]);
+  const [tipeData, setTipeData] = useState([]);
+  const [allAssets, setAllAssets] = useState([]);
+  const [loadingBase, setLoadingBase] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [filterJenis, setFilterJenis] = useState("");
+  const [filterLokasi, setFilterLokasi] = useState("");
+  const [formJenis, setFormJenis] = useState("");
+  const [formTipe, setFormTipe] = useState("");
+  const [formLokasi, setFormLokasi] = useState("");
+  const [formTitik, setFormTitik] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  useEffect(() => {
+    if (activeTab === "penempatan") {
+      loadBaseData();
+    }
+  }, [activeTab]);
+  const loadBaseData = async () => {
+    setLoadingBase(true);
+    try {
+      const [lokRes, jenisRes, tipeRes, assetRes] = await Promise.all([
+        supabase.from("lokasi").select("id, nama").order("nama"),
+        supabase.from("jenis_peralatan").select("id, nama").order("nama"),
+        supabase.from("tipe_peralatan").select("id, id_jenis, nama, varian").order("nama"),
+        supabase.from("penempatan_peralatan").select(`
+          id,
+          is_active,
+          id_lokasi,
+          tipe_peralatan ( id, id_jenis, nama, jenis_peralatan ( nama ) ),
+          titik_lokasi ( id, nomor ),
+          lokasi ( id, nama )
+        `)
+      ]);
+      if (lokRes.data) setLocations(lokRes.data);
+      if (jenisRes.data) setJenisData(jenisRes.data);
+      if (tipeRes.data) setTipeData(tipeRes.data);
+      if (assetRes.data) {
+        const sorted = assetRes.data.sort((a, b) => {
+          const numA = parseInt(a.titik_lokasi?.nomor?.replace(/[^0-9]/g, "") || "0", 10);
+          const numB = parseInt(b.titik_lokasi?.nomor?.replace(/[^0-9]/g, "") || "0", 10);
+          return numA - numB;
+        });
+        setAllAssets(sorted);
+      }
+    } catch (err) {
+      console.error("Failed to load base data", err);
+    } finally {
+      setLoadingBase(false);
+    }
+  };
+  const handleAddAsset = async () => {
+    if (!formLokasi || !formTipe || !formTitik.trim()) {
+      setErrorMsg("Mohon lengkapi semua field (Lokasi, Tipe, Titik)!");
+      return;
+    }
+    setSaving(true);
+    setErrorMsg("");
+    try {
+      const titikArray = formTitik.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+      if (titikArray.length === 0) {
+        throw new Error("Format titik tidak valid.");
+      }
+      for (const titikStr of titikArray) {
+        let titikId = null;
+        const { data: existingTitik, error: titikErr } = await supabase.from("titik_lokasi").select("id").eq("id_lokasi", formLokasi).eq("nomor", titikStr).maybeSingle();
+        if (existingTitik) {
+          titikId = existingTitik.id;
+        } else {
+          const { data: newTitik, error: insertErr } = await supabase.from("titik_lokasi").insert({ id_lokasi: formLokasi, nomor: titikStr }).select("id").single();
+          if (insertErr) throw insertErr;
+          titikId = newTitik.id;
+        }
+        const { error: penempatanErr } = await supabase.from("penempatan_peralatan").insert({
+          id_tipe: formTipe,
+          id_lokasi: formLokasi,
+          id_titik: titikId,
+          is_active: true
+        });
+        if (penempatanErr) throw penempatanErr;
+      }
+      setFormTitik("");
+      await loadBaseData();
+      initializeSupabaseData();
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.message || "Terjadi kesalahan saat menyimpan data.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleDeleteAsset = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus mesin ini dari area ini secara permanen?")) return;
+    try {
+      const { error } = await supabase.from("penempatan_peralatan").delete().eq("id", id);
+      if (error) throw error;
+      await loadBaseData();
+      initializeSupabaseData();
+    } catch (err) {
+      console.error("Gagal menghapus aset", err);
+      alert("Gagal menghapus aset.");
+    }
+  };
+  const locationsWithFilteredJenis = locations.filter((loc) => {
+    if (!filterJenis) return true;
+    return allAssets.some((a) => a.id_lokasi === loc.id && a.tipe_peralatan?.id_jenis === filterJenis);
+  });
+  useEffect(() => {
+    if (filterJenis && filterLokasi) {
+      const isValid = locationsWithFilteredJenis.some((l) => l.id === filterLokasi);
+      if (!isValid) setFilterLokasi("");
+    }
+  }, [filterJenis]);
+  const displayAssets = allAssets.filter((a) => {
+    if (filterJenis && a.tipe_peralatan?.id_jenis !== filterJenis) return false;
+    if (filterLokasi && a.id_lokasi !== filterLokasi) return false;
+    return true;
+  });
+  const filteredTipeForForm = tipeData.filter((t) => t.id_jenis === formJenis);
+  return /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex border-b border-slate-200 bg-slate-50 overflow-x-auto hide-scrollbar", children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("penempatan"),
+          className: `flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === "penempatan" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`,
+          children: [
+            /* @__PURE__ */ jsx(LayoutGrid, { className: "w-4 h-4" }),
+            " Penempatan Mesin"
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("lokasi"),
+          className: `flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === "lokasi" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`,
+          children: [
+            /* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4" }),
+            " Master Lokasi"
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("peralatan"),
+          className: `flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === "peralatan" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`,
+          children: [
+            /* @__PURE__ */ jsx(Database, { className: "w-4 h-4" }),
+            " Master Peralatan"
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "p-6", children: [
+      activeTab === "lokasi" && /* @__PURE__ */ jsx(AssetMasterLokasi, {}),
+      activeTab === "peralatan" && /* @__PURE__ */ jsx(AssetMasterPeralatan, {}),
+      activeTab === "penempatan" && (loadingBase ? /* @__PURE__ */ jsx("div", { className: "flex justify-center p-12", children: /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 text-blue-500 animate-spin" }) }) : /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-8", children: [
+        /* @__PURE__ */ jsx("div", { className: "lg:col-span-1", children: /* @__PURE__ */ jsxs("div", { className: "bg-blue-50 p-5 rounded-xl border border-blue-100 sticky top-4", children: [
+          /* @__PURE__ */ jsxs("h3", { className: "font-bold text-blue-900 mb-4 flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(Plus, { className: "w-5 h-5" }),
+            " Tambah Penempatan"
+          ] }),
+          errorMsg && /* @__PURE__ */ jsxs("div", { className: "mb-4 p-3 bg-red-100 text-red-700 text-sm rounded-lg flex items-start gap-2", children: [
+            /* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 mt-0.5 shrink-0" }),
+            /* @__PURE__ */ jsx("p", { children: errorMsg })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Jenis Peralatan" }),
+              /* @__PURE__ */ jsxs(
+                "select",
+                {
+                  value: formJenis,
+                  onChange: (e) => {
+                    setFormJenis(e.target.value);
+                    setFormTipe("");
+                  },
+                  className: "w-full p-2 border border-blue-200 rounded-lg text-sm bg-white",
+                  children: [
+                    /* @__PURE__ */ jsx("option", { value: "", children: "-- Pilih Jenis --" }),
+                    jenisData.map((j) => /* @__PURE__ */ jsx("option", { value: j.id, children: j.nama }, j.id))
+                  ]
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Tipe / Model Mesin" }),
+              /* @__PURE__ */ jsxs(
+                "select",
+                {
+                  value: formTipe,
+                  onChange: (e) => setFormTipe(e.target.value),
+                  disabled: !formJenis,
+                  className: "w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:opacity-50",
+                  children: [
+                    /* @__PURE__ */ jsx("option", { value: "", children: "-- Pilih Tipe --" }),
+                    filteredTipeForForm.map((t) => /* @__PURE__ */ jsx("option", { value: t.id, children: t.nama }, t.id))
+                  ]
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Lokasi" }),
+              /* @__PURE__ */ jsxs(
+                "select",
+                {
+                  value: formLokasi,
+                  onChange: (e) => setFormLokasi(e.target.value),
+                  className: "w-full p-2 border border-blue-200 rounded-lg text-sm bg-white",
+                  children: [
+                    /* @__PURE__ */ jsx("option", { value: "", children: "- Pilih Lokasi -" }),
+                    locations.map((loc) => /* @__PURE__ */ jsx("option", { value: loc.id, children: loc.nama }, loc.id))
+                  ]
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsxs("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: [
+                "Nomor Titik ",
+                /* @__PURE__ */ jsx("span", { className: "font-normal text-blue-600", children: "(Bisa multi, pisah dengan koma)" })
+              ] }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "text",
+                  value: formTitik,
+                  onChange: (e) => setFormTitik(e.target.value),
+                  placeholder: "Contoh: 1, 2, 3",
+                  className: "w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                onClick: handleAddAsset,
+                disabled: saving || !formTipe || !formLokasi || !formTitik.trim(),
+                className: "w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2",
+                children: [
+                  saving ? /* @__PURE__ */ jsx(Loader2, { className: "w-4 h-4 animate-spin" }) : /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }),
+                  "Simpan Penempatan"
+                ]
+              }
+            )
+          ] })
+        ] }) }),
+        /* @__PURE__ */ jsxs("div", { className: "lg:col-span-2", children: [
+          /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6", children: /* @__PURE__ */ jsxs("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(Layers, { className: "w-5 h-5 text-slate-500" }),
+            " Daftar Mesin Terpasang"
+          ] }) }),
+          /* @__PURE__ */ jsxs("div", { className: "bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 flex flex-col sm:flex-row gap-4", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+              /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-slate-600 mb-1", children: "Filter Jenis Peralatan" }),
+              /* @__PURE__ */ jsxs(
+                "select",
+                {
+                  value: filterJenis,
+                  onChange: (e) => setFilterJenis(e.target.value),
+                  className: "w-full p-2 border border-slate-300 rounded-lg text-sm bg-white font-medium",
+                  children: [
+                    /* @__PURE__ */ jsx("option", { value: "", children: "Semua Jenis Peralatan" }),
+                    jenisData.map((j) => /* @__PURE__ */ jsx("option", { value: j.id, children: j.nama }, j.id))
+                  ]
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+              /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-slate-600 mb-1", children: "Filter Lokasi" }),
+              /* @__PURE__ */ jsxs(
+                "select",
+                {
+                  value: filterLokasi,
+                  onChange: (e) => setFilterLokasi(e.target.value),
+                  className: "w-full p-2 border border-slate-300 rounded-lg text-sm bg-white font-medium",
+                  children: [
+                    /* @__PURE__ */ jsx("option", { value: "", children: "- Pilih Lokasi -" }),
+                    locationsWithFilteredJenis.map((loc) => /* @__PURE__ */ jsx("option", { value: loc.id, children: loc.nama }, loc.id))
+                  ]
+                }
+              )
+            ] })
+          ] }),
+          displayAssets.length === 0 ? /* @__PURE__ */ jsx("div", { className: "p-8 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50", children: /* @__PURE__ */ jsx("p", { className: "text-slate-500", children: "Tidak ada data penempatan sesuai filter." }) }) : /* @__PURE__ */ jsx("div", { className: "space-y-3", children: displayAssets.map((asset) => /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-slate-200 rounded-xl bg-white hover:border-blue-300 transition-colors shadow-sm gap-4", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-4", children: [
+              /* @__PURE__ */ jsx("div", { className: "bg-slate-100 p-2.5 rounded-lg shrink-0", children: /* @__PURE__ */ jsx(Cpu, { className: "w-5 h-5 text-slate-600" }) }),
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 mb-1", children: [
+                  /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded flex items-center gap-1", children: [
+                    /* @__PURE__ */ jsx(MapPin, { className: "w-3 h-3" }),
+                    " ",
+                    asset.lokasi?.nama || "Unknown"
+                  ] }),
+                  /* @__PURE__ */ jsx("span", { className: "text-xs font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded", children: asset.tipe_peralatan?.jenis_peralatan?.nama || "Unknown" }),
+                  !asset.is_active && /* @__PURE__ */ jsx("span", { className: "text-xs font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded", children: "Nonaktif" })
+                ] }),
+                /* @__PURE__ */ jsx("p", { className: "font-bold text-slate-800", children: asset.tipe_peralatan?.nama || "Tipe Tidak Diketahui" }),
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1 text-sm text-slate-500 mt-1", children: [
+                  /* @__PURE__ */ jsx(Hash, { className: "w-3.5 h-3.5" }),
+                  " Titik: ",
+                  /* @__PURE__ */ jsx("strong", { className: "text-slate-700", children: asset.titik_lokasi?.nomor || "-" })
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                onClick: () => handleDeleteAsset(asset.id),
+                className: "flex items-center justify-center gap-1 px-3 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors sm:w-auto w-full shrink-0",
+                children: [
+                  /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" }),
+                  " Hapus"
+                ]
+              }
+            )
+          ] }, asset.id)) })
+        ] })
+      ] }))
+    ] })
   ] });
 };
 const TabData = () => {
@@ -3867,123 +4793,35 @@ const AdminLogin = () => {
   ] }) });
 };
 const AdminDashboard = ({ logout }) => {
-  const [activeTable, setActiveTable] = useState("jenis_peralatan");
   return /* @__PURE__ */ jsxs("div", { className: "p-6 animate-in fade-in duration-300", children: [
     /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8", children: [
       /* @__PURE__ */ jsxs("div", { children: [
         /* @__PURE__ */ jsxs("h2", { className: "text-2xl font-black text-slate-800 flex items-center gap-2", children: [
           /* @__PURE__ */ jsx(Database, { className: "w-7 h-7 text-blue-600" }),
-          " Database Manager"
+          " Pengaturan Data"
         ] }),
-        /* @__PURE__ */ jsx("p", { className: "text-slate-500 mt-1 font-medium", children: "Kelola data master secara langsung ke Supabase." })
+        /* @__PURE__ */ jsx("p", { className: "text-slate-500 mt-1 font-medium", children: "Kelola konfigurasi dan master data laporan." })
       ] }),
       /* @__PURE__ */ jsxs("button", { onClick: logout, className: "flex items-center gap-2 px-4 py-2.5 bg-rose-100 text-rose-700 hover:bg-rose-200 font-bold rounded-xl transition-colors", children: [
         /* @__PURE__ */ jsx(LogOut, { className: "w-5 h-5" }),
         " Keluar"
       ] })
     ] }),
-    /* @__PURE__ */ jsx("div", { className: "flex overflow-x-auto gap-2 pb-2 mb-6 hide-scrollbar border-b border-slate-200", children: [
-      { id: "jenis_peralatan", label: "Jenis Peralatan" },
-      { id: "lokasi", label: "Lokasi Utama" },
-      { id: "tipe_peralatan", label: "Tipe Peralatan" },
-      { id: "titik_lokasi", label: "Titik Lokasi" },
-      { id: "penempatan_peralatan", label: "Penempatan (Inventaris)" },
-      { id: "local_personel", label: "Personel & Storing (Lokal)" }
-    ].map((t) => /* @__PURE__ */ jsx(
-      "button",
-      {
-        onClick: () => setActiveTable(t.id),
-        className: `whitespace-nowrap px-5 py-2.5 rounded-t-xl font-bold transition-all ${activeTable === t.id ? "bg-blue-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`,
-        children: t.label
-      },
-      t.id
-    )) }),
-    /* @__PURE__ */ jsx("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]", children: activeTable === "local_personel" ? /* @__PURE__ */ jsx(LocalDataEditor, {}) : /* @__PURE__ */ jsx(GenericCrudTable, { tableName: activeTable }) })
-  ] });
-};
-const GenericCrudTable = ({ tableName }) => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [newItemName, setNewItemName] = useState("");
-  const isSimpleTable = tableName === "jenis_peralatan" || tableName === "lokasi";
-  const fetchData = async () => {
-    setLoading(true);
-    const { data: result, error } = await supabase.from(tableName).select("*").order("id", { ascending: true });
-    if (!error && result) {
-      setData(result);
-    }
-    setLoading(false);
-  };
-  useEffect(() => {
-    fetchData();
-  }, [tableName]);
-  const handleDelete = async (id) => {
-    if (!window.confirm("Hapus data ini? Data yang terhubung juga mungkin terhapus!")) return;
-    await supabase.from(tableName).delete().eq("id", id);
-    fetchData();
-  };
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!newItemName.trim()) return;
-    await supabase.from(tableName).insert([{ nama: newItemName }]);
-    setNewItemName("");
-    fetchData();
-  };
-  if (loading) {
-    return /* @__PURE__ */ jsx("div", { className: "p-12 flex justify-center", children: /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 animate-spin text-blue-500" }) });
-  }
-  if (!isSimpleTable) {
-    return /* @__PURE__ */ jsxs("div", { className: "p-12 text-center", children: [
-      /* @__PURE__ */ jsx(Database, { className: "w-16 h-16 text-slate-300 mx-auto mb-4" }),
-      /* @__PURE__ */ jsx("h3", { className: "text-xl font-bold text-slate-700", children: "Tabel Relasional Kompleks" }),
-      /* @__PURE__ */ jsxs("p", { className: "text-slate-500 mt-2 max-w-md mx-auto", children: [
-        "Tabel ",
-        /* @__PURE__ */ jsx("b", { children: tableName }),
-        " membutuhkan formulir khusus dengan *dropdown* relasi antar tabel (Foreign Keys). Untuk saat ini, silakan kelola tabel ini langsung melalui ",
-        /* @__PURE__ */ jsx("b", { children: "Dashboard Supabase" }),
-        " Anda."
-      ] })
-    ] });
-  }
-  return /* @__PURE__ */ jsxs("div", { children: [
-    /* @__PURE__ */ jsxs("div", { className: "p-5 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-4 justify-between items-center", children: [
-      /* @__PURE__ */ jsxs("form", { onSubmit: handleAdd, className: "flex w-full sm:w-auto gap-2", children: [
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "text",
-            value: newItemName,
-            onChange: (e) => setNewItemName(e.target.value),
-            placeholder: "Tambah nama baru...",
-            className: "flex-1 sm:w-64 px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-          }
-        ),
-        /* @__PURE__ */ jsxs("button", { type: "submit", className: "px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-2 transition-colors", children: [
-          /* @__PURE__ */ jsx(Plus, { className: "w-5 h-5" }),
-          " ",
-          /* @__PURE__ */ jsx("span", { className: "hidden sm:inline", children: "Tambah" })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsx("button", { onClick: fetchData, className: "p-2.5 text-slate-500 hover:bg-slate-200 rounded-xl transition-colors", children: /* @__PURE__ */ jsx(RefreshCw, { className: "w-5 h-5" }) })
-    ] }),
-    /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "w-full text-left border-collapse", children: [
-      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { className: "bg-slate-100 text-slate-600 text-sm", children: [
-        /* @__PURE__ */ jsx("th", { className: "p-4 font-bold border-b border-slate-200", children: "Nama / Nilai" }),
-        /* @__PURE__ */ jsx("th", { className: "p-4 font-bold border-b border-slate-200 w-24 text-center", children: "Aksi" })
-      ] }) }),
-      /* @__PURE__ */ jsx("tbody", { children: data.length === 0 ? /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 2, className: "p-8 text-center text-slate-500 italic", children: "Belum ada data." }) }) : data.map((row, i) => /* @__PURE__ */ jsxs("tr", { className: `border-b border-slate-100 hover:bg-blue-50/50 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-slate-50/30"}`, children: [
-        /* @__PURE__ */ jsx("td", { className: "p-4 font-medium text-slate-800", children: row.nama }),
-        /* @__PURE__ */ jsx("td", { className: "p-4 text-center", children: /* @__PURE__ */ jsx("button", { onClick: () => handleDelete(row.id), className: "p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) }) })
-      ] }, row.id)) })
-    ] }) })
+    /* @__PURE__ */ jsx("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]", children: /* @__PURE__ */ jsx(LocalDataEditor, {}) })
   ] });
 };
 const LocalDataEditor = () => {
   const store = useMasterDataStore();
-  const [activeSubTab, setActiveSubTab] = useState("storing_equip");
+  const [activeSubTab, setActiveSubTab] = useState("upload_jadwal");
   const [localData, setLocalData] = useState([]);
   useEffect(() => {
     switch (activeSubTab) {
+      case "api_t2":
+        setLocalData([...store.dataApiT2]);
+        break;
+      case "om_ias_t2":
+        setLocalData([...store.dataOmIasT2]);
+        break;
       case "storing_equip":
         setLocalData([...store.storingEquipments]);
         break;
@@ -3994,6 +4832,12 @@ const LocalDataEditor = () => {
   }, [activeSubTab, store]);
   const handleSave = () => {
     switch (activeSubTab) {
+      case "api_t2":
+        store.setDataApiT2(localData);
+        break;
+      case "om_ias_t2":
+        store.setDataOmIasT2(localData);
+        break;
       case "storing_equip":
         store.setStoringEquipments(localData);
         break;
@@ -4001,26 +4845,60 @@ const LocalDataEditor = () => {
         store.setTipLeftCol(localData);
         break;
     }
-    alert("Data Lokal berhasil disimpan!");
+    if (activeSubTab !== "kalibrasi_equip") {
+      alert("Data Lokal berhasil disimpan!");
+    }
   };
   const handleTextChange = (index, field, value) => {
     const newData = [...localData];
-    newData[index] = value;
+    if (field) {
+      if (field === "name") {
+        newData[index][field] = toTitleCase(value);
+      } else {
+        newData[index][field] = value;
+      }
+    } else {
+      newData[index] = value;
+    }
     setLocalData(newData);
   };
   return /* @__PURE__ */ jsxs("div", { className: "flex flex-col h-full", children: [
     /* @__PURE__ */ jsx("div", { className: "bg-slate-800 text-white p-2 flex gap-1 overflow-x-auto hide-scrollbar", children: [
       { id: "upload_jadwal", label: "Upload Jadwal Excel" },
-      { id: "storing_equip", label: "Alat Storing" },
-      { id: "checklist_config", label: "Checklist Config" }
+      { id: "manajemen_aset", label: "Manajemen Aset (Lokasi & Mesin)" },
+      { id: "api_t2", label: "Personel API T2" },
+      { id: "om_ias_t2", label: "Personel OM/IAS" },
+      { id: "checklist_config", label: "Checklist Config" },
+      { id: "kalibrasi_equip", label: "Config Peralatan Kalibrasi" },
+      { id: "tip_data_manager", label: "Data TIP Tersimpan" }
     ].map((t) => /* @__PURE__ */ jsx("button", { onClick: () => setActiveSubTab(t.id), className: `px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeSubTab === t.id ? "bg-blue-600" : "hover:bg-slate-700 text-slate-300"}`, children: t.label }, t.id)) }),
-    /* @__PURE__ */ jsxs("div", { className: "p-4 bg-blue-50 border-b border-blue-100 text-blue-800 text-sm font-medium", children: [
-      /* @__PURE__ */ jsx("b", { children: "Catatan:" }),
-      ' Data Teknisi dikelola terpusat lewat Database Supabase. Gunakan tab "Upload Jadwal Excel" untuk sinkronisasi jadwal shift bulanan.'
-    ] }),
-    activeSubTab === "upload_jadwal" ? /* @__PURE__ */ jsx("div", { className: "p-6", children: /* @__PURE__ */ jsx(ScheduleUploader, {}) }) : activeSubTab === "checklist_config" ? /* @__PURE__ */ jsx("div", { className: "p-6", children: /* @__PURE__ */ jsx(ChecklistDataEditor, {}) }) : /* @__PURE__ */ jsxs("div", { className: "p-6 flex-1 space-y-4", children: [
+    activeSubTab === "upload_jadwal" ? /* @__PURE__ */ jsx("div", { className: "p-6", children: /* @__PURE__ */ jsx(ScheduleUploader, {}) }) : activeSubTab === "manajemen_aset" ? /* @__PURE__ */ jsx("div", { className: "p-6 bg-slate-50 min-h-[500px]", children: /* @__PURE__ */ jsx(AssetManager, {}) }) : activeSubTab === "checklist_config" ? /* @__PURE__ */ jsx("div", { className: "p-6", children: /* @__PURE__ */ jsx(ChecklistDataEditor, {}) }) : activeSubTab === "kalibrasi_equip" ? /* @__PURE__ */ jsxs("div", { className: "p-6", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold text-slate-800 mb-4", children: "Peralatan untuk Tab Kalibrasi" }),
+      /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-500 mb-6", children: "Pilih jenis peralatan dari database yang akan dimunculkan sebagai opsi di halaman Kalibrasi." }),
+      /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4", children: store.jenisPeralatanData.map((jenis) => {
+        const isChecked = !!jenis.tampil_di_kalibrasi;
+        return /* @__PURE__ */ jsxs("label", { className: `flex items-center p-4 border rounded-xl cursor-pointer transition-colors ${isChecked ? "bg-blue-50 border-blue-500 shadow-sm" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`, children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "checkbox",
+              checked: isChecked,
+              onChange: (e) => {
+                store.toggleKalibrasiEquipmentDb(jenis.id, e.target.checked);
+              },
+              className: "w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+            }
+          ),
+          /* @__PURE__ */ jsx("span", { className: "ml-3 font-semibold text-slate-700", children: jenis.nama })
+        ] }, jenis.id);
+      }) }),
+      /* @__PURE__ */ jsx("div", { className: "pt-6 mt-6 border-t border-slate-200 text-sm text-green-600 font-medium", children: "* Perubahan otomatis disimpan ke database." })
+    ] }) : activeSubTab === "tip_data_manager" ? /* @__PURE__ */ jsx("div", { className: "p-0 border border-slate-200 rounded-xl overflow-hidden m-6", children: /* @__PURE__ */ jsx(TipDataManager, {}) }) : /* @__PURE__ */ jsxs("div", { className: "p-6 flex-1 space-y-4", children: [
       localData.map((item, index) => /* @__PURE__ */ jsxs("div", { className: "flex gap-3", children: [
-        /* @__PURE__ */ jsx("input", { className: "flex-1 p-2 border rounded-lg", value: item, onChange: (e) => handleTextChange(index, void 0, e.target.value) }),
+        activeSubTab === "api_t2" || activeSubTab === "om_ias_t2" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx("input", { className: "flex-1 p-2 border rounded-lg", placeholder: "Nama Personel", value: item.name || "", onChange: (e) => handleTextChange(index, "name", e.target.value) }),
+          /* @__PURE__ */ jsx("input", { className: "w-1/3 p-2 border rounded-lg", placeholder: "No. WA", value: item.phone || "", onChange: (e) => handleTextChange(index, "phone", e.target.value) })
+        ] }) : /* @__PURE__ */ jsx("input", { className: "flex-1 p-2 border rounded-lg", value: item, onChange: (e) => handleTextChange(index, void 0, e.target.value) }),
         /* @__PURE__ */ jsx("button", { onClick: () => {
           const d = [...localData];
           d.splice(index, 1);
@@ -4029,11 +4907,61 @@ const LocalDataEditor = () => {
       ] }, index)),
       /* @__PURE__ */ jsx("button", { onClick: () => {
         const d = [...localData];
-        d.push("");
+        if (activeSubTab === "api_t2" || activeSubTab === "om_ias_t2") d.push({ name: "", phone: "" });
+        else d.push("");
         setLocalData(d);
       }, className: "w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 font-bold rounded-lg hover:bg-blue-50", children: "+ Tambah Baris" }),
       /* @__PURE__ */ jsx("div", { className: "pt-4 border-t border-slate-200 flex justify-end", children: /* @__PURE__ */ jsx("button", { onClick: handleSave, className: "px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors", children: "Simpan Perubahan" }) })
     ] })
+  ] });
+};
+const TipDataManager = () => {
+  const [tipList, setTipList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const fetchTipData = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("master_configs").select("key, updated_at").like("key", "tip_data_%").order("updated_at", { ascending: false });
+    if (!error && data) {
+      setTipList(data);
+    }
+    setLoading(false);
+  };
+  useEffect(() => {
+    fetchTipData();
+  }, []);
+  const handleDelete = async (key) => {
+    if (!window.confirm(`Hapus data ${key.replace("tip_data_", "").replace("_", " ")}?`)) return;
+    await supabase.from("master_configs").delete().eq("key", key);
+    fetchTipData();
+  };
+  if (loading) {
+    return /* @__PURE__ */ jsx("div", { className: "p-12 flex justify-center", children: /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 animate-spin text-blue-500" }) });
+  }
+  return /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsxs("div", { className: "p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center", children: [
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold text-slate-800", children: "Daftar Data TIP Tersimpan" }),
+        /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-500", children: "Data TIP bulanan yang telah disimpan ke cloud." })
+      ] }),
+      /* @__PURE__ */ jsx("button", { onClick: fetchTipData, className: "p-2.5 text-slate-500 hover:bg-slate-200 rounded-xl transition-colors", children: /* @__PURE__ */ jsx(RefreshCw, { className: "w-5 h-5" }) })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "w-full text-left border-collapse", children: [
+      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { className: "bg-slate-100 text-slate-600 text-sm", children: [
+        /* @__PURE__ */ jsx("th", { className: "p-4 font-bold border-b border-slate-200", children: "Bulan & Tahun" }),
+        /* @__PURE__ */ jsx("th", { className: "p-4 font-bold border-b border-slate-200", children: "Terakhir Diperbarui" }),
+        /* @__PURE__ */ jsx("th", { className: "p-4 font-bold border-b border-slate-200 w-24 text-center", children: "Aksi" })
+      ] }) }),
+      /* @__PURE__ */ jsx("tbody", { children: tipList.length === 0 ? /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 3, className: "p-8 text-center text-slate-500 italic", children: "Belum ada data TIP yang tersimpan." }) }) : tipList.map((row, i) => {
+        const monthYear = row.key.replace("tip_data_", "").replace("_", " ");
+        const dateObj = new Date(row.updated_at);
+        const formattedDate = !isNaN(dateObj.getTime()) ? dateObj.toLocaleString("id-ID") : "-";
+        return /* @__PURE__ */ jsxs("tr", { className: `border-b border-slate-100 hover:bg-blue-50/50 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-slate-50/30"}`, children: [
+          /* @__PURE__ */ jsx("td", { className: "p-4 font-medium text-slate-800 capitalize", children: monthYear }),
+          /* @__PURE__ */ jsx("td", { className: "p-4 text-slate-600 text-sm", children: formattedDate }),
+          /* @__PURE__ */ jsx("td", { className: "p-4 text-center", children: /* @__PURE__ */ jsx("button", { onClick: () => handleDelete(row.key), className: "p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors", title: "Hapus Data", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) }) })
+        ] }, row.key);
+      }) })
+    ] }) })
   ] });
 };
 function App() {

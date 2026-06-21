@@ -15,6 +15,9 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  ssr: {
+    noExternal: ['konva', 'react-konva', 'use-image'],
+  },
 })
 
 export default config
