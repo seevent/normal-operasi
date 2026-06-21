@@ -10,7 +10,7 @@ export const TabChecklist: React.FC = () => {
   const { checklistDataMaster } = useMasterDataStore();
 
   const [checklistData, setChecklistData] = useState({
-    tanggal: new Date().toISOString().split('T')[0],
+    tanggal: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
     waktuMulai: '',
     waktuSelesai: '',
   });

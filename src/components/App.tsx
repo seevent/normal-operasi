@@ -69,6 +69,7 @@ export default function App() {
                activeTab === 'storing' ? <Box className="text-white w-7 h-7" /> : 
                activeTab === 'checklist' ? <CheckSquare className="text-white w-7 h-7" /> : 
                activeTab === 'tip' ? <AlertTriangle className="text-white w-7 h-7" /> : 
+               activeTab === 'data' ? <Database className="text-white w-7 h-7" /> : 
                <Settings className="text-white w-7 h-7" />}
               <div>
                 <h1 className="text-xl font-bold text-white">Laporan SSES T2</h1>

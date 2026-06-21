@@ -17,16 +17,14 @@ export const TabPerbaikan: React.FC = () => {
 
   const [formData, setFormData] = useState(() => {
     const now = new Date();
-    const currentHour = now.getHours();
-    const logicalDateObj = new Date(now.getTime());
-    if (currentHour < 8) {
-      logicalDateObj.setDate(logicalDateObj.getDate() - 1);
-    }
-    const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;
-    const localDate = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split('T')[0];
+    // Real-time local date for the tanggal field
+    const realYear = now.getFullYear();
+    const realMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const realDay = String(now.getDate()).padStart(2, '0');
+    const realDate = `${realYear}-${realMonth}-${realDay}`;
     return {
       peralatan: '', lokasi1: '', lokasi2: '', sumberLaporan: 'Avsec', indikasiAwal: '',
-      tanggal: localDate, waktuMulai: '', waktuSelesai: '',
+      tanggal: realDate, waktuMulai: '', waktuSelesai: '',
       lamaPengerjaan: '', teknisi: '', permasalahan: '• ', tindakLanjut: '• ', status: 'Pekerjaan Selesai'
     };
   });

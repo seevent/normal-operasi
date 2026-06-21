@@ -18,7 +18,7 @@ export const TabStoring: React.FC = () => {
   const storingEquipments = Array.from(new Set(jenisPeralatanData.map(j => j.nama)));
 
   const [storingData, setStoringData] = useState({
-    tanggal: new Date().toISOString().split('T')[0],
+    tanggal: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
     waktuMulai: '',
     waktuSelesai: '',
     peralatan: [] as string[],
