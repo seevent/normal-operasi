@@ -206,7 +206,8 @@ export const TabStoring: React.FC = () => {
                 </select>
               </div>
 
-              {storingData.peralatan.includes('Access Control') && (storingData.lokasi.includes('Avio') || storingData.lokasi.includes('Rampout')) && (
+              {((storingData.peralatan.includes('Access Control') && (storingData.lokasi.includes('Avio') || storingData.lokasi.includes('Rampout'))) || 
+                (!storingData.peralatan.includes('Access Control') && storingData.lokasi === 'HBSCP')) && (
                 <div className="w-1/3 relative">
                   <Hash className="absolute left-2.5 top-2.5 h-5 w-5 text-slate-400" />
                   <select 

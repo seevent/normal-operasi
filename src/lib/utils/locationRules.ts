@@ -139,6 +139,7 @@ export const getStoringValidLocations = (equipArray: string[], storingLocAc: str
 };
 
 export const getStoringValidNumbers = (lokasi: string) => {
+  if (lokasi === 'HBSCP') return ['1.1-1.6', '2.1-2.6', '2.7-2.8'];
   if (!lokasi.includes('Avio') && !lokasi.includes('Rampout')) return [];
   if (lokasi === 'Rampout D' || lokasi === 'Rampout E') return ['2,4,6', '2', '4', '6'];
   if (lokasi === 'Rampout F') return ['1-7', '1', '2', '3', '4', '5', '6', '7'];

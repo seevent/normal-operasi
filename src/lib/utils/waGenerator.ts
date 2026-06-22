@@ -6,7 +6,7 @@ export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) =>
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
   const dateParts = formData.tanggal ? formData.tanggal.split('-') : ['','',''];
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : '';
-  let lokasiFinal = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== '-' ? (formData.peralatan === 'Access Control' ? ` ${formData.lokasi2}` : ` No.${formData.lokasi2}`) : '');
+  let lokasiFinal = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || formData.lokasi1 === 'HBSCP') ? ` ${formData.lokasi2}` : ` No.${formData.lokasi2}`) : '');
   const judulLaporan = isVerifikasiETD ? `Laporan Verifikasi ${formData.peralatan}` : `Laporan Perbaikan ${formData.peralatan}`;
 
   return `${judulLaporan}

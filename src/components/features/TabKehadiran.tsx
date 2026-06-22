@@ -16,14 +16,18 @@ export const TabKehadiran: React.FC = () => {
   const [attendanceData, setAttendanceData] = useState(() => {
     const now = new Date();
     const currentHour = now.getHours();
-    const isPagi = currentHour >= 8 && currentHour < 20;
+    const currentMinute = now.getMinutes();
+    const timeInMinutes = currentHour * 60 + currentMinute;
+    
+    // Shift changes at 07:30 (450 mins) and 19:30 (1170 mins)
+    const isPagi = timeInMinutes >= 450 && timeInMinutes < 1170;
     const shiftValue = isPagi ? 'Pagi, 08.00 - 20.00 WIB' : 'Malam, 20.00 - 08.00 WIB';
     const kegiatan = isPagi 
       ? '- Monitoring Ops\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Perangkat' 
       : '- Monitoring Ops\n- Storing Peralatan';
     
     const logicalDateObj = new Date(now.getTime());
-    if (currentHour < 8) {
+    if (timeInMinutes < 450) {
       logicalDateObj.setDate(logicalDateObj.getDate() - 1);
     }
     const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;

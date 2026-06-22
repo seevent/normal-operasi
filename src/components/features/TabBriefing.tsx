@@ -13,11 +13,24 @@ export const TabBriefing: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
 
   const [briefingData, setBriefingData] = useState(() => {
-    const currentHour = new Date().getHours();
-    const isPagi = currentHour >= 8 && currentHour < 20;
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const timeInMinutes = currentHour * 60 + currentMinute;
+    
+    // Shift changes at 07:30 (450 mins) and 19:30 (1170 mins)
+    const isPagi = timeInMinutes >= 450 && timeInMinutes < 1170;
+    
+    const logicalDateObj = new Date(now.getTime());
+    if (timeInMinutes < 450) {
+      logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+    }
+    const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;
+    const localDate = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split('T')[0];
+
     return {
       jenis: 'Unit', // 'Unit' | 'MOT'
-      tanggal: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
+      tanggal: localDate,
       shift: isPagi ? 'Pagi' : 'Malam',
       lokasi: 'Terminal 2'
     };
