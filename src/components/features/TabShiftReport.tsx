@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, FileText, Download, Share2, Loader2, CheckCircle, Clock } from 'lucide-react';
 import { GOOGLE_SHEETS_WEBAPP_URL } from '../../lib/data/constants';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import html2pdf from 'html2pdf.js';
+// html2pdf.js is loaded dynamically (browser-only, references `self`)
 import { supabase } from '../../lib/supabaseClient';
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -137,6 +137,7 @@ export const TabShiftReport: React.FC = () => {
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
       };
 
+      const html2pdf = (await import('html2pdf.js')).default;
       const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
       
       setStatusMsg({ text: "PDF berhasil dibuat. Menyimpan ke Google Drive...", type: 'info' });
