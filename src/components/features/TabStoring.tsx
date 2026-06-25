@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Box, Calendar, MapPin, Hash, AlertCircle, Share2, CheckCircle, FileText } from 'lucide-react';
+import { Calendar, MapPin, Hash, AlertCircle, Share2, CheckCircle, FileText } from 'lucide-react';
+import { MonitorSearchIcon } from '../shared/MonitorSearchIcon';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
-import { getStoringValidLocations, getStoringValidNumbers } from '../../lib/utils/locationRules';
+import { getStoringValidLocations, getStoringValidNumbers, getGeneralLokasiOptions, getAcNomorOptions } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { lazy, Suspense } from 'react';
+import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 const CollageEditor = lazy(() => import('../shared/CollageEditor').then(m => ({ default: m.CollageEditor })));
 
@@ -23,6 +25,8 @@ export const TabStoring: React.FC = () => {
     waktuSelesai: '',
     peralatan: [] as string[],
     lokasi: '',
+    acLokasi: [] as string[],
+    acNomor: {} as Record<string, string>,
     nomor: '',
     hasil: 'Normal Operasi'
   });
@@ -48,7 +52,7 @@ export const TabStoring: React.FC = () => {
       }
       
       // Reset lokasi & nomor jika kombinasi peralatan berubah drastis
-      return { ...prev, peralatan: newPeralatan, lokasi: '', nomor: '' };
+      return { ...prev, peralatan: newPeralatan, lokasi: '', acLokasi: [], acNomor: {}, nomor: '' };
     });
   };
 
@@ -103,17 +107,26 @@ export const TabStoring: React.FC = () => {
   const handleStoringSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (storingData.peralatan.length > 0 && (storingData.acLokasi || []).length === 0) {
+      alert("Pastikan Anda memilih minimal 1 lokasi untuk peralatan terpilih!");
+      return;
+    }
+    
     let generatedCollageFile: File | null = customCollageFile;
     let generatedCollageUrl: string | null = customCollageUrl;
 
     if (photos.length > 0 && !generatedCollageFile) {
-      // Create fallback collage
-      const collageResult = await processPhotosToCollage(photos);
-      if (collageResult) {
-        generatedCollageUrl = collageResult.url;
-        const res = await fetch(collageResult.url);
-        const blob = await res.blob();
-        generatedCollageFile = new File([blob], `Dokumentasi_Storing_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      if (photos.length === 1) {
+        generatedCollageFile = photos[0].file || null;
+      } else {
+        // Create fallback collage
+        const collageResult = await processPhotosToCollage(photos);
+        if (collageResult) {
+          generatedCollageUrl = collageResult.url;
+          const res = await fetch(collageResult.url);
+          const blob = await res.blob();
+          generatedCollageFile = new File([blob], `Dokumentasi_Storing_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        }
       }
     }
 
@@ -134,7 +147,7 @@ export const TabStoring: React.FC = () => {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center border-b pb-2">
           <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-            <Box className="w-5 h-5 text-blue-600" /> Detail Kegiatan Storing
+            <MonitorSearchIcon className="w-5 h-5 text-blue-600" /> Detail Kegiatan Storing
           </h2>
         </div>
         
@@ -189,39 +202,79 @@ export const TabStoring: React.FC = () => {
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Lokasi</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <select 
-                  name="lokasi" 
-                  required 
-                  value={storingData.lokasi} 
-                  onChange={handleStoringChange} 
-                  disabled={storingData.peralatan.length === 0}
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  <option value="">- Pilih Lokasi -</option>
-                  {getStoringValidLocations(storingData.peralatan, storingLocAc, storingLocDefault).map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              </div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Lokasi{storingData.peralatan.length > 0 && <span className="text-xs text-slate-400 font-normal"> (Pilih 1 atau lebih)</span>}
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {(() => {
+                const locOpts = storingData.peralatan.includes('Access Control')
+                  ? getGeneralLokasiOptions('Access Control')
+                  : getStoringValidLocations(storingData.peralatan, storingLocAc, storingLocDefault);
 
-              {((storingData.peralatan.includes('Access Control') && (storingData.lokasi.includes('Avio') || storingData.lokasi.includes('Rampout'))) || 
-                (!storingData.peralatan.includes('Access Control') && storingData.lokasi === 'HBSCP')) && (
-                <div className="w-1/3 relative">
-                  <Hash className="absolute left-2.5 top-2.5 h-5 w-5 text-slate-400" />
-                  <select 
-                    name="nomor" 
-                    required 
-                    value={storingData.nomor} 
-                    onChange={handleStoringChange} 
-                    className="w-full pl-9 pr-2 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
-                  >
-                    <option value="">- No -</option>
-                    {getStoringValidNumbers(storingData.lokasi).map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
-              )}
+                if (locOpts.length === 0) {
+                  return (
+                    <div className="col-span-full p-3 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-sm text-center">
+                      {storingData.peralatan.length === 0 ? "Pilih peralatan terlebih dahulu untuk melihat daftar lokasi." : "Data lokasi belum tersedia di database."}
+                    </div>
+                  );
+                }
+
+                return locOpts.map((loc: string) => {
+                  const isChecked = (storingData.acLokasi || []).includes(loc);
+                  const nomorOpts = getAcNomorOptions(loc);
+
+                  return (
+                    <div
+                      key={loc}
+                      className={`flex items-center justify-between p-2 border rounded-lg transition-colors ${
+                        isChecked ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <label className="flex items-center cursor-pointer flex-1 min-w-0 mr-1.5">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            setStoringData(prev => {
+                              const exists = (prev.acLokasi || []).includes(loc);
+                              const newLocs = exists ? (prev.acLokasi || []).filter(l => l !== loc) : [...(prev.acLokasi || []), loc];
+                              const newNomor = { ...(prev.acNomor || {}) };
+                              if (!exists && nomorOpts.length > 0) {
+                                newNomor[loc] = nomorOpts[0];
+                              } else if (exists) {
+                                delete newNomor[loc];
+                              }
+                              return { ...prev, acLokasi: newLocs, acNomor: newNomor };
+                            });
+                          }}
+                          className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 flex-shrink-0"
+                        />
+                        <span className={`ml-2 text-xs truncate select-none ${isChecked ? 'font-semibold text-blue-700' : 'text-slate-700'}`} title={loc}>
+                          {loc}
+                        </span>
+                      </label>
+
+                      {isChecked && nomorOpts.length > 0 && (
+                        <select
+                          value={(storingData.acNomor || {})[loc] || nomorOpts[0]}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setStoringData(prev => ({
+                              ...prev,
+                              acNomor: { ...(prev.acNomor || {}), [loc]: val }
+                            }));
+                          }}
+                          className="text-xs py-1 px-1 bg-white border border-blue-300 rounded text-blue-800 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 flex-shrink-0 cursor-pointer shadow-sm"
+                        >
+                          {nomorOpts.map(num => (
+                            <option key={num} value={num}>{num}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
 
@@ -252,6 +305,7 @@ export const TabStoring: React.FC = () => {
           <button type="button" onClick={() => { setCustomCollageUrl(null); setCustomCollageFile(null); }} className="mt-2 text-xs text-red-600 font-semibold hover:text-red-700">Hapus Kolase Kustom</button>
         </div>
       )}
+      {!customCollageUrl && <LiveCollagePreview photos={photos} />}
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>

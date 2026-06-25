@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { 
-  Wrench, Users, Megaphone, Box, CheckSquare, Settings, AlertTriangle, 
-  RefreshCw, Check, Database, CheckCircle
+  Wrench, Users, Megaphone, CheckSquare, Settings, AlertTriangle, 
+  RefreshCw, Check, Database, CheckCircle, FileText, MoreHorizontal, Briefcase
 } from 'lucide-react';
+import { MonitorSearchIcon } from './shared/MonitorSearchIcon';
 
 import { TabKehadiran } from './features/TabKehadiran';
 import { TabPerbaikan } from './features/TabPerbaikan';
@@ -12,6 +13,8 @@ import { TabTip } from './features/TabTip';
 import { TabChecklist } from './features/TabChecklist';
 import { TabBriefing } from './features/TabBriefing';
 import { TabData } from './features/TabData';
+import { TabKegiatan } from './features/TabKegiatan';
+import { TabShiftReport } from './features/TabShiftReport';
 import { useAppStore } from '../store/useAppStore';
 import { useMasterDataStore } from '../store/useMasterDataStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -24,6 +27,7 @@ export default function App() {
 
   const [isResetting, setIsResetting] = useState(false);
   const [showGsheetNotif] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   useEffect(() => {
     initializeSupabaseData();
@@ -35,6 +39,7 @@ export default function App() {
 
   const switchTab = (tab: string) => {
     setActiveTab(tab);
+    setShowMoreMenu(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -66,10 +71,12 @@ export default function App() {
               {activeTab === 'perbaikan' ? <Wrench className="text-white w-7 h-7" /> : 
                activeTab === 'kehadiran' ? <Users className="text-white w-7 h-7" /> : 
                activeTab === 'briefing' ? <Megaphone className="text-white w-7 h-7" /> : 
-               activeTab === 'storing' ? <Box className="text-white w-7 h-7" /> : 
+               activeTab === 'storing' ? <MonitorSearchIcon className="text-white w-7 h-7" /> : 
                activeTab === 'checklist' ? <CheckSquare className="text-white w-7 h-7" /> : 
+               activeTab === 'report' ? <FileText className="text-white w-7 h-7" /> : 
                activeTab === 'tip' ? <AlertTriangle className="text-white w-7 h-7" /> : 
                activeTab === 'data' ? <Database className="text-white w-7 h-7" /> : 
+               activeTab === 'kegiatan' ? <Briefcase className="text-white w-7 h-7" /> : 
                <Settings className="text-white w-7 h-7" />}
               <div>
                 <h1 className="text-xl font-bold text-white">Laporan SSES T2</h1>
@@ -93,31 +100,49 @@ export default function App() {
 
         {/* === TAB NAVIGATION === */}
         <div className="grid grid-cols-4 bg-slate-50 border-b border-slate-200">
-          <button onClick={() => switchTab('perbaikan')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-b border-slate-200 ${activeTab === 'perbaikan' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
-            <Wrench className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Perbaikan</span>
-          </button>
           <button onClick={() => switchTab('kehadiran')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-b border-slate-200 ${activeTab === 'kehadiran' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
             <Users className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Kehadiran</span>
           </button>
           <button onClick={() => switchTab('briefing')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-b border-slate-200 ${activeTab === 'briefing' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
             <Megaphone className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Briefing</span>
           </button>
-          <button onClick={() => switchTab('storing')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-b border-slate-200 ${activeTab === 'storing' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
-            <Box className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Storing</span>
+          <button onClick={() => switchTab('storing')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-b border-slate-200 ${activeTab === 'storing' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+            <MonitorSearchIcon className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Storing</span>
+          </button>
+          <button onClick={() => switchTab('checklist')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-b border-slate-200 ${activeTab === 'checklist' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+            <CheckSquare className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Checklist</span>
           </button>
           
-          <button onClick={() => switchTab('checklist')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'checklist' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
-            <CheckSquare className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Checklist</span>
+          <button onClick={() => switchTab('perbaikan')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'perbaikan' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+            <Wrench className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Perbaikan</span>
           </button>
           <button onClick={() => switchTab('kalibrasi')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'kalibrasi' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
             <Settings className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Kalibrasi</span>
           </button>
-          <button onClick={() => switchTab('tip')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'tip' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
-            <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">TIP</span>
+          <button onClick={() => switchTab('kegiatan')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'kegiatan' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+            <Briefcase className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Kegiatan</span>
           </button>
-          <button onClick={() => switchTab('data')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${activeTab === 'data' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
-            <Database className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Data</span>
-          </button>
+          <div className="relative flex">
+            <button onClick={() => setShowMoreMenu(!showMoreMenu)} className={`w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${(activeTab === 'tip' || activeTab === 'data' || activeTab === 'report' || showMoreMenu) ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+              <MoreHorizontal className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">More</span>
+            </button>
+            {showMoreMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)}></div>
+                <div className="absolute top-full right-0 mt-1 w-36 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                  <button onClick={() => switchTab('report')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'report' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                    <FileText className="w-4 h-4 sm:w-5 sm:h-5" /> Report
+                  </button>
+                  <button onClick={() => switchTab('data')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'data' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                    <Database className="w-4 h-4 sm:w-5 sm:h-5" /> Data
+                  </button>
+                  <button onClick={() => switchTab('tip')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === 'tip' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" /> TIP
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* ======================================================== */}
@@ -129,8 +154,10 @@ export default function App() {
         {activeTab === 'storing' && <TabStoring />}
         {activeTab === 'checklist' && <TabChecklist />}
         {activeTab === 'kalibrasi' && <TabKalibrasi />}
+        {activeTab === 'report' && <TabShiftReport />}
         {activeTab === 'tip' && <TabTip />}
         {activeTab === 'data' && <TabData />}
+        {activeTab === 'kegiatan' && <TabKegiatan />}
 
       </div>
     </div>

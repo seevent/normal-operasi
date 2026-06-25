@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
@@ -8,9 +8,25 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase } from '../../lib/data/masterData';
-import { lazy, Suspense } from 'react';
+import { GOOGLE_SHEETS_WEBAPP_URL } from '../../lib/data/constants';
+import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 const CollageEditor = lazy(() => import('../shared/CollageEditor').then(m => ({ default: m.CollageEditor })));
+
+function formatNamaPersonel(fullName: string): string {
+  if (!fullName) return '';
+  const words = fullName.trim().split(/\s+/);
+  if (words.length === 0) return '';
+  if (words.length === 1) return words[0];
+  
+  const firstWord = words[0].toLowerCase();
+  const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad'];
+  
+  if (titlePrefixes.includes(firstWord)) {
+    return words[1];
+  }
+  return words[0];
+}
 
 export const TabPerbaikan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -31,6 +47,7 @@ export const TabPerbaikan: React.FC = () => {
   
   const [availableTeknisi, setAvailableTeknisi] = useState<{id: string, name: string, unit?: string}[]>([]);
   const [selectedTeknisi, setSelectedTeknisi] = useState<string[]>([]);
+  const [manualTeknisi, setManualTeknisi] = useState<string>('');
   const [tipePeralatanOptions, setTipePeralatanOptions] = useState<string[]>([]);
 
   // Ambil data teknisi dan tipe peralatan dari Supabase
@@ -65,7 +82,7 @@ export const TabPerbaikan: React.FC = () => {
 
         setAvailableTeknisi(filteredTeknisi.map((d: any) => ({
           id: d.id,
-          name: toTitleCase(d.personel?.nama || ''),
+          name: formatNamaPersonel(toTitleCase(d.personel?.nama || '')),
           unit: d.personel?.unit_kerja?.nama || ''
         })).filter((t: any) => t.name !== ''));
       }
@@ -85,8 +102,26 @@ export const TabPerbaikan: React.FC = () => {
 
   // Update string 'teknisi' di formData jika checkbox berubah
   React.useEffect(() => {
-    setFormData(prev => ({ ...prev, teknisi: selectedTeknisi.join(', ') }));
-  }, [selectedTeknisi]);
+    setFormData(prev => {
+      const allTeknisi = [...selectedTeknisi];
+      if (manualTeknisi.trim()) {
+        const manualList = manualTeknisi.split(',').map(t => t.trim()).filter(t => t);
+        allTeknisi.push(...manualList);
+      }
+      
+      let teknisiStr = '';
+      if (allTeknisi.length === 0) {
+        teknisiStr = '';
+      } else if (allTeknisi.length === 1) {
+        teknisiStr = allTeknisi[0];
+      } else {
+        const last = allTeknisi[allTeknisi.length - 1];
+        const rest = allTeknisi.slice(0, -1);
+        teknisiStr = `${rest.join(', ')} & ${last}`;
+      }
+      return { ...prev, teknisi: teknisiStr };
+    });
+  }, [selectedTeknisi, manualTeknisi]);
 
   const toggleTeknisi = (name: string) => {
     setSelectedTeknisi(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
@@ -232,18 +267,56 @@ export const TabPerbaikan: React.FC = () => {
     let generatedCollageUrl: string | null = customCollageUrl;
 
     if (photos.length > 0 && !generatedCollageFile) {
-      // Create fallback grid collage if user didn't use the advanced editor
-      const collageResult = await processPhotosToCollage(photos);
-      if (collageResult) {
-        generatedCollageUrl = collageResult.url;
-        const res = await fetch(collageResult.url);
-        const blob = await res.blob();
-        generatedCollageFile = new File([blob], `Dokumentasi_Perbaikan_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      if (photos.length === 1) {
+        generatedCollageFile = photos[0].file || null;
+      } else {
+        // Create fallback grid collage if user didn't use the advanced editor
+        const collageResult = await processPhotosToCollage(photos);
+        if (collageResult) {
+          generatedCollageUrl = collageResult.url;
+          const res = await fetch(collageResult.url);
+          const blob = await res.blob();
+          generatedCollageFile = new File([blob], `Dokumentasi_Perbaikan_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        }
       }
     }
 
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
     
+    // Kirim data ke Google Sheets secara diam-diam (background)
+    try {
+      let imageBase64 = "";
+      if (generatedCollageFile) {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onloadend = () => {
+            const base64String = (reader.result as string).split(',')[1];
+            resolve(base64String || "");
+          };
+        });
+        reader.readAsDataURL(generatedCollageFile);
+        imageBase64 = await base64Promise;
+      }
+
+      fetch(GOOGLE_SHEETS_WEBAPP_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          action: 'save_report',
+          peralatan: formData.peralatan,
+          kondisi: formData.kondisi,
+          uraian: formData.uraian,
+          tindakLanjut: formData.tindakLanjut,
+          teknisi: formData.teknisi,
+          imageBase64: imageBase64
+        }),
+      }).catch(err => console.error("Gagal mengirim ke Google Sheets:", err));
+    } catch (e) {
+      console.error("Error memproses data untuk Google Sheets:", e);
+    }
+
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
@@ -430,17 +503,14 @@ export const TabPerbaikan: React.FC = () => {
                 })()}
               </div>
 
-              {/* Teks input fallback jika data belum disinkronisasi */}
-              {availableTeknisi.length === 0 && (
-                <input 
-                  type="text" 
-                  name="teknisi" 
-                  placeholder="Ketik manual nama teknisi jika jadwal kosong..." 
-                  value={formData.teknisi} 
-                  onChange={handleRepairChange} 
-                  className="w-full mt-2 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
-                />
-              )}
+              {/* Teks input manual teknisi */}
+              <input 
+                type="text" 
+                placeholder={availableTeknisi.length === 0 ? "Ketik manual nama teknisi karena jadwal kosong..." : "Tambah teknisi lain (pisahkan dengan koma)..."}
+                value={manualTeknisi} 
+                onChange={(e) => setManualTeknisi(e.target.value)} 
+                className="w-full mt-3 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
+              />
             </div>
           </div>
         </div>
@@ -485,6 +555,7 @@ export const TabPerbaikan: React.FC = () => {
             <button type="button" onClick={() => { setCustomCollageUrl(null); setCustomCollageFile(null); }} className="mt-2 text-xs text-red-600 font-semibold hover:text-red-700">Hapus Kolase Kustom</button>
           </div>
         )}
+        {!customCollageUrl && <LiveCollagePreview photos={photos} />}
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>

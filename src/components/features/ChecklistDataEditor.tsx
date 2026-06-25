@@ -57,23 +57,23 @@ export const ChecklistDataEditor: React.FC = () => {
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
-        <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
+        <div className="w-full sm:w-auto">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Settings className="w-6 h-6 text-blue-600" /> Editor Konfigurasi Checklist
+            <Settings className="w-6 h-6 text-blue-600 shrink-0" /> Editor Konfigurasi Checklist
           </h2>
           <p className="text-slate-500 text-sm mt-1">Edit struktur checklist untuk WhatsApp. Perubahan akan langsung disimpan ke Supabase.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap w-full sm:w-auto gap-2">
           <button onClick={() => {
             if (window.confirm('Reset checklist ke default bawaan sistem? Data saat ini di cloud akan tertimpa setelah Anda menekan Simpan ke Cloud.')) {
               setData(JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_DATA)));
             }
-          }} className="flex items-center gap-2 px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-xl transition-all shadow-sm border border-rose-200">
-            <RefreshCw className="w-5 h-5" /> Reset Default
+          }} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 text-sm sm:text-base font-bold rounded-xl transition-all shadow-sm border border-rose-200">
+            <RefreshCw className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" /> Reset
           </button>
-          <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md">
-            <Save className="w-5 h-5" /> Simpan ke Cloud
+          <button onClick={handleSave} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-3 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-bold rounded-xl transition-all shadow-md">
+            <Save className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" /> Simpan
           </button>
         </div>
       </div>

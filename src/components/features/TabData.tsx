@@ -342,19 +342,21 @@ const LocalDataEditor: React.FC = () => {
       ) : (
         <div className="p-6 flex-1 space-y-4">
           {localData.map((item, index) => (
-            <div key={index} className="flex gap-3">
-              {(activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') ? (
-                <>
-                  <input className="flex-1 p-2 border rounded-lg" placeholder="Nama Personel" value={item.name || ''} onChange={e => handleTextChange(index, 'name', e.target.value)} />
-                  <input className="w-1/3 p-2 border rounded-lg" placeholder="No. WA" value={item.phone || ''} onChange={e => handleTextChange(index, 'phone', e.target.value)} />
-                </>
-              ) : (
-                <input className="flex-1 p-2 border rounded-lg" value={item} onChange={e => handleTextChange(index, undefined, e.target.value)} />
-              )}
-            <button onClick={() => { const d = [...localData]; d.splice(index, 1); setLocalData(d); }} className="p-2 text-rose-500 bg-rose-50 rounded-lg">
-              <Trash2 className="w-5 h-5" />
-            </button>
-          </div>
+            <div key={index} className="flex gap-2 sm:gap-3 items-start sm:items-center">
+              <div className="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+                {(activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') ? (
+                  <>
+                    <input className="flex-1 w-full p-2 border rounded-lg" placeholder="Nama Personel" value={item.name || ''} onChange={e => handleTextChange(index, 'name', e.target.value)} />
+                    <input className="sm:w-1/3 w-full p-2 border rounded-lg" placeholder="No. WA" value={item.phone || ''} onChange={e => handleTextChange(index, 'phone', e.target.value)} />
+                  </>
+                ) : (
+                  <input className="flex-1 w-full p-2 border rounded-lg" value={item} onChange={e => handleTextChange(index, undefined, e.target.value)} />
+                )}
+              </div>
+              <button onClick={() => { const d = [...localData]; d.splice(index, 1); setLocalData(d); }} className="p-2 mt-1 sm:mt-0 text-rose-500 bg-rose-50 rounded-lg shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
         ))}
         
         <button onClick={() => {

@@ -132,10 +132,27 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
 
 export const getStoringValidLocations = (equipArray: string[], storingLocAc: string[], storingLocDefault: string[]) => {
   if (equipArray.length === 0) return [];
-  if (equipArray.includes('Access Control')) return storingLocAc;
+  if (equipArray.includes('Access Control')) return getGeneralLokasiOptions('Access Control');
   
-  // Untuk peralatan selain Access Control, gunakan database relasional
-  return getIntersectedLocations(equipArray);
+  const intersected = getIntersectedLocations(equipArray);
+
+  const hasHhmdOrWtmd = equipArray.some(e => ['HHMD', 'WTMD'].includes(e.trim().toUpperCase()));
+  if (hasHhmdOrWtmd) {
+    const transferLocs = new Set<string>();
+    equipArray.forEach(e => {
+      if (['HHMD', 'WTMD'].includes(e.trim().toUpperCase())) {
+        getGeneralLokasiOptions(e).forEach(loc => {
+          if (loc.trim().toUpperCase().includes('TRANSFER')) {
+            transferLocs.add(loc);
+          }
+        });
+      }
+    });
+    const combined = new Set([...intersected, ...transferLocs]);
+    return Array.from(combined).sort();
+  }
+
+  return intersected;
 };
 
 export const getStoringValidNumbers = (lokasi: string) => {
@@ -146,6 +163,22 @@ export const getStoringValidNumbers = (lokasi: string) => {
   if (lokasi === 'Avio & BL D' || lokasi === 'Avio & BL E' || lokasi === 'Avio & BL F') return ['1-7', '1', '2', '3', '4', '5', '6', '7'];
   return ['1', '2', '3', '4', '5', '6', '7'];
 };
+
+export const getStoringNomorOptions = (loc: string): string[] => {
+  if (!loc) return [];
+  const upper = loc.trim().toUpperCase();
+  if (upper === 'HBSCP') return ['1.1-1.6', '2.1-2.6', '2.7-2.8'];
+  if (upper.includes('BEA CUKAI') || upper.includes('BELT')) return ['11-14', '15-16'];
+  if (upper === 'ARRIVAL F') return ['1,6,7', '1', '6', '7'];
+  if (['RAMPOUT D', 'RAMPOUT E'].includes(upper)) {
+    return ['2,4,6', '2', '4', '6'];
+  }
+  if (upper.startsWith('AVIOBRIDGE') || upper.startsWith('BL') || upper === 'RAMPOUT F') {
+    return ['1-7', '1', '2', '3', '4', '5', '6', '7'];
+  }
+  return [];
+};
+export const getAcNomorOptions = getStoringNomorOptions;
 
 export const formatTanggalIndo = (dateStr: string) => {
   if (!dateStr) return '';

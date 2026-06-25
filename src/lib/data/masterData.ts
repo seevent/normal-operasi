@@ -37,11 +37,7 @@ export const DEFAULT_DATA_OM_IAS_T2 = [
 ].map(p => ({ ...p, name: toTitleCase(p.name) }));
 
 export const DEFAULT_STORING_EQUIPMENTS = ['Access Control', 'X-Ray', 'HHMD', 'ETD', 'WTMD', 'Body Scanner'];
-export const DEFAULT_STORING_LOC_AC = [
-  'Avio & BL D', 'Avio & BL E', 'Avio & BL F', 'Rampout D', 'Rampout E', 
-  'Rampout F', 'Breakdown D, E1, E2 & F', 'Breakdown Umrah', 'Ruang Monitoring E1', 
-  'Server Access', 'HBSCP Umrah'
-];
+export const DEFAULT_STORING_LOC_AC: string[] = [];
 export const DEFAULT_STORING_LOC_DEFAULT = [
   'PSCP D', 'PSCP E', 'PSCP F', 'PSCP Umroh', 'SSCP E', 'SSCP F',
   'HBSCP 1.1 -1.6', 'HBSCP 2.1-2.6', 'HBSCP Umrah'

@@ -8,6 +8,7 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { lazy, Suspense } from 'react';
 import { LayoutGrid } from 'lucide-react';
+import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 const CollageEditor = lazy(() => import('../shared/CollageEditor').then(m => ({ default: m.CollageEditor })));
 
@@ -302,6 +303,7 @@ export const TabKalibrasi: React.FC = () => {
                 </button>
               </div>
             )}
+            {!group.collageUrl && <LiveCollagePreview photos={group.photos} />}
           </div>
         ))}
 
@@ -344,7 +346,7 @@ export const TabKalibrasi: React.FC = () => {
           const file = new File([blob], `Dokumentasi_Kalibrasi_Kolase_${i+1}_${Date.now()}.jpg`, { type: 'image/jpeg' });
           customFilesArray.push(file);
         }
-      } else if (group.photos.length === 1) {
+      } else if (group.photos.length === 1 && group.photos[0]?.file) {
         customFilesArray.push(group.photos[0].file);
       }
     }

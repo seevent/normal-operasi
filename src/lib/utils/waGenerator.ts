@@ -66,6 +66,87 @@ export const generateWA_Briefing = (briefingData: any) => {
   return `${judul}\nHari/Tanggal : ${formattedDate}\nShift : ${briefingData.shift}\nLokasi : ${briefingData.lokasi}`;
 };
 
+export const formatACLokasiList = (locs: string[]): string => {
+  if (!locs || locs.length === 0) return '-';
+  if (locs.length === 1) return locs[0];
+
+  interface FormattedChunk {
+    text: string;
+    minIndex: number;
+  }
+
+  const results: FormattedChunk[] = [];
+  const normalLocsWithIndex: { loc: string; idx: number }[] = [];
+
+  locs.forEach((loc, idx) => {
+    if (loc.toUpperCase().includes('PSCP') || loc.toUpperCase().includes('BEA CUKAI') || loc.toUpperCase().includes('BELT')) {
+      results.push({ text: loc.trim(), minIndex: idx });
+    } else {
+      normalLocsWithIndex.push({ loc: loc.trim(), idx });
+    }
+  });
+
+  // Step 1: Group normalLocs by prefix
+  const prefixGroups: Map<string, { suffix: string; idx: number }[]> = new Map();
+  normalLocsWithIndex.forEach(({ loc, idx }) => {
+    const parts = loc.split(' ');
+    if (parts.length >= 2) {
+      const prefix = parts.slice(0, -1).join(' ');
+      const suffix = parts[parts.length - 1];
+      if (!prefixGroups.has(prefix)) prefixGroups.set(prefix, []);
+      prefixGroups.get(prefix)!.push({ suffix, idx });
+    } else {
+      results.push({ text: loc, minIndex: idx });
+    }
+  });
+
+  const remainingForSuffixGroup: { prefix: string; suffix: string; idx: number }[] = [];
+
+  prefixGroups.forEach((items, prefix) => {
+    if (items.length === 1) {
+      remainingForSuffixGroup.push({ prefix, suffix: items[0].suffix, idx: items[0].idx });
+    } else {
+      const minIndex = Math.min(...items.map(i => i.idx));
+      const suffixes = items.map(i => i.suffix);
+      const lastSuffix = suffixes[suffixes.length - 1];
+      const otherSuffixes = suffixes.slice(0, -1).join(', ');
+      results.push({ text: `${prefix} ${otherSuffixes} & ${lastSuffix}`, minIndex });
+    }
+  });
+
+  // Step 2: Group remaining by suffix
+  const suffixGroups: Map<string, { prefix: string; idx: number }[]> = new Map();
+  remainingForSuffixGroup.forEach(({ prefix, suffix, idx }) => {
+    if (!suffixGroups.has(suffix)) suffixGroups.set(suffix, []);
+    suffixGroups.get(suffix)!.push({ prefix, idx });
+  });
+
+  suffixGroups.forEach((items, suffix) => {
+    const minIndex = Math.min(...items.map(i => i.idx));
+    if (items.length === 1) {
+      results.push({ text: `${items[0].prefix} ${suffix}`, minIndex });
+    } else {
+      const prefixes = items.map(i => i.prefix);
+      const lastPrefix = prefixes[prefixes.length - 1];
+      const otherPrefixes = prefixes.slice(0, -1).join(', ');
+      results.push({ text: `${otherPrefixes} & ${lastPrefix} ${suffix}`, minIndex });
+    }
+  });
+
+  results.sort((a, b) => a.minIndex - b.minIndex);
+  const formattedResults = results.map(r => r.text);
+
+  if (formattedResults.length <= 1) {
+    return formattedResults[0] || '-';
+  }
+  const last = formattedResults[formattedResults.length - 1];
+  if (last.includes('&') || formattedResults.some(r => r.includes('&'))) {
+    return formattedResults.join(', ');
+  }
+  const firstPart = formattedResults.slice(0, -1).join(', ');
+  return `${firstPart} & ${last}`;
+};
+
 export const generateWA_Storing = (storingData: any) => {
   const formattedDate = formatTanggalIndo(storingData.tanggal);
   const jamMulai = storingData.waktuMulai || '...';
@@ -81,7 +162,17 @@ export const generateWA_Storing = (storingData: any) => {
   }
 
   let locString = '-';
-  if (storingData.lokasi) {
+  const rawLocs = storingData.acLokasi || [];
+  if (rawLocs.length > 0) {
+    const nomors = storingData.acNomor || {};
+    const mappedLocs = rawLocs.map((loc: string) => {
+      const num = nomors[loc];
+      if (!num) return loc;
+      if (loc.trim().toUpperCase() === 'HBSCP' || loc.trim().toUpperCase().includes('BEA CUKAI') || loc.trim().toUpperCase().includes('BELT')) return `${loc} ${num}`;
+      return `${loc}${num}`;
+    });
+    locString = formatACLokasiList(mappedLocs);
+  } else if (storingData.lokasi) {
     if (storingData.nomor) {
       if (storingData.lokasi === 'Avio & BL D' || storingData.lokasi === 'Avio & BL E' || storingData.lokasi === 'Avio & BL F' || storingData.lokasi.includes('Rampout')) {
         locString = `${storingData.lokasi}${storingData.nomor}`;
@@ -269,4 +360,13 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
   });
 
   return msg;
+};
+
+export const generateWA_Kegiatan = (kegiatanData: any) => {
+  const formattedDate = formatTanggalIndo(kegiatanData.tanggal);
+  const waktuText = kegiatanData.waktuSelesai 
+    ? `${kegiatanData.waktuMulai} - ${kegiatanData.waktuSelesai}`
+    : kegiatanData.waktuMulai;
+    
+  return `*KEGIATAN SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${waktuText}\nLokasi : ${kegiatanData.lokasi}\nKegiatan : ${kegiatanData.kegiatan}`;
 };

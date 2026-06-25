@@ -1,9 +1,32 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import React, { useState, useEffect, Suspense, lazy } from "react";
-import { Users, Loader2, Calendar, User, X, Plus, ClipboardList, CheckCircle, Share2, FileText, Camera, Move, ImagePlus, Cpu, MapPin, Clock, AlertCircle, Box, Hash, Trash2, LayoutGrid, ZoomIn, ZoomOut, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, Database, Layers, Mail, KeyRound, LogOut, Wrench } from "lucide-react";
+import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
+import { Users, Loader2, Calendar, User, X, Plus, ClipboardList, CheckCircle, Share2, FileText, Camera, Move, ImagePlus, Cpu, MapPin, Clock, AlertCircle, Hash, Trash2, LayoutGrid, ZoomIn, ZoomOut, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, Database, Layers, Mail, KeyRound, LogOut, Briefcase, Download, Wrench, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
+import html2pdf from "html2pdf.js";
+const MonitorSearchIcon = ({ className }) => {
+  return /* @__PURE__ */ jsxs(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      className,
+      children: [
+        /* @__PURE__ */ jsx("rect", { width: "20", height: "14", x: "2", y: "3", rx: "2" }),
+        /* @__PURE__ */ jsx("line", { x1: "8", x2: "16", y1: "21", y2: "21" }),
+        /* @__PURE__ */ jsx("line", { x1: "12", x2: "12", y1: "17", y2: "21" }),
+        /* @__PURE__ */ jsx("circle", { cx: "11", cy: "9", r: "3" }),
+        /* @__PURE__ */ jsx("line", { x1: "13.1", x2: "16", y1: "11.1", y2: "14" })
+      ]
+    }
+  );
+};
 const useAppStore = create((set) => ({
   activeTab: "perbaikan",
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -521,6 +544,7 @@ const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) =
   return getIntersectedLocations(equipArray);
 };
 const getStoringValidNumbers = (lokasi) => {
+  if (lokasi === "HBSCP") return ["1.1-1.6", "2.1-2.6", "2.7-2.8"];
   if (!lokasi.includes("Avio") && !lokasi.includes("Rampout")) return [];
   if (lokasi === "Rampout D" || lokasi === "Rampout E") return ["2,4,6", "2", "4", "6"];
   if (lokasi === "Rampout F") return ["1-7", "1", "2", "3", "4", "5", "6", "7"];
@@ -538,7 +562,7 @@ const generateWA_Perbaikan = (formData, isVerifikasiETD) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
   const dateParts = formData.tanggal ? formData.tanggal.split("-") : ["", "", ""];
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : "";
-  let lokasiFinal = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== "-" ? formData.peralatan === "Access Control" ? ` ${formData.lokasi2}` : ` No.${formData.lokasi2}` : "");
+  let lokasiFinal = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== "-" ? formData.peralatan === "Access Control" || formData.lokasi1 === "HBSCP" ? ` ${formData.lokasi2}` : ` No.${formData.lokasi2}` : "");
   const judulLaporan = isVerifikasiETD ? `Laporan Verifikasi ${formData.peralatan}` : `Laporan Perbaikan ${formData.peralatan}`;
   return `${judulLaporan}
 
@@ -840,6 +864,14 @@ ${etdName}
   });
   return msg;
 };
+const generateWA_Kegiatan = (kegiatanData) => {
+  const formattedDate = formatTanggalIndo(kegiatanData.tanggal);
+  const waktuText = kegiatanData.waktuSelesai ? `${kegiatanData.waktuMulai} - ${kegiatanData.waktuSelesai}` : kegiatanData.waktuMulai;
+  return `*KEGIATAN SSES T2*
+Hari/Tanggal/Jam : ${formattedDate}, ${waktuText}
+Lokasi : ${kegiatanData.lokasi}
+Kegiatan : ${kegiatanData.kegiatan}`;
+};
 const fallbackShare = async (message, hasUnsharedPhotos, setIsCopied) => {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -895,11 +927,13 @@ const TabKehadiran = () => {
   const [attendanceData, setAttendanceData] = useState(() => {
     const now = /* @__PURE__ */ new Date();
     const currentHour = now.getHours();
-    const isPagi = currentHour >= 8 && currentHour < 20;
+    const currentMinute = now.getMinutes();
+    const timeInMinutes = currentHour * 60 + currentMinute;
+    const isPagi = timeInMinutes >= 450 && timeInMinutes < 1170;
     const shiftValue = isPagi ? "Pagi, 08.00 - 20.00 WIB" : "Malam, 20.00 - 08.00 WIB";
     const kegiatan = isPagi ? "- Monitoring Ops\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Perangkat" : "- Monitoring Ops\n- Storing Peralatan";
     const logicalDateObj = new Date(now.getTime());
-    if (currentHour < 8) {
+    if (timeInMinutes < 450) {
       logicalDateObj.setDate(logicalDateObj.getDate() - 1);
     }
     const tzOffset = logicalDateObj.getTimezoneOffset() * 6e4;
@@ -1377,25 +1411,71 @@ const processPhotosToCollage = async (photosArray) => {
     }
   });
 };
-const CollageEditor$3 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
+const GOOGLE_SHEETS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzL7KzQ38l7-64u8v-J5zE0Vvj_i_8p0fWvM_ZpM4D1Jv4A2dK9eA6i2t2z-3D1N6eE/exec";
+const LiveCollagePreview = ({ photos }) => {
+  const [autoCollageUrl, setAutoCollageUrl] = useState(null);
+  useEffect(() => {
+    let active = true;
+    const generate = async () => {
+      if (photos.length > 1) {
+        const result = await processPhotosToCollage(photos);
+        if (!active && result) {
+          URL.revokeObjectURL(result.url);
+        } else if (active && result) {
+          setAutoCollageUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return result.url;
+          });
+        }
+      } else {
+        if (active) {
+          setAutoCollageUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+        }
+      }
+    };
+    generate();
+    return () => {
+      active = false;
+    };
+  }, [photos]);
+  if (!autoCollageUrl || photos.length <= 1) return null;
+  return /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200", children: [
+    /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-slate-700 mb-2", children: "Preview Auto-Kolase:" }),
+    /* @__PURE__ */ jsx("img", { src: autoCollageUrl, alt: "Auto Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
+    /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mt-2", children: 'Kolase ini akan digenerate otomatis saat dikirim. Anda dapat menyesuaikannya melalui tombol "Advanced Editor" (jika tersedia).' })
+  ] });
+};
+const CollageEditor$4 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
+function formatNamaPersonel(fullName) {
+  if (!fullName) return "";
+  const words = fullName.trim().split(/\s+/);
+  if (words.length === 0) return "";
+  if (words.length === 1) return words[0];
+  const firstWord = words[0].toLowerCase();
+  const titlePrefixes = ["m.", "muh.", "muhammad", "moch.", "mochammad"];
+  if (titlePrefixes.includes(firstWord)) {
+    return words[1];
+  }
+  return words[0];
+}
 const TabPerbaikan = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [formData, setFormData] = useState(() => {
     const now = /* @__PURE__ */ new Date();
-    const currentHour = now.getHours();
-    const logicalDateObj = new Date(now.getTime());
-    if (currentHour < 8) {
-      logicalDateObj.setDate(logicalDateObj.getDate() - 1);
-    }
-    const tzOffset = logicalDateObj.getTimezoneOffset() * 6e4;
-    const localDate = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split("T")[0];
+    const realYear = now.getFullYear();
+    const realMonth = String(now.getMonth() + 1).padStart(2, "0");
+    const realDay = String(now.getDate()).padStart(2, "0");
+    const realDate = `${realYear}-${realMonth}-${realDay}`;
     return {
       peralatan: "",
       lokasi1: "",
       lokasi2: "",
       sumberLaporan: "Avsec",
       indikasiAwal: "",
-      tanggal: localDate,
+      tanggal: realDate,
       waktuMulai: "",
       waktuSelesai: "",
       lamaPengerjaan: "",
@@ -1407,6 +1487,7 @@ const TabPerbaikan = () => {
   });
   const [availableTeknisi, setAvailableTeknisi] = useState([]);
   const [selectedTeknisi, setSelectedTeknisi] = useState([]);
+  const [manualTeknisi, setManualTeknisi] = useState("");
   const [tipePeralatanOptions, setTipePeralatanOptions] = useState([]);
   React.useEffect(() => {
     const fetchData = async () => {
@@ -1431,7 +1512,7 @@ const TabPerbaikan = () => {
         });
         setAvailableTeknisi(filteredTeknisi.map((d) => ({
           id: d.id,
-          name: toTitleCase(d.personel?.nama || ""),
+          name: formatNamaPersonel(toTitleCase(d.personel?.nama || "")),
           unit: d.personel?.unit_kerja?.nama || ""
         })).filter((t) => t.name !== ""));
       }
@@ -1443,8 +1524,25 @@ const TabPerbaikan = () => {
     fetchData();
   }, []);
   React.useEffect(() => {
-    setFormData((prev) => ({ ...prev, teknisi: selectedTeknisi.join(", ") }));
-  }, [selectedTeknisi]);
+    setFormData((prev) => {
+      const allTeknisi = [...selectedTeknisi];
+      if (manualTeknisi.trim()) {
+        const manualList = manualTeknisi.split(",").map((t) => t.trim()).filter((t) => t);
+        allTeknisi.push(...manualList);
+      }
+      let teknisiStr = "";
+      if (allTeknisi.length === 0) {
+        teknisiStr = "";
+      } else if (allTeknisi.length === 1) {
+        teknisiStr = allTeknisi[0];
+      } else {
+        const last = allTeknisi[allTeknisi.length - 1];
+        const rest = allTeknisi.slice(0, -1);
+        teknisiStr = `${rest.join(", ")} & ${last}`;
+      }
+      return { ...prev, teknisi: teknisiStr };
+    });
+  }, [selectedTeknisi, manualTeknisi]);
   const toggleTeknisi = (name) => {
     setSelectedTeknisi((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
   };
@@ -1570,6 +1668,37 @@ const TabPerbaikan = () => {
       }
     }
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
+    try {
+      let imageBase64 = "";
+      if (generatedCollageFile) {
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve) => {
+          reader.onloadend = () => {
+            const base64String = reader.result.split(",")[1];
+            resolve(base64String || "");
+          };
+        });
+        reader.readAsDataURL(generatedCollageFile);
+        imageBase64 = await base64Promise;
+      }
+      fetch(GOOGLE_SHEETS_WEBAPP_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({
+          action: "save_report",
+          peralatan: formData.peralatan,
+          kondisi: formData.kondisi,
+          uraian: formData.uraian,
+          tindakLanjut: formData.tindakLanjut,
+          teknisi: formData.teknisi,
+          imageBase64
+        })
+      }).catch((err) => console.error("Gagal mengirim ke Google Sheets:", err));
+    } catch (e2) {
+      console.error("Error memproses data untuk Google Sheets:", e2);
+    }
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
@@ -1718,15 +1847,14 @@ const TabPerbaikan = () => {
                 ] }, t.id)) })
               ] });
             })() }),
-            availableTeknisi.length === 0 && /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsx(
               "input",
               {
                 type: "text",
-                name: "teknisi",
-                placeholder: "Ketik manual nama teknisi jika jadwal kosong...",
-                value: formData.teknisi,
-                onChange: handleRepairChange,
-                className: "w-full mt-2 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                placeholder: availableTeknisi.length === 0 ? "Ketik manual nama teknisi karena jadwal kosong..." : "Tambah teknisi lain (pisahkan dengan koma)...",
+                value: manualTeknisi,
+                onChange: (e) => setManualTeknisi(e.target.value),
+                className: "w-full mt-3 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
               }
             )
           ] })
@@ -1775,6 +1903,7 @@ const TabPerbaikan = () => {
           setCustomCollageFile(null);
         }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
       ] }),
+      !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
       /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
         /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
         " Berhasil Disalin / Dibagikan!"
@@ -1791,7 +1920,7 @@ const TabPerbaikan = () => {
       ] })
     ] }),
     /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$3,
+      CollageEditor$4,
       {
         photos,
         isOpen: isEditorOpen,
@@ -1805,13 +1934,16 @@ const TabPerbaikan = () => {
     ) })
   ] });
 };
-const CollageEditor$2 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
+const CollageEditor$3 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabStoring = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData, storingLocAc, storingLocDefault } = useMasterDataStore();
   const storingEquipments = Array.from(new Set(jenisPeralatanData.map((j) => j.nama)));
   const [storingData, setStoringData] = useState({
-    tanggal: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+    tanggal: (() => {
+      const d = /* @__PURE__ */ new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    })(),
     waktuMulai: "",
     waktuSelesai: "",
     peralatan: [],
@@ -1899,7 +2031,7 @@ const TabStoring = () => {
   return /* @__PURE__ */ jsxs("form", { onSubmit: handleStoringSubmit, className: "p-6 sm:p-8 space-y-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
       /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center border-b pb-2", children: /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2", children: [
-        /* @__PURE__ */ jsx(Box, { className: "w-5 h-5 text-blue-600" }),
+        /* @__PURE__ */ jsx(MonitorSearchIcon, { className: "w-5 h-5 text-blue-600" }),
         " Detail Kegiatan Storing"
       ] }) }),
       /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
@@ -1970,7 +2102,7 @@ const TabStoring = () => {
                 }
               )
             ] }),
-            storingData.peralatan.includes("Access Control") && (storingData.lokasi.includes("Avio") || storingData.lokasi.includes("Rampout")) && /* @__PURE__ */ jsxs("div", { className: "w-1/3 relative", children: [
+            (storingData.peralatan.includes("Access Control") && (storingData.lokasi.includes("Avio") || storingData.lokasi.includes("Rampout")) || !storingData.peralatan.includes("Access Control") && storingData.lokasi === "HBSCP") && /* @__PURE__ */ jsxs("div", { className: "w-1/3 relative", children: [
               /* @__PURE__ */ jsx(Hash, { className: "absolute left-2.5 top-2.5 h-5 w-5 text-slate-400" }),
               /* @__PURE__ */ jsxs(
                 "select",
@@ -2018,6 +2150,7 @@ const TabStoring = () => {
         setCustomCollageFile(null);
       }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
     ] }),
+    !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
     /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
       " Berhasil Disalin / Dibagikan!"
@@ -2033,7 +2166,7 @@ const TabStoring = () => {
       /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_Storing(storingData) }) })
     ] }),
     /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$2,
+      CollageEditor$3,
       {
         photos,
         isOpen: isEditorOpen,
@@ -2047,7 +2180,7 @@ const TabStoring = () => {
     ) })
   ] });
 };
-const CollageEditor$1 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
+const CollageEditor$2 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabKalibrasi = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData } = useMasterDataStore();
@@ -2094,7 +2227,10 @@ const TabKalibrasi = () => {
     etdRdx: "Alarm"
   });
   const [kalibrasiGlobal, setKalibrasiGlobal] = useState({
-    tanggal: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+    tanggal: (() => {
+      const d = /* @__PURE__ */ new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    })(),
     waktuMulai: "",
     waktuSelesai: ""
   });
@@ -2339,7 +2475,8 @@ const TabKalibrasi = () => {
               children: "Hapus Kolase Kustom"
             }
           )
-        ] })
+        ] }),
+        !group.collageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos: group.photos })
       ] }, group.id)),
       /* @__PURE__ */ jsxs(
         "button",
@@ -2784,7 +2921,7 @@ const TabKalibrasi = () => {
       /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%] max-h-[500px] overflow-y-auto", children: generateWA_Kalibrasi(kalibrasiGlobal, kalibrasiEntries) }) })
     ] }),
     editorGroupId !== null && /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$1,
+      CollageEditor$2,
       {
         photos: kalibrasiPhotoGroups.find((g) => g.id === editorGroupId)?.photos || [],
         isOpen: editorGroupId !== null,
@@ -3180,7 +3317,10 @@ const TabChecklist = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { checklistDataMaster } = useMasterDataStore();
   const [checklistData, setChecklistData] = useState({
-    tanggal: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+    tanggal: (() => {
+      const d = /* @__PURE__ */ new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    })(),
     waktuMulai: "",
     waktuSelesai: ""
   });
@@ -3369,16 +3509,25 @@ const TabChecklist = () => {
     ] })
   ] });
 };
-const CollageEditor = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
+const CollageEditor$1 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabBriefing = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [briefingData, setBriefingData] = useState(() => {
-    const currentHour = (/* @__PURE__ */ new Date()).getHours();
-    const isPagi = currentHour >= 8 && currentHour < 20;
+    const now = /* @__PURE__ */ new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const timeInMinutes = currentHour * 60 + currentMinute;
+    const isPagi = timeInMinutes >= 450 && timeInMinutes < 1170;
+    const logicalDateObj = new Date(now.getTime());
+    if (timeInMinutes < 450) {
+      logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+    }
+    const tzOffset = logicalDateObj.getTimezoneOffset() * 6e4;
+    const localDate = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split("T")[0];
     return {
       jenis: "Unit",
       // 'Unit' | 'MOT'
-      tanggal: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+      tanggal: localDate,
       shift: isPagi ? "Pagi" : "Malam",
       lokasi: "Terminal 2"
     };
@@ -3505,6 +3654,7 @@ const TabBriefing = () => {
         setCustomCollageFile(null);
       }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
     ] }),
+    !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
     /* @__PURE__ */ jsx("div", { className: "space-y-4 mt-6", children: /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
       /* @__PURE__ */ jsxs("div", { children: [
         /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Tanggal" }),
@@ -3543,7 +3693,7 @@ const TabBriefing = () => {
       /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_Briefing(briefingData) }) })
     ] }),
     /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor,
+      CollageEditor$1,
       {
         photos,
         isOpen: isEditorOpen,
@@ -3839,26 +3989,26 @@ const ChecklistDataEditor = () => {
     setData(newData);
   };
   return /* @__PURE__ */ jsxs("div", { className: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200", children: [
-    /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-6 border-b border-slate-200 pb-4", children: [
-      /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "w-full sm:w-auto", children: [
         /* @__PURE__ */ jsxs("h2", { className: "text-xl font-bold text-slate-800 flex items-center gap-2", children: [
-          /* @__PURE__ */ jsx(Settings, { className: "w-6 h-6 text-blue-600" }),
+          /* @__PURE__ */ jsx(Settings, { className: "w-6 h-6 text-blue-600 shrink-0" }),
           " Editor Konfigurasi Checklist"
         ] }),
         /* @__PURE__ */ jsx("p", { className: "text-slate-500 text-sm mt-1", children: "Edit struktur checklist untuk WhatsApp. Perubahan akan langsung disimpan ke Supabase." })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap w-full sm:w-auto gap-2", children: [
         /* @__PURE__ */ jsxs("button", { onClick: () => {
           if (window.confirm("Reset checklist ke default bawaan sistem? Data saat ini di cloud akan tertimpa setelah Anda menekan Simpan ke Cloud.")) {
             setData(JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_DATA)));
           }
-        }, className: "flex items-center gap-2 px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-xl transition-all shadow-sm border border-rose-200", children: [
-          /* @__PURE__ */ jsx(RefreshCw, { className: "w-5 h-5" }),
-          " Reset Default"
+        }, className: "flex-1 sm:flex-none justify-center flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 text-sm sm:text-base font-bold rounded-xl transition-all shadow-sm border border-rose-200", children: [
+          /* @__PURE__ */ jsx(RefreshCw, { className: "w-4 sm:w-5 h-4 sm:h-5 shrink-0" }),
+          " Reset"
         ] }),
-        /* @__PURE__ */ jsxs("button", { onClick: handleSave, className: "flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md", children: [
-          /* @__PURE__ */ jsx(Save, { className: "w-5 h-5" }),
-          " Simpan ke Cloud"
+        /* @__PURE__ */ jsxs("button", { onClick: handleSave, className: "flex-1 sm:flex-none justify-center flex items-center gap-2 px-3 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-bold rounded-xl transition-all shadow-md", children: [
+          /* @__PURE__ */ jsx(Save, { className: "w-4 sm:w-5 h-4 sm:h-5 shrink-0" }),
+          " Simpan"
         ] })
       ] })
     ] }),
@@ -4894,16 +5044,16 @@ const LocalDataEditor = () => {
       }) }),
       /* @__PURE__ */ jsx("div", { className: "pt-6 mt-6 border-t border-slate-200 text-sm text-green-600 font-medium", children: "* Perubahan otomatis disimpan ke database." })
     ] }) : activeSubTab === "tip_data_manager" ? /* @__PURE__ */ jsx("div", { className: "p-0 border border-slate-200 rounded-xl overflow-hidden m-6", children: /* @__PURE__ */ jsx(TipDataManager, {}) }) : /* @__PURE__ */ jsxs("div", { className: "p-6 flex-1 space-y-4", children: [
-      localData.map((item, index) => /* @__PURE__ */ jsxs("div", { className: "flex gap-3", children: [
-        activeSubTab === "api_t2" || activeSubTab === "om_ias_t2" ? /* @__PURE__ */ jsxs(Fragment, { children: [
-          /* @__PURE__ */ jsx("input", { className: "flex-1 p-2 border rounded-lg", placeholder: "Nama Personel", value: item.name || "", onChange: (e) => handleTextChange(index, "name", e.target.value) }),
-          /* @__PURE__ */ jsx("input", { className: "w-1/3 p-2 border rounded-lg", placeholder: "No. WA", value: item.phone || "", onChange: (e) => handleTextChange(index, "phone", e.target.value) })
-        ] }) : /* @__PURE__ */ jsx("input", { className: "flex-1 p-2 border rounded-lg", value: item, onChange: (e) => handleTextChange(index, void 0, e.target.value) }),
+      localData.map((item, index) => /* @__PURE__ */ jsxs("div", { className: "flex gap-2 sm:gap-3 items-start sm:items-center", children: [
+        /* @__PURE__ */ jsx("div", { className: "flex-1 flex flex-col sm:flex-row gap-2 sm:gap-3 w-full", children: activeSubTab === "api_t2" || activeSubTab === "om_ias_t2" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx("input", { className: "flex-1 w-full p-2 border rounded-lg", placeholder: "Nama Personel", value: item.name || "", onChange: (e) => handleTextChange(index, "name", e.target.value) }),
+          /* @__PURE__ */ jsx("input", { className: "sm:w-1/3 w-full p-2 border rounded-lg", placeholder: "No. WA", value: item.phone || "", onChange: (e) => handleTextChange(index, "phone", e.target.value) })
+        ] }) : /* @__PURE__ */ jsx("input", { className: "flex-1 w-full p-2 border rounded-lg", value: item, onChange: (e) => handleTextChange(index, void 0, e.target.value) }) }),
         /* @__PURE__ */ jsx("button", { onClick: () => {
           const d = [...localData];
           d.splice(index, 1);
           setLocalData(d);
-        }, className: "p-2 text-rose-500 bg-rose-50 rounded-lg", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) })
+        }, className: "p-2 mt-1 sm:mt-0 text-rose-500 bg-rose-50 rounded-lg shrink-0", children: /* @__PURE__ */ jsx(Trash2, { className: "w-5 h-5" }) })
       ] }, index)),
       /* @__PURE__ */ jsx("button", { onClick: () => {
         const d = [...localData];
@@ -4964,18 +5114,553 @@ const TipDataManager = () => {
     ] }) })
   ] });
 };
+const CollageEditor = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
+const TabKegiatan = () => {
+  const { isCopied, setIsCopied } = useAppStore();
+  const [kegiatanData, setKegiatanData] = useState(() => {
+    const now = /* @__PURE__ */ new Date();
+    const tzOffset = now.getTimezoneOffset() * 6e4;
+    const localDate = new Date(now.getTime() - tzOffset).toISOString().split("T")[0];
+    const currentHour = now.getHours().toString().padStart(2, "0");
+    const currentMinute = now.getMinutes().toString().padStart(2, "0");
+    return {
+      tanggal: localDate,
+      waktuMulai: `${currentHour}:${currentMinute}`,
+      waktuSelesai: "",
+      lokasi: "",
+      kegiatan: ""
+    };
+  });
+  const [photos, setPhotos] = useState([]);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [customCollageFile, setCustomCollageFile] = useState(null);
+  const [customCollageUrl, setCustomCollageUrl] = useState(null);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setKegiatanData({ ...kegiatanData, [name]: value });
+  };
+  const handlePhotoUpload = (e) => {
+    if (e.target.files) {
+      const newPhotos = Array.from(e.target.files).map((file) => ({
+        id: Date.now() + Math.random(),
+        file,
+        preview: URL.createObjectURL(file),
+        zoom: 1
+      }));
+      setPhotos((prev) => [...prev, ...newPhotos]);
+    }
+  };
+  const removePhoto = (index) => {
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      URL.revokeObjectURL(newPhotos[index].preview);
+      newPhotos.splice(index, 1);
+      return newPhotos;
+    });
+  };
+  const updatePhotoZoom = (index, delta) => {
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      const currentZoom = newPhotos[index].zoom || 1;
+      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      return newPhotos;
+    });
+  };
+  const handlePhotoDrop = (e, targetIndex) => {
+    e.preventDefault();
+    const sourceIndexStr = e.dataTransfer?.getData("text/plain");
+    if (!sourceIndexStr) return;
+    const sourceIndex = parseInt(sourceIndexStr, 10);
+    if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      const [movedPhoto] = newPhotos.splice(sourceIndex, 1);
+      newPhotos.splice(targetIndex, 0, movedPhoto);
+      return newPhotos;
+    });
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    let generatedCollageFile = customCollageFile;
+    if (photos.length > 0 && !generatedCollageFile) {
+      const collageResult = await processPhotosToCollage(photos);
+      if (collageResult) {
+        collageResult.url;
+        const res = await fetch(collageResult.url);
+        const blob = await res.blob();
+        generatedCollageFile = new File([blob], `Dokumentasi_Kegiatan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      }
+    }
+    const message = generateWA_Kegiatan(kegiatanData);
+    await shareToWhatsApp(message, generatedCollageFile, () => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 3e3);
+    });
+  };
+  return /* @__PURE__ */ jsxs("form", { onSubmit: handleSubmit, className: "p-6 sm:p-8 space-y-8", children: [
+    /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2", children: [
+        /* @__PURE__ */ jsx(Briefcase, { className: "w-5 h-5 text-blue-600" }),
+        " Form Laporan Kegiatan"
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Tanggal" }),
+          /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+            /* @__PURE__ */ jsx(Calendar, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+            /* @__PURE__ */ jsx("input", { type: "date", name: "tanggal", required: true, value: kegiatanData.tanggal, onChange: handleChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Pukul Mulai" }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx(Clock, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+              /* @__PURE__ */ jsx("input", { type: "time", name: "waktuMulai", required: true, value: kegiatanData.waktuMulai, onChange: handleChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: [
+              "Pukul Selesai ",
+              /* @__PURE__ */ jsx("span", { className: "text-slate-400 text-xs font-normal", children: "(Opsional)" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx(Clock, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+              /* @__PURE__ */ jsx("input", { type: "time", name: "waktuSelesai", value: kegiatanData.waktuSelesai, onChange: handleChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "md:col-span-2", children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Lokasi" }),
+          /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+            /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+            /* @__PURE__ */ jsx("input", { type: "text", name: "lokasi", required: true, placeholder: "Contoh: Terminal D", value: kegiatanData.lokasi, onChange: handleChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "md:col-span-2", children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Kegiatan" }),
+          /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+            /* @__PURE__ */ jsx(ClipboardList, { className: "absolute left-3 top-3 h-5 w-5 text-slate-400" }),
+            /* @__PURE__ */ jsx("textarea", { name: "kegiatan", required: true, placeholder: "Contoh: Mendampingi Audit dari Otban", rows: 3, value: kegiatanData.kegiatan, onChange: handleChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" })
+          ] })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(
+      PhotoUploader,
+      {
+        photos,
+        onUpload: handlePhotoUpload,
+        onRemove: removePhoto,
+        onZoom: updatePhotoZoom,
+        onDrop: handlePhotoDrop,
+        listType: "general",
+        onOpenEditor: () => setIsEditorOpen(true)
+      }
+    ),
+    customCollageUrl && /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-800 mb-2", children: "Preview Kolase Kustom:" }),
+      /* @__PURE__ */ jsx("img", { src: customCollageUrl, alt: "Custom Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
+      /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
+        setCustomCollageUrl(null);
+        setCustomCollageFile(null);
+      }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
+    ] }),
+    !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
+    /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
+      " Berhasil Disalin / Dibagikan!"
+    ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx(Share2, { className: "w-6 h-6" }),
+      " Share Kegiatan ke WA"
+    ] }) }) }),
+    /* @__PURE__ */ jsxs("div", { className: "mt-8 border-t border-slate-200 pt-8", children: [
+      /* @__PURE__ */ jsxs("h3", { className: "text-sm font-bold text-slate-700 mb-4 flex items-center gap-2", children: [
+        /* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 text-blue-600" }),
+        " Preview Laporan Kegiatan (Real-time)"
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_Kegiatan(kegiatanData) }) })
+    ] }),
+    /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
+      CollageEditor,
+      {
+        photos,
+        isOpen: isEditorOpen,
+        onClose: () => setIsEditorOpen(false),
+        onSave: (file, url) => {
+          setCustomCollageFile(file);
+          setCustomCollageUrl(url);
+          setIsEditorOpen(false);
+        }
+      }
+    ) })
+  ] });
+};
+const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+const TabShiftReport = () => {
+  const [date, setDate] = useState(() => {
+    const now = /* @__PURE__ */ new Date();
+    const h = now.getHours();
+    if (h < 8) {
+      const prevDate = new Date(now);
+      prevDate.setDate(now.getDate() - 1);
+      return prevDate.toISOString().split("T")[0];
+    }
+    return now.toISOString().split("T")[0];
+  });
+  const [shift, setShift] = useState(() => {
+    const h = (/* @__PURE__ */ new Date()).getHours();
+    return h >= 8 && h < 20 ? "PS" : "M";
+  });
+  const [loading, setLoading] = useState(false);
+  const [reports, setReports] = useState([]);
+  const [statusMsg, setStatusMsg] = useState(null);
+  const [apiPersonil, setApiPersonil] = useState([]);
+  const [iasPersonil, setIasPersonil] = useState([]);
+  const pdfRef = useRef(null);
+  useEffect(() => {
+    const fetchPersonil = async () => {
+      try {
+        const { data, error } = await supabase.from("jadwal_shift").select(`
+            id, shift, status_kehadiran,
+            personel:personel_id (id, nama, no_hp, unit_kerja(nama))
+          `).eq("tanggal", date).eq("shift", shift);
+        if (!error && data) {
+          const hadir = data.filter((d) => d.status_kehadiran !== "Off" && d.status_kehadiran !== "Cuti" && d.status_kehadiran !== "Sakit" && d.status_kehadiran !== "Izin");
+          const apiList = hadir.filter((d) => {
+            const u = d.personel?.unit_kerja?.nama?.toUpperCase() || "";
+            return u === "API T2" || u.includes("API") || u.includes("ANGKASA PURA");
+          });
+          const iasList = hadir.filter((d) => {
+            const u = d.personel?.unit_kerja?.nama?.toUpperCase() || "";
+            return u === "OM/IAS T2" || u.includes("IAS") || u.includes("INJOURNEY");
+          });
+          setApiPersonil(apiList);
+          setIasPersonil(iasList);
+        }
+      } catch (err) {
+        console.error("Gagal fetch personil", err);
+      }
+    };
+    fetchPersonil();
+  }, [date, shift]);
+  const fetchAndGeneratePDF = async () => {
+    if (!date) return;
+    setLoading(true);
+    setStatusMsg({ text: "Mengambil data dari server...", type: "info" });
+    try {
+      const res1 = await fetch(`${GOOGLE_SHEETS_WEBAPP_URL}?action=get_daily&date=${date}`);
+      const data1 = await res1.json();
+      let allData = data1.status === "success" && data1.data ? data1.data : [];
+      if (shift === "M") {
+        const nextDateObj = new Date(date);
+        nextDateObj.setDate(nextDateObj.getDate() + 1);
+        const nextDateStr = nextDateObj.toISOString().split("T")[0];
+        const res2 = await fetch(`${GOOGLE_SHEETS_WEBAPP_URL}?action=get_daily&date=${nextDateStr}`);
+        const data2 = await res2.json();
+        if (data2.status === "success" && data2.data) {
+          allData = [...allData, ...data2.data];
+        }
+      }
+      const filtered = allData.filter((r) => {
+        if (!r.Waktu) return true;
+        const timeMatch = r.Waktu.match(/(\d{2}):(\d{2})/);
+        if (!timeMatch) return true;
+        const hour = parseInt(timeMatch[1], 10);
+        if (shift === "PS") {
+          return hour >= 8 && hour < 20;
+        } else {
+          return hour >= 20 || hour < 8;
+        }
+      });
+      if (filtered.length > 0) {
+        setReports(filtered);
+        setStatusMsg({ text: `Ditemukan ${filtered.length} laporan. Memproses PDF...`, type: "info" });
+        setTimeout(async () => {
+          await generateAndSharePdf(filtered);
+        }, 1500);
+      } else {
+        setReports([]);
+        setStatusMsg({ text: "Tidak ada laporan pada shift tersebut.", type: "error" });
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({ text: "Terjadi kesalahan saat mengambil data.", type: "error" });
+      setLoading(false);
+    }
+  };
+  const generateAndSharePdf = async (reportData) => {
+    try {
+      if (!pdfRef.current) return;
+      const element = pdfRef.current;
+      const opt = {
+        margin: 5,
+        // smaller margin for landscape
+        filename: `Laporan_Shift_${shift}_${date}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }
+      };
+      const pdfBlob = await html2pdf().set(opt).from(element).output("blob");
+      setStatusMsg({ text: "PDF berhasil dibuat. Menyimpan ke Google Drive...", type: "info" });
+      const reader = new FileReader();
+      reader.readAsDataURL(pdfBlob);
+      reader.onloadend = async () => {
+        const base64String = reader.result.split(",")[1];
+        try {
+          await fetch(GOOGLE_SHEETS_WEBAPP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "save_pdf",
+              filename: `Laporan_Shift_${shift}_${date}.pdf`,
+              pdfBase64: base64String
+            })
+          });
+          setStatusMsg({ text: "PDF tersimpan di Drive. Meneruskan ke WA...", type: "success" });
+        } catch (e) {
+          setStatusMsg({ text: "Gagal menyimpan ke Drive, tapi tetap dibagikan ke WA.", type: "error" });
+        }
+        const pdfFile = new File([pdfBlob], `Laporan_Shift_${shift}_${date}.pdf`, { type: "application/pdf" });
+        await shareToWhatsApp(`Berikut lampiran rekap laporan perbaikan Shift ${shift} tanggal ${date}`, pdfFile, () => {
+        });
+        setTimeout(() => setStatusMsg(null), 4e3);
+        setLoading(false);
+      };
+    } catch (err) {
+      setStatusMsg({ text: "Gagal membuat PDF.", type: "error" });
+      setLoading(false);
+    }
+  };
+  const isCorrective = (r) => {
+    if (r.Uraian?.toLowerCase().includes("permasalahan") || r.TindakLanjut?.toLowerCase().includes("perbaikan")) return true;
+    if (r.Peralatan?.toLowerCase().includes("kegiatan") || r.Uraian?.toLowerCase().includes("storing") || r.Uraian?.toLowerCase().includes("running test")) return false;
+    return true;
+  };
+  const formatUraian = (r) => {
+    if (isCorrective(r)) {
+      return /* @__PURE__ */ jsxs("div", { className: "text-left text-[9px]", children: [
+        /* @__PURE__ */ jsx("span", { className: "font-bold", children: "Permasalahan :" }),
+        " ",
+        r.Uraian,
+        /* @__PURE__ */ jsx("br", {}),
+        /* @__PURE__ */ jsx("span", { className: "font-bold", children: "Tindak lanjut :" }),
+        " ",
+        r.TindakLanjut
+      ] });
+    } else {
+      return /* @__PURE__ */ jsx("div", { className: "text-center font-bold text-[9px]", children: r.TindakLanjut || r.Uraian || "Running test" });
+    }
+  };
+  const getTime = (waktuStr) => {
+    if (!waktuStr) return "-";
+    const match = waktuStr.match(/(\d{2}:\d{2})/);
+    return match ? match[1] : waktuStr;
+  };
+  const getDayName = (d) => {
+    const days = ["MINGGU", "SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
+    return days[new Date(d).getDay()];
+  };
+  const formatDateIndo = (d) => {
+    const dt = new Date(d);
+    return `${dt.getDate()} ${MONTHS[dt.getMonth()].toUpperCase()} ${dt.getFullYear()}`;
+  };
+  return /* @__PURE__ */ jsxs("div", { className: "flex flex-col h-full bg-slate-50 p-6 rounded-2xl", children: [
+    /* @__PURE__ */ jsxs("div", { className: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-xl font-bold text-slate-800 flex items-center gap-2 mb-2", children: [
+        /* @__PURE__ */ jsx(FileText, { className: "w-6 h-6 text-blue-600" }),
+        " Generate Laporan Shift (PDF)"
+      ] }),
+      /* @__PURE__ */ jsx("p", { className: "text-slate-500 text-sm mb-6", children: "Pilih Tanggal dan Shift. Sistem akan otomatis memuat nama Personil On Duty dari absen dan menarik laporan dari jam operasional shift bersangkutan." }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(Calendar, { className: "w-4 h-4 text-slate-500" }),
+            " Tanggal Shift"
+          ] }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "date",
+              value: date,
+              onChange: (e) => setDate(e.target.value),
+              className: "w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(Clock, { className: "w-4 h-4 text-slate-500" }),
+            " Shift"
+          ] }),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: shift,
+              onChange: (e) => setShift(e.target.value),
+              className: "w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "PS", children: "Pagi - Siang (08:00 - 20:00)" }),
+                /* @__PURE__ */ jsx("option", { value: "M", children: "Malam (20:00 - 08:00)" })
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "pt-7", children: /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: fetchAndGeneratePDF,
+            disabled: loading,
+            className: "w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-colors shadow-md disabled:bg-blue-400 disabled:cursor-not-allowed",
+            children: loading ? /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx(Loader2, { className: "w-5 h-5 animate-spin" }),
+              " Memproses..."
+            ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx(Download, { className: "w-5 h-5" }),
+              " Buat Laporan"
+            ] })
+          }
+        ) })
+      ] }),
+      statusMsg && /* @__PURE__ */ jsxs("div", { className: `mt-2 p-4 rounded-xl flex items-center gap-3 text-sm font-bold ${statusMsg.type === "error" ? "bg-rose-100 text-rose-700" : statusMsg.type === "success" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`, children: [
+        statusMsg.type === "success" ? /* @__PURE__ */ jsx(CheckCircle, { className: "w-5 h-5" }) : statusMsg.type === "error" ? /* @__PURE__ */ jsx(FileText, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(Loader2, { className: "w-5 h-5 animate-spin" }),
+        statusMsg.text
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "overflow-hidden h-0 w-0 absolute opacity-0 pointer-events-none", children: /* @__PURE__ */ jsxs("div", { ref: pdfRef, className: "w-[1100px] p-4 bg-white text-black font-sans", children: [
+      /* @__PURE__ */ jsxs("div", { className: "border-[3px] border-black flex items-stretch", children: [
+        /* @__PURE__ */ jsx("div", { className: "w-[15%] border-r-[3px] border-black flex items-center justify-center p-2", children: /* @__PURE__ */ jsxs("div", { className: "text-[12px] font-bold text-blue-800 text-center", children: [
+          "INJOURNEY",
+          /* @__PURE__ */ jsx("br", {}),
+          "AIRPORTS"
+        ] }) }),
+        /* @__PURE__ */ jsxs("div", { className: "w-[50%] border-r-[3px] border-black p-2 flex flex-col items-center justify-center text-center", children: [
+          /* @__PURE__ */ jsx("h1", { className: "font-extrabold text-[13px]", children: "PT ANGKASA PURA INDONESIA" }),
+          /* @__PURE__ */ jsx("h2", { className: "font-bold text-[11px]", children: "CABANG UTAMA BANDARA SOEKARNO-HATTA" }),
+          /* @__PURE__ */ jsx("h2", { className: "font-bold text-[11px]", children: "UNIT SAFETY & SECURITY ELECTRONIC SERVICES – T2" })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "w-[35%] p-2 flex flex-col items-center justify-center text-center bg-gray-100", children: [
+          /* @__PURE__ */ jsx("h1", { className: "font-extrabold text-[11px]", children: "LAPORAN PERBAIKAN SAFETY & SECURITY ELECTRONIC SERVICES" }),
+          /* @__PURE__ */ jsx("h2", { className: "font-bold text-[10px]", children: "TERMINAL 2 BANDARA SOEKARNO-HATTA" }),
+          /* @__PURE__ */ jsxs("h2", { className: "font-bold text-[10px]", children: [
+            "PERIODE : ",
+            MONTHS[new Date(date).getMonth()].toUpperCase()
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "border-l-[3px] border-r-[3px] border-b-[3px] border-black flex items-stretch bg-white", children: [
+        /* @__PURE__ */ jsxs("div", { className: "w-[15%] border-r-[3px] border-black p-2 flex flex-col items-center justify-center text-center text-[10px] font-bold", children: [
+          "SHIFT ",
+          shift === "M" ? "MALAM (M)" : "PAGI (PS)",
+          " ",
+          getDayName(date),
+          ", ",
+          formatDateIndo(date),
+          /* @__PURE__ */ jsx("br", {}),
+          "(D,E,F,UMROH)",
+          /* @__PURE__ */ jsx("br", {}),
+          "TERMINAL 2"
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "w-[85%] flex flex-col", children: [
+          /* @__PURE__ */ jsxs("div", { className: "bg-black text-white text-center font-bold text-[11px] py-1 border-b-[3px] border-black uppercase", children: [
+            "PERSONIL ON DUTY ",
+            shift === "M" ? "MALAM" : "PAGI"
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-1", children: [
+            /* @__PURE__ */ jsxs("div", { className: "w-1/2 border-r-[3px] border-black flex flex-col", children: [
+              /* @__PURE__ */ jsx("div", { className: "bg-gray-200 text-center font-bold text-[10px] py-1 border-b-[3px] border-black", children: "API" }),
+              /* @__PURE__ */ jsxs("div", { className: "p-1 flex-1 flex flex-col justify-around", children: [
+                apiPersonil.map((p, i) => /* @__PURE__ */ jsxs("div", { className: "flex justify-between text-[10px] font-semibold px-4", children: [
+                  /* @__PURE__ */ jsx("span", { children: p.personel.nama }),
+                  /* @__PURE__ */ jsx("span", { children: p.personel.no_hp })
+                ] }, i)),
+                apiPersonil.length === 0 && /* @__PURE__ */ jsx("div", { className: "text-center text-[10px] text-gray-500 py-1", children: "-" })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "w-1/2 flex flex-col", children: [
+              /* @__PURE__ */ jsx("div", { className: "bg-gray-200 text-center font-bold text-[10px] py-1 border-b-[3px] border-black", children: "IAS" }),
+              /* @__PURE__ */ jsxs("div", { className: "p-1 flex-1 flex flex-col justify-around", children: [
+                iasPersonil.map((p, i) => /* @__PURE__ */ jsxs("div", { className: "flex justify-between text-[10px] font-semibold px-4", children: [
+                  /* @__PURE__ */ jsx("span", { children: p.personel.nama }),
+                  /* @__PURE__ */ jsx("span", { children: p.personel.no_hp })
+                ] }, i)),
+                iasPersonil.length === 0 && /* @__PURE__ */ jsx("div", { className: "text-center text-[10px] text-gray-500 py-1", children: "-" })
+              ] })
+            ] })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "h-4" }),
+      /* @__PURE__ */ jsxs("table", { className: "w-full border-collapse border-[3px] border-black text-[10px]", children: [
+        /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { className: "bg-gray-200 font-bold text-center", children: [
+          /* @__PURE__ */ jsx("th", { className: "border-[3px] border-black p-1 w-[3%]", children: "No" }),
+          /* @__PURE__ */ jsx("th", { className: "border-[3px] border-black p-1 w-[12%]", children: "LOKASI" }),
+          /* @__PURE__ */ jsx("th", { className: "border-[3px] border-black p-1 w-[15%]", children: "PERALATAN" }),
+          /* @__PURE__ */ jsxs("th", { className: "border-[3px] border-black p-1 w-[10%]", children: [
+            "CORRECTIVE",
+            /* @__PURE__ */ jsx("br", {}),
+            "MAINTENANCE"
+          ] }),
+          /* @__PURE__ */ jsxs("th", { className: "border-[3px] border-black p-1 w-[10%]", children: [
+            "PREVENTIVE",
+            /* @__PURE__ */ jsx("br", {}),
+            "MAINTENANCE"
+          ] }),
+          /* @__PURE__ */ jsx("th", { className: "border-[3px] border-black p-1 w-[10%]", children: "LAIN - LAIN" }),
+          /* @__PURE__ */ jsx("th", { className: "border-[3px] border-black p-1 w-[20%]", children: "URAIAN KEGIATAN" }),
+          /* @__PURE__ */ jsxs("th", { className: "border-[3px] border-black p-1 w-[8%]", children: [
+            "WAKTU",
+            /* @__PURE__ */ jsx("br", {}),
+            "TINDAK LANJUT"
+          ] }),
+          /* @__PURE__ */ jsx("th", { className: "border-[3px] border-black p-1 w-[5%]", children: "HASIL" }),
+          /* @__PURE__ */ jsx("th", { className: "border-[3px] border-black p-1 w-[7%]", children: "DOKUMENTASI" })
+        ] }) }),
+        /* @__PURE__ */ jsxs("tbody", { children: [
+          reports.map((report, idx) => /* @__PURE__ */ jsxs("tr", { className: "text-center bg-white", children: [
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-bold", children: idx + 1 }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-semibold", children: report.Lokasi || "-" }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-semibold", children: report.Peralatan }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-bold", children: isCorrective(report) ? "CORRECTIVE MAINTENANCE" : "-" }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-bold", children: "-" }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-bold", children: isCorrective(report) ? "-" : "KEGIATAN" }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 text-left align-top", children: formatUraian(report) }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-bold", children: getTime(report.Waktu) }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1 font-bold", children: report.Status === "Normal" ? "Normal" : report.Status }),
+            /* @__PURE__ */ jsx("td", { className: "border-[3px] border-black p-1", children: report.Drive_Image_ID ? /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: `https://drive.google.com/uc?id=${report.Drive_Image_ID}`,
+                alt: "Dok",
+                crossOrigin: "anonymous",
+                className: "w-full h-12 object-cover",
+                onError: (e) => {
+                  e.target.style.display = "none";
+                }
+              }
+            ) : "-" })
+          ] }, idx)),
+          reports.length === 0 && /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 10, className: "border-[3px] border-black p-4 text-center font-bold italic text-gray-500", children: "Tidak ada laporan perbaikan/kegiatan pada shift ini." }) })
+        ] })
+      ] })
+    ] }) })
+  ] });
+};
 function App() {
   const { activeTab, setActiveTab } = useAppStore();
   const { initializeSupabaseData } = useMasterDataStore();
   const { initializeAuth } = useAuthStore();
   const [isResetting, setIsResetting] = useState(false);
   const [showGsheetNotif] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   useEffect(() => {
     initializeSupabaseData();
     initializeAuth();
   }, [initializeSupabaseData, initializeAuth]);
   const switchTab = (tab) => {
     setActiveTab(tab);
+    setShowMoreMenu(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleReset = () => {
@@ -4992,7 +5677,7 @@ function App() {
     /* @__PURE__ */ jsxs("div", { className: "max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200", children: [
       /* @__PURE__ */ jsx("div", { className: "bg-blue-800 px-6 py-5 flex flex-col gap-4", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
-          activeTab === "perbaikan" ? /* @__PURE__ */ jsx(Wrench, { className: "text-white w-7 h-7" }) : activeTab === "kehadiran" ? /* @__PURE__ */ jsx(Users, { className: "text-white w-7 h-7" }) : activeTab === "briefing" ? /* @__PURE__ */ jsx(Megaphone, { className: "text-white w-7 h-7" }) : activeTab === "storing" ? /* @__PURE__ */ jsx(Box, { className: "text-white w-7 h-7" }) : activeTab === "checklist" ? /* @__PURE__ */ jsx(CheckSquare, { className: "text-white w-7 h-7" }) : activeTab === "tip" ? /* @__PURE__ */ jsx(AlertTriangle, { className: "text-white w-7 h-7" }) : /* @__PURE__ */ jsx(Settings, { className: "text-white w-7 h-7" }),
+          activeTab === "perbaikan" ? /* @__PURE__ */ jsx(Wrench, { className: "text-white w-7 h-7" }) : activeTab === "kehadiran" ? /* @__PURE__ */ jsx(Users, { className: "text-white w-7 h-7" }) : activeTab === "briefing" ? /* @__PURE__ */ jsx(Megaphone, { className: "text-white w-7 h-7" }) : activeTab === "storing" ? /* @__PURE__ */ jsx(MonitorSearchIcon, { className: "text-white w-7 h-7" }) : activeTab === "checklist" ? /* @__PURE__ */ jsx(CheckSquare, { className: "text-white w-7 h-7" }) : activeTab === "report" ? /* @__PURE__ */ jsx(FileText, { className: "text-white w-7 h-7" }) : activeTab === "tip" ? /* @__PURE__ */ jsx(AlertTriangle, { className: "text-white w-7 h-7" }) : activeTab === "data" ? /* @__PURE__ */ jsx(Database, { className: "text-white w-7 h-7" }) : activeTab === "kegiatan" ? /* @__PURE__ */ jsx(Briefcase, { className: "text-white w-7 h-7" }) : /* @__PURE__ */ jsx(Settings, { className: "text-white w-7 h-7" }),
           /* @__PURE__ */ jsxs("div", { children: [
             /* @__PURE__ */ jsx("h1", { className: "text-xl font-bold text-white", children: "Laporan SSES T2" }),
             /* @__PURE__ */ jsx("p", { className: "text-blue-200 text-sm", children: "Otomatisasi Kirim ke WhatsApp" })
@@ -5032,7 +5717,7 @@ function App() {
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Briefing" })
         ] }),
         /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("storing"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-b border-slate-200 ${activeTab === "storing" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
-          /* @__PURE__ */ jsx(Box, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
+          /* @__PURE__ */ jsx(MonitorSearchIcon, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
           " ",
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Storing" })
         ] }),
@@ -5046,15 +5731,34 @@ function App() {
           " ",
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Kalibrasi" })
         ] }),
-        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("tip"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === "tip" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
-          /* @__PURE__ */ jsx(AlertTriangle, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
+        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("report"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === "report" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+          /* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
           " ",
-          /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "TIP" })
+          /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Report" })
         ] }),
-        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("data"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${activeTab === "data" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
-          /* @__PURE__ */ jsx(Database, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
-          " ",
-          /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Data" })
+        /* @__PURE__ */ jsxs("div", { className: "relative flex", children: [
+          /* @__PURE__ */ jsxs("button", { onClick: () => setShowMoreMenu(!showMoreMenu), className: `w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${activeTab === "tip" || activeTab === "data" || activeTab === "kegiatan" || showMoreMenu ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+            /* @__PURE__ */ jsx(MoreHorizontal, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
+            " ",
+            /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "More" })
+          ] }),
+          showMoreMenu && /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-40", onClick: () => setShowMoreMenu(false) }),
+            /* @__PURE__ */ jsxs("div", { className: "absolute top-full right-0 mt-1 w-36 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50", children: [
+              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("kegiatan"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === "kegiatan" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
+                /* @__PURE__ */ jsx(Briefcase, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
+                " Kegiatan"
+              ] }),
+              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("data"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === "data" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
+                /* @__PURE__ */ jsx(Database, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
+                " Data"
+              ] }),
+              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("tip"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === "tip" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
+                /* @__PURE__ */ jsx(AlertTriangle, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
+                " TIP"
+              ] })
+            ] })
+          ] })
         ] })
       ] }),
       activeTab === "perbaikan" && /* @__PURE__ */ jsx(TabPerbaikan, {}),
@@ -5063,8 +5767,10 @@ function App() {
       activeTab === "storing" && /* @__PURE__ */ jsx(TabStoring, {}),
       activeTab === "checklist" && /* @__PURE__ */ jsx(TabChecklist, {}),
       activeTab === "kalibrasi" && /* @__PURE__ */ jsx(TabKalibrasi, {}),
+      activeTab === "report" && /* @__PURE__ */ jsx(TabShiftReport, {}),
       activeTab === "tip" && /* @__PURE__ */ jsx(TabTip, {}),
-      activeTab === "data" && /* @__PURE__ */ jsx(TabData, {})
+      activeTab === "data" && /* @__PURE__ */ jsx(TabData, {}),
+      activeTab === "kegiatan" && /* @__PURE__ */ jsx(TabKegiatan, {})
     ] })
   ] });
 }
