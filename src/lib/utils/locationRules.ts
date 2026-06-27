@@ -173,7 +173,15 @@ export const getStoringNomorOptions = (loc: string): string[] => {
   if (!loc) return [];
   const upper = loc.trim().toUpperCase();
   if (upper === 'HBSCP') return ['1.1-1.6', '2.1-2.6', '2.7-2.8'];
-  if (upper.includes('BEA CUKAI') || upper.includes('BELT')) return ['11-14', '15-16'];
+  
+  if (upper.includes('MONITORING') || upper.includes('REDLINE') || upper.includes('UMRAH')) {
+    return [];
+  }
+
+  if (upper.includes('BELT') || (upper.includes('BEA CUKAI') && upper.includes('X-RAY')) || (upper.includes('BEACUKAI') && upper.includes('X-RAY'))) {
+    return ['11-14', '15-16'];
+  }
+
   if (upper === 'ARRIVAL F') return ['1,6,7', '1', '6', '7'];
   if (['RAMPOUT D', 'RAMPOUT E'].includes(upper)) {
     return ['2,4,6', '2', '4', '6'];
