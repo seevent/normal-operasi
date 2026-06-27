@@ -32,7 +32,7 @@ export const TabKalibrasi: React.FC = () => {
     lokasi1: '', lokasi2: '',
     acLokasi: [] as string[],
     acEmlock: 'Berfungsi', acIntercom: 'Berfungsi', acFingerprint: 'Berfungsi', acCctv: 'Berfungsi', acPengontrolan: 'Berfungsi', acRecordCctv: '',
-    xrayKvV: '', xrayKvH: '', xrayMaV: '', xrayMaH: '', xrayOnV: '', xrayOnH: '', xrayArchive: '',
+    xrayKvV: '', xrayKvH: '', xrayMaV: '', xrayMaH: '', xrayOnV: '', xrayOnH: '', xrayArchive: '+- 1 bulan',
     wtmdZ1: '', wtmdZ2: '', wtmdZ3: '', wtmdZ4: '', wtmdLc: '', wtmdLs: '', wtmdUc: '', wtmdSe: '', wtmdDs: '',
     bsSuspect: 'Normal', bsMonitor: 'Normal', bsScanning: 'Normal', bsCalibration: 'Normal',
     etdTnt: 'Alarm', etdPetn: 'Alarm', etdRdx: 'Alarm',
@@ -78,7 +78,11 @@ export const TabKalibrasi: React.FC = () => {
       if (newPeralatan.includes(equip)) {
         newPeralatan = newPeralatan.filter(e => e !== equip);
       } else {
-        newPeralatan.push(equip);
+        if (equip === 'Access Control') {
+          newPeralatan = ['Access Control'];
+        } else if (!newPeralatan.includes('Access Control')) {
+          newPeralatan.push(equip);
+        }
       }
       
       newEntries[index] = { 
@@ -541,7 +545,7 @@ export const TabKalibrasi: React.FC = () => {
                       ⚡ Parameter X-Ray
                     </h3>
                     <select name="xrayModel" value={entry.xrayModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
-                      {getValidXRayModels(entry.lokasi1).map((model: string) => (
+                      {getValidXRayModels(entry.lokasi1, entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua X-Ray' ? '-- Semua Model X-Ray --' : model.replace('X-Ray ', '')}
                         </option>
@@ -555,7 +559,7 @@ export const TabKalibrasi: React.FC = () => {
                     <div><label className="block text-xs font-semibold text-slate-600 mb-1">mA Horizontal</label><input type="text" inputMode="decimal" name="xrayMaH" value={entry.xrayMaH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
                     <div><label className="block text-xs font-semibold text-slate-600 mb-1">Ontime Vertikal</label><input type="text" inputMode="decimal" name="xrayOnV" value={entry.xrayOnV} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
                     <div><label className="block text-xs font-semibold text-slate-600 mb-1">Ontime Horizontal</label><input type="text" inputMode="decimal" name="xrayOnH" value={entry.xrayOnH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                    <div className="col-span-2"><label className="block text-xs font-semibold text-slate-600 mb-1">Archive</label><input type="text" name="xrayArchive" value={entry.xrayArchive} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
+                    <div className="col-span-2"><label className="block text-xs font-semibold text-slate-600 mb-1">Archive</label><input type="text" name="xrayArchive" value={entry.xrayArchive} placeholder="+- 1 bulan" onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
                   </div>
                 </div>
               )}
@@ -567,7 +571,7 @@ export const TabKalibrasi: React.FC = () => {
                       🎛️ Parameter WTMD
                     </h3>
                     <select name="wtmdModel" value={entry.wtmdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
-                      {getValidModels(entry.lokasi1, 'WTMD').map((model: string) => (
+                      {getValidModels(entry.lokasi1, 'WTMD', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua WTMD' ? '-- Semua Model WTMD --' : model.replace('WTMD ', '')}
                         </option>
@@ -595,7 +599,7 @@ export const TabKalibrasi: React.FC = () => {
                       📱 Parameter HHMD
                     </h3>
                     <select name="hhmdModel" value={entry.hhmdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer">
-                      {getValidModels(entry.lokasi1, 'HHMD').map((model: string) => (
+                      {getValidModels(entry.lokasi1, 'HHMD', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua HHMD' ? '-- Semua Model HHMD --' : model.replace('HHMD ', '')}
                         </option>
@@ -612,7 +616,7 @@ export const TabKalibrasi: React.FC = () => {
                       🔍 Parameter Body Scanner
                     </h3>
                     <select name="bsModel" value={entry.bsModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer">
-                      {getValidModels(entry.lokasi1, 'Body Scanner').map((model: string) => (
+                      {getValidModels(entry.lokasi1, 'Body Scanner', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua Body Scanner' ? '-- Semua Model Body Scanner --' : model.replace('Body Scanner ', '')}
                         </option>
@@ -655,7 +659,7 @@ export const TabKalibrasi: React.FC = () => {
                       🧪 Parameter ETD
                     </h3>
                     <select name="etdModel" value={entry.etdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer">
-                      {getValidModels(entry.lokasi1, 'ETD').map((model: string) => (
+                      {getValidModels(entry.lokasi1, 'ETD', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua ETD' ? '-- Semua Model ETD --' : model.replace('ETD ', '')}
                         </option>

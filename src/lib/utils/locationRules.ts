@@ -1,7 +1,7 @@
 // src/lib/utils/locationRules.ts
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 
-export const getValidModels = (lokasi: string, jenisPeralatan: string) => {
+export const getValidModels = (lokasi: string, jenisPeralatan: string, titik?: string) => {
   const defaultOption = `Semua ${jenisPeralatan}`;
   const models = [defaultOption];
   if (!lokasi) return models;
@@ -15,6 +15,11 @@ export const getValidModels = (lokasi: string, jenisPeralatan: string) => {
         p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase() &&
         p.tipe_peralatan?.jenis_peralatan?.nama?.toUpperCase() === jenisPeralatan.toUpperCase()
       ) {
+        if (titik && titik !== '' && titik !== '-') {
+          const pTitik = String(p.titik_lokasi?.nomor || '').trim().toUpperCase();
+          const targetTitik = String(titik).trim().toUpperCase();
+          if (pTitik !== targetTitik) return;
+        }
         if (p.tipe_peralatan?.nama) {
           extractedModels.add(p.tipe_peralatan.nama);
         }
@@ -31,8 +36,8 @@ export const getValidModels = (lokasi: string, jenisPeralatan: string) => {
   return models;
 };
 
-export const getValidXRayModels = (lokasi: string) => {
-  return getValidModels(lokasi, 'X-Ray');
+export const getValidXRayModels = (lokasi: string, titik?: string) => {
+  return getValidModels(lokasi, 'X-Ray', titik);
 };
 
 export const getGeneralLokasiOptions = (peralatanType: string) => {

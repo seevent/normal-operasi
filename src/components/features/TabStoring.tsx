@@ -7,6 +7,7 @@ import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { getStoringValidLocations, getStoringValidNumbers, getGeneralLokasiOptions, getAcNomorOptions } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
+import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { lazy, Suspense } from 'react';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
@@ -48,7 +49,11 @@ export const TabStoring: React.FC = () => {
       if (newPeralatan.includes(equip)) {
         newPeralatan = newPeralatan.filter(e => e !== equip);
       } else {
-        newPeralatan.push(equip);
+        if (equip === 'Access Control') {
+          newPeralatan = ['Access Control'];
+        } else if (!newPeralatan.includes('Access Control')) {
+          newPeralatan.push(equip);
+        }
       }
       
       // Reset lokasi & nomor jika kombinasi peralatan berubah drastis
@@ -132,6 +137,22 @@ export const TabStoring: React.FC = () => {
 
     const message = generateWA_Storing(storingData);
     
+    const waktuFull = storingData.waktuSelesai ? `${storingData.waktuMulai} - ${storingData.waktuSelesai}` : storingData.waktuMulai;
+    const lokasiFull = storingData.lokasi || (storingData.acLokasi && storingData.acLokasi.length > 0 ? storingData.acLokasi.join(', ') : '-');
+    const alatFull = storingData.peralatan.join(', ') || 'Peralatan';
+
+    syncToGoogleSheets({
+      jenis: 'Storing',
+      tanggal: storingData.tanggal,
+      waktu: waktuFull,
+      lokasi: lokasiFull,
+      peralatan: alatFull,
+      uraian: `Kegiatan Storing : ${alatFull}`,
+      tindakLanjut: '-',
+      status: storingData.hasil || 'Normal Operasi',
+      imageFile: generatedCollageFile
+    });
+
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);

@@ -340,7 +340,15 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
 
     if (entry.peralatan.includes('X-Ray')) {
       const xrayName = entry.xrayModel === 'Semua X-Ray' ? 'X-Ray' : entry.xrayModel;
-      msg += `\n${xrayName}\n- kV : ${entry.xrayKvV || '...'} (v) - ${entry.xrayKvH || '...'} (h)\n- mA : ${entry.xrayMaV || '...'} (v) - ${entry.xrayMaH || '...'} (h)\n- Ontime : ${entry.xrayOnV || '...'} (v) - ${entry.xrayOnH || '...'} (h)\n- Archive : ${entry.xrayArchive || '...'}\n`;
+      const fmtUnit = (val: string, unit: string) => {
+        if (!val) return '...';
+        const trimmed = String(val).trim();
+        return /[a-zA-Z]$/.test(trimmed) ? trimmed : `${trimmed} ${unit}`;
+      };
+      const kvStr = `${fmtUnit(entry.xrayKvV, 'kV')} / ${fmtUnit(entry.xrayKvH, 'kV')}`;
+      const maStr = `${fmtUnit(entry.xrayMaV, 'mA')} / ${fmtUnit(entry.xrayMaH, 'mA')}`;
+      const onStr = `${fmtUnit(entry.xrayOnV, 'h')} / ${fmtUnit(entry.xrayOnH, 'h')}`;
+      msg += `\n${xrayName}\n- kV Vertikal/Horizontal : ${kvStr}\n- mA Vertikal/Horizontal : ${maStr}\n- Ontime Vertikal/Horizontal : ${onStr}\n- Archive : ${entry.xrayArchive || '+- 1 bulan'}\n`;
     }
     
     if (entry.peralatan.includes('WTMD')) {

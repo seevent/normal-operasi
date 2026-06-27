@@ -6,12 +6,14 @@ Aplikasi web mobile-first untuk personel **T2 Safety & Security Electronic Servi
 
 | Tab | Fungsi |
 |-----|--------|
-| **Perbaikan** | Generator laporan perbaikan/verifikasi peralatan keamanan. Pilihan tipe peralatan dan teknisi otomatis dari database. |
 | **Kehadiran** | Generator laporan kehadiran shift personel API & OM IAS, terintegrasi jadwal shift dari Supabase. |
 | **Briefing** | Generator laporan giat briefing unit/MOT. |
 | **Storing** | Generator laporan kegiatan storing peralatan. Pilihan peralatan dari database `jenis_peralatan`, lokasi dari database relasional (`penempatan_peralatan`). |
 | **Checklist** | Checklist status operasi peralatan (toggle per item), konfigurasi checklist dapat diedit via Admin. |
+| **Perbaikan** | Generator laporan perbaikan/verifikasi peralatan keamanan. Pilihan tipe peralatan dan teknisi otomatis dari database. |
 | **Kalibrasi** | Generator laporan PM & kalibrasi multi-lokasi. Parameter dinamis per jenis peralatan (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control). |
+| **Kegiatan** | Generator laporan kegiatan harian personel di lapangan. |
+| **Report** | Generator rekapitulasi laporan pergantian shift (*Shift Report*). |
 | **TIP** | Tracker TIP Performance bulanan dengan export gambar. Data tersimpan ke Supabase (cloud). |
 | **Data** | Panel admin (login required) untuk mengelola master data, upload jadwal Excel, manajemen aset, konfigurasi checklist, peralatan kalibrasi, dan data TIP tersimpan. |
 
@@ -36,15 +38,17 @@ Aplikasi web mobile-first untuk personel **T2 Safety & Security Electronic Servi
 ```
 src/
 ├── components/
-│   ├── App.tsx                    # Root app: tab navigation, layout utama
+│   ├── App.tsx                    # Root app: tab navigation untuk 10 fitur, layout utama
 │   ├── Calculator.tsx             # Kalkulator iOS-style (bonus tool)
 │   ├── features/                  # Komponen per-fitur (1 file per tab)
-│   │   ├── TabPerbaikan.tsx       # Tab laporan perbaikan
 │   │   ├── TabKehadiran.tsx       # Tab laporan kehadiran shift
 │   │   ├── TabBriefing.tsx        # Tab laporan briefing
 │   │   ├── TabStoring.tsx         # Tab laporan storing
 │   │   ├── TabChecklist.tsx       # Tab checklist status peralatan
+│   │   ├── TabPerbaikan.tsx       # Tab laporan perbaikan
 │   │   ├── TabKalibrasi.tsx       # Tab kalibrasi multi-lokasi
+│   │   ├── TabKegiatan.tsx        # Tab laporan kegiatan lapangan
+│   │   ├── TabShiftReport.tsx     # Tab rekapitulasi shift report
 │   │   ├── TabTip.tsx             # Tab TIP performance tracker
 │   │   ├── TabData.tsx            # Panel admin CRUD + login
 │   │   ├── AssetManager.tsx       # CRUD manajemen penempatan aset

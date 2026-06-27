@@ -8,7 +8,7 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase } from '../../lib/data/masterData';
-import { GOOGLE_SHEETS_WEBAPP_URL } from '../../lib/data/constants';
+import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 const CollageEditor = lazy(() => import('../shared/CollageEditor').then(m => ({ default: m.CollageEditor })));
@@ -20,7 +20,7 @@ function formatNamaPersonel(fullName: string): string {
   if (words.length === 1) return words[0];
   
   const firstWord = words[0].toLowerCase();
-  const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad'];
+  const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad', 'abdul'];
   
   if (titlePrefixes.includes(firstWord)) {
     return words[1];
@@ -283,39 +283,22 @@ export const TabPerbaikan: React.FC = () => {
 
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
     
-    // Kirim data ke Google Sheets secara diam-diam (background)
-    try {
-      let imageBase64 = "";
-      if (generatedCollageFile) {
-        const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve) => {
-          reader.onloadend = () => {
-            const base64String = (reader.result as string).split(',')[1];
-            resolve(base64String || "");
-          };
-        });
-        reader.readAsDataURL(generatedCollageFile);
-        imageBase64 = await base64Promise;
-      }
+    const uraianText = `Permasalahan : ${formData.permasalahan}`;
+    const lokasiFull = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== '-' ? ` - ${formData.lokasi2}` : '');
+    const waktuFull = formData.waktuSelesai ? `${formData.waktuMulai} - ${formData.waktuSelesai}` : formData.waktuMulai;
 
-      fetch(GOOGLE_SHEETS_WEBAPP_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        },
-        body: JSON.stringify({
-          action: 'save_report',
-          peralatan: formData.peralatan,
-          kondisi: formData.kondisi,
-          uraian: formData.uraian,
-          tindakLanjut: formData.tindakLanjut,
-          teknisi: formData.teknisi,
-          imageBase64: imageBase64
-        }),
-      }).catch(err => console.error("Gagal mengirim ke Google Sheets:", err));
-    } catch (e) {
-      console.error("Error memproses data untuk Google Sheets:", e);
-    }
+    syncToGoogleSheets({
+      jenis: 'Perbaikan',
+      tanggal: formData.tanggal,
+      waktu: waktuFull,
+      teknisi: formData.teknisi,
+      lokasi: lokasiFull || '-',
+      peralatan: formData.peralatan,
+      uraian: uraianText,
+      tindakLanjut: formData.tindakLanjut,
+      status: formData.status,
+      imageFile: generatedCollageFile
+    });
 
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);

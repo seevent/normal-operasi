@@ -133,11 +133,11 @@ export default function App() {
                   <button onClick={() => switchTab('report')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'report' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
                     <FileText className="w-4 h-4 sm:w-5 sm:h-5" /> Report
                   </button>
-                  <button onClick={() => switchTab('data')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'data' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
-                    <Database className="w-4 h-4 sm:w-5 sm:h-5" /> Data
-                  </button>
-                  <button onClick={() => switchTab('tip')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === 'tip' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                  <button onClick={() => switchTab('tip')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'tip' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
                     <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" /> TIP
+                  </button>
+                  <button onClick={() => switchTab('data')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === 'data' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                    <Database className="w-4 h-4 sm:w-5 sm:h-5" /> Data
                   </button>
                 </div>
               </>

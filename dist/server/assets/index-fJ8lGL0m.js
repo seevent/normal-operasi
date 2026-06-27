@@ -1,10 +1,9 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
-import { Users, Loader2, Calendar, User, X, Plus, ClipboardList, CheckCircle, Share2, FileText, Camera, Move, ImagePlus, Cpu, MapPin, Clock, AlertCircle, Hash, Trash2, LayoutGrid, ZoomIn, ZoomOut, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, Database, Layers, Mail, KeyRound, LogOut, Briefcase, Download, Wrench, MoreHorizontal } from "lucide-react";
+import { Users, Loader2, Calendar, User, X, Plus, ClipboardList, CheckCircle, Share2, FileText, Camera, Move, ImagePlus, Cpu, MapPin, Clock, AlertCircle, Trash2, LayoutGrid, ZoomIn, ZoomOut, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, Wrench, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
-import html2pdf from "html2pdf.js";
 const MonitorSearchIcon = ({ className }) => {
   return /* @__PURE__ */ jsxs(
     "svg",
@@ -67,19 +66,7 @@ const DEFAULT_DATA_OM_IAS_T2 = [
   { name: "Abdul Rifan Sukarno", phone: "083111807154" }
 ].map((p) => ({ ...p, name: toTitleCase(p.name) }));
 const DEFAULT_STORING_EQUIPMENTS = ["Access Control", "X-Ray", "HHMD", "ETD", "WTMD", "Body Scanner"];
-const DEFAULT_STORING_LOC_AC = [
-  "Avio & BL D",
-  "Avio & BL E",
-  "Avio & BL F",
-  "Rampout D",
-  "Rampout E",
-  "Rampout F",
-  "Breakdown D, E1, E2 & F",
-  "Breakdown Umrah",
-  "Ruang Monitoring E1",
-  "Server Access",
-  "HBSCP Umrah"
-];
+const DEFAULT_STORING_LOC_AC = [];
 const DEFAULT_STORING_LOC_DEFAULT = [
   "PSCP D",
   "PSCP E",
@@ -441,7 +428,7 @@ const useMasterDataStore = create((set, get) => ({
     }
   }
 }));
-const getValidModels = (lokasi, jenisPeralatan) => {
+const getValidModels = (lokasi, jenisPeralatan, titik) => {
   const defaultOption = `Semua ${jenisPeralatan}`;
   const models = [defaultOption];
   if (!lokasi) return models;
@@ -450,6 +437,11 @@ const getValidModels = (lokasi, jenisPeralatan) => {
     const extractedModels = /* @__PURE__ */ new Set();
     penempatanData.forEach((p) => {
       if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase() && p.tipe_peralatan?.jenis_peralatan?.nama?.toUpperCase() === jenisPeralatan.toUpperCase()) {
+        if (titik && titik !== "" && titik !== "-") {
+          const pTitik = String(p.titik_lokasi?.nomor || "").trim().toUpperCase();
+          const targetTitik = String(titik).trim().toUpperCase();
+          if (pTitik !== targetTitik) return;
+        }
         if (p.tipe_peralatan?.nama) {
           extractedModels.add(p.tipe_peralatan.nama);
         }
@@ -463,8 +455,8 @@ const getValidModels = (lokasi, jenisPeralatan) => {
   }
   return models;
 };
-const getValidXRayModels = (lokasi) => {
-  return getValidModels(lokasi, "X-Ray");
+const getValidXRayModels = (lokasi, titik) => {
+  return getValidModels(lokasi, "X-Ray", titik);
 };
 const getGeneralLokasiOptions = (peralatanType) => {
   if (!peralatanType) return [];
@@ -540,17 +532,40 @@ const getLokasi2Options = (lokasi, peralatanArray = []) => {
 };
 const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) => {
   if (equipArray.length === 0) return [];
-  if (equipArray.includes("Access Control")) return storingLocAc;
-  return getIntersectedLocations(equipArray);
+  if (equipArray.includes("Access Control")) return getGeneralLokasiOptions("Access Control");
+  const intersected = getIntersectedLocations(equipArray);
+  const hasHhmdOrWtmd = equipArray.some((e) => ["HHMD", "WTMD"].includes(e.trim().toUpperCase()));
+  if (hasHhmdOrWtmd) {
+    const transferLocs = /* @__PURE__ */ new Set();
+    equipArray.forEach((e) => {
+      if (["HHMD", "WTMD"].includes(e.trim().toUpperCase())) {
+        getGeneralLokasiOptions(e).forEach((loc) => {
+          if (loc.trim().toUpperCase().includes("TRANSFER")) {
+            transferLocs.add(loc);
+          }
+        });
+      }
+    });
+    const combined = /* @__PURE__ */ new Set([...intersected, ...transferLocs]);
+    return Array.from(combined).sort();
+  }
+  return intersected;
 };
-const getStoringValidNumbers = (lokasi) => {
-  if (lokasi === "HBSCP") return ["1.1-1.6", "2.1-2.6", "2.7-2.8"];
-  if (!lokasi.includes("Avio") && !lokasi.includes("Rampout")) return [];
-  if (lokasi === "Rampout D" || lokasi === "Rampout E") return ["2,4,6", "2", "4", "6"];
-  if (lokasi === "Rampout F") return ["1-7", "1", "2", "3", "4", "5", "6", "7"];
-  if (lokasi === "Avio & BL D" || lokasi === "Avio & BL E" || lokasi === "Avio & BL F") return ["1-7", "1", "2", "3", "4", "5", "6", "7"];
-  return ["1", "2", "3", "4", "5", "6", "7"];
+const getStoringNomorOptions = (loc) => {
+  if (!loc) return [];
+  const upper = loc.trim().toUpperCase();
+  if (upper === "HBSCP") return ["1.1-1.6", "2.1-2.6", "2.7-2.8"];
+  if (upper.includes("BEA CUKAI") || upper.includes("BELT")) return ["11-14", "15-16"];
+  if (upper === "ARRIVAL F") return ["1,6,7", "1", "6", "7"];
+  if (["RAMPOUT D", "RAMPOUT E"].includes(upper)) {
+    return ["2,4,6", "2", "4", "6"];
+  }
+  if (upper.startsWith("AVIOBRIDGE") || upper.startsWith("BL") || upper === "RAMPOUT F") {
+    return ["1-7", "1", "2", "3", "4", "5", "6", "7"];
+  }
+  return [];
 };
+const getAcNomorOptions = getStoringNomorOptions;
 const formatTanggalIndo = (dateStr) => {
   if (!dateStr) return "";
   const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -620,6 +635,70 @@ Hari/Tanggal : ${formattedDate}
 Shift : ${briefingData.shift}
 Lokasi : ${briefingData.lokasi}`;
 };
+const formatACLokasiList = (locs) => {
+  if (!locs || locs.length === 0) return "-";
+  if (locs.length === 1) return locs[0];
+  const results = [];
+  const normalLocsWithIndex = [];
+  locs.forEach((loc, idx) => {
+    if (loc.toUpperCase().includes("PSCP") || loc.toUpperCase().includes("BEA CUKAI") || loc.toUpperCase().includes("BELT")) {
+      results.push({ text: loc.trim(), minIndex: idx });
+    } else {
+      normalLocsWithIndex.push({ loc: loc.trim(), idx });
+    }
+  });
+  const prefixGroups = /* @__PURE__ */ new Map();
+  normalLocsWithIndex.forEach(({ loc, idx }) => {
+    const parts = loc.split(" ");
+    if (parts.length >= 2) {
+      const prefix = parts.slice(0, -1).join(" ");
+      const suffix = parts[parts.length - 1];
+      if (!prefixGroups.has(prefix)) prefixGroups.set(prefix, []);
+      prefixGroups.get(prefix).push({ suffix, idx });
+    } else {
+      results.push({ text: loc, minIndex: idx });
+    }
+  });
+  const remainingForSuffixGroup = [];
+  prefixGroups.forEach((items, prefix) => {
+    if (items.length === 1) {
+      remainingForSuffixGroup.push({ prefix, suffix: items[0].suffix, idx: items[0].idx });
+    } else {
+      const minIndex = Math.min(...items.map((i) => i.idx));
+      const suffixes = items.map((i) => i.suffix);
+      const lastSuffix = suffixes[suffixes.length - 1];
+      const otherSuffixes = suffixes.slice(0, -1).join(", ");
+      results.push({ text: `${prefix} ${otherSuffixes} & ${lastSuffix}`, minIndex });
+    }
+  });
+  const suffixGroups = /* @__PURE__ */ new Map();
+  remainingForSuffixGroup.forEach(({ prefix, suffix, idx }) => {
+    if (!suffixGroups.has(suffix)) suffixGroups.set(suffix, []);
+    suffixGroups.get(suffix).push({ prefix, idx });
+  });
+  suffixGroups.forEach((items, suffix) => {
+    const minIndex = Math.min(...items.map((i) => i.idx));
+    if (items.length === 1) {
+      results.push({ text: `${items[0].prefix} ${suffix}`, minIndex });
+    } else {
+      const prefixes = items.map((i) => i.prefix);
+      const lastPrefix = prefixes[prefixes.length - 1];
+      const otherPrefixes = prefixes.slice(0, -1).join(", ");
+      results.push({ text: `${otherPrefixes} & ${lastPrefix} ${suffix}`, minIndex });
+    }
+  });
+  results.sort((a, b) => a.minIndex - b.minIndex);
+  const formattedResults = results.map((r) => r.text);
+  if (formattedResults.length <= 1) {
+    return formattedResults[0] || "-";
+  }
+  const last = formattedResults[formattedResults.length - 1];
+  if (last.includes("&") || formattedResults.some((r) => r.includes("&"))) {
+    return formattedResults.join(", ");
+  }
+  const firstPart = formattedResults.slice(0, -1).join(", ");
+  return `${firstPart} & ${last}`;
+};
 const generateWA_Storing = (storingData) => {
   const formattedDate = formatTanggalIndo(storingData.tanggal);
   const jamMulai = storingData.waktuMulai || "...";
@@ -633,7 +712,17 @@ const generateWA_Storing = (storingData) => {
     equipString = `${otherEquips} & ${lastEquip}`;
   }
   let locString = "-";
-  if (storingData.lokasi) {
+  const rawLocs = storingData.acLokasi || [];
+  if (rawLocs.length > 0) {
+    const nomors = storingData.acNomor || {};
+    const mappedLocs = rawLocs.map((loc) => {
+      const num = nomors[loc];
+      if (!num) return loc;
+      if (loc.trim().toUpperCase() === "HBSCP" || loc.trim().toUpperCase().includes("BEA CUKAI") || loc.trim().toUpperCase().includes("BELT")) return `${loc} ${num}`;
+      return `${loc}${num}`;
+    });
+    locString = formatACLokasiList(mappedLocs);
+  } else if (storingData.lokasi) {
     if (storingData.nomor) {
       if (storingData.lokasi === "Avio & BL D" || storingData.lokasi === "Avio & BL E" || storingData.lokasi === "Avio & BL F" || storingData.lokasi.includes("Rampout")) {
         locString = `${storingData.lokasi}${storingData.nomor}`;
@@ -826,12 +915,20 @@ Kegiatan :
 Catatan :`;
     if (entry.peralatan.includes("X-Ray")) {
       const xrayName = entry.xrayModel === "Semua X-Ray" ? "X-Ray" : entry.xrayModel;
+      const fmtUnit = (val, unit) => {
+        if (!val) return "...";
+        const trimmed = String(val).trim();
+        return /[a-zA-Z]$/.test(trimmed) ? trimmed : `${trimmed} ${unit}`;
+      };
+      const kvStr = `${fmtUnit(entry.xrayKvV, "kV")} / ${fmtUnit(entry.xrayKvH, "kV")}`;
+      const maStr = `${fmtUnit(entry.xrayMaV, "mA")} / ${fmtUnit(entry.xrayMaH, "mA")}`;
+      const onStr = `${fmtUnit(entry.xrayOnV, "h")} / ${fmtUnit(entry.xrayOnH, "h")}`;
       msg += `
 ${xrayName}
-- kV : ${entry.xrayKvV || "..."} (v) - ${entry.xrayKvH || "..."} (h)
-- mA : ${entry.xrayMaV || "..."} (v) - ${entry.xrayMaH || "..."} (h)
-- Ontime : ${entry.xrayOnV || "..."} (v) - ${entry.xrayOnH || "..."} (h)
-- Archive : ${entry.xrayArchive || "..."}
+- kV Vertikal/Horizontal : ${kvStr}
+- mA Vertikal/Horizontal : ${maStr}
+- Ontime Vertikal/Horizontal : ${onStr}
+- Archive : ${entry.xrayArchive || "+- 1 bulan"}
 `;
     }
     if (entry.peralatan.includes("WTMD")) {
@@ -1412,6 +1509,117 @@ const processPhotosToCollage = async (photosArray) => {
   });
 };
 const GOOGLE_SHEETS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzL7KzQ38l7-64u8v-J5zE0Vvj_i_8p0fWvM_ZpM4D1Jv4A2dK9eA6i2t2z-3D1N6eE/exec";
+const determineShift = (waktuStr) => {
+  if (!waktuStr) {
+    const hour2 = (/* @__PURE__ */ new Date()).getHours();
+    return hour2 >= 8 && hour2 < 20 ? "PS" : "M";
+  }
+  const match = waktuStr.match(/(\d{2}):(\d{2})/);
+  if (!match) {
+    const hour2 = (/* @__PURE__ */ new Date()).getHours();
+    return hour2 >= 8 && hour2 < 20 ? "PS" : "M";
+  }
+  const hour = parseInt(match[1], 10);
+  return hour >= 8 && hour < 20 ? "PS" : "M";
+};
+const fileToBase64 = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(",")[1];
+      resolve(base64String || "");
+    };
+    reader.onerror = () => {
+      console.error("Gagal membaca file gambar untuk sync");
+      resolve("");
+    };
+    reader.readAsDataURL(file);
+  });
+};
+const syncToGoogleSheets = async (payload) => {
+  try {
+    let imageBase64 = "";
+    if (payload.imageFile) {
+      imageBase64 = await fileToBase64(payload.imageFile);
+    }
+    let shift = payload.shift || determineShift(payload.waktu);
+    const postBody = {
+      action: "save_report",
+      jenis: payload.jenis,
+      tanggal: payload.tanggal,
+      waktu: payload.waktu,
+      shift,
+      teknisi: payload.teknisi || "-",
+      lokasi: payload.lokasi || "-",
+      peralatan: payload.peralatan || "-",
+      uraian: payload.uraian || "-",
+      tindakLanjut: payload.tindakLanjut || "-",
+      status: payload.status || "Normal",
+      imageBase64
+    };
+    fetch(GOOGLE_SHEETS_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(postBody)
+    }).catch((err) => console.error(`[Background Sync] Gagal mengirim laporan:`, err));
+    return true;
+  } catch (e) {
+    console.error("[Background Sync] Error memproses payload:", e);
+    return false;
+  }
+};
+const updateSheetReport = async (payload) => {
+  try {
+    let imageBase64 = "";
+    if (payload.imageFile) {
+      imageBase64 = await fileToBase64(payload.imageFile);
+    }
+    let shift = payload.shift || determineShift(payload.waktu);
+    const postBody = {
+      action: "update_report",
+      rowIndex: payload.rowIndex,
+      jenis: payload.jenis,
+      tanggal: payload.tanggal,
+      waktu: payload.waktu,
+      shift,
+      teknisi: payload.teknisi || "-",
+      lokasi: payload.lokasi || "-",
+      peralatan: payload.peralatan || "-",
+      uraian: payload.uraian || "-",
+      tindakLanjut: payload.tindakLanjut || "-",
+      status: payload.status || "Normal",
+      imageBase64
+    };
+    const res = await fetch(GOOGLE_SHEETS_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(postBody)
+    });
+    const result = await res.json();
+    return result.status === "success";
+  } catch (e) {
+    console.error("[Update Report] Error:", e);
+    return false;
+  }
+};
+const deleteSheetReport = async (rowIndex) => {
+  try {
+    const postBody = {
+      action: "delete_report",
+      rowIndex
+    };
+    const res = await fetch(GOOGLE_SHEETS_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(postBody)
+    });
+    const result = await res.json();
+    return result.status === "success";
+  } catch (e) {
+    console.error("[Delete Report] Error:", e);
+    return false;
+  }
+};
 const LiveCollagePreview = ({ photos }) => {
   const [autoCollageUrl, setAutoCollageUrl] = useState(null);
   useEffect(() => {
@@ -1659,46 +1867,34 @@ const TabPerbaikan = () => {
     e.preventDefault();
     let generatedCollageFile = customCollageFile;
     if (photos.length > 0 && !generatedCollageFile) {
-      const collageResult = await processPhotosToCollage(photos);
-      if (collageResult) {
-        collageResult.url;
-        const res = await fetch(collageResult.url);
-        const blob = await res.blob();
-        generatedCollageFile = new File([blob], `Dokumentasi_Perbaikan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (photos.length === 1) {
+        generatedCollageFile = photos[0].file || null;
+      } else {
+        const collageResult = await processPhotosToCollage(photos);
+        if (collageResult) {
+          collageResult.url;
+          const res = await fetch(collageResult.url);
+          const blob = await res.blob();
+          generatedCollageFile = new File([blob], `Dokumentasi_Perbaikan_${Date.now()}.jpg`, { type: "image/jpeg" });
+        }
       }
     }
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
-    try {
-      let imageBase64 = "";
-      if (generatedCollageFile) {
-        const reader = new FileReader();
-        const base64Promise = new Promise((resolve) => {
-          reader.onloadend = () => {
-            const base64String = reader.result.split(",")[1];
-            resolve(base64String || "");
-          };
-        });
-        reader.readAsDataURL(generatedCollageFile);
-        imageBase64 = await base64Promise;
-      }
-      fetch(GOOGLE_SHEETS_WEBAPP_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify({
-          action: "save_report",
-          peralatan: formData.peralatan,
-          kondisi: formData.kondisi,
-          uraian: formData.uraian,
-          tindakLanjut: formData.tindakLanjut,
-          teknisi: formData.teknisi,
-          imageBase64
-        })
-      }).catch((err) => console.error("Gagal mengirim ke Google Sheets:", err));
-    } catch (e2) {
-      console.error("Error memproses data untuk Google Sheets:", e2);
-    }
+    const uraianText = `Permasalahan : ${formData.permasalahan}`;
+    const lokasiFull = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== "-" ? ` - ${formData.lokasi2}` : "");
+    const waktuFull = formData.waktuSelesai ? `${formData.waktuMulai} - ${formData.waktuSelesai}` : formData.waktuMulai;
+    syncToGoogleSheets({
+      jenis: "Perbaikan",
+      tanggal: formData.tanggal,
+      waktu: waktuFull,
+      teknisi: formData.teknisi,
+      lokasi: lokasiFull || "-",
+      peralatan: formData.peralatan,
+      uraian: uraianText,
+      tindakLanjut: formData.tindakLanjut,
+      status: formData.status,
+      imageFile: generatedCollageFile
+    });
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
@@ -1948,6 +2144,8 @@ const TabStoring = () => {
     waktuSelesai: "",
     peralatan: [],
     lokasi: "",
+    acLokasi: [],
+    acNomor: {},
     nomor: "",
     hasil: "Normal Operasi"
   });
@@ -1965,9 +2163,13 @@ const TabStoring = () => {
       if (newPeralatan.includes(equip)) {
         newPeralatan = newPeralatan.filter((e) => e !== equip);
       } else {
-        newPeralatan.push(equip);
+        if (equip === "Access Control") {
+          newPeralatan = ["Access Control"];
+        } else if (!newPeralatan.includes("Access Control")) {
+          newPeralatan.push(equip);
+        }
       }
-      return { ...prev, peralatan: newPeralatan, lokasi: "", nomor: "" };
+      return { ...prev, peralatan: newPeralatan, lokasi: "", acLokasi: [], acNomor: {}, nomor: "" };
     });
   };
   const handlePhotoUpload = (e) => {
@@ -2012,17 +2214,39 @@ const TabStoring = () => {
   };
   const handleStoringSubmit = async (e) => {
     e.preventDefault();
+    if (storingData.peralatan.length > 0 && (storingData.acLokasi || []).length === 0) {
+      alert("Pastikan Anda memilih minimal 1 lokasi untuk peralatan terpilih!");
+      return;
+    }
     let generatedCollageFile = customCollageFile;
     if (photos.length > 0 && !generatedCollageFile) {
-      const collageResult = await processPhotosToCollage(photos);
-      if (collageResult) {
-        collageResult.url;
-        const res = await fetch(collageResult.url);
-        const blob = await res.blob();
-        generatedCollageFile = new File([blob], `Dokumentasi_Storing_${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (photos.length === 1) {
+        generatedCollageFile = photos[0].file || null;
+      } else {
+        const collageResult = await processPhotosToCollage(photos);
+        if (collageResult) {
+          collageResult.url;
+          const res = await fetch(collageResult.url);
+          const blob = await res.blob();
+          generatedCollageFile = new File([blob], `Dokumentasi_Storing_${Date.now()}.jpg`, { type: "image/jpeg" });
+        }
       }
     }
     const message = generateWA_Storing(storingData);
+    const waktuFull = storingData.waktuSelesai ? `${storingData.waktuMulai} - ${storingData.waktuSelesai}` : storingData.waktuMulai;
+    const lokasiFull = storingData.lokasi || (storingData.acLokasi && storingData.acLokasi.length > 0 ? storingData.acLokasi.join(", ") : "-");
+    const alatFull = storingData.peralatan.join(", ") || "Peralatan";
+    syncToGoogleSheets({
+      jenis: "Storing",
+      tanggal: storingData.tanggal,
+      waktu: waktuFull,
+      lokasi: lokasiFull,
+      peralatan: alatFull,
+      uraian: `Kegiatan Storing : ${alatFull}`,
+      tindakLanjut: "-",
+      status: storingData.hasil || "Normal Operasi",
+      imageFile: generatedCollageFile
+    });
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
@@ -2082,44 +2306,68 @@ const TabStoring = () => {
           }) })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "col-span-2", children: [
-          /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Lokasi" }),
-          /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
-            /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
-              /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
-              /* @__PURE__ */ jsxs(
-                "select",
+          /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-2", children: [
+            "Lokasi",
+            storingData.peralatan.length > 0 && /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-400 font-normal", children: " (Pilih 1 atau lebih)" })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2", children: (() => {
+            const locOpts = storingData.peralatan.includes("Access Control") ? getGeneralLokasiOptions("Access Control") : getStoringValidLocations(storingData.peralatan);
+            if (locOpts.length === 0) {
+              return /* @__PURE__ */ jsx("div", { className: "col-span-full p-3 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-sm text-center", children: storingData.peralatan.length === 0 ? "Pilih peralatan terlebih dahulu untuk melihat daftar lokasi." : "Data lokasi belum tersedia di database." });
+            }
+            return locOpts.map((loc) => {
+              const isChecked = (storingData.acLokasi || []).includes(loc);
+              const nomorOpts = getAcNomorOptions(loc);
+              return /* @__PURE__ */ jsxs(
+                "div",
                 {
-                  name: "lokasi",
-                  required: true,
-                  value: storingData.lokasi,
-                  onChange: handleStoringChange,
-                  disabled: storingData.peralatan.length === 0,
-                  className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed",
+                  className: `flex items-center justify-between p-2 border rounded-lg transition-colors ${isChecked ? "bg-blue-50 border-blue-500 shadow-sm" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`,
                   children: [
-                    /* @__PURE__ */ jsx("option", { value: "", children: "- Pilih Lokasi -" }),
-                    getStoringValidLocations(storingData.peralatan, storingLocAc).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+                    /* @__PURE__ */ jsxs("label", { className: "flex items-center cursor-pointer flex-1 min-w-0 mr-1.5", children: [
+                      /* @__PURE__ */ jsx(
+                        "input",
+                        {
+                          type: "checkbox",
+                          checked: isChecked,
+                          onChange: () => {
+                            setStoringData((prev) => {
+                              const exists = (prev.acLokasi || []).includes(loc);
+                              const newLocs = exists ? (prev.acLokasi || []).filter((l) => l !== loc) : [...prev.acLokasi || [], loc];
+                              const newNomor = { ...prev.acNomor || {} };
+                              if (!exists && nomorOpts.length > 0) {
+                                newNomor[loc] = nomorOpts[0];
+                              } else if (exists) {
+                                delete newNomor[loc];
+                              }
+                              return { ...prev, acLokasi: newLocs, acNomor: newNomor };
+                            });
+                          },
+                          className: "w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 flex-shrink-0"
+                        }
+                      ),
+                      /* @__PURE__ */ jsx("span", { className: `ml-2 text-xs truncate select-none ${isChecked ? "font-semibold text-blue-700" : "text-slate-700"}`, title: loc, children: loc })
+                    ] }),
+                    isChecked && nomorOpts.length > 0 && /* @__PURE__ */ jsx(
+                      "select",
+                      {
+                        value: (storingData.acNomor || {})[loc] || nomorOpts[0],
+                        onChange: (e) => {
+                          const val = e.target.value;
+                          setStoringData((prev) => ({
+                            ...prev,
+                            acNomor: { ...prev.acNomor || {}, [loc]: val }
+                          }));
+                        },
+                        className: "text-xs py-1 px-1 bg-white border border-blue-300 rounded text-blue-800 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 flex-shrink-0 cursor-pointer shadow-sm",
+                        children: nomorOpts.map((num) => /* @__PURE__ */ jsx("option", { value: num, children: num }, num))
+                      }
+                    )
                   ]
-                }
-              )
-            ] }),
-            (storingData.peralatan.includes("Access Control") && (storingData.lokasi.includes("Avio") || storingData.lokasi.includes("Rampout")) || !storingData.peralatan.includes("Access Control") && storingData.lokasi === "HBSCP") && /* @__PURE__ */ jsxs("div", { className: "w-1/3 relative", children: [
-              /* @__PURE__ */ jsx(Hash, { className: "absolute left-2.5 top-2.5 h-5 w-5 text-slate-400" }),
-              /* @__PURE__ */ jsxs(
-                "select",
-                {
-                  name: "nomor",
-                  required: true,
-                  value: storingData.nomor,
-                  onChange: handleStoringChange,
-                  className: "w-full pl-9 pr-2 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none",
-                  children: [
-                    /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
-                    getStoringValidNumbers(storingData.lokasi).map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-                  ]
-                }
-              )
-            ] })
-          ] })
+                },
+                loc
+              );
+            });
+          })() })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "col-span-2", children: [
           /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Hasil" }),
@@ -2208,7 +2456,7 @@ const TabKalibrasi = () => {
     xrayMaH: "",
     xrayOnV: "",
     xrayOnH: "",
-    xrayArchive: "",
+    xrayArchive: "+- 1 bulan",
     wtmdZ1: "",
     wtmdZ2: "",
     wtmdZ3: "",
@@ -2262,7 +2510,11 @@ const TabKalibrasi = () => {
       if (newPeralatan.includes(equip)) {
         newPeralatan = newPeralatan.filter((e) => e !== equip);
       } else {
-        newPeralatan.push(equip);
+        if (equip === "Access Control") {
+          newPeralatan = ["Access Control"];
+        } else if (!newPeralatan.includes("Access Control")) {
+          newPeralatan.push(equip);
+        }
       }
       newEntries[index] = {
         ...newEntries[index],
@@ -2515,7 +2767,7 @@ const TabKalibrasi = () => {
           const file = new File([blob], `Dokumentasi_Kalibrasi_Kolase_${i + 1}_${Date.now()}.jpg`, { type: "image/jpeg" });
           customFilesArray.push(file);
         }
-      } else if (group.photos.length === 1) {
+      } else if (group.photos.length === 1 && group.photos[0]?.file) {
         customFilesArray.push(group.photos[0].file);
       }
     }
@@ -2696,7 +2948,7 @@ const TabKalibrasi = () => {
         entry.peralatan.includes("X-Ray") && /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/40 p-4 sm:p-5 rounded-xl border border-blue-200 space-y-4", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-blue-200 pb-3", children: [
             /* @__PURE__ */ jsx("h3", { className: "font-bold text-blue-900 flex items-center gap-2", children: "⚡ Parameter X-Ray" }),
-            /* @__PURE__ */ jsx("select", { name: "xrayModel", value: entry.xrayModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer", children: getValidXRayModels(entry.lokasi1).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua X-Ray" ? "-- Semua Model X-Ray --" : model.replace("X-Ray ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "xrayModel", value: entry.xrayModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer", children: getValidXRayModels(entry.lokasi1, entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua X-Ray" ? "-- Semua Model X-Ray --" : model.replace("X-Ray ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -2725,14 +2977,14 @@ const TabKalibrasi = () => {
             ] }),
             /* @__PURE__ */ jsxs("div", { className: "col-span-2", children: [
               /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-slate-600 mb-1", children: "Archive" }),
-              /* @__PURE__ */ jsx("input", { type: "text", name: "xrayArchive", value: entry.xrayArchive, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" })
+              /* @__PURE__ */ jsx("input", { type: "text", name: "xrayArchive", value: entry.xrayArchive, placeholder: "+- 1 bulan", onChange: (e) => handleKalibrasiEntryChange(index, e), className: "w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" })
             ] })
           ] })
         ] }),
         entry.peralatan.includes("WTMD") && /* @__PURE__ */ jsxs("div", { className: "bg-indigo-50/40 p-4 sm:p-5 rounded-xl border border-indigo-200 space-y-4", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-200 pb-3", children: [
             /* @__PURE__ */ jsx("h3", { className: "font-bold text-indigo-900 flex items-center gap-2", children: "🎛️ Parameter WTMD" }),
-            /* @__PURE__ */ jsx("select", { name: "wtmdModel", value: entry.wtmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "WTMD").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua WTMD" ? "-- Semua Model WTMD --" : model.replace("WTMD ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "wtmdModel", value: entry.wtmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "WTMD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua WTMD" ? "-- Semua Model WTMD --" : model.replace("WTMD ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -2775,12 +3027,12 @@ const TabKalibrasi = () => {
         ] }),
         entry.peralatan.includes("HHMD") && /* @__PURE__ */ jsx("div", { className: "bg-purple-50/40 p-4 sm:p-5 rounded-xl border border-purple-200 space-y-4", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200 pb-3", children: [
           /* @__PURE__ */ jsx("h3", { className: "font-bold text-purple-900 flex items-center gap-2", children: "📱 Parameter HHMD" }),
-          /* @__PURE__ */ jsx("select", { name: "hhmdModel", value: entry.hhmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "HHMD").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua HHMD" ? "-- Semua Model HHMD --" : model.replace("HHMD ", "") }, model)) })
+          /* @__PURE__ */ jsx("select", { name: "hhmdModel", value: entry.hhmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "HHMD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua HHMD" ? "-- Semua Model HHMD --" : model.replace("HHMD ", "") }, model)) })
         ] }) }),
         entry.peralatan.includes("Body Scanner") && /* @__PURE__ */ jsxs("div", { className: "bg-emerald-50/40 p-4 sm:p-5 rounded-xl border border-emerald-200 space-y-4", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-200 pb-3", children: [
             /* @__PURE__ */ jsx("h3", { className: "font-bold text-emerald-900 flex items-center gap-2", children: "🔍 Parameter Body Scanner" }),
-            /* @__PURE__ */ jsx("select", { name: "bsModel", value: entry.bsModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "Body Scanner").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua Body Scanner" ? "-- Semua Model Body Scanner --" : model.replace("Body Scanner ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "bsModel", value: entry.bsModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "Body Scanner", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua Body Scanner" ? "-- Semua Model Body Scanner --" : model.replace("Body Scanner ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -2820,7 +3072,7 @@ const TabKalibrasi = () => {
         entry.peralatan.includes("ETD") && /* @__PURE__ */ jsxs("div", { className: "bg-amber-50/40 p-4 sm:p-5 rounded-xl border border-amber-200 space-y-4", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-200 pb-3", children: [
             /* @__PURE__ */ jsx("h3", { className: "font-bold text-amber-900 flex items-center gap-2", children: "🧪 Parameter ETD" }),
-            /* @__PURE__ */ jsx("select", { name: "etdModel", value: entry.etdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "ETD").map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua ETD" ? "-- Semua Model ETD --" : model.replace("ETD ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "etdModel", value: entry.etdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "ETD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua ETD" ? "-- Semua Model ETD --" : model.replace("ETD ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -3584,12 +3836,16 @@ const TabBriefing = () => {
     e.preventDefault();
     let generatedCollageFile = customCollageFile;
     if (photos.length > 0 && !generatedCollageFile) {
-      const collageResult = await processPhotosToCollage(photos);
-      if (collageResult) {
-        collageResult.url;
-        const res = await fetch(collageResult.url);
-        const blob = await res.blob();
-        generatedCollageFile = new File([blob], `Dokumentasi_Briefing_${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (photos.length === 1) {
+        generatedCollageFile = photos[0].file || null;
+      } else {
+        const collageResult = await processPhotosToCollage(photos);
+        if (collageResult) {
+          collageResult.url;
+          const res = await fetch(collageResult.url);
+          const blob = await res.blob();
+          generatedCollageFile = new File([blob], `Dokumentasi_Briefing_${Date.now()}.jpg`, { type: "image/jpeg" });
+        }
       }
     }
     const message = generateWA_Briefing(briefingData);
@@ -5183,15 +5439,31 @@ const TabKegiatan = () => {
     e.preventDefault();
     let generatedCollageFile = customCollageFile;
     if (photos.length > 0 && !generatedCollageFile) {
-      const collageResult = await processPhotosToCollage(photos);
-      if (collageResult) {
-        collageResult.url;
-        const res = await fetch(collageResult.url);
-        const blob = await res.blob();
-        generatedCollageFile = new File([blob], `Dokumentasi_Kegiatan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (photos.length === 1) {
+        generatedCollageFile = photos[0].file || null;
+      } else {
+        const collageResult = await processPhotosToCollage(photos);
+        if (collageResult) {
+          collageResult.url;
+          const res = await fetch(collageResult.url);
+          const blob = await res.blob();
+          generatedCollageFile = new File([blob], `Dokumentasi_Kegiatan_${Date.now()}.jpg`, { type: "image/jpeg" });
+        }
       }
     }
     const message = generateWA_Kegiatan(kegiatanData);
+    const waktuFull = kegiatanData.waktuSelesai ? `${kegiatanData.waktuMulai} - ${kegiatanData.waktuSelesai}` : kegiatanData.waktuMulai;
+    syncToGoogleSheets({
+      jenis: "Kegiatan",
+      tanggal: kegiatanData.tanggal,
+      waktu: waktuFull,
+      lokasi: kegiatanData.lokasi || "-",
+      peralatan: "Kegiatan Lapangan",
+      uraian: kegiatanData.kegiatan || "-",
+      tindakLanjut: "-",
+      status: "Normal Operasi",
+      imageFile: generatedCollageFile
+    });
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
@@ -5313,8 +5585,111 @@ const TabShiftReport = () => {
     return h >= 8 && h < 20 ? "PS" : "M";
   });
   const [loading, setLoading] = useState(false);
+  const [fetchingLive, setFetchingLive] = useState(false);
   const [reports, setReports] = useState([]);
   const [statusMsg, setStatusMsg] = useState(null);
+  const [isCrudModalOpen, setIsCrudModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("add");
+  const [editingRowIndex, setEditingRowIndex] = useState(null);
+  const [crudSubmitting, setCrudSubmitting] = useState(false);
+  const [deletingRowIndex, setDeletingRowIndex] = useState(null);
+  const [crudForm, setCrudForm] = useState({
+    jenis: "Kegiatan",
+    waktu: "",
+    peralatan: "",
+    lokasi: "",
+    uraian: "",
+    tindakLanjut: "-",
+    status: "Normal Operasi"
+  });
+  const openAddModal = () => {
+    setModalMode("add");
+    setEditingRowIndex(null);
+    const now = /* @__PURE__ */ new Date();
+    const timeStr = `${("0" + now.getHours()).slice(-2)}:${("0" + now.getMinutes()).slice(-2)}`;
+    setCrudForm({
+      jenis: "Kegiatan",
+      waktu: timeStr,
+      peralatan: "",
+      lokasi: "",
+      uraian: "",
+      tindakLanjut: "-",
+      status: "Normal Operasi"
+    });
+    setIsCrudModalOpen(true);
+  };
+  const openEditModal = (item) => {
+    setModalMode("edit");
+    setEditingRowIndex(item.rowIndex);
+    setCrudForm({
+      jenis: item.Jenis || "Kegiatan",
+      waktu: item.Waktu || "",
+      peralatan: item.Peralatan || "",
+      lokasi: item.Lokasi || "",
+      uraian: item.Uraian || "",
+      tindakLanjut: item.TindakLanjut || "-",
+      status: item.Status || "Normal Operasi"
+    });
+    setIsCrudModalOpen(true);
+  };
+  const handleDeleteItem = async (rowIndex, namaAlat) => {
+    if (!window.confirm(`Hapus laporan kegiatan "${namaAlat}" ini dari Google Sheets?`)) return;
+    setDeletingRowIndex(rowIndex);
+    try {
+      const ok = await deleteSheetReport(rowIndex);
+      if (ok) {
+        setStatusMsg({ text: "Laporan berhasil dihapus.", type: "success" });
+        await loadShiftReports(date, shift);
+      } else {
+        setStatusMsg({ text: "Gagal menghapus laporan dari server.", type: "error" });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeletingRowIndex(null);
+    }
+  };
+  const handleCrudSubmit = async (e) => {
+    e.preventDefault();
+    setCrudSubmitting(true);
+    try {
+      if (modalMode === "add") {
+        await syncToGoogleSheets({
+          jenis: crudForm.jenis,
+          tanggal: date,
+          waktu: crudForm.waktu,
+          shift,
+          lokasi: crudForm.lokasi || "-",
+          peralatan: crudForm.peralatan || "-",
+          uraian: crudForm.uraian || "-",
+          tindakLanjut: crudForm.tindakLanjut || "-",
+          status: crudForm.status || "Normal Operasi"
+        });
+        setStatusMsg({ text: "Laporan baru ditambahkan.", type: "success" });
+      } else if (modalMode === "edit" && editingRowIndex) {
+        await updateSheetReport({
+          rowIndex: editingRowIndex,
+          jenis: crudForm.jenis,
+          tanggal: date,
+          waktu: crudForm.waktu,
+          shift,
+          lokasi: crudForm.lokasi || "-",
+          peralatan: crudForm.peralatan || "-",
+          uraian: crudForm.uraian || "-",
+          tindakLanjut: crudForm.tindakLanjut || "-",
+          status: crudForm.status || "Normal Operasi"
+        });
+        setStatusMsg({ text: "Laporan diperbarui.", type: "success" });
+      }
+      setIsCrudModalOpen(false);
+      setTimeout(() => loadShiftReports(date, shift), 1e3);
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({ text: "Gagal menyimpan perubahan.", type: "error" });
+    } finally {
+      setCrudSubmitting(false);
+    }
+  };
   const [apiPersonil, setApiPersonil] = useState([]);
   const [iasPersonil, setIasPersonil] = useState([]);
   const pdfRef = useRef(null);
@@ -5343,50 +5718,60 @@ const TabShiftReport = () => {
       }
     };
     fetchPersonil();
+    loadShiftReports(date, shift);
   }, [date, shift]);
-  const fetchAndGeneratePDF = async () => {
-    if (!date) return;
-    setLoading(true);
-    setStatusMsg({ text: "Mengambil data dari server...", type: "info" });
+  const loadShiftReports = async (targetDate, targetShift) => {
+    if (!targetDate) return [];
+    setFetchingLive(true);
     try {
-      const res1 = await fetch(`${GOOGLE_SHEETS_WEBAPP_URL}?action=get_daily&date=${date}`);
+      const res1 = await fetch(`${GOOGLE_SHEETS_WEBAPP_URL}?action=get_daily&date=${targetDate}`);
       const data1 = await res1.json();
-      let allData = data1.status === "success" && data1.data ? data1.data : [];
-      if (shift === "M") {
-        const nextDateObj = new Date(date);
+      let allData = data1 && data1.status === "success" && Array.isArray(data1.data) ? data1.data : [];
+      if (targetShift === "M") {
+        const nextDateObj = new Date(targetDate);
         nextDateObj.setDate(nextDateObj.getDate() + 1);
         const nextDateStr = nextDateObj.toISOString().split("T")[0];
         const res2 = await fetch(`${GOOGLE_SHEETS_WEBAPP_URL}?action=get_daily&date=${nextDateStr}`);
         const data2 = await res2.json();
-        if (data2.status === "success" && data2.data) {
+        if (data2 && data2.status === "success" && Array.isArray(data2.data)) {
           allData = [...allData, ...data2.data];
         }
       }
       const filtered = allData.filter((r) => {
         if (!r.Waktu) return true;
-        const timeMatch = r.Waktu.match(/(\d{2}):(\d{2})/);
+        const timeMatch = String(r.Waktu).match(/(\d{2}):(\d{2})/);
         if (!timeMatch) return true;
         const hour = parseInt(timeMatch[1], 10);
-        if (shift === "PS") {
+        if (targetShift === "PS") {
           return hour >= 8 && hour < 20;
         } else {
           return hour >= 20 || hour < 8;
         }
       });
-      if (filtered.length > 0) {
-        setReports(filtered);
-        setStatusMsg({ text: `Ditemukan ${filtered.length} laporan. Memproses PDF...`, type: "info" });
-        setTimeout(async () => {
-          await generateAndSharePdf(filtered);
-        }, 1500);
-      } else {
-        setReports([]);
-        setStatusMsg({ text: "Tidak ada laporan pada shift tersebut.", type: "error" });
-        setLoading(false);
-      }
+      setReports(filtered);
+      return filtered;
     } catch (err) {
-      console.error(err);
-      setStatusMsg({ text: "Terjadi kesalahan saat mengambil data.", type: "error" });
+      console.error("Gagal menarik data harian shift:", err);
+      return [];
+    } finally {
+      setFetchingLive(false);
+    }
+  };
+  const fetchAndGeneratePDF = async () => {
+    if (!date) return;
+    setLoading(true);
+    setStatusMsg({ text: "Mempersiapkan laporan PDF...", type: "info" });
+    let currentList = reports;
+    if (currentList.length === 0) {
+      currentList = await loadShiftReports(date, shift) || [];
+    }
+    if (currentList.length > 0) {
+      setStatusMsg({ text: `Memproses ${currentList.length} laporan ke dalam PDF...`, type: "info" });
+      setTimeout(async () => {
+        await generateAndSharePdf();
+      }, 1e3);
+    } else {
+      setStatusMsg({ text: "Tidak ada laporan pada shift tersebut.", type: "error" });
       setLoading(false);
     }
   };
@@ -5402,6 +5787,7 @@ const TabShiftReport = () => {
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }
       };
+      const html2pdf = (await import("html2pdf.js")).default;
       const pdfBlob = await html2pdf().set(opt).from(element).output("blob");
       setStatusMsg({ text: "PDF berhasil dibuat. Menyimpan ke Google Drive...", type: "info" });
       const reader = new FileReader();
@@ -5467,6 +5853,94 @@ const TabShiftReport = () => {
     return `${dt.getDate()} ${MONTHS[dt.getMonth()].toUpperCase()} ${dt.getFullYear()}`;
   };
   return /* @__PURE__ */ jsxs("div", { className: "flex flex-col h-full bg-slate-50 p-6 rounded-2xl", children: [
+    /* @__PURE__ */ jsxs("div", { className: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 flex-1 overflow-auto", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between mb-4 flex-wrap gap-2", children: [
+        /* @__PURE__ */ jsxs("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 text-blue-600" }),
+          " Daftar Laporan Shift Aktif (",
+          reports.length,
+          ")"
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              onClick: openAddModal,
+              className: "text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 flex items-center gap-1 px-3 py-2 rounded-lg transition-colors cursor-pointer shadow-sm",
+              children: [
+                /* @__PURE__ */ jsx(Plus, { className: "w-3.5 h-3.5" }),
+                " Tambah Manual"
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              onClick: () => loadShiftReports(date, shift),
+              disabled: fetchingLive,
+              className: "text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 p-2 bg-blue-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50",
+              children: [
+                fetchingLive ? /* @__PURE__ */ jsx(Loader2, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsx(Clock, { className: "w-3 h-3" }),
+                " Segarkan"
+              ]
+            }
+          )
+        ] })
+      ] }),
+      fetchingLive ? /* @__PURE__ */ jsxs("div", { className: "p-8 text-center text-slate-400 font-bold flex flex-col items-center justify-center gap-2", children: [
+        /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 animate-spin text-blue-500" }),
+        " Memuat data kegiatan shift..."
+      ] }) : reports.length === 0 ? /* @__PURE__ */ jsx("div", { className: "p-8 text-center text-slate-400 font-bold italic bg-slate-50 rounded-xl border border-dashed border-slate-200", children: "Belum ada laporan (Perbaikan, Kegiatan, atau Storing) tercatat pada shift ini." }) : /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: reports.map((item, idx) => /* @__PURE__ */ jsxs("div", { className: "relative flex gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white transition-all shadow-sm group pr-16", children: [
+        /* @__PURE__ */ jsxs("div", { className: "absolute top-3 right-3 flex items-center gap-1 z-10", children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => openEditModal(item),
+              title: "Edit Laporan",
+              className: "p-1.5 bg-white hover:bg-blue-50 text-blue-600 rounded-lg border border-slate-200 shadow-sm cursor-pointer transition-colors",
+              children: /* @__PURE__ */ jsx(Edit, { className: "w-3.5 h-3.5" })
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => handleDeleteItem(item.rowIndex, item.Peralatan || "item"),
+              disabled: deletingRowIndex === item.rowIndex,
+              title: "Hapus Laporan",
+              className: "p-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded-lg border border-slate-200 shadow-sm cursor-pointer transition-colors disabled:opacity-50",
+              children: deletingRowIndex === item.rowIndex ? /* @__PURE__ */ jsx(Loader2, { className: "w-3.5 h-3.5 animate-spin" }) : /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" })
+            }
+          )
+        ] }),
+        item.Drive_Image_ID && item.Drive_Image_ID !== "-" && item.Drive_Image_ID !== "" ? /* @__PURE__ */ jsx(
+          "img",
+          {
+            src: `https://drive.google.com/uc?export=view&id=${item.Drive_Image_ID}`,
+            alt: "Foto",
+            className: "w-24 h-24 rounded-lg object-cover bg-slate-200 border border-slate-300 shrink-0",
+            onError: (e) => {
+              e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="%23cbd5e1"/><text x="50%" y="50%" font-size="10" text-anchor="middle" dominant-baseline="middle" fill="%2364748b">No Foto</text></svg>';
+            }
+          }
+        ) : /* @__PURE__ */ jsx("div", { className: "w-24 h-24 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-400 shrink-0", children: "No Foto" }),
+        /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 mb-1", children: [
+            /* @__PURE__ */ jsx("span", { className: `text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${item.Jenis === "Perbaikan" ? "bg-rose-100 text-rose-700 border border-rose-200" : item.Jenis === "Storing" ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-blue-100 text-blue-700 border border-blue-200"}`, children: item.Jenis || "Kegiatan" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-slate-500 flex items-center gap-1", children: [
+              /* @__PURE__ */ jsx(Clock, { className: "w-3 h-3" }),
+              " ",
+              item.Waktu || "-"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("h4", { className: "font-bold text-sm text-slate-800 truncate", children: item.Peralatan || "Peralatan" }),
+          /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-600 mb-1 truncate", children: [
+            "📍 ",
+            item.Lokasi || "-"
+          ] }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-600 line-clamp-2", children: item.Uraian || "-" })
+        ] })
+      ] }, idx)) })
+    ] }),
     /* @__PURE__ */ jsxs("div", { className: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6", children: [
       /* @__PURE__ */ jsxs("h2", { className: "text-xl font-bold text-slate-800 flex items-center gap-2 mb-2", children: [
         /* @__PURE__ */ jsx(FileText, { className: "w-6 h-6 text-blue-600" }),
@@ -5644,6 +6118,142 @@ const TabShiftReport = () => {
           reports.length === 0 && /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 10, className: "border-[3px] border-black p-4 text-center font-bold italic text-gray-500", children: "Tidak ada laporan perbaikan/kegiatan pada shift ini." }) })
         ] })
       ] })
+    ] }) }),
+    isCrudModalOpen && /* @__PURE__ */ jsx("div", { className: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4", children: /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200", children: [
+      /* @__PURE__ */ jsxs("div", { className: "p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxs("h3", { className: "font-bold text-slate-800 flex items-center gap-2", children: [
+          modalMode === "add" ? /* @__PURE__ */ jsx(Plus, { className: "w-5 h-5 text-blue-600" }) : /* @__PURE__ */ jsx(Edit, { className: "w-5 h-5 text-blue-600" }),
+          modalMode === "add" ? "Tambah Laporan Manual" : "Edit Laporan Shift"
+        ] }),
+        /* @__PURE__ */ jsx("button", { onClick: () => setIsCrudModalOpen(false), className: "p-1 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors", children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
+      ] }),
+      /* @__PURE__ */ jsxs("form", { onSubmit: handleCrudSubmit, className: "p-6 overflow-y-auto space-y-4 flex-1", children: [
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-slate-700 mb-1", children: "Jenis Laporan" }),
+            /* @__PURE__ */ jsxs(
+              "select",
+              {
+                value: crudForm.jenis,
+                onChange: (e) => setCrudForm({ ...crudForm, jenis: e.target.value }),
+                className: "w-full text-sm font-bold p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none",
+                children: [
+                  /* @__PURE__ */ jsx("option", { value: "Kegiatan", children: "Kegiatan" }),
+                  /* @__PURE__ */ jsx("option", { value: "Perbaikan", children: "Perbaikan" }),
+                  /* @__PURE__ */ jsx("option", { value: "Storing", children: "Storing" })
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-slate-700 mb-1", children: "Jam / Waktu" }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "text",
+                required: true,
+                placeholder: "Contoh: 08:30",
+                value: crudForm.waktu,
+                onChange: (e) => setCrudForm({ ...crudForm, waktu: e.target.value }),
+                className: "w-full text-sm font-bold p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-slate-700 mb-1", children: "Nama Peralatan" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              required: true,
+              placeholder: "Contoh: X-Ray Baggage / AC Split",
+              value: crudForm.peralatan,
+              onChange: (e) => setCrudForm({ ...crudForm, peralatan: e.target.value }),
+              className: "w-full text-sm font-bold p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-slate-700 mb-1", children: "Lokasi" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              required: true,
+              placeholder: "Contoh: SCP T2D / Ruang Server",
+              value: crudForm.lokasi,
+              onChange: (e) => setCrudForm({ ...crudForm, lokasi: e.target.value }),
+              className: "w-full text-sm font-bold p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-slate-700 mb-1", children: "Uraian / Deskripsi Pekerjaan" }),
+          /* @__PURE__ */ jsx(
+            "textarea",
+            {
+              required: true,
+              rows: 3,
+              placeholder: "Jelaskan detail kegiatan yang dilakukan...",
+              value: crudForm.uraian,
+              onChange: (e) => setCrudForm({ ...crudForm, uraian: e.target.value }),
+              className: "w-full text-sm p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-slate-700 mb-1", children: "Tindak Lanjut" }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "text",
+                placeholder: "Contoh: Monitoring / Selesai",
+                value: crudForm.tindakLanjut,
+                onChange: (e) => setCrudForm({ ...crudForm, tindakLanjut: e.target.value }),
+                className: "w-full text-sm p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-slate-700 mb-1", children: "Status" }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "text",
+                placeholder: "Contoh: Normal Operasi",
+                value: crudForm.status,
+                onChange: (e) => setCrudForm({ ...crudForm, status: e.target.value }),
+                className: "w-full text-sm font-bold p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "pt-2 flex items-center justify-end gap-2 border-t border-slate-200 mt-4", children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => setIsCrudModalOpen(false),
+              className: "px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors",
+              children: "Batal"
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "submit",
+              disabled: crudSubmitting,
+              className: "px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5",
+              children: [
+                crudSubmitting && /* @__PURE__ */ jsx(Loader2, { className: "w-3.5 h-3.5 animate-spin" }),
+                crudSubmitting ? "Menyimpan..." : "Simpan Laporan"
+              ]
+            }
+          )
+        ] })
+      ] })
     ] }) })
   ] });
 };
@@ -5701,11 +6311,6 @@ function App() {
         ) })
       ] }) }),
       /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-4 bg-slate-50 border-b border-slate-200", children: [
-        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("perbaikan"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-b border-slate-200 ${activeTab === "perbaikan" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
-          /* @__PURE__ */ jsx(Wrench, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
-          " ",
-          /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Perbaikan" })
-        ] }),
         /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("kehadiran"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-b border-slate-200 ${activeTab === "kehadiran" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
           /* @__PURE__ */ jsx(Users, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
           " ",
@@ -5716,28 +6321,33 @@ function App() {
           " ",
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Briefing" })
         ] }),
-        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("storing"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-b border-slate-200 ${activeTab === "storing" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("storing"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-b border-slate-200 ${activeTab === "storing" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
           /* @__PURE__ */ jsx(MonitorSearchIcon, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
           " ",
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Storing" })
         ] }),
-        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("checklist"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === "checklist" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("checklist"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-b border-slate-200 ${activeTab === "checklist" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
           /* @__PURE__ */ jsx(CheckSquare, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
           " ",
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Checklist" })
+        ] }),
+        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("perbaikan"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === "perbaikan" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+          /* @__PURE__ */ jsx(Wrench, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
+          " ",
+          /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Perbaikan" })
         ] }),
         /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("kalibrasi"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === "kalibrasi" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
           /* @__PURE__ */ jsx(Settings, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
           " ",
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Kalibrasi" })
         ] }),
-        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("report"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === "report" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
-          /* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
+        /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("kegiatan"), className: `py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === "kegiatan" ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+          /* @__PURE__ */ jsx(Briefcase, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
           " ",
-          /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Report" })
+          /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Kegiatan" })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "relative flex", children: [
-          /* @__PURE__ */ jsxs("button", { onClick: () => setShowMoreMenu(!showMoreMenu), className: `w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${activeTab === "tip" || activeTab === "data" || activeTab === "kegiatan" || showMoreMenu ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+          /* @__PURE__ */ jsxs("button", { onClick: () => setShowMoreMenu(!showMoreMenu), className: `w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${activeTab === "tip" || activeTab === "data" || activeTab === "report" || showMoreMenu ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
             /* @__PURE__ */ jsx(MoreHorizontal, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
             " ",
             /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "More" })
@@ -5745,17 +6355,17 @@ function App() {
           showMoreMenu && /* @__PURE__ */ jsxs(Fragment, { children: [
             /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-40", onClick: () => setShowMoreMenu(false) }),
             /* @__PURE__ */ jsxs("div", { className: "absolute top-full right-0 mt-1 w-36 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50", children: [
-              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("kegiatan"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === "kegiatan" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
-                /* @__PURE__ */ jsx(Briefcase, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
-                " Kegiatan"
+              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("report"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === "report" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
+                /* @__PURE__ */ jsx(FileText, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
+                " Report"
               ] }),
-              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("data"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === "data" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
-                /* @__PURE__ */ jsx(Database, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
-                " Data"
-              ] }),
-              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("tip"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === "tip" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
+              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("tip"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === "tip" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
                 /* @__PURE__ */ jsx(AlertTriangle, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
                 " TIP"
+              ] }),
+              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("data"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === "data" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
+                /* @__PURE__ */ jsx(Database, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
+                " Data"
               ] })
             ] })
           ] })

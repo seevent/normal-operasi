@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
+import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
@@ -111,6 +112,19 @@ export const TabKegiatan: React.FC = () => {
 
     const message = generateWA_Kegiatan(kegiatanData);
     
+    const waktuFull = kegiatanData.waktuSelesai ? `${kegiatanData.waktuMulai} - ${kegiatanData.waktuSelesai}` : kegiatanData.waktuMulai;
+    syncToGoogleSheets({
+      jenis: 'Kegiatan',
+      tanggal: kegiatanData.tanggal,
+      waktu: waktuFull,
+      lokasi: kegiatanData.lokasi || '-',
+      peralatan: 'Kegiatan Lapangan',
+      uraian: kegiatanData.kegiatan || '-',
+      tindakLanjut: '-',
+      status: 'Normal Operasi',
+      imageFile: generatedCollageFile
+    });
+
     await shareToWhatsApp(message, generatedCollageFile, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
