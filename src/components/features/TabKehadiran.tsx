@@ -12,6 +12,7 @@ export const TabKehadiran: React.FC = () => {
   const { dataApiT2, dataOmIasT2 } = useMasterDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [loadedJadwalIds, setLoadedJadwalIds] = useState<number[]>([]);
 
   const [attendanceData, setAttendanceData] = useState(() => {
     const now = new Date();
@@ -94,6 +95,9 @@ export const TabKehadiran: React.FC = () => {
         if (apiRows.length === 0) apiRows.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
         if (omRows.length === 0) omRows.push({ id: Date.now()+1, jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
 
+        const allLoaded = [...apiRows, ...omRows];
+        setLoadedJadwalIds(allLoaded.map(r => r.jadwal_id).filter(Boolean));
+
         setAttendanceData(prev => ({
           ...prev,
           apiList: apiRows,
@@ -157,6 +161,9 @@ export const TabKehadiran: React.FC = () => {
   const removeRow = (listType: 'apiList' | 'omList', index: number) => {
     const newList = [...attendanceData[listType]];
     newList.splice(index, 1);
+    if (newList.length === 0) {
+      newList.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
+    }
     setAttendanceData({ ...attendanceData, [listType]: newList });
   };
 
@@ -184,12 +191,25 @@ export const TabKehadiran: React.FC = () => {
       const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
       const allRows = [...attendanceData.apiList, ...attendanceData.omList];
 
+      const currentJadwalIds = new Set(allRows.map(r => r.jadwal_id).filter(Boolean));
+      const idsToDelete = loadedJadwalIds.filter(id => !currentJadwalIds.has(id));
+
+      if (idsToDelete.length > 0) {
+        const { error: delError } = await supabase
+          .from('jadwal_shift')
+          .delete()
+          .in('id', idsToDelete);
+        if (delError) {
+          console.error('Failed to delete removed schedule rows:', delError);
+        }
+      }
+
       for (const row of allRows) {
         if (!row.name || !row.personel_id) continue;
         
         if (row.jadwal_id) {
           await supabase.from('jadwal_shift')
-            .update({ status_kehadiran: row.status })
+            .update({ personel_id: row.personel_id, status_kehadiran: row.status })
             .eq('id', row.jadwal_id);
         } else {
           await supabase.from('jadwal_shift').upsert({
@@ -200,6 +220,8 @@ export const TabKehadiran: React.FC = () => {
           }, { onConflict: 'personel_id, tanggal' });
         }
       }
+
+      setLoadedJadwalIds(Array.from(currentJadwalIds));
 
       const message = generateWA_Kehadiran(attendanceData);
       await shareToWhatsApp(message, null, () => {
@@ -261,7 +283,7 @@ export const TabKehadiran: React.FC = () => {
                   <option value="Sakit">Sakit</option>
                   <option value="Dinas Luar">Dinas Luar</option>
                 </select>
-                <button type="button" onClick={() => removeRow('apiList', index)} disabled={attendanceData.apiList.length <= 1} className={`w-full sm:w-auto p-2 rounded-md flex justify-center items-center transition-colors ${attendanceData.apiList.length <= 1 ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}`}>
+                <button type="button" onClick={() => removeRow('apiList', index)} disabled={attendanceData.apiList.length <= 1 && !row.name} className={`w-full sm:w-auto p-2 rounded-md flex justify-center items-center transition-colors ${attendanceData.apiList.length <= 1 && !row.name ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}`}>
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -295,7 +317,7 @@ export const TabKehadiran: React.FC = () => {
                   <option value="Sakit">Sakit</option>
                   <option value="Dinas Luar">Dinas Luar</option>
                 </select>
-                <button type="button" onClick={() => removeRow('omList', index)} disabled={attendanceData.omList.length <= 1} className={`w-full sm:w-auto p-2 rounded-md flex justify-center items-center transition-colors ${attendanceData.omList.length <= 1 ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}`}>
+                <button type="button" onClick={() => removeRow('omList', index)} disabled={attendanceData.omList.length <= 1 && !row.name} className={`w-full sm:w-auto p-2 rounded-md flex justify-center items-center transition-colors ${attendanceData.omList.length <= 1 && !row.name ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}`}>
                   <X className="w-5 h-5" />
                 </button>
               </div>
