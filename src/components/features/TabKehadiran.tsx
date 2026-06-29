@@ -12,7 +12,7 @@ export const TabKehadiran: React.FC = () => {
   const { dataApiT2, dataOmIasT2 } = useMasterDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [loadedJadwalIds, setLoadedJadwalIds] = useState<number[]>([]);
+  const [loadedSchedules, setLoadedSchedules] = useState<{ id: number; personel_id: number }[]>([]);
 
   const [attendanceData, setAttendanceData] = useState(() => {
     const now = new Date();
@@ -44,74 +44,79 @@ export const TabKehadiran: React.FC = () => {
     };
   });
 
-  useEffect(() => {
-    const fetchJadwal = async () => {
-      setIsLoading(true);
-      try {
-        const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
+  const fetchJadwal = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
 
-        const { data, error } = await supabase
-          .from('jadwal_shift')
-          .select(`
-            id, shift, status_kehadiran,
-            personel:personel_id (id, nama, no_hp, unit_kerja(nama))
-          `)
-          .eq('tanggal', attendanceData.tanggal)
-          .neq('shift', 'D');
+      const { data, error } = await supabase
+        .from('jadwal_shift')
+        .select(`
+          id, shift, status_kehadiran,
+          personel:personel_id (id, nama, no_hp, unit_kerja(nama))
+        `)
+        .eq('tanggal', attendanceData.tanggal)
+        .neq('shift', 'D')
+        .order('id', { ascending: true });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        const filteredData = ((data as any[]) || []).filter((d: any) => {
-          const s = (d.shift || '').toUpperCase();
-          if (targetShiftCode === 'PS') {
-            return s === 'PS';
-          } else {
-            return s === 'M';
-          }
-        });
+      const filteredData = ((data as any[]) || []).filter((d: any) => {
+        const s = (d.shift || '').toUpperCase();
+        if (targetShiftCode === 'PS') {
+          return s === 'PS';
+        } else {
+          return s === 'M';
+        }
+      });
 
-        const apiRows = filteredData
-          .filter((d: any) => d.personel?.unit_kerja?.nama === 'API T2')
-          .map(d => ({
-            id: d.id,
-            jadwal_id: d.id,
-            personel_id: d.personel?.id,
-            name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
-            phone: d.personel?.no_hp || '',
-            status: d.status_kehadiran || 'Hadir'
-          }));
-
-        const omRows = filteredData
-          .filter((d: any) => d.personel?.unit_kerja?.nama === 'OM/IAS T2')
-          .map((d: any) => ({
-            id: d.id,
-            jadwal_id: d.id,
-            personel_id: d.personel?.id,
-            name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
-            phone: d.personel?.no_hp || '',
-            status: d.status_kehadiran || 'Hadir'
-          }));
-
-        if (apiRows.length === 0) apiRows.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
-        if (omRows.length === 0) omRows.push({ id: Date.now()+1, jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
-
-        const allLoaded = [...apiRows, ...omRows];
-        setLoadedJadwalIds(allLoaded.map(r => r.jadwal_id).filter(Boolean));
-
-        setAttendanceData(prev => ({
-          ...prev,
-          apiList: apiRows,
-          omList: omRows
+      const apiRows = filteredData
+        .filter((d: any) => d.personel?.unit_kerja?.nama === 'API T2')
+        .map(d => ({
+          id: d.id,
+          jadwal_id: d.id,
+          personel_id: d.personel?.id,
+          name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
+          phone: d.personel?.no_hp || '',
+          status: d.status_kehadiran || 'Hadir'
         }));
-      } catch (err) {
-        console.error('Error fetching jadwal:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchJadwal();
+      const omRows = filteredData
+        .filter((d: any) => d.personel?.unit_kerja?.nama === 'OM/IAS T2')
+        .map((d: any) => ({
+          id: d.id,
+          jadwal_id: d.id,
+          personel_id: d.personel?.id,
+          name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
+          phone: d.personel?.no_hp || '',
+          status: d.status_kehadiran || 'Hadir'
+        }));
+
+      if (apiRows.length === 0) apiRows.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
+      if (omRows.length === 0) omRows.push({ id: Date.now()+1, jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
+
+      const allLoaded = [...apiRows, ...omRows];
+      setLoadedSchedules(
+        allLoaded
+          .filter(r => r.jadwal_id && r.personel_id)
+          .map(r => ({ id: r.jadwal_id, personel_id: r.personel_id }))
+      );
+
+      setAttendanceData(prev => ({
+        ...prev,
+        apiList: apiRows,
+        omList: omRows
+      }));
+    } catch (err) {
+      console.error('Error fetching jadwal:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [attendanceData.tanggal, attendanceData.shift]);
+
+  useEffect(() => {
+    fetchJadwal();
+  }, [fetchJadwal]);
 
   const handleAttendanceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -142,9 +147,11 @@ export const TabKehadiran: React.FC = () => {
       if (person) {
         newList[index].phone = person.phone;
         newList[index].personel_id = person.id;
+        newList[index].jadwal_id = null;
       } else {
         newList[index].phone = '';
         newList[index].personel_id = null;
+        newList[index].jadwal_id = null;
       }
     }
     
@@ -190,9 +197,13 @@ export const TabKehadiran: React.FC = () => {
     try {
       const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
       const allRows = [...attendanceData.apiList, ...attendanceData.omList];
+      const validRows = allRows.filter(r => r.name && r.personel_id);
+      const currentPersonelIds = new Set(validRows.map(r => r.personel_id));
 
-      const currentJadwalIds = new Set(allRows.map(r => r.jadwal_id).filter(Boolean));
-      const idsToDelete = loadedJadwalIds.filter(id => !currentJadwalIds.has(id));
+      // 1. Hapus personil yang sebelumnya ada di jadwal shift ini tetapi dihapus atau diganti di UI
+      const idsToDelete = loadedSchedules
+        .filter(item => !currentPersonelIds.has(item.personel_id))
+        .map(item => item.id);
 
       if (idsToDelete.length > 0) {
         const { error: delError } = await supabase
@@ -200,37 +211,39 @@ export const TabKehadiran: React.FC = () => {
           .delete()
           .in('id', idsToDelete);
         if (delError) {
-          console.error('Failed to delete removed schedule rows:', delError);
+          throw new Error(`Gagal menghapus personil dari database: ${delError.message}`);
         }
       }
 
-      for (const row of allRows) {
-        if (!row.name || !row.personel_id) continue;
-        
-        if (row.jadwal_id) {
-          await supabase.from('jadwal_shift')
-            .update({ personel_id: row.personel_id, status_kehadiran: row.status })
-            .eq('id', row.jadwal_id);
-        } else {
-          await supabase.from('jadwal_shift').upsert({
-            personel_id: row.personel_id,
-            tanggal: attendanceData.tanggal,
-            shift: targetShiftCode,
-            status_kehadiran: row.status
-          }, { onConflict: 'personel_id, tanggal' });
+      // 2. Simpan (penambahan) atau perbarui (perubahan status kehadiran / personil) semua personil yang hadir saat ini
+      const upsertPayload = validRows.map(row => ({
+        personel_id: row.personel_id,
+        tanggal: attendanceData.tanggal,
+        shift: targetShiftCode,
+        status_kehadiran: row.status
+      }));
+
+      if (upsertPayload.length > 0) {
+        const { error: upsertError } = await supabase
+          .from('jadwal_shift')
+          .upsert(upsertPayload, { onConflict: 'personel_id, tanggal' });
+
+        if (upsertError) {
+          throw new Error(`Gagal menyimpan perubahan kehadiran ke database: ${upsertError.message}`);
         }
       }
 
-      setLoadedJadwalIds(Array.from(currentJadwalIds));
+      // Sync data jadwal dari database agar ID jadwal terbaru tersimpan di state
+      await fetchJadwal();
 
       const message = generateWA_Kehadiran(attendanceData);
       await shareToWhatsApp(message, null, () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save attendance', err);
-      alert('Gagal menyimpan absensi ke database!');
+      alert(err.message || 'Gagal menyimpan absensi ke database!');
     } finally {
       setIsSaving(false);
     }

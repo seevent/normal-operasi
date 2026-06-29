@@ -6,7 +6,13 @@ export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) =>
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
   const dateParts = formData.tanggal ? formData.tanggal.split('-') : ['','',''];
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : '';
-  let lokasiFinal = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || formData.lokasi1 === 'HBSCP') ? ` ${formData.lokasi2}` : ` No.${formData.lokasi2}`) : '');
+  const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0
+    ? formData.lokasiList.filter((l: any) => l.lokasi1)
+    : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
+    
+  const lokasiFinal = locList.map((loc: any) => {
+    return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
+  }).join(', ');
   const judulLaporan = isVerifikasiETD ? `Laporan Verifikasi ${formData.peralatan}` : `Laporan Perbaikan ${formData.peralatan}`;
 
   return `${judulLaporan}
@@ -298,7 +304,7 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
   const jamMulai = kalibrasiGlobal.waktuMulai || '...';
   const jamSelesai = kalibrasiGlobal.waktuSelesai || '...';
 
-  let msg = `*(Real-time)*\n*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}`;
+  let msg = `*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}`;
 
   kalibrasiEntries.forEach((entry) => {
     if (entry.peralatan.length === 0) return; 

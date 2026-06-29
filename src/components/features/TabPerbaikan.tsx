@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle } from 'lucide-react';
+import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
@@ -39,7 +39,7 @@ export const TabPerbaikan: React.FC = () => {
     const realDay = String(now.getDate()).padStart(2, '0');
     const realDate = `${realYear}-${realMonth}-${realDay}`;
     return {
-      peralatan: '', lokasi1: '', lokasi2: '', sumberLaporan: 'Avsec', indikasiAwal: '',
+      peralatan: '', lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] as { lokasi1: string; lokasi2: string }[], sumberLaporan: 'Avsec', indikasiAwal: '',
       tanggal: realDate, waktuMulai: '', waktuSelesai: '',
       lamaPengerjaan: '', teknisi: '', permasalahan: '• ', tindakLanjut: '• ', status: 'Pekerjaan Selesai'
     };
@@ -133,14 +133,32 @@ export const TabPerbaikan: React.FC = () => {
   const [customCollageFile, setCustomCollageFile] = useState<File | null>(null);
   const [customCollageUrl, setCustomCollageUrl] = useState<string | null>(null);
 
+  const permasalahanRef = React.useRef<HTMLTextAreaElement>(null);
+  const tindakLanjutRef = React.useRef<HTMLTextAreaElement>(null);
+
+  React.useEffect(() => {
+    if (permasalahanRef.current) {
+      permasalahanRef.current.style.height = 'auto';
+      permasalahanRef.current.style.height = `${Math.max(80, permasalahanRef.current.scrollHeight)}px`;
+    }
+  }, [formData.permasalahan]);
+
+  React.useEffect(() => {
+    if (tindakLanjutRef.current) {
+      tindakLanjutRef.current.style.height = 'auto';
+      tindakLanjutRef.current.style.height = `${Math.max(140, tindakLanjutRef.current.scrollHeight)}px`;
+    }
+  }, [formData.tindakLanjut]);
+
   // === Handlers ===
   const handleRepairChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     let newFormData = { ...formData, [name]: value };
 
-    // Jika ubah lokasi 1 atau peralatan, reset lokasi 2
-    if (name === 'lokasi1' || name === 'peralatan') {
+    if (name === 'peralatan') {
+      newFormData.lokasi1 = '';
       newFormData.lokasi2 = '';
+      newFormData.lokasiList = [{ lokasi1: '', lokasi2: '' }];
     }
 
     if (name === 'waktuMulai' || name === 'waktuSelesai') {
@@ -163,15 +181,52 @@ export const TabPerbaikan: React.FC = () => {
     setFormData(newFormData);
   };
 
+  const handleLokasiEntryChange = (index: number, field: 'lokasi1' | 'lokasi2', value: string) => {
+    setFormData(prev => {
+      const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }])];
+      newList[index] = { ...newList[index], [field]: value };
+      if (field === 'lokasi1') {
+        newList[index].lokasi2 = '';
+      }
+      return {
+        ...prev,
+        lokasiList: newList,
+        lokasi1: newList[0]?.lokasi1 || '',
+        lokasi2: newList[0]?.lokasi2 || ''
+      };
+    });
+  };
+
+  const addLokasiEntry = () => {
+    setFormData(prev => {
+      const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }]), { lokasi1: '', lokasi2: '' }];
+      return { ...prev, lokasiList: newList };
+    });
+  };
+
+  const removeLokasiEntry = (index: number) => {
+    setFormData(prev => {
+      const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }])];
+      newList.splice(index, 1);
+      if (newList.length === 0) newList.push({ lokasi1: '', lokasi2: '' });
+      return {
+        ...prev,
+        lokasiList: newList,
+        lokasi1: newList[0]?.lokasi1 || '',
+        lokasi2: newList[0]?.lokasi2 || ''
+      };
+    });
+  };
+
   const handlePeralatanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     const isETD = value === 'ETD Leidos QS-B220';
     
     if (!isETD && isVerifikasiETD) {
       setIsVerifikasiETD(false);
-      setFormData(prev => ({ ...prev, peralatan: value, lokasi2: '', permasalahan: '• ', tindakLanjut: '• ' }));
+      setFormData(prev => ({ ...prev, peralatan: value, lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }], permasalahan: '• ', tindakLanjut: '• ' }));
     } else {
-      setFormData(prev => ({ ...prev, peralatan: value, lokasi2: '' }));
+      setFormData(prev => ({ ...prev, peralatan: value, lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] }));
     }
   };
 
@@ -181,7 +236,9 @@ export const TabPerbaikan: React.FC = () => {
       const newData = { ...prev };
       if (checked && newData.peralatan !== 'ETD Leidos QS-B220') {
         newData.peralatan = 'ETD Leidos QS-B220';
+        newData.lokasi1 = '';
         newData.lokasi2 = '';
+        newData.lokasiList = [{ lokasi1: '', lokasi2: '' }];
       }
       
       if (checked) {
@@ -284,7 +341,8 @@ export const TabPerbaikan: React.FC = () => {
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
     
     const uraianText = `Permasalahan : ${formData.permasalahan}`;
-    const lokasiFull = formData.lokasi1 + (formData.lokasi2 && formData.lokasi2 !== '-' ? ` - ${formData.lokasi2}` : '');
+    const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
+    const lokasiFull = activeLocs.map((l: any) => l.lokasi1 + (l.lokasi2 && l.lokasi2 !== '-' ? ` - ${l.lokasi2}` : '')).join(', ');
     const waktuFull = formData.waktuSelesai ? `${formData.waktuMulai} - ${formData.waktuSelesai}` : formData.waktuMulai;
 
     syncToGoogleSheets({
@@ -343,35 +401,69 @@ export const TabPerbaikan: React.FC = () => {
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Lokasi</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                  <select 
-                    name="lokasi1" 
-                    required 
-                    disabled={!formData.peralatan}
-                    value={formData.lokasi1} 
-                    onChange={handleRepairChange} 
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    <option value="">- Pilih Lokasi -</option>
-                    {getGeneralLokasiOptions(formData.peralatan).map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
-                <div className="w-1/3">
-                  {(() => {
-                    const options = getLokasi2Options(formData.lokasi1, [formData.peralatan]);
-                    const isDisabled = options.length === 0 || (options.length === 1 && options[0] === '-');
-                    return (
-                      <select name="lokasi2" value={formData.lokasi2} onChange={handleRepairChange} disabled={isDisabled} className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${isDisabled ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}>
-                        <option value="">- No -</option>
-                        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            <div className="md:col-span-2 space-y-3">
+              <label className="block text-sm font-medium text-slate-700">Lokasi</label>
+              {(formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).map((loc, index) => {
+                const selectedOtherLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1 }])
+                  .filter((_, idx) => idx !== index)
+                  .map((item) => item.lokasi1)
+                  .filter(Boolean);
+
+                const availableOptions = getGeneralLokasiOptions(formData.peralatan).filter(
+                  (opt: string) => !selectedOtherLocs.includes(opt) || opt === loc.lokasi1
+                );
+
+                const options2 = getLokasi2Options(loc.lokasi1, [formData.peralatan]);
+                const isDisabled2 = options2.length === 0 || (options2.length === 1 && options2[0] === '-');
+
+                return (
+                  <div key={index} className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                      <select 
+                        required={index === 0}
+                        disabled={!formData.peralatan}
+                        value={loc.lokasi1} 
+                        onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)} 
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm"
+                      >
+                        <option value="">{index === 0 ? '- Pilih Lokasi -' : '- Pilih Lokasi Tambahan (Opsional) -'}</option>
+                        {availableOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
-                    );
-                  })()}
-                </div>
+                    </div>
+                    <div className="w-1/3">
+                      <select 
+                        value={loc.lokasi2} 
+                        onChange={(e) => handleLokasiEntryChange(index, 'lokasi2', e.target.value)} 
+                        disabled={isDisabled2} 
+                        className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}
+                      >
+                        <option value="">- No -</option>
+                        {options2.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    </div>
+                    {index > 0 && (
+                      <button 
+                        type="button" 
+                        onClick={() => removeLokasiEntry(index)}
+                        className="p-2 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-lg transition-colors flex items-center justify-center shrink-0"
+                        title="Hapus lokasi tambahan ini"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              <div>
+                <button
+                  type="button"
+                  disabled={!formData.peralatan}
+                  onClick={addLokasiEntry}
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 pt-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Tambah Lokasi
+                </button>
               </div>
             </div>
             <div>
@@ -504,16 +596,17 @@ export const TabPerbaikan: React.FC = () => {
           </h2>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Permasalahan</label>
-            <textarea name="permasalahan" required rows={3} value={formData.permasalahan} onChange={(e) => handleBulletChange(e, 'permasalahan')} onKeyDown={(e) => handleBulletKeyDown(e, 'permasalahan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"></textarea>
+            <textarea ref={permasalahanRef} name="permasalahan" required rows={3} value={formData.permasalahan} onChange={(e) => handleBulletChange(e, 'permasalahan')} onKeyDown={(e) => handleBulletKeyDown(e, 'permasalahan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Tindak Lanjut</label>
-            <textarea name="tindakLanjut" required rows={6} value={formData.tindakLanjut} onChange={(e) => handleBulletChange(e, 'tindakLanjut')} onKeyDown={(e) => handleBulletKeyDown(e, 'tindakLanjut')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"></textarea>
+            <textarea ref={tindakLanjutRef} name="tindakLanjut" required rows={6} value={formData.tindakLanjut} onChange={(e) => handleBulletChange(e, 'tindakLanjut')} onKeyDown={(e) => handleBulletKeyDown(e, 'tindakLanjut')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
             <select name="status" value={formData.status} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
               <option value="Pekerjaan Selesai">Pekerjaan Selesai</option>
+              <option value="Normal Operasi">Normal Operasi</option>
               <option value="On Progress">On Progress</option>
               <option value="Menunggu Sparepart">Menunggu Sparepart</option>
               <option value="Perlu Eskalasi Lanjut">Perlu Eskalasi Lanjut</option>
