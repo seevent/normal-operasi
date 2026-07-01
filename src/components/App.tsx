@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { 
   Wrench, Users, Megaphone, CheckSquare, Settings, AlertTriangle, 
-  RefreshCw, Check, Database, CheckCircle, FileText, MoreHorizontal, Briefcase
+  RefreshCw, Check, Database, CheckCircle, FileText, MoreHorizontal, Briefcase, FileWarning
 } from 'lucide-react';
 import { MonitorSearchIcon } from './shared/MonitorSearchIcon';
 
+import { TabInitialReport } from './features/TabInitialReport';
 import { TabKehadiran } from './features/TabKehadiran';
 import { TabPerbaikan } from './features/TabPerbaikan';
 import { TabStoring } from './features/TabStoring';
@@ -68,7 +69,8 @@ export default function App() {
         <div className="bg-blue-800 px-6 py-5 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {activeTab === 'perbaikan' ? <Wrench className="text-white w-7 h-7" /> : 
+              {activeTab === 'initial' ? <FileWarning className="text-white w-7 h-7" /> :
+               activeTab === 'perbaikan' ? <Wrench className="text-white w-7 h-7" /> : 
                activeTab === 'kehadiran' ? <Users className="text-white w-7 h-7" /> : 
                activeTab === 'briefing' ? <Megaphone className="text-white w-7 h-7" /> : 
                activeTab === 'storing' ? <MonitorSearchIcon className="text-white w-7 h-7" /> : 
@@ -113,23 +115,26 @@ export default function App() {
             <CheckSquare className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Checklist</span>
           </button>
           
+          <button onClick={() => switchTab('initial')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'initial' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+            <FileWarning className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Initial Report</span>
+          </button>
           <button onClick={() => switchTab('perbaikan')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'perbaikan' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
             <Wrench className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Perbaikan</span>
           </button>
           <button onClick={() => switchTab('kalibrasi')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'kalibrasi' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
             <Settings className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Kalibrasi</span>
           </button>
-          <button onClick={() => switchTab('kegiatan')} className={`py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all border-r border-slate-200 ${activeTab === 'kegiatan' ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
-            <Briefcase className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Kegiatan</span>
-          </button>
           <div className="relative flex">
-            <button onClick={() => setShowMoreMenu(!showMoreMenu)} className={`w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${(activeTab === 'tip' || activeTab === 'data' || activeTab === 'report' || showMoreMenu) ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+            <button onClick={() => setShowMoreMenu(!showMoreMenu)} className={`w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${(activeTab === 'kegiatan' || activeTab === 'tip' || activeTab === 'data' || activeTab === 'report' || showMoreMenu) ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
               <MoreHorizontal className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">More</span>
             </button>
             {showMoreMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)}></div>
                 <div className="absolute top-full right-0 mt-1 w-36 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                  <button onClick={() => switchTab('kegiatan')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'kegiatan' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                    <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" /> Kegiatan
+                  </button>
                   <button onClick={() => switchTab('report')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'report' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
                     <FileText className="w-4 h-4 sm:w-5 sm:h-5" /> Report
                   </button>
@@ -148,6 +153,7 @@ export default function App() {
         {/* ======================================================== */}
         {/* ====================== TAB CONTENTS ==================== */}
         {/* ======================================================== */}
+        {activeTab === 'initial' && <TabInitialReport />}
         {activeTab === 'perbaikan' && <TabPerbaikan />}
         {activeTab === 'kehadiran' && <TabKehadiran />}
         {activeTab === 'briefing' && <TabBriefing />}

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { 
   DEFAULT_DATA_API_T2, DEFAULT_DATA_OM_IAS_T2, DEFAULT_STORING_EQUIPMENTS, 
   DEFAULT_STORING_LOC_AC, DEFAULT_STORING_LOC_DEFAULT, DEFAULT_CHECKLIST_DATA,
-  DEFAULT_TIP_LEFT_COL, DEFAULT_TIP_RIGHT_COL, toTitleCase
+  DEFAULT_TIP_LEFT_COL, DEFAULT_TIP_RIGHT_COL, toTitleCase, sortPersonelByJabatan
 } from '../lib/data/masterData';
 import { supabase } from '../lib/supabaseClient';
 
@@ -30,6 +30,7 @@ interface MasterDataState {
   setDataApiT2: (data: any[]) => void;
   dataOmIasT2: any[];
   setDataOmIasT2: (data: any[]) => void;
+  savePersonelToSupabase: (data: any[], unitName: string) => Promise<void>;
   storingEquipments: string[];
   setStoringEquipments: (data: string[]) => void;
   storingLocAc: string[];
@@ -66,15 +67,52 @@ interface MasterDataState {
 }
 
 export const useMasterDataStore = create<MasterDataState>((set, get) => ({
-  dataApiT2: loadMasterData('master_api_t2', DEFAULT_DATA_API_T2),
+  dataApiT2: loadMasterData('master_api_t2', sortPersonelByJabatan(DEFAULT_DATA_API_T2)),
   setDataApiT2: (data) => {
-    saveMasterDataToLocal('master_api_t2', data);
-    set({ dataApiT2: data });
+    const sorted = sortPersonelByJabatan(data);
+    saveMasterDataToLocal('master_api_t2', sorted);
+    set({ dataApiT2: sorted });
   },
-  dataOmIasT2: loadMasterData('master_om_ias_t2', DEFAULT_DATA_OM_IAS_T2),
+  dataOmIasT2: loadMasterData('master_om_ias_t2', sortPersonelByJabatan(DEFAULT_DATA_OM_IAS_T2)),
   setDataOmIasT2: (data) => {
-    saveMasterDataToLocal('master_om_ias_t2', data);
-    set({ dataOmIasT2: data });
+    const sorted = sortPersonelByJabatan(data);
+    saveMasterDataToLocal('master_om_ias_t2', sorted);
+    set({ dataOmIasT2: sorted });
+  },
+  savePersonelToSupabase: async (data, unitName) => {
+    try {
+      let unitId: number | null = null;
+      const { data: uData } = await supabase.from('unit_kerja').select('id').ilike('nama', `%${unitName === 'API T2' ? 'API' : 'OM'}%`).limit(1);
+      if (uData && uData.length > 0) unitId = uData[0].id;
+
+      for (let idx = 0; idx < data.length; idx++) {
+        const p = data[idx];
+        if (!p.name) continue;
+        const urutanVal = idx + 1;
+        if (p.id) {
+          const payload: any = { nama: p.name, no_hp: p.phone, urutan: urutanVal };
+          if (p.jabatan !== undefined) payload.jabatan = p.jabatan || null;
+          const { error } = await supabase.from('personel').update(payload).eq('id', p.id);
+          if (error && (error.message?.includes('urutan') || error.message?.includes('jabatan'))) {
+            const fallback: any = { nama: p.name, no_hp: p.phone };
+            if (p.jabatan !== undefined && !error.message?.includes('jabatan')) fallback.jabatan = p.jabatan || null;
+            await supabase.from('personel').update(fallback).eq('id', p.id);
+          }
+        } else if (unitId) {
+          const payload: any = { nama: p.name, no_hp: p.phone, unit_kerja_id: unitId, urutan: urutanVal };
+          if (p.jabatan !== undefined) payload.jabatan = p.jabatan || null;
+          const { error } = await supabase.from('personel').insert(payload);
+          if (error && (error.message?.includes('urutan') || error.message?.includes('jabatan'))) {
+            const fallback: any = { nama: p.name, no_hp: p.phone, unit_kerja_id: unitId };
+            if (p.jabatan !== undefined && !error.message?.includes('jabatan')) fallback.jabatan = p.jabatan || null;
+            await supabase.from('personel').insert(fallback);
+          }
+        }
+      }
+      await get().initializeSupabaseData();
+    } catch (err) {
+      console.error('Failed savePersonelToSupabase:', err);
+    }
   },
   storingEquipments: loadMasterData('master_storing_equip', DEFAULT_STORING_EQUIPMENTS),
   setStoringEquipments: (data) => {
@@ -198,7 +236,7 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
   addModalDataRow: () => {
     const { masterModalOpen, masterModalData } = get();
     let newItem: any;
-    if (masterModalOpen === 'api_t2' || masterModalOpen === 'om_ias_t2') newItem = { name: '', phone: '' };
+    if (masterModalOpen === 'api_t2' || masterModalOpen === 'om_ias_t2') newItem = { name: '', phone: '', jabatan: '' };
     else if (masterModalOpen === 'storing_equip' || masterModalOpen === 'storing_loc_ac' || masterModalOpen === 'storing_loc_default' || masterModalOpen === 'kalibrasi_equip') newItem = '';
     else if (masterModalOpen === 'tip_left' || masterModalOpen === 'tip_right') newItem = { id: `new_${Date.now()}`, name: '', items: [] };
     set({ masterModalData: [...masterModalData, newItem] });
@@ -240,25 +278,46 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
       }
 
       // 2. Fetch Data Personel & NIK dari Supabase
-      const { data: personelData, error: personelError } = await supabase
+      let { data: personelData, error: personelError } = await supabase
         .from('personel')
-        .select(`id, nik, nama, no_hp, unit_kerja(nama)`);
+        .select(`id, nik, nama, no_hp, jabatan, urutan, unit_kerja(nama)`)
+        .order('urutan', { ascending: true })
+        .order('id', { ascending: true });
+
+      if (personelError) {
+        console.warn('Kolom urutan/jabatan mungkin belum ada di tabel personel Supabase, mencoba fallback query...', personelError.message);
+        const resFallback = await supabase
+          .from('personel')
+          .select(`id, nik, nama, no_hp, jabatan, unit_kerja(nama)`)
+          .order('id', { ascending: true });
+        personelData = resFallback.data;
+        personelError = resFallback.error;
+
+        if (personelError) {
+          const resFallback2 = await supabase
+            .from('personel')
+            .select(`id, nik, nama, no_hp, unit_kerja(nama)`)
+            .order('id', { ascending: true });
+          personelData = resFallback2.data;
+          personelError = resFallback2.error;
+        }
+      }
 
       if (!personelError && personelData) {
         console.log('✅ Berhasil mengambil data personel dari Supabase:', personelData.length);
         
         // Memisahkan berdasarkan unit kerja dan format ke struktur state
-        const apiT2 = personelData
+        const apiT2Raw = personelData
           .filter((p: any) => p.unit_kerja?.nama === 'API T2')
-          .map((p: any) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || '' }));
+          .map((p: any, idx: number) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || '', jabatan: p.jabatan || '', dbOrder: (p.urutan !== undefined && p.urutan !== null) ? Number(p.urutan) : idx }));
           
-        const omIasT2 = personelData
+        const omIasT2Raw = personelData
           .filter((p: any) => p.unit_kerja?.nama === 'OM/IAS T2')
-          .map((p: any) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || '' }));
+          .map((p: any, idx: number) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || '', jabatan: p.jabatan || '', dbOrder: (p.urutan !== undefined && p.urutan !== null) ? Number(p.urutan) : idx }));
         
-        // Timpa state lokal dengan data dari Supabase
-        if (apiT2.length > 0) get().setDataApiT2(apiT2);
-        if (omIasT2.length > 0) get().setDataOmIasT2(omIasT2);
+        // Timpa state lokal dengan data dari Supabase yang diurutkan berdasarkan jabatan
+        if (apiT2Raw.length > 0) get().setDataApiT2(sortPersonelByJabatan(apiT2Raw));
+        if (omIasT2Raw.length > 0) get().setDataOmIasT2(sortPersonelByJabatan(omIasT2Raw));
       }
 
       // 3. Fetch Master Configs dari Supabase (JSONB)

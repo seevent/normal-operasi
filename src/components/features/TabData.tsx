@@ -253,15 +253,31 @@ const LocalDataEditor: React.FC = () => {
     }
   }, [activeSubTab, store]);
 
-  const handleSave = () => {
-    switch (activeSubTab) {
-      case 'api_t2': store.setDataApiT2(localData); break;
-      case 'om_ias_t2': store.setDataOmIasT2(localData); break;
-      case 'storing_equip': store.setStoringEquipments(localData); break;
-      case 'tip_left': store.setTipLeftCol(localData); break;
-    }
-    if (activeSubTab !== 'kalibrasi_equip') {
-      alert('Data Lokal berhasil disimpan!');
+  const [isSavingDb, setIsSavingDb] = useState(false);
+
+  const handleSave = async () => {
+    setIsSavingDb(true);
+    try {
+      switch (activeSubTab) {
+        case 'api_t2':
+          store.setDataApiT2(localData);
+          await store.savePersonelToSupabase(localData, 'API T2');
+          break;
+        case 'om_ias_t2':
+          store.setDataOmIasT2(localData);
+          await store.savePersonelToSupabase(localData, 'OM/IAS T2');
+          break;
+        case 'storing_equip': store.setStoringEquipments(localData); break;
+        case 'tip_left': store.setTipLeftCol(localData); break;
+      }
+      if (activeSubTab !== 'kalibrasi_equip') {
+        alert('Data berhasil disimpan ke sistem & database!');
+      }
+    } catch (err: any) {
+      console.error('Error saving data:', err);
+      alert('Terjadi kesalahan saat menyimpan: ' + (err?.message || err));
+    } finally {
+      setIsSavingDb(false);
     }
   };
 
@@ -346,22 +362,86 @@ const LocalDataEditor: React.FC = () => {
               <div className="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                 {(activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') ? (
                   <>
-                    <input className="flex-1 w-full p-2 border rounded-lg" placeholder="Nama Personel" value={item.name || ''} onChange={e => handleTextChange(index, 'name', e.target.value)} />
-                    <input className="sm:w-1/3 w-full p-2 border rounded-lg" placeholder="No. WA" value={item.phone || ''} onChange={e => handleTextChange(index, 'phone', e.target.value)} />
+                    <select
+                      className="sm:w-1/3 w-full p-2 border rounded-lg text-sm bg-white"
+                      value={item.jabatan || ''}
+                      onChange={e => handleTextChange(index, 'jabatan', e.target.value)}
+                    >
+                      <option value="">-- Pilih Jabatan --</option>
+                      {activeSubTab === 'api_t2' ? (
+                        <>
+                          <option value="Supervisor">Supervisor</option>
+                          <option value="Engineer">Engineer</option>
+                          <option value="Technician">Technician</option>
+                          {item.jabatan && !['Supervisor', 'Engineer', 'Technician'].includes(item.jabatan) && (
+                            <option value={item.jabatan}>{item.jabatan}</option>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <option value="Supervisor">Supervisor</option>
+                          <option value="Teknisi">Teknisi</option>
+                          <option value="Pembantu Teknisi">Pembantu Teknisi</option>
+                          {item.jabatan && !['Supervisor', 'Teknisi', 'Pembantu Teknisi'].includes(item.jabatan) && (
+                            <option value={item.jabatan}>{item.jabatan}</option>
+                          )}
+                        </>
+                      )}
+                    </select>
+                    <input className="flex-1 w-full p-2 border rounded-lg text-sm bg-white" placeholder="Nama Personel" value={item.name || ''} onChange={e => handleTextChange(index, 'name', e.target.value)} />
+                    <input className="sm:w-1/4 w-full p-2 border rounded-lg text-sm bg-white" placeholder="No. WA" value={item.phone || ''} onChange={e => handleTextChange(index, 'phone', e.target.value)} />
                   </>
                 ) : (
                   <input className="flex-1 w-full p-2 border rounded-lg" value={item} onChange={e => handleTextChange(index, undefined, e.target.value)} />
                 )}
               </div>
-              <button onClick={() => { const d = [...localData]; d.splice(index, 1); setLocalData(d); }} className="p-2 mt-1 sm:mt-0 text-rose-500 bg-rose-50 rounded-lg shrink-0">
-                <Trash2 className="w-5 h-5" />
-              </button>
+              <div className="flex gap-1 items-center mt-1 sm:mt-0 shrink-0">
+                {(activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (index === 0) return;
+                        const d = [...localData];
+                        const temp = d[index - 1];
+                        d[index - 1] = d[index];
+                        d[index] = temp;
+                        setLocalData(d);
+                      }}
+                      disabled={index === 0}
+                      className="p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-lg font-bold text-sm"
+                      title="Naikkan Urutan"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (index === localData.length - 1) return;
+                        const d = [...localData];
+                        const temp = d[index + 1];
+                        d[index + 1] = d[index];
+                        d[index] = temp;
+                        setLocalData(d);
+                      }}
+                      disabled={index === localData.length - 1}
+                      className="p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-lg font-bold text-sm"
+                      title="Turunkan Urutan"
+                    >
+                      ▼
+                    </button>
+                  </>
+                )}
+                <button type="button" onClick={() => { const d = [...localData]; d.splice(index, 1); setLocalData(d); }} className="p-2 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-lg" title="Hapus">
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-        ))}
+          ))}
         
         <button onClick={() => {
           const d = [...localData];
-          if (activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') d.push({ name: '', phone: '' });
+          if (activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') d.push({ name: '', phone: '', jabatan: '' });
           else d.push('');
           setLocalData(d);
         }} className="w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 font-bold rounded-lg hover:bg-blue-50">
@@ -369,8 +449,8 @@ const LocalDataEditor: React.FC = () => {
         </button>
 
         <div className="pt-4 border-t border-slate-200 flex justify-end">
-          <button onClick={handleSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">
-            Simpan Perubahan
+          <button onClick={handleSave} disabled={isSavingDb} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors flex items-center gap-2">
+            {isSavingDb ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
       </div>

@@ -1,9 +1,9 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X } from 'lucide-react';
+import { Cpu, FileText, MapPin, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, FileWarning } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
-import { generateWA_Perbaikan } from '../../lib/utils/waGenerator';
+import { generateWA_InitialReport } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { supabase } from '../../lib/supabaseClient';
@@ -28,33 +28,47 @@ function formatNamaPersonel(fullName: string): string {
   return words[0];
 }
 
-export const TabPerbaikan: React.FC = () => {
+export const TabInitialReport: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
 
   const [formData, setFormData] = useState(() => {
     const now = new Date();
-    // Real-time local date for the tanggal field
     const realYear = now.getFullYear();
     const realMonth = String(now.getMonth() + 1).padStart(2, '0');
     const realDay = String(now.getDate()).padStart(2, '0');
     const realDate = `${realYear}-${realMonth}-${realDay}`;
+    const currentHour = String(now.getHours()).padStart(2, '0');
+    const currentMin = String(now.getMinutes()).padStart(2, '0');
+
     return {
-      peralatan: '', lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] as { lokasi1: string; lokasi2: string }[], sumberLaporan: 'Avsec', indikasiAwal: '',
-      tanggal: realDate, waktuMulai: '', waktuSelesai: '',
-      lamaPengerjaan: '', teknisi: '', permasalahan: '• ', tindakLanjut: '• ', status: 'Pekerjaan Selesai'
+      peralatan: '',
+      lokasi1: '',
+      lokasi2: '',
+      lokasiList: [{ lokasi1: '', lokasi2: '' }] as { lokasi1: string; lokasi2: string }[],
+      tanggal: realDate,
+      waktuMulai: `${currentHour}:${currentMin}`,
+      jamPengerjaan: '',
+      menitPengerjaan: '',
+      lamaPengerjaan: '-',
+      teknisi: '-',
+      permasalahan: '• ',
+      status: 'On Progress',
+      uraian: '• ',
+      dampak: '1. ',
+      tindakanMitigasi: '1. ',
+      tindakan: '1. ',
+      hasilTindakan: '1. '
     };
   });
-  
+
   const [availableTeknisi, setAvailableTeknisi] = useState<{id: string, name: string, unit?: string}[]>([]);
   const [selectedTeknisi, setSelectedTeknisi] = useState<string[]>([]);
   const [manualTeknisi, setManualTeknisi] = useState<string>('');
   const [tipePeralatanOptions, setTipePeralatanOptions] = useState<string[]>([]);
   const [isManualPeralatan, setIsManualPeralatan] = useState<boolean>(false);
 
-  // Ambil data teknisi dan tipe peralatan dari Supabase
   React.useEffect(() => {
     const fetchData = async () => {
-      // 1. Fetch Teknisi
       const now = new Date();
       const currentHour = now.getHours();
       const logicalDateObj = new Date(now.getTime());
@@ -88,7 +102,6 @@ export const TabPerbaikan: React.FC = () => {
         })).filter((t: any) => t.name !== ''));
       }
 
-      // 2. Fetch Tipe Peralatan
       const { data: dataTipe } = await supabase
         .from('tipe_peralatan')
         .select('nama')
@@ -101,7 +114,6 @@ export const TabPerbaikan: React.FC = () => {
     fetchData();
   }, []);
 
-  // Update string 'teknisi' di formData jika checkbox berubah
   React.useEffect(() => {
     setFormData(prev => {
       const allTeknisi = [...selectedTeknisi];
@@ -110,12 +122,10 @@ export const TabPerbaikan: React.FC = () => {
         allTeknisi.push(...manualList);
       }
       
-      let teknisiStr = '';
-      if (allTeknisi.length === 0) {
-        teknisiStr = '';
-      } else if (allTeknisi.length === 1) {
+      let teknisiStr = '-';
+      if (allTeknisi.length === 1) {
         teknisiStr = allTeknisi[0];
-      } else {
+      } else if (allTeknisi.length > 1) {
         const last = allTeknisi[allTeknisi.length - 1];
         const rest = allTeknisi.slice(0, -1);
         teknisiStr = `${rest.join(', ')} & ${last}`;
@@ -127,32 +137,34 @@ export const TabPerbaikan: React.FC = () => {
   const toggleTeknisi = (name: string) => {
     setSelectedTeknisi(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
   };
-  
-  const [isVerifikasiETD, setIsVerifikasiETD] = useState(false);
+
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [customCollageFile, setCustomCollageFile] = useState<File | null>(null);
   const [customCollageUrl, setCustomCollageUrl] = useState<string | null>(null);
 
   const permasalahanRef = React.useRef<HTMLTextAreaElement>(null);
-  const tindakLanjutRef = React.useRef<HTMLTextAreaElement>(null);
+  const uraianRef = React.useRef<HTMLTextAreaElement>(null);
+  const dampakRef = React.useRef<HTMLTextAreaElement>(null);
+  const mitigasiRef = React.useRef<HTMLTextAreaElement>(null);
+  const tindakanRef = React.useRef<HTMLTextAreaElement>(null);
+  const hasilRef = React.useRef<HTMLTextAreaElement>(null);
 
-  React.useEffect(() => {
-    if (permasalahanRef.current) {
-      permasalahanRef.current.style.height = 'auto';
-      permasalahanRef.current.style.height = `${Math.max(80, permasalahanRef.current.scrollHeight)}px`;
+  const autoResize = (ref: React.RefObject<HTMLTextAreaElement | null>, minHeight: number) => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${Math.max(minHeight, ref.current.scrollHeight)}px`;
     }
-  }, [formData.permasalahan]);
+  };
 
-  React.useEffect(() => {
-    if (tindakLanjutRef.current) {
-      tindakLanjutRef.current.style.height = 'auto';
-      tindakLanjutRef.current.style.height = `${Math.max(140, tindakLanjutRef.current.scrollHeight)}px`;
-    }
-  }, [formData.tindakLanjut]);
+  React.useEffect(() => autoResize(permasalahanRef, 80), [formData.permasalahan]);
+  React.useEffect(() => autoResize(uraianRef, 100), [formData.uraian]);
+  React.useEffect(() => autoResize(dampakRef, 80), [formData.dampak]);
+  React.useEffect(() => autoResize(mitigasiRef, 80), [formData.tindakanMitigasi]);
+  React.useEffect(() => autoResize(tindakanRef, 100), [formData.tindakan]);
+  React.useEffect(() => autoResize(hasilRef, 100), [formData.hasilTindakan]);
 
-  // === Handlers ===
-  const handleRepairChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     let newFormData = { ...formData, [name]: value };
 
@@ -162,24 +174,37 @@ export const TabPerbaikan: React.FC = () => {
       newFormData.lokasiList = [{ lokasi1: '', lokasi2: '' }];
     }
 
-    if (name === 'waktuMulai' || name === 'waktuSelesai') {
-      const start = name === 'waktuMulai' ? value : formData.waktuMulai;
-      const end = name === 'waktuSelesai' ? value : formData.waktuSelesai;
-      
-      if (start && end) {
-        const [startH, startM] = start.split(':').map(Number);
-        const [endH, endM] = end.split(':').map(Number);
-        
-        let diff = (endH * 60 + endM) - (startH * 60 + startM);
-        if (diff < 0) diff += 24 * 60; // Lintas hari
-        
-        const hours = Math.floor(diff / 60);
-        const minutes = diff % 60;
-        newFormData.lamaPengerjaan = `${hours > 0 ? `${hours} Jam ` : ''}${minutes} Menit`;
-      }
-    }
-
     setFormData(newFormData);
+  };
+
+  const handleJamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, ''); // Hanya angka
+    setFormData(prev => {
+      const jam = val;
+      const menit = prev.menitPengerjaan;
+      const jamNum = parseInt(jam, 10) || 0;
+      const menitNum = parseInt(menit, 10) || 0;
+      let lama = '-';
+      if (jamNum > 0 && menitNum > 0) lama = `${jamNum} Jam ${menitNum} Menit`;
+      else if (jamNum > 0) lama = `${jamNum} Jam`;
+      else if (menitNum > 0) lama = `${menitNum} Menit`;
+      return { ...prev, jamPengerjaan: jam, lamaPengerjaan: lama };
+    });
+  };
+
+  const handleMenitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, ''); // Hanya angka
+    setFormData(prev => {
+      const jam = prev.jamPengerjaan;
+      const menit = val;
+      const jamNum = parseInt(jam, 10) || 0;
+      const menitNum = parseInt(menit, 10) || 0;
+      let lama = '-';
+      if (jamNum > 0 && menitNum > 0) lama = `${jamNum} Jam ${menitNum} Menit`;
+      else if (jamNum > 0) lama = `${jamNum} Jam`;
+      else if (menitNum > 0) lama = `${menitNum} Menit`;
+      return { ...prev, menitPengerjaan: menit, lamaPengerjaan: lama };
+    });
   };
 
   const handleLokasiEntryChange = (index: number, field: 'lokasi1' | 'lokasi2', value: string) => {
@@ -227,37 +252,7 @@ export const TabPerbaikan: React.FC = () => {
       setFormData(prev => ({ ...prev, peralatan: '', lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] }));
       return;
     }
-    const isETD = value === 'ETD Leidos QS-B220';
-    
-    if (!isETD && isVerifikasiETD) {
-      setIsVerifikasiETD(false);
-      setFormData(prev => ({ ...prev, peralatan: value, lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }], permasalahan: '• ', tindakLanjut: '• ' }));
-    } else {
-      setFormData(prev => ({ ...prev, peralatan: value, lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] }));
-    }
-  };
-
-  const handleVerifikasiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setFormData(prev => {
-      const newData = { ...prev };
-      if (checked && newData.peralatan !== 'ETD Leidos QS-B220') {
-        newData.peralatan = 'ETD Leidos QS-B220';
-        newData.lokasi1 = '';
-        newData.lokasi2 = '';
-        newData.lokasiList = [{ lokasi1: '', lokasi2: '' }];
-      }
-      
-      if (checked) {
-        newData.permasalahan = '• Verification Required';
-        newData.tindakLanjut = '• Melakukan Verifikasi Negatif';
-      } else {
-        newData.permasalahan = '• ';
-        newData.tindakLanjut = '• ';
-      }
-      return newData;
-    });
-    setIsVerifikasiETD(checked);
+    setFormData(prev => ({ ...prev, peralatan: value, lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] }));
   };
 
   const handleBulletChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: string) => {
@@ -272,11 +267,38 @@ export const TabPerbaikan: React.FC = () => {
   const handleBulletKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, field: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      setFormData(prev => ({ ...prev, [field]: prev[field as keyof typeof formData] + '\n• ' }));
+      setFormData(prev => ({ ...prev, [field]: (prev as any)[field] + '\n• ' }));
     }
   };
 
-  // === Photo Handlers ===
+  const handleNumberedChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: string) => {
+    let value = e.target.value;
+    if (value.length > 0 && !value.match(/^\d+\.\s/)) {
+      value = '1. ' + value.replace(/^\d+\.\s*/, '');
+    }
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNumberedKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, field: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const cursorPosition = textarea.selectionStart;
+      const textBefore = textarea.value.substring(0, cursorPosition);
+      const textAfter = textarea.value.substring(cursorPosition);
+      
+      const linesBefore = textBefore.split('\n');
+      const nextNum = linesBefore.length + 1;
+      
+      const newText = textBefore + `\n${nextNum}. ` + textAfter;
+      setFormData(prev => ({ ...prev, [field]: newText }));
+      
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = cursorPosition + 3 + String(nextNum).length;
+      }, 0);
+    }
+  };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newPhotos = Array.from(e.target.files).map(file => ({
@@ -323,45 +345,44 @@ export const TabPerbaikan: React.FC = () => {
     });
   };
 
-  // === Submit ===
-  const handleRepairSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     let generatedCollageFile: File | null = customCollageFile;
-    let generatedCollageUrl: string | null = customCollageUrl;
 
     if (photos.length > 0 && !generatedCollageFile) {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
-        // Create fallback grid collage if user didn't use the advanced editor
         const collageResult = await processPhotosToCollage(photos);
         if (collageResult) {
-          generatedCollageUrl = collageResult.url;
           const res = await fetch(collageResult.url);
           const blob = await res.blob();
-          generatedCollageFile = new File([blob], `Dokumentasi_Perbaikan_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          generatedCollageFile = new File([blob], `Dokumentasi_InitialReport_${Date.now()}.jpg`, { type: 'image/jpeg' });
         }
       }
     }
 
-    const message = generateWA_Perbaikan(formData, isVerifikasiETD);
-    
-    const uraianText = `Permasalahan : ${formData.permasalahan}`;
-    const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
-    const lokasiFull = activeLocs.map((l: any) => l.lokasi1 + (l.lokasi2 && l.lokasi2 !== '-' ? ` - ${l.lokasi2}` : '')).join(', ');
-    const waktuFull = formData.waktuSelesai ? `${formData.waktuMulai} - ${formData.waktuSelesai}` : formData.waktuMulai;
+    const message = generateWA_InitialReport(formData);
+
+    const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0
+      ? formData.lokasiList.filter((l: any) => l.lokasi1)
+      : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
+      
+    const lokasiFinal = locList.map((loc: any) => {
+      return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
+    }).join(', ') || '-';
 
     syncToGoogleSheets({
-      jenis: 'Perbaikan',
+      jenis: 'Initial Report',
       tanggal: formData.tanggal,
-      waktu: waktuFull,
+      waktu: formData.waktuMulai || '-',
+      lokasi: lokasiFinal,
+      peralatan: formData.peralatan || '-',
+      uraian: `[Permasalahan: ${formData.permasalahan}] ${formData.uraian}`,
+      tindakLanjut: `[Mitigasi: ${formData.tindakanMitigasi}] [Tindakan: ${formData.tindakan}] [Hasil: ${formData.hasilTindakan}]`,
+      status: formData.status || '-',
       teknisi: formData.teknisi,
-      lokasi: lokasiFull || '-',
-      peralatan: formData.peralatan,
-      uraian: uraianText,
-      tindakLanjut: formData.tindakLanjut,
-      status: formData.status,
       imageFile: generatedCollageFile
     });
 
@@ -369,15 +390,11 @@ export const TabPerbaikan: React.FC = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     });
-
-    if (generatedCollageUrl) {
-      // Optional: Store to global context if needed
-    }
   };
 
   return (
-    <div>
-      <div className="bg-blue-50/50 px-6 py-5 border-b border-slate-200">
+    <div className="bg-white rounded-b-2xl">
+      <div className="p-6 sm:p-8 bg-blue-50/50 border-b border-blue-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-full">
             <label className="block text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
@@ -414,21 +431,14 @@ export const TabPerbaikan: React.FC = () => {
               </select>
             )}
           </div>
-          
-          <div className="flex items-center gap-2 pt-2 sm:pt-7">
-            <input type="checkbox" id="verifikasiETD_tab" checked={isVerifikasiETD} onChange={handleVerifikasiChange} className="w-5 h-5 text-blue-600 bg-white border-blue-300 rounded focus:ring-2 focus:ring-blue-400 cursor-pointer" />
-            <label htmlFor="verifikasiETD_tab" className="text-sm font-bold text-blue-900 cursor-pointer select-none">
-              Verifikasi ETD
-            </label>
-          </div>
         </div>
       </div>
 
-      <form onSubmit={handleRepairSubmit} className="p-6 sm:p-8 space-y-8">
+      <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
         <div className="space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
             <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" /> Informasi Laporan
+              <FileWarning className="w-5 h-5 text-amber-600" /> Informasi Initial Report
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -506,17 +516,6 @@ export const TabPerbaikan: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Sumber Laporan</label>
-              <div className="relative">
-                <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <input type="text" name="sumberLaporan" required value={formData.sumberLaporan} onChange={handleRepairChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Indikasi Awal</label>
-              <textarea name="indikasiAwal" required={!isVerifikasiETD} disabled={isVerifikasiETD} rows={2} placeholder="Cth: Mesin tidak menyala..." value={formData.indikasiAwal} onChange={handleRepairChange} className={`w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none ${isVerifikasiETD ? 'opacity-60 cursor-not-allowed bg-slate-200 text-slate-500' : ''}`}></textarea>
-            </div>
           </div>
         </div>
 
@@ -524,29 +523,49 @@ export const TabPerbaikan: React.FC = () => {
           <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
             <Clock className="w-5 h-5 text-blue-600" /> Waktu & Pelaksana
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <input type="date" name="tanggal" required value={formData.tanggal} onChange={handleRepairChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="date" name="tanggal" required value={formData.tanggal} onChange={handleFieldChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
             </div>
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
-              <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Pukul</label>
+              <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleFieldChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
-              <input type="time" name="waktuSelesai" required value={formData.waktuSelesai} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Lama Waktu Pengerjaan</label>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={formData.jamPengerjaan}
+                    onChange={handleJamChange}
+                    className="w-full pr-12 pl-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm text-right"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-500 pointer-events-none">Jam</span>
+                </div>
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={formData.menitPengerjaan}
+                    onChange={handleMenitChange}
+                    className="w-full pr-14 pl-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm text-right"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-500 pointer-events-none">Menit</span>
+                </div>
+              </div>
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Lama Pengerjaan</label>
-              <input type="text" name="lamaPengerjaan" required readOnly placeholder="Terisi otomatis..." value={formData.lamaPengerjaan} className="w-full px-4 py-2 bg-slate-200 border border-slate-300 rounded-lg outline-none cursor-not-allowed text-slate-600 font-medium select-none" />
-            </div>
-            <div className="col-span-2">
+
+            <div className="md:col-span-3">
               <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                Teknisi Bertugas (Otomatis dari Shift)
+                Teknisi Bertugas (Opsional, Default: -)
                 {availableTeknisi.length === 0 && <span className="text-xs text-rose-500 font-normal">*(Tidak ada teknisi hadir/jadwal kosong)</span>}
               </label>
               
@@ -616,41 +635,50 @@ export const TabPerbaikan: React.FC = () => {
                     </>
                   );
                 })()}
+                <input 
+                  type="text" 
+                  placeholder={availableTeknisi.length === 0 ? "Ketik manual nama teknisi..." : "Tambah teknisi lain (pisahkan dengan koma)..."}
+                  value={manualTeknisi} 
+                  onChange={(e) => setManualTeknisi(e.target.value)} 
+                  className="w-full mt-1 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
+                />
               </div>
-
-              {/* Teks input manual teknisi */}
-              <input 
-                type="text" 
-                placeholder={availableTeknisi.length === 0 ? "Ketik manual nama teknisi karena jadwal kosong..." : "Tambah teknisi lain (pisahkan dengan koma)..."}
-                value={manualTeknisi} 
-                onChange={(e) => setManualTeknisi(e.target.value)} 
-                className="w-full mt-3 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
-              />
             </div>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
-            <AlertCircle className="w-5 h-5 text-blue-600" /> Detail Pengerjaan
+            <AlertCircle className="w-5 h-5 text-blue-600" /> Detail Laporan Awal
           </h2>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Permasalahan</label>
             <textarea ref={permasalahanRef} name="permasalahan" required rows={3} value={formData.permasalahan} onChange={(e) => handleBulletChange(e, 'permasalahan')} onKeyDown={(e) => handleBulletKeyDown(e, 'permasalahan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Tindak Lanjut</label>
-            <textarea ref={tindakLanjutRef} name="tindakLanjut" required rows={6} value={formData.tindakLanjut} onChange={(e) => handleBulletChange(e, 'tindakLanjut')} onKeyDown={(e) => handleBulletKeyDown(e, 'tindakLanjut')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+            <input type="text" name="status" required placeholder="Cth: On Progress / Menunggu Sparepart" value={formData.status} onChange={handleFieldChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-            <select name="status" value={formData.status} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
-              <option value="Pekerjaan Selesai">Pekerjaan Selesai</option>
-              <option value="Normal Operasi">Normal Operasi</option>
-              <option value="On Progress">On Progress</option>
-              <option value="Menunggu Sparepart">Menunggu Sparepart</option>
-              <option value="Perlu Eskalasi Lanjut">Perlu Eskalasi Lanjut</option>
-            </select>
+            <label className="block text-sm font-medium text-slate-700 mb-1">URAIAN</label>
+            <p className="text-xs text-slate-500 mb-1">(Uraian kronologis kerusakan s.d saat dilaporkan)</p>
+            <textarea ref={uraianRef} name="uraian" rows={4} value={formData.uraian} onChange={(e) => handleBulletChange(e, 'uraian')} onKeyDown={(e) => handleBulletKeyDown(e, 'uraian')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">DAMPAK</label>
+            <textarea ref={dampakRef} name="dampak" rows={3} value={formData.dampak} onChange={(e) => handleNumberedChange(e, 'dampak')} onKeyDown={(e) => handleNumberedKeyDown(e, 'dampak')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">TINDAKAN MITIGASI</label>
+            <textarea ref={mitigasiRef} name="tindakanMitigasi" rows={3} value={formData.tindakanMitigasi} onChange={(e) => handleNumberedChange(e, 'tindakanMitigasi')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakanMitigasi')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">TINDAKAN</label>
+            <textarea ref={tindakanRef} name="tindakan" rows={4} value={formData.tindakan} onChange={(e) => handleNumberedChange(e, 'tindakan')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">HASIL TINDAKAN</label>
+            <textarea ref={hasilRef} name="hasilTindakan" rows={4} value={formData.hasilTindakan} onChange={(e) => handleNumberedChange(e, 'hasilTindakan')} onKeyDown={(e) => handleNumberedKeyDown(e, 'hasilTindakan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
           </div>
         </div>
 
@@ -675,17 +703,17 @@ export const TabPerbaikan: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>
-            {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Perbaikan ke WA</>}
+            {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Initial Report ke WA</>}
           </button>
         </div>
 
         <div className="mt-8 border-t border-slate-200 pt-8">
           <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Perbaikan (Real-time)
+            <FileText className="w-5 h-5 text-blue-600" /> Preview Initial Report (Real-time)
           </h3>
           <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
             <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
-              {generateWA_Perbaikan(formData, isVerifikasiETD)}
+              {generateWA_InitialReport(formData)}
             </div>
           </div>
         </div>

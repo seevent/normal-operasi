@@ -5,7 +5,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { generateWA_Kehadiran } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
-import { toTitleCase } from '../../lib/data/masterData';
+import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
 
 export const TabKehadiran: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -49,15 +49,43 @@ export const TabKehadiran: React.FC = () => {
     try {
       const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('jadwal_shift')
         .select(`
           id, shift, status_kehadiran,
-          personel:personel_id (id, nama, no_hp, unit_kerja(nama))
+          personel:personel_id (id, nama, no_hp, jabatan, urutan, unit_kerja(nama))
         `)
         .eq('tanggal', attendanceData.tanggal)
         .neq('shift', 'D')
         .order('id', { ascending: true });
+
+      if (error) {
+        const fallbackRes = await supabase
+          .from('jadwal_shift')
+          .select(`
+            id, shift, status_kehadiran,
+            personel:personel_id (id, nama, no_hp, jabatan, unit_kerja(nama))
+          `)
+          .eq('tanggal', attendanceData.tanggal)
+          .neq('shift', 'D')
+          .order('id', { ascending: true });
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+
+        if (error) {
+          const fallbackRes2 = await supabase
+            .from('jadwal_shift')
+            .select(`
+              id, shift, status_kehadiran,
+              personel:personel_id (id, nama, no_hp, unit_kerja(nama))
+            `)
+            .eq('tanggal', attendanceData.tanggal)
+            .neq('shift', 'D')
+            .order('id', { ascending: true });
+          data = fallbackRes2.data;
+          error = fallbackRes2.error;
+        }
+      }
 
       if (error) throw error;
 
@@ -72,28 +100,40 @@ export const TabKehadiran: React.FC = () => {
 
       const apiRows = filteredData
         .filter((d: any) => d.personel?.unit_kerja?.nama === 'API T2')
-        .map(d => ({
-          id: d.id,
-          jadwal_id: d.id,
-          personel_id: d.personel?.id,
-          name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
-          phone: d.personel?.no_hp || '',
-          status: d.status_kehadiran || 'Hadir'
-        }));
+        .map((d: any, idx: number) => {
+          const storeP = dataApiT2.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
+          const orderVal = (d.personel?.urutan !== undefined && d.personel?.urutan !== null) ? Number(d.personel.urutan) : (storeP?.dbOrder !== undefined ? Number(storeP.dbOrder) : idx);
+          return {
+            id: d.id,
+            jadwal_id: d.id,
+            personel_id: d.personel?.id,
+            name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
+            phone: d.personel?.no_hp || '',
+            jabatan: d.personel?.jabatan || storeP?.jabatan || '',
+            dbOrder: orderVal,
+            status: d.status_kehadiran || 'Hadir'
+          };
+        });
 
       const omRows = filteredData
         .filter((d: any) => d.personel?.unit_kerja?.nama === 'OM/IAS T2')
-        .map((d: any) => ({
-          id: d.id,
-          jadwal_id: d.id,
-          personel_id: d.personel?.id,
-          name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
-          phone: d.personel?.no_hp || '',
-          status: d.status_kehadiran || 'Hadir'
-        }));
+        .map((d: any, idx: number) => {
+          const storeP = dataOmIasT2.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
+          const orderVal = (d.personel?.urutan !== undefined && d.personel?.urutan !== null) ? Number(d.personel.urutan) : (storeP?.dbOrder !== undefined ? Number(storeP.dbOrder) : idx);
+          return {
+            id: d.id,
+            jadwal_id: d.id,
+            personel_id: d.personel?.id,
+            name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
+            phone: d.personel?.no_hp || '',
+            jabatan: d.personel?.jabatan || storeP?.jabatan || '',
+            dbOrder: orderVal,
+            status: d.status_kehadiran || 'Hadir'
+          };
+        });
 
-      if (apiRows.length === 0) apiRows.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
-      if (omRows.length === 0) omRows.push({ id: Date.now()+1, jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
+      if (apiRows.length === 0) apiRows.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', jabatan: '', dbOrder: 999, status: 'Hadir' });
+      if (omRows.length === 0) omRows.push({ id: Date.now()+1, jadwal_id: null, personel_id: null, name: '', phone: '', jabatan: '', dbOrder: 999, status: 'Hadir' });
 
       const allLoaded = [...apiRows, ...omRows];
       setLoadedSchedules(
@@ -104,8 +144,8 @@ export const TabKehadiran: React.FC = () => {
 
       setAttendanceData(prev => ({
         ...prev,
-        apiList: apiRows,
-        omList: omRows
+        apiList: sortPersonelByJabatan(apiRows),
+        omList: sortPersonelByJabatan(omRows)
       }));
     } catch (err) {
       console.error('Error fetching jadwal:', err);
@@ -147,21 +187,25 @@ export const TabKehadiran: React.FC = () => {
       if (person) {
         newList[index].phone = person.phone;
         newList[index].personel_id = person.id;
+        newList[index].jabatan = person.jabatan || '';
+        newList[index].dbOrder = (person.dbOrder !== undefined && person.dbOrder !== null) ? Number(person.dbOrder) : 999;
         newList[index].jadwal_id = null;
       } else {
         newList[index].phone = '';
         newList[index].personel_id = null;
+        newList[index].jabatan = '';
+        newList[index].dbOrder = index;
         newList[index].jadwal_id = null;
       }
     }
     
-    setAttendanceData({ ...attendanceData, [listType]: newList });
+    setAttendanceData({ ...attendanceData, [listType]: sortPersonelByJabatan(newList) });
   };
 
   const addRow = (listType: 'apiList' | 'omList') => {
     setAttendanceData({
       ...attendanceData,
-      [listType]: [...attendanceData[listType], { id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' }]
+      [listType]: [...attendanceData[listType], { id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', jabatan: '', dbOrder: 999, status: 'Hadir' }]
     });
   };
 
@@ -169,9 +213,9 @@ export const TabKehadiran: React.FC = () => {
     const newList = [...attendanceData[listType]];
     newList.splice(index, 1);
     if (newList.length === 0) {
-      newList.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', status: 'Hadir' });
+      newList.push({ id: Date.now(), jadwal_id: null, personel_id: null, name: '', phone: '', jabatan: '', dbOrder: 999, status: 'Hadir' });
     }
-    setAttendanceData({ ...attendanceData, [listType]: newList });
+    setAttendanceData({ ...attendanceData, [listType]: sortPersonelByJabatan(newList) });
   };
 
   const handleDashChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: string) => {

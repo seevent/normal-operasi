@@ -65,6 +65,12 @@ export const getGeneralLokasiOptions = (peralatanType: string) => {
       }
     });
 
+    if (extractedLocs.size === 0) {
+      penempatanData.forEach((p: any) => {
+        if (p.lokasi?.nama) extractedLocs.add(p.lokasi.nama);
+      });
+    }
+
   } catch (error) {
     console.warn('Error reading dynamic locations from relational data', error);
   }
@@ -121,6 +127,14 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
         }
       }
     });
+
+    if (extractedNumbers.size === 0 && peralatanArray.length > 0) {
+      penempatanData.forEach((p: any) => {
+        if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase()) {
+          if (p.titik_lokasi?.nomor) extractedNumbers.add(p.titik_lokasi.nomor);
+        }
+      });
+    }
 
   } catch (error) {
     console.warn('Error reading dynamic numbers from relational data', error);

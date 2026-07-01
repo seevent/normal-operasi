@@ -8,6 +8,46 @@ export const toTitleCase = (str: string): string => {
   );
 };
 
+export const getJabatanRank = (jabatan?: string): number => {
+  if (!jabatan) return 999;
+  const str = String(jabatan).trim();
+  if (!str) return 999;
+
+  const numMatch = str.match(/^(\d+)/);
+  if (numMatch) {
+    return parseInt(numMatch[1], 10);
+  }
+
+  const lower = str.toLowerCase();
+  if (lower.includes('manager') || lower.includes('head') || lower.includes('chief') || lower.includes('kadep') || lower.includes('kasi')) return 10;
+  if (lower.includes('supervisor') || lower.includes('spv') || lower.includes('koordinator') || lower.includes('asman')) return 20;
+  if (lower.includes('engineer')) return 30;
+  if (lower.includes('team leader') || lower.includes('leader') || lower === 'tl' || lower.startsWith('tl ') || lower.includes('ketua tim')) return 35;
+  if (lower.includes('senior') || lower.includes('sr.') || lower.includes('sr ')) return 40;
+  if (lower.includes('pembantu teknisi') || lower.includes('pembantu') || lower.includes('helper') || lower.includes('ojt') || lower.includes('magang')) return 60;
+  if (lower.includes('teknisi') || lower.includes('technician') || lower.includes('pelaksana') || lower.includes('staff') || lower.includes('anggota')) return 50;
+
+  return 100;
+};
+
+export const sortPersonelByJabatan = <T extends Record<string, any>>(list: T[]): T[] => {
+  return [...list].sort((a, b) => {
+    const rankA = getJabatanRank(a.jabatan);
+    const rankB = getJabatanRank(b.jabatan);
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+    const getOrder = (item: any) => {
+      if (item.urutan !== undefined && item.urutan !== null && !isNaN(Number(item.urutan))) return Number(item.urutan);
+      if (item.dbOrder !== undefined && item.dbOrder !== null && !isNaN(Number(item.dbOrder))) return Number(item.dbOrder);
+      return 999;
+    };
+    const orderA = getOrder(a);
+    const orderB = getOrder(b);
+    return orderA - orderB;
+  });
+};
+
 export const DEFAULT_DATA_API_T2 = [
   { name: "Dwisasono Glory Prayoga", phone: "081213138823" },
   { name: "Muh. Syukri", phone: "081296010797" },
@@ -19,7 +59,7 @@ export const DEFAULT_DATA_API_T2 = [
   { name: "Dimas Aria Wiratama", phone: "081296778575" },
   { name: "Dhea Febriani", phone: "087883390219" },
   { name: "Rio Anang Kriswanto", phone: "081398399043" }
-].map(p => ({ ...p, name: toTitleCase(p.name) }));
+].map((p, idx) => ({ ...p, name: toTitleCase(p.name), jabatan: '', dbOrder: idx }));
 
 export const DEFAULT_DATA_OM_IAS_T2 = [
   { name: "Aly Masmudi", phone: "085221344164" },
@@ -34,7 +74,7 @@ export const DEFAULT_DATA_OM_IAS_T2 = [
   { name: "Rifky Aziz", phone: "085716500615" },
   { name: "Muhammad Agus Sofyan", phone: "085691540333" },
   { name: "Abdul Rifan Sukarno", phone: "083111807154" }
-].map(p => ({ ...p, name: toTitleCase(p.name) }));
+].map((p, idx) => ({ ...p, name: toTitleCase(p.name), jabatan: '', dbOrder: idx }));
 
 export const DEFAULT_STORING_EQUIPMENTS = ['Access Control', 'X-Ray', 'HHMD', 'ETD', 'WTMD', 'Body Scanner'];
 export const DEFAULT_STORING_LOC_AC: string[] = [];

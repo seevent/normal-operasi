@@ -2,7 +2,7 @@
 import { GOOGLE_SHEETS_WEBAPP_URL } from '../data/constants';
 
 export interface SyncReportPayload {
-  jenis: 'Perbaikan' | 'Kegiatan' | 'Storing';
+  jenis: 'Initial Report' | 'Perbaikan' | 'Kegiatan' | 'Storing';
   tanggal: string; // Format YYYY-MM-DD
   waktu: string;   // e.g. "08:30 - 09:00" atau "08:15"
   shift?: 'PS' | 'M';

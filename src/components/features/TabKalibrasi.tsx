@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X } from 'lucide-react';
+import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X, ImagePlus } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
@@ -237,10 +237,11 @@ export const TabKalibrasi: React.FC = () => {
             </div>
 
             <div>
-              <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-blue-300 rounded-xl bg-white hover:bg-blue-50 cursor-pointer transition-colors group">
-                <div className="flex items-center gap-3">
-                  <Camera className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-blue-700">Tambah Foto ke Kolase Ini</span>
+              <label className="flex items-center justify-center w-full p-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors group">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <ImagePlus className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-bold text-blue-700">Pilih / Ambil Foto</span>
+                  <span className="text-xs text-blue-500">Galeri, File, atau Kamera langsung</span>
                 </div>
                 <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleKalibrasiPhotoUpload(group.id, e)} />
               </label>
@@ -314,9 +315,13 @@ export const TabKalibrasi: React.FC = () => {
         <button 
           type="button" 
           onClick={addKalibrasiPhotoGroup} 
-          className="w-full border-2 border-dashed border-blue-400 text-blue-700 font-bold py-3 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+          className="w-full p-5 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors group flex flex-col items-center justify-center gap-1.5 text-center"
         >
-          <Plus className="w-5 h-5" /> Tambah Grup Kolase Baru
+          <div className="w-10 h-10 rounded-full bg-blue-100 group-hover:scale-110 transition-transform flex items-center justify-center text-blue-600 shadow-sm">
+            <Plus className="w-5 h-5" />
+          </div>
+          <span className="text-sm font-bold text-blue-700 block">Tambah Grup Kolase Baru</span>
+          <span className="text-xs text-blue-500 block">Klik untuk membuat grup kolase foto baru</span>
         </button>
       </div>
     </div>
@@ -744,9 +749,13 @@ export const TabKalibrasi: React.FC = () => {
       <button 
         type="button" 
         onClick={addKalibrasiEntry} 
-        className="w-full border-2 border-dashed border-blue-400 text-blue-700 font-bold py-4 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 mt-4"
+        className="w-full p-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors group flex flex-col items-center justify-center gap-2 text-center mt-6"
       >
-        <Plus className="w-5 h-5" /> Tambah Lokasi Kalibrasi Berikutnya
+        <div className="w-12 h-12 rounded-full bg-blue-100 group-hover:scale-110 transition-transform flex items-center justify-center text-blue-600 shadow-sm">
+          <Plus className="w-6 h-6" />
+        </div>
+        <span className="text-sm font-bold text-blue-700 block">Tambah Lokasi Kalibrasi Berikutnya</span>
+        <span className="text-xs text-blue-500 block">Klik untuk menambahkan formulir kalibrasi peralatan di lokasi lain</span>
       </button>
 
       {renderKalibrasiPhotoSection()}

@@ -1,6 +1,7 @@
 // src/lib/utils/waGenerator.ts
 
 import { formatTanggalIndo } from './locationRules';
+import { sortPersonelByJabatan } from '../data/masterData';
 
 export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
@@ -47,6 +48,9 @@ export const generateWA_Kehadiran = (attendanceData: any) => {
   const formattedDate = formatTanggalIndo(attendanceData.tanggal);
   const greeting = 'Semangat Pagii.....!!!';
 
+  const sortedApiList = sortPersonelByJabatan(attendanceData.apiList || []);
+  const sortedOmList = sortPersonelByJabatan(attendanceData.omList || []);
+
   return `${greeting}
 T2 Safety & Security Electronic Services
 
@@ -54,10 +58,10 @@ Dinas     : ${attendanceData.shift}
 Hari      : ${formattedDate}
 
 Personel API T2 :
-${formatPersonnelList(attendanceData.apiList)}
+${formatPersonnelList(sortedApiList)}
 
 Personel OM IAS T2 :
-${formatPersonnelList(attendanceData.omList)}
+${formatPersonnelList(sortedOmList)}
 
 Tlp Ruangan :
 ${attendanceData.tlpRuangan}
@@ -384,3 +388,63 @@ export const generateWA_Kegiatan = (kegiatanData: any) => {
     
   return `*KEGIATAN SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${waktuText}\nLokasi : ${kegiatanData.lokasi}\nKegiatan : ${kegiatanData.kegiatan}`;
 };
+
+export const generateWA_InitialReport = (formData: any) => {
+  if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
+
+  const dateParts = formData.tanggal ? formData.tanggal.split('-') : ['','',''];
+  const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : '';
+
+  const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0
+    ? formData.lokasiList.filter((l: any) => l.lokasi1)
+    : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
+    
+  const lokasiFinal = locList.map((loc: any) => {
+    return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
+  }).join(', ') || '-';
+
+  const pukulStr = formData.waktuMulai ? `${formData.waktuMulai} WIB` : '- WIB';
+  const lamaStr = formData.lamaPengerjaan || '-';
+  const teknisiStr = formData.teknisi || '-';
+  const permasalahanStr = formData.permasalahan || '';
+  const statusStr = formData.status || '-';
+  const uraianStr = (formData.uraian && formData.uraian !== '• ') ? formData.uraian : '(Uraian kronologis kerusakan s.d saat dilaporkan)';
+  const dampakStr = formData.dampak || '1. ';
+  const mitigasiStr = formData.tindakanMitigasi || '1. ';
+  const tindakanStr = formData.tindakan || '1. ';
+  const hasilStr = formData.hasilTindakan || '1. ';
+
+  return `*INITIAL REPORT*
+
+Nama Peralatan : ${formData.peralatan}
+Lokasi : ${lokasiFinal}
+
+🗓️ Tanggal : ${formattedDate}
+🕝 Pukul : ${pukulStr}
+⏰ Lama waktu Pengerjaan : ${lamaStr}
+👨🏻‍🔧 Teknisi : ${teknisiStr}
+
+🪛 Permasalahan : 
+${permasalahanStr}
+
+Status : ${statusStr}
+
+*URAIAN*
+${uraianStr}
+
+*DAMPAK*
+${dampakStr}
+
+*TINDAKAN MITIGASI*
+${mitigasiStr}
+
+*TINDAKAN*
+${tindakanStr}
+
+*HASIL TINDAKAN*
+${hasilStr}
+
+Demikian laporan kronologis dan tindak lanjut kami sampaikan
+Terimakasih atas perhatiannya.`;
+};
+
