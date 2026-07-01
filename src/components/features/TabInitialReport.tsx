@@ -565,7 +565,7 @@ export const TabInitialReport: React.FC = () => {
 
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                Teknisi Bertugas (Opsional, Default: -)
+                Teknisi Bertugas (Otomatis dari Shift)
                 {availableTeknisi.length === 0 && <span className="text-xs text-rose-500 font-normal">*(Tidak ada teknisi hadir/jadwal kosong)</span>}
               </label>
               
