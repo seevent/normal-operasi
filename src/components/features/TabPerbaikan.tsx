@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X } from 'lucide-react';
+import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, Wrench } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
@@ -428,7 +428,7 @@ export const TabPerbaikan: React.FC = () => {
         <div className="space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
             <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" /> Informasi Laporan
+              <Wrench className="w-5 h-5 text-blue-600" /> Informasi Laporan Perbaikan
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

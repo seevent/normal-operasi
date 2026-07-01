@@ -139,7 +139,7 @@ export const TabKegiatan: React.FC = () => {
     <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
-          <Briefcase className="w-5 h-5 text-blue-600" /> Form Laporan Kegiatan
+          <Briefcase className="w-5 h-5 text-blue-600" /> Informasi Laporan Kegiatan
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
