@@ -5,6 +5,23 @@ import { supabase } from '../../lib/supabaseClient';
 
 export const TIP_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+const getDefaultTipPeriod = () => {
+  const now = new Date();
+  let monthIdx = now.getMonth();
+  let year = now.getFullYear();
+  if (now.getDate() < 20) {
+    monthIdx -= 1;
+    if (monthIdx < 0) {
+      monthIdx = 11;
+      year -= 1;
+    }
+  }
+  return {
+    month: TIP_MONTHS[monthIdx],
+    year: year.toString()
+  };
+};
+
 export const TabTip: React.FC = () => {
   const { checklistDataMaster } = useMasterDataStore();
 
@@ -46,8 +63,8 @@ export const TabTip: React.FC = () => {
   const tipRightCol = tipCategories.slice(Math.ceil(tipCategories.length / 2));
   const TIP_TOTAL_ITEMS = tipCategories.reduce((acc, cat) => acc + cat.items.length, 0);
 
-  const [tipMonth, setTipMonth] = useState(TIP_MONTHS[new Date().getMonth()]);
-  const [tipYear, setTipYear] = useState(new Date().getFullYear().toString());
+  const [tipMonth, setTipMonth] = useState(() => getDefaultTipPeriod().month);
+  const [tipYear, setTipYear] = useState(() => getDefaultTipPeriod().year);
   const [tipDataState, setTipDataState] = useState<any>({});
   const [tipLastSaved, setTipLastSaved] = useState<string | null>(null);
   const [tipUnsavedChanges, setTipUnsavedChanges] = useState(false);
@@ -229,7 +246,10 @@ export const TabTip: React.FC = () => {
       if (!blob) throw new Error('Blob image is empty');
 
       const file = new File([blob], `TIP_Performance_${tipMonth}_${tipYear}.jpg`, { type: 'image/jpeg' });
-      const shareText = `Halo, berikut adalah status laporan TIP Performance bulan ${tipMonth} ${tipYear}.`;
+      const now = new Date();
+      const fallbackTimeStr = `${now.getDate()} ${TIP_MONTHS[now.getMonth()]} ${now.getFullYear()} pukul ${String(now.getHours()).padStart(2, '0')}.${String(now.getMinutes()).padStart(2, '0')}`;
+      const savedTimeStr = tipLastSaved || fallbackTimeStr;
+      const shareText = `Laporan T2 TIP Performance ${tipMonth} ${tipYear}\nDisimpan Pada ${savedTimeStr}`;
       
       let canShare = false; 
       try { 
@@ -256,7 +276,7 @@ export const TabTip: React.FC = () => {
       a.click();
       URL.revokeObjectURL(url);
       
-      const text = encodeURIComponent(shareText + ' (Gambar telah otomatis diunduh)');
+      const text = encodeURIComponent(shareText);
       window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
 
     } catch (error) {

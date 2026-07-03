@@ -8,11 +8,8 @@ import { getStoringValidLocations, getStoringValidNumbers, getGeneralLokasiOptio
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
-import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
-import { lazy, Suspense } from 'react';
+import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
-
-const CollageEditor = lazy(() => import('../shared/CollageEditor').then(m => ({ default: m.CollageEditor })));
 
 export const TabStoring: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -33,9 +30,16 @@ export const TabStoring: React.FC = () => {
   });
 
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [customCollageFile, setCustomCollageFile] = useState<File | null>(null);
-  const [customCollageUrl, setCustomCollageUrl] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      photos.forEach(p => {
+        if (p.preview && p.preview.startsWith('blob:')) {
+          URL.revokeObjectURL(p.preview);
+        }
+      });
+    };
+  }, [photos]);
 
   // === Handlers ===
   const handleStoringChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -62,12 +66,14 @@ export const TabStoring: React.FC = () => {
   };
 
   // === Photo Handlers ===
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map(file => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
+      const newPhotos = compressedResults.map(res => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setPhotos(prev => [...prev, ...newPhotos]);
@@ -117,20 +123,15 @@ export const TabStoring: React.FC = () => {
       return;
     }
     
-    let generatedCollageFile: File | null = customCollageFile;
-    let generatedCollageUrl: string | null = customCollageUrl;
+    let generatedCollageFile: File | null = null;
 
-    if (photos.length > 0 && !generatedCollageFile) {
+    if (photos.length > 0) {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
-        // Create fallback collage
         const collageResult = await processPhotosToCollage(photos);
         if (collageResult) {
-          generatedCollageUrl = collageResult.url;
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          generatedCollageFile = new File([blob], `Dokumentasi_Storing_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          generatedCollageFile = collageResult.file;
         }
       }
     }
@@ -316,17 +317,9 @@ export const TabStoring: React.FC = () => {
         onZoom={updatePhotoZoom}
         onDrop={handlePhotoDrop}
         listType="general"
-        onOpenEditor={() => setIsEditorOpen(true)}
       />
 
-      {customCollageUrl && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <h3 className="text-sm font-bold text-blue-800 mb-2">Preview Kolase Kustom:</h3>
-          <img src={customCollageUrl} alt="Custom Collage" className="w-full max-w-sm rounded-lg shadow-sm border border-slate-200" />
-          <button type="button" onClick={() => { setCustomCollageUrl(null); setCustomCollageFile(null); }} className="mt-2 text-xs text-red-600 font-semibold hover:text-red-700">Hapus Kolase Kustom</button>
-        </div>
-      )}
-      {!customCollageUrl && <LiveCollagePreview photos={photos} />}
+      <LiveCollagePreview photos={photos} />
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>
@@ -344,19 +337,6 @@ export const TabStoring: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Suspense fallback={null}>
-        <CollageEditor 
-          photos={photos} 
-          isOpen={isEditorOpen} 
-          onClose={() => setIsEditorOpen(false)} 
-          onSave={(file, url) => {
-            setCustomCollageFile(file);
-            setCustomCollageUrl(url);
-            setIsEditorOpen(false);
-          }}
-        />
-      </Suspense>
     </form>
   );
 };

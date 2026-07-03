@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
-import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Cpu, FileWarning, MapPin, Plus, Clock, Calendar, AlertCircle, CheckCircle, Share2, FileText, Users, Loader2, User, ClipboardList, Trash2, LayoutGrid, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, Wrench, MoreHorizontal } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Cpu, FileWarning, MapPin, Plus, Clock, Calendar, AlertCircle, CheckCircle, Share2, FileText, Users, Loader2, User, ClipboardList, Wrench, Trash2, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, LayoutGrid, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -38,8 +38,7 @@ const PhotoUploader = ({
   onRemove,
   onZoom,
   onDrop,
-  listType,
-  onOpenEditor
+  listType
 }) => {
   return /* @__PURE__ */ jsxs("div", { children: [
     /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-3", children: [
@@ -61,22 +60,11 @@ const PhotoUploader = ({
       /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*", multiple: true, className: "hidden", onChange: onUpload })
     ] }) }),
     photos.length > 0 && /* @__PURE__ */ jsxs("div", { className: "mt-4", children: [
-      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-2", children: [
-        /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-500", children: [
-          "Daftar Foto (",
-          photos.length,
-          "):"
-        ] }),
-        onOpenEditor && /* @__PURE__ */ jsxs("button", { type: "button", onClick: onOpenEditor, className: "text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm transition-colors", children: [
-          /* @__PURE__ */ jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsx("rect", { width: "7", height: "7", x: "3", y: "3", rx: "1" }),
-            /* @__PURE__ */ jsx("rect", { width: "7", height: "7", x: "14", y: "3", rx: "1" }),
-            /* @__PURE__ */ jsx("rect", { width: "7", height: "7", x: "14", y: "14", rx: "1" }),
-            /* @__PURE__ */ jsx("rect", { width: "7", height: "7", x: "3", y: "14", rx: "1" })
-          ] }),
-          "Edit Kolase (Pro)"
-        ] })
-      ] }),
+      /* @__PURE__ */ jsx("div", { className: "flex justify-between items-center mb-2", children: /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-500", children: [
+        "Daftar Foto (",
+        photos.length,
+        "):"
+      ] }) }),
       /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4", children: photos.map((photo, index) => /* @__PURE__ */ jsxs(
         "div",
         {
@@ -1203,7 +1191,7 @@ const generateWA_InitialReport = (formData) => {
   const teknisiStr = formData.teknisi || "-";
   const permasalahanStr = formData.permasalahan || "";
   const statusStr = formData.status || "-";
-  const uraianStr = formData.uraian || "(Uraian kronologis kerusakan s.d saat dilaporkan)";
+  const uraianStr = formData.uraian && formData.uraian !== "• " ? formData.uraian : "(Uraian kronologis kerusakan s.d saat dilaporkan)";
   const dampakStr = formData.dampak || "1. ";
   const mitigasiStr = formData.tindakanMitigasi || "1. ";
   const tindakanStr = formData.tindakan || "1. ";
@@ -1287,6 +1275,52 @@ const shareToWhatsApp = async (message, filesArray, setIsCopied) => {
     if (err.name === "AbortError") return;
   }
   fallbackShare(message, finalFiles.length > 0, setIsCopied);
+};
+const compressImageFile = async (file, maxWidth = 1600, maxHeight = 1600, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve({ file, preview: objectUrl });
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(objectUrl);
+          if (!blob) {
+            resolve({ file, preview: URL.createObjectURL(file) });
+            return;
+          }
+          const compressedFile = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, "") + ".jpg",
+            { type: "image/jpeg", lastModified: Date.now() }
+          );
+          const compressedPreview = URL.createObjectURL(blob);
+          resolve({ file: compressedFile, preview: compressedPreview });
+        },
+        "image/jpeg",
+        quality
+      );
+    };
+    img.onerror = () => {
+      resolve({ file, preview: objectUrl });
+    };
+    img.src = objectUrl;
+  });
 };
 const processPhotosToCollage = async (photosArray) => {
   return new Promise(async (resolve) => {
@@ -1503,7 +1537,6 @@ const LiveCollagePreview = ({ photos }) => {
     /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mt-2", children: 'Kolase ini akan digenerate otomatis saat dikirim. Anda dapat menyesuaikannya melalui tombol "Advanced Editor" (jika tersedia).' })
   ] });
 };
-const CollageEditor$5 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 function formatNamaPersonel$1(fullName) {
   if (!fullName) return "";
   const words = fullName.trim().split(/\s+/);
@@ -1533,11 +1566,13 @@ const TabInitialReport = () => {
       lokasiList: [{ lokasi1: "", lokasi2: "" }],
       tanggal: realDate,
       waktuMulai: `${currentHour}:${currentMin}`,
+      jamPengerjaan: "",
+      menitPengerjaan: "",
       lamaPengerjaan: "-",
       teknisi: "-",
       permasalahan: "• ",
       status: "On Progress",
-      uraian: "",
+      uraian: "• ",
       dampak: "1. ",
       tindakanMitigasi: "1. ",
       tindakan: "1. ",
@@ -1605,9 +1640,15 @@ const TabInitialReport = () => {
     setSelectedTeknisi((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
   };
   const [photos, setPhotos] = useState([]);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [customCollageFile, setCustomCollageFile] = useState(null);
-  const [customCollageUrl, setCustomCollageUrl] = useState(null);
+  React.useEffect(() => {
+    return () => {
+      photos.forEach((p) => {
+        if (p.preview && p.preview.startsWith("blob:")) {
+          URL.revokeObjectURL(p.preview);
+        }
+      });
+    };
+  }, [photos]);
   const permasalahanRef = React.useRef(null);
   const uraianRef = React.useRef(null);
   const dampakRef = React.useRef(null);
@@ -1636,12 +1677,41 @@ const TabInitialReport = () => {
     }
     setFormData(newFormData);
   };
+  const handleJamChange = (e) => {
+    const val = e.target.value.replace(/\D/g, "");
+    setFormData((prev) => {
+      const jam = val;
+      const menit = prev.menitPengerjaan;
+      const jamNum = parseInt(jam, 10) || 0;
+      const menitNum = parseInt(menit, 10) || 0;
+      let lama = "-";
+      if (jamNum > 0 && menitNum > 0) lama = `${jamNum} Jam ${menitNum} Menit`;
+      else if (jamNum > 0) lama = `${jamNum} Jam`;
+      else if (menitNum > 0) lama = `${menitNum} Menit`;
+      return { ...prev, jamPengerjaan: jam, lamaPengerjaan: lama };
+    });
+  };
+  const handleMenitChange = (e) => {
+    const val = e.target.value.replace(/\D/g, "");
+    setFormData((prev) => {
+      const jam = prev.jamPengerjaan;
+      const menit = val;
+      const jamNum = parseInt(jam, 10) || 0;
+      const menitNum = parseInt(menit, 10) || 0;
+      let lama = "-";
+      if (jamNum > 0 && menitNum > 0) lama = `${jamNum} Jam ${menitNum} Menit`;
+      else if (jamNum > 0) lama = `${jamNum} Jam`;
+      else if (menitNum > 0) lama = `${menitNum} Menit`;
+      return { ...prev, menitPengerjaan: menit, lamaPengerjaan: lama };
+    });
+  };
   const handleLokasiEntryChange = (index, field, value) => {
     setFormData((prev) => {
       const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
       newList[index] = { ...newList[index], [field]: value };
       if (field === "lokasi1") {
-        newList[index].lokasi2 = "";
+        const pts = getLokasi2Options(value, [prev.peralatan]);
+        newList[index].lokasi2 = pts.length === 0 || pts.length === 1 && pts[0] === "-" ? "-" : "";
       }
       return {
         ...prev,
@@ -1717,12 +1787,14 @@ ${nextNum}. ` + textAfter;
       }, 0);
     }
   };
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map((file) => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map((f) => compressImageFile(f)));
+      const newPhotos = compressedResults.map((res) => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setPhotos((prev) => [...prev, ...newPhotos]);
@@ -1759,17 +1831,14 @@ ${nextNum}. ` + textAfter;
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let generatedCollageFile = customCollageFile;
-    if (photos.length > 0 && !generatedCollageFile) {
+    let generatedCollageFile = null;
+    if (photos.length > 0) {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
         const collageResult = await processPhotosToCollage(photos);
         if (collageResult) {
-          collageResult.url;
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          generatedCollageFile = new File([blob], `Dokumentasi_InitialReport_${Date.now()}.jpg`, { type: "image/jpeg" });
+          generatedCollageFile = collageResult.file;
         }
       }
     }
@@ -1840,12 +1909,21 @@ ${nextNum}. ` + textAfter;
         /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: /* @__PURE__ */ jsxs("div", { className: "md:col-span-2 space-y-3", children: [
           /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700", children: "Lokasi" }),
           (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).map((loc, index) => {
-            const selectedOtherLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1 }]).filter((_, idx) => idx !== index).map((item) => item.lokasi1).filter(Boolean);
-            const availableOptions = getGeneralLokasiOptions(formData.peralatan).filter(
-              (opt) => !selectedOtherLocs.includes(opt) || opt === loc.lokasi1
-            );
-            const options2 = getLokasi2Options(loc.lokasi1, [formData.peralatan]);
-            const isDisabled2 = options2.length === 0 || options2.length === 1 && options2[0] === "-";
+            const allRows = formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
+            const otherRows = allRows.filter((_, idx) => idx !== index);
+            const availableOptions = getGeneralLokasiOptions(formData.peralatan).filter((opt) => {
+              if (opt === loc.lokasi1) return true;
+              const otherRowsWithOpt = otherRows.filter((r) => r.lokasi1 === opt);
+              if (otherRowsWithOpt.length === 0) return true;
+              const pts = getLokasi2Options(opt, [formData.peralatan]);
+              if (pts.length === 0 || pts[0] === "-") return false;
+              const takenPts = otherRowsWithOpt.map((r) => r.lokasi2).filter(Boolean);
+              return !pts.every((p) => takenPts.includes(p));
+            });
+            const allOptions2 = getLokasi2Options(loc.lokasi1, [formData.peralatan]);
+            const takenOptions2ForThisLoc1 = otherRows.filter((r) => r.lokasi1 === loc.lokasi1).map((r) => r.lokasi2).filter(Boolean);
+            const options2 = allOptions2.filter((opt) => !takenOptions2ForThisLoc1.includes(opt) || opt === loc.lokasi2);
+            const isDisabled2 = allOptions2.length === 0 || allOptions2.length === 1 && allOptions2[0] === "-";
             return /* @__PURE__ */ jsxs("div", { className: "flex gap-2 items-center", children: [
               /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
                 /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
@@ -1923,11 +2001,40 @@ ${nextNum}. ` + textAfter;
           ] }),
           /* @__PURE__ */ jsxs("div", { children: [
             /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Lama Waktu Pengerjaan" }),
-            /* @__PURE__ */ jsx("input", { type: "text", name: "lamaPengerjaan", placeholder: "Cth: - atau 30 Menit", value: formData.lamaPengerjaan, onChange: handleFieldChange, className: "w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" })
+            /* @__PURE__ */ jsxs("div", { className: "flex gap-2 items-center", children: [
+              /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
+                /* @__PURE__ */ jsx(
+                  "input",
+                  {
+                    type: "text",
+                    inputMode: "numeric",
+                    placeholder: "0",
+                    value: formData.jamPengerjaan,
+                    onChange: handleJamChange,
+                    className: "w-full pr-12 pl-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm text-right"
+                  }
+                ),
+                /* @__PURE__ */ jsx("span", { className: "absolute right-3 top-2.5 text-xs font-semibold text-slate-500 pointer-events-none", children: "Jam" })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
+                /* @__PURE__ */ jsx(
+                  "input",
+                  {
+                    type: "text",
+                    inputMode: "numeric",
+                    placeholder: "0",
+                    value: formData.menitPengerjaan,
+                    onChange: handleMenitChange,
+                    className: "w-full pr-14 pl-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm text-right"
+                  }
+                ),
+                /* @__PURE__ */ jsx("span", { className: "absolute right-3 top-2.5 text-xs font-semibold text-slate-500 pointer-events-none", children: "Menit" })
+              ] })
+            ] })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "md:col-span-3", children: [
             /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2", children: [
-              "Teknisi Bertugas (Opsional, Default: -)",
+              "Teknisi Bertugas (Otomatis dari Shift)",
               availableTeknisi.length === 0 && /* @__PURE__ */ jsx("span", { className: "text-xs text-rose-500 font-normal", children: "*(Tidak ada teknisi hadir/jadwal kosong)" })
             ] }),
             /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200", children: [
@@ -2006,7 +2113,7 @@ ${nextNum}. ` + textAfter;
         /* @__PURE__ */ jsxs("div", { children: [
           /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "URAIAN" }),
           /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mb-1", children: "(Uraian kronologis kerusakan s.d saat dilaporkan)" }),
-          /* @__PURE__ */ jsx("textarea", { ref: uraianRef, name: "uraian", rows: 4, placeholder: "Jelaskan uraian kronologis...", value: formData.uraian, onChange: handleFieldChange, className: "w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden text-sm leading-relaxed transition-all" })
+          /* @__PURE__ */ jsx("textarea", { ref: uraianRef, name: "uraian", rows: 4, value: formData.uraian, onChange: (e) => handleBulletChange(e, "uraian"), onKeyDown: (e) => handleBulletKeyDown(e, "uraian"), className: "w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all" })
         ] }),
         /* @__PURE__ */ jsxs("div", { children: [
           /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "DAMPAK" }),
@@ -2033,19 +2140,10 @@ ${nextNum}. ` + textAfter;
           onRemove: removePhoto,
           onZoom: updatePhotoZoom,
           onDrop: handlePhotoDrop,
-          listType: "general",
-          onOpenEditor: () => setIsEditorOpen(true)
+          listType: "general"
         }
       ),
-      customCollageUrl && /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200", children: [
-        /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-800 mb-2", children: "Preview Kolase Kustom:" }),
-        /* @__PURE__ */ jsx("img", { src: customCollageUrl, alt: "Custom Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
-          setCustomCollageUrl(null);
-          setCustomCollageFile(null);
-        }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
-      ] }),
-      !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
+      /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
       /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
         /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
         " Berhasil Disalin / Dibagikan!"
@@ -2060,20 +2158,7 @@ ${nextNum}. ` + textAfter;
         ] }),
         /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_InitialReport(formData) }) })
       ] })
-    ] }),
-    /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$5,
-      {
-        photos,
-        isOpen: isEditorOpen,
-        onClose: () => setIsEditorOpen(false),
-        onSave: (file, url) => {
-          setCustomCollageFile(file);
-          setCustomCollageUrl(url);
-          setIsEditorOpen(false);
-        }
-      }
-    ) })
+    ] })
   ] });
 };
 const TabKehadiran = () => {
@@ -2436,7 +2521,6 @@ const TabKehadiran = () => {
     ] })
   ] });
 };
-const CollageEditor$4 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 function formatNamaPersonel(fullName) {
   if (!fullName) return "";
   const words = fullName.trim().split(/\s+/);
@@ -2538,9 +2622,15 @@ const TabPerbaikan = () => {
   };
   const [isVerifikasiETD, setIsVerifikasiETD] = useState(false);
   const [photos, setPhotos] = useState([]);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [customCollageFile, setCustomCollageFile] = useState(null);
-  const [customCollageUrl, setCustomCollageUrl] = useState(null);
+  React.useEffect(() => {
+    return () => {
+      photos.forEach((p) => {
+        if (p.preview && p.preview.startsWith("blob:")) {
+          URL.revokeObjectURL(p.preview);
+        }
+      });
+    };
+  }, [photos]);
   const permasalahanRef = React.useRef(null);
   const tindakLanjutRef = React.useRef(null);
   React.useEffect(() => {
@@ -2583,7 +2673,8 @@ const TabPerbaikan = () => {
       const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
       newList[index] = { ...newList[index], [field]: value };
       if (field === "lokasi1") {
-        newList[index].lokasi2 = "";
+        const pts = getLokasi2Options(value, [prev.peralatan]);
+        newList[index].lokasi2 = pts.length === 0 || pts.length === 1 && pts[0] === "-" ? "-" : "";
       }
       return {
         ...prev,
@@ -2662,12 +2753,14 @@ const TabPerbaikan = () => {
       setFormData((prev) => ({ ...prev, [field]: prev[field] + "\n• " }));
     }
   };
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map((file) => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map((f) => compressImageFile(f)));
+      const newPhotos = compressedResults.map((res) => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setPhotos((prev) => [...prev, ...newPhotos]);
@@ -2704,17 +2797,14 @@ const TabPerbaikan = () => {
   };
   const handleRepairSubmit = async (e) => {
     e.preventDefault();
-    let generatedCollageFile = customCollageFile;
-    if (photos.length > 0 && !generatedCollageFile) {
+    let generatedCollageFile = null;
+    if (photos.length > 0) {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
         const collageResult = await processPhotosToCollage(photos);
         if (collageResult) {
-          collageResult.url;
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          generatedCollageFile = new File([blob], `Dokumentasi_Perbaikan_${Date.now()}.jpg`, { type: "image/jpeg" });
+          generatedCollageFile = collageResult.file;
         }
       }
     }
@@ -2739,6 +2829,7 @@ const TabPerbaikan = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
+    if (generatedCollageUrl) ;
   };
   return /* @__PURE__ */ jsxs("div", { children: [
     /* @__PURE__ */ jsx("div", { className: "bg-blue-50/50 px-6 py-5 border-b border-slate-200", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4", children: [
@@ -2785,19 +2876,28 @@ const TabPerbaikan = () => {
     /* @__PURE__ */ jsxs("form", { onSubmit: handleRepairSubmit, className: "p-6 sm:p-8 space-y-8", children: [
       /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
         /* @__PURE__ */ jsx("div", { className: "flex justify-between items-center border-b pb-2", children: /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2", children: [
-          /* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 text-blue-600" }),
-          " Informasi Laporan"
+          /* @__PURE__ */ jsx(Wrench, { className: "w-5 h-5 text-blue-600" }),
+          " Informasi Laporan Perbaikan"
         ] }) }),
         /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
           /* @__PURE__ */ jsxs("div", { className: "md:col-span-2 space-y-3", children: [
             /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700", children: "Lokasi" }),
             (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).map((loc, index) => {
-              const selectedOtherLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1 }]).filter((_, idx) => idx !== index).map((item) => item.lokasi1).filter(Boolean);
-              const availableOptions = getGeneralLokasiOptions(formData.peralatan).filter(
-                (opt) => !selectedOtherLocs.includes(opt) || opt === loc.lokasi1
-              );
-              const options2 = getLokasi2Options(loc.lokasi1, [formData.peralatan]);
-              const isDisabled2 = options2.length === 0 || options2.length === 1 && options2[0] === "-";
+              const allRows = formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
+              const otherRows = allRows.filter((_, idx) => idx !== index);
+              const availableOptions = getGeneralLokasiOptions(formData.peralatan).filter((opt) => {
+                if (opt === loc.lokasi1) return true;
+                const otherRowsWithOpt = otherRows.filter((r) => r.lokasi1 === opt);
+                if (otherRowsWithOpt.length === 0) return true;
+                const pts = getLokasi2Options(opt, [formData.peralatan]);
+                if (pts.length === 0 || pts[0] === "-") return false;
+                const takenPts = otherRowsWithOpt.map((r) => r.lokasi2).filter(Boolean);
+                return !pts.every((p) => takenPts.includes(p));
+              });
+              const allOptions2 = getLokasi2Options(loc.lokasi1, [formData.peralatan]);
+              const takenOptions2ForThisLoc1 = otherRows.filter((r) => r.lokasi1 === loc.lokasi1).map((r) => r.lokasi2).filter(Boolean);
+              const options2 = allOptions2.filter((opt) => !takenOptions2ForThisLoc1.includes(opt) || opt === loc.lokasi2);
+              const isDisabled2 = allOptions2.length === 0 || allOptions2.length === 1 && allOptions2[0] === "-";
               return /* @__PURE__ */ jsxs("div", { className: "flex gap-2 items-center", children: [
                 /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
                   /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
@@ -2988,19 +3088,10 @@ const TabPerbaikan = () => {
           onRemove: removePhoto,
           onZoom: updatePhotoZoom,
           onDrop: handlePhotoDrop,
-          listType: "general",
-          onOpenEditor: () => setIsEditorOpen(true)
+          listType: "general"
         }
       ),
-      customCollageUrl && /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200", children: [
-        /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-800 mb-2", children: "Preview Kolase Kustom:" }),
-        /* @__PURE__ */ jsx("img", { src: customCollageUrl, alt: "Custom Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
-          setCustomCollageUrl(null);
-          setCustomCollageFile(null);
-        }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
-      ] }),
-      !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
+      /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
       /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
         /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
         " Berhasil Disalin / Dibagikan!"
@@ -3015,23 +3106,9 @@ const TabPerbaikan = () => {
         ] }),
         /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_Perbaikan(formData, isVerifikasiETD) }) })
       ] })
-    ] }),
-    /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$4,
-      {
-        photos,
-        isOpen: isEditorOpen,
-        onClose: () => setIsEditorOpen(false),
-        onSave: (file, url) => {
-          setCustomCollageFile(file);
-          setCustomCollageUrl(url);
-          setIsEditorOpen(false);
-        }
-      }
-    ) })
+    ] })
   ] });
 };
-const CollageEditor$3 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabStoring = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData, storingLocAc, storingLocDefault } = useMasterDataStore();
@@ -3051,9 +3128,15 @@ const TabStoring = () => {
     hasil: "Normal Operasi"
   });
   const [photos, setPhotos] = useState([]);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [customCollageFile, setCustomCollageFile] = useState(null);
-  const [customCollageUrl, setCustomCollageUrl] = useState(null);
+  React.useEffect(() => {
+    return () => {
+      photos.forEach((p) => {
+        if (p.preview && p.preview.startsWith("blob:")) {
+          URL.revokeObjectURL(p.preview);
+        }
+      });
+    };
+  }, [photos]);
   const handleStoringChange = (e) => {
     const { name, value } = e.target;
     setStoringData((prev) => ({ ...prev, [name]: value }));
@@ -3073,12 +3156,14 @@ const TabStoring = () => {
       return { ...prev, peralatan: newPeralatan, lokasi: "", acLokasi: [], acNomor: {}, nomor: "" };
     });
   };
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map((file) => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map((f) => compressImageFile(f)));
+      const newPhotos = compressedResults.map((res) => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setPhotos((prev) => [...prev, ...newPhotos]);
@@ -3119,17 +3204,14 @@ const TabStoring = () => {
       alert("Pastikan Anda memilih minimal 1 lokasi untuk peralatan terpilih!");
       return;
     }
-    let generatedCollageFile = customCollageFile;
-    if (photos.length > 0 && !generatedCollageFile) {
+    let generatedCollageFile = null;
+    if (photos.length > 0) {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
         const collageResult = await processPhotosToCollage(photos);
         if (collageResult) {
-          collageResult.url;
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          generatedCollageFile = new File([blob], `Dokumentasi_Storing_${Date.now()}.jpg`, { type: "image/jpeg" });
+          generatedCollageFile = collageResult.file;
         }
       }
     }
@@ -3152,6 +3234,7 @@ const TabStoring = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
+    if (generatedCollageUrl) ;
   };
   return /* @__PURE__ */ jsxs("form", { onSubmit: handleStoringSubmit, className: "p-6 sm:p-8 space-y-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
@@ -3287,19 +3370,10 @@ const TabStoring = () => {
         onRemove: removePhoto,
         onZoom: updatePhotoZoom,
         onDrop: handlePhotoDrop,
-        listType: "general",
-        onOpenEditor: () => setIsEditorOpen(true)
+        listType: "general"
       }
     ),
-    customCollageUrl && /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200", children: [
-      /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-800 mb-2", children: "Preview Kolase Kustom:" }),
-      /* @__PURE__ */ jsx("img", { src: customCollageUrl, alt: "Custom Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
-      /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
-        setCustomCollageUrl(null);
-        setCustomCollageFile(null);
-      }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
-    ] }),
-    !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
+    /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
     /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
       " Berhasil Disalin / Dibagikan!"
@@ -3313,23 +3387,9 @@ const TabStoring = () => {
         " Preview Laporan Storing (Real-time)"
       ] }),
       /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_Storing(storingData) }) })
-    ] }),
-    /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$3,
-      {
-        photos,
-        isOpen: isEditorOpen,
-        onClose: () => setIsEditorOpen(false),
-        onSave: (file, url) => {
-          setCustomCollageFile(file);
-          setCustomCollageUrl(url);
-          setIsEditorOpen(false);
-        }
-      }
-    ) })
+    ] })
   ] });
 };
-const CollageEditor$2 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabKalibrasi = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData } = useMasterDataStore();
@@ -3385,9 +3445,19 @@ const TabKalibrasi = () => {
   });
   const [kalibrasiEntries, setKalibrasiEntries] = useState([createEmptyKalibrasiEntry()]);
   const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState([
-    { id: Date.now(), photos: [], collageUrl: null, collageFile: null, isGenerating: false }
+    { id: Date.now(), photos: [], isGenerating: false }
   ]);
-  const [editorGroupId, setEditorGroupId] = useState(null);
+  React.useEffect(() => {
+    return () => {
+      kalibrasiPhotoGroups.forEach((group) => {
+        group.photos.forEach((p) => {
+          if (p.preview && p.preview.startsWith("blob:")) {
+            URL.revokeObjectURL(p.preview);
+          }
+        });
+      });
+    };
+  }, [kalibrasiPhotoGroups]);
   const handleKalibrasiGlobalChange = (e) => {
     const { name, value } = e.target;
     setKalibrasiGlobal((prev) => ({ ...prev, [name]: value }));
@@ -3447,12 +3517,14 @@ const TabKalibrasi = () => {
       return newEntries;
     });
   };
-  const handleKalibrasiPhotoUpload = (groupId, e) => {
+  const handleKalibrasiPhotoUpload = async (groupId, e) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map((file) => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map((f) => compressImageFile(f)));
+      const newPhotos = compressedResults.map((res) => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setKalibrasiPhotoGroups((prev) => prev.map((group) => {
@@ -3502,7 +3574,7 @@ const TabKalibrasi = () => {
     }));
   };
   const addKalibrasiPhotoGroup = () => {
-    setKalibrasiPhotoGroups((prev) => [...prev, { id: Date.now(), photos: [], collageUrl: null, collageFile: null, isGenerating: false }]);
+    setKalibrasiPhotoGroups((prev) => [...prev, { id: Date.now(), photos: [], isGenerating: false }]);
   };
   const removeKalibrasiPhotoGroup = (groupId) => {
     if (kalibrasiPhotoGroups.length <= 1) return;
@@ -3531,24 +3603,10 @@ const TabKalibrasi = () => {
     /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
       kalibrasiPhotoGroups.map((group, groupIndex) => /* @__PURE__ */ jsxs("div", { className: "p-4 sm:p-5 bg-blue-50/30 border border-blue-100 rounded-xl space-y-4 relative shadow-sm", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center gap-3 justify-between", children: [
-          /* @__PURE__ */ jsxs("div", { className: "flex-1 w-full flex items-center gap-3", children: [
-            /* @__PURE__ */ jsxs("h3", { className: "font-bold text-blue-900 text-sm", children: [
-              "Grup Kolase ",
-              groupIndex + 1
-            ] }),
-            group.photos.length > 0 && /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                onClick: () => setEditorGroupId(group.id),
-                className: "text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm transition-colors",
-                children: [
-                  /* @__PURE__ */ jsx(LayoutGrid, { className: "w-3 h-3" }),
-                  " Edit Kolase (Pro)"
-                ]
-              }
-            )
-          ] }),
+          /* @__PURE__ */ jsx("div", { className: "flex-1 w-full flex items-center gap-3", children: /* @__PURE__ */ jsxs("h3", { className: "font-bold text-blue-900 text-sm", children: [
+            "Grup Kolase ",
+            groupIndex + 1
+          ] }) }),
           kalibrasiPhotoGroups.length > 1 && /* @__PURE__ */ jsxs(
             "button",
             {
@@ -3615,22 +3673,7 @@ const TabKalibrasi = () => {
             photo.id
           )) })
         ] }),
-        group.collageUrl && /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-white rounded-xl border border-blue-200", children: [
-          /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-800 mb-2", children: "Preview Kolase Kustom:" }),
-          /* @__PURE__ */ jsx("img", { src: group.collageUrl, alt: "Custom Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => {
-                setKalibrasiPhotoGroups((prev) => prev.map((g) => g.id === group.id ? { ...g, collageUrl: null, collageFile: null } : g));
-              },
-              className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700",
-              children: "Hapus Kolase Kustom"
-            }
-          )
-        ] }),
-        !group.collageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos: group.photos })
+        /* @__PURE__ */ jsx(LiveCollagePreview, { photos: group.photos })
       ] }, group.id)),
       /* @__PURE__ */ jsxs(
         "button",
@@ -3660,15 +3703,10 @@ const TabKalibrasi = () => {
     let customFilesArray = [];
     for (let i = 0; i < kalibrasiPhotoGroups.length; i++) {
       const group = kalibrasiPhotoGroups[i];
-      if (group.collageFile) {
-        customFilesArray.push(group.collageFile);
-      } else if (group.photos.length > 1) {
+      if (group.photos.length > 1) {
         const collageResult = await processPhotosToCollage(group.photos);
-        if (collageResult) {
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          const file = new File([blob], `Dokumentasi_Kalibrasi_Kolase_${i + 1}_${Date.now()}.jpg`, { type: "image/jpeg" });
-          customFilesArray.push(file);
+        if (collageResult && collageResult.file) {
+          customFilesArray.push(collageResult.file);
         }
       } else if (group.photos.length === 1 && group.photos[0]?.file) {
         customFilesArray.push(group.photos[0].file);
@@ -4075,22 +4113,26 @@ const TabKalibrasi = () => {
         " Preview Laporan Kalibrasi (Real-time)"
       ] }),
       /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%] max-h-[500px] overflow-y-auto", children: generateWA_Kalibrasi(kalibrasiGlobal, kalibrasiEntries) }) })
-    ] }),
-    editorGroupId !== null && /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$2,
-      {
-        photos: kalibrasiPhotoGroups.find((g) => g.id === editorGroupId)?.photos || [],
-        isOpen: editorGroupId !== null,
-        onClose: () => setEditorGroupId(null),
-        onSave: (file, url) => {
-          setKalibrasiPhotoGroups((prev) => prev.map((g) => g.id === editorGroupId ? { ...g, collageUrl: url, collageFile: file } : g));
-          setEditorGroupId(null);
-        }
-      }
-    ) })
+    ] })
   ] });
 };
 const TIP_MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+const getDefaultTipPeriod = () => {
+  const now = /* @__PURE__ */ new Date();
+  let monthIdx = now.getMonth();
+  let year = now.getFullYear();
+  if (now.getDate() < 20) {
+    monthIdx -= 1;
+    if (monthIdx < 0) {
+      monthIdx = 11;
+      year -= 1;
+    }
+  }
+  return {
+    month: TIP_MONTHS[monthIdx],
+    year: year.toString()
+  };
+};
 const TabTip = () => {
   const { checklistDataMaster } = useMasterDataStore();
   const tipCategories = React.useMemo(() => {
@@ -4129,8 +4171,8 @@ const TabTip = () => {
   const tipLeftCol = tipCategories.slice(0, Math.ceil(tipCategories.length / 2));
   const tipRightCol = tipCategories.slice(Math.ceil(tipCategories.length / 2));
   const TIP_TOTAL_ITEMS = tipCategories.reduce((acc, cat) => acc + cat.items.length, 0);
-  const [tipMonth, setTipMonth] = useState(TIP_MONTHS[(/* @__PURE__ */ new Date()).getMonth()]);
-  const [tipYear, setTipYear] = useState((/* @__PURE__ */ new Date()).getFullYear().toString());
+  const [tipMonth, setTipMonth] = useState(() => getDefaultTipPeriod().month);
+  const [tipYear, setTipYear] = useState(() => getDefaultTipPeriod().year);
   const [tipDataState, setTipDataState] = useState({});
   const [tipLastSaved, setTipLastSaved] = useState(null);
   const [tipUnsavedChanges, setTipUnsavedChanges] = useState(false);
@@ -4280,7 +4322,11 @@ const TabTip = () => {
       });
       if (!blob) throw new Error("Blob image is empty");
       const file = new File([blob], `TIP_Performance_${tipMonth}_${tipYear}.jpg`, { type: "image/jpeg" });
-      const shareText = `Halo, berikut adalah status laporan TIP Performance bulan ${tipMonth} ${tipYear}.`;
+      const now = /* @__PURE__ */ new Date();
+      const fallbackTimeStr = `${now.getDate()} ${TIP_MONTHS[now.getMonth()]} ${now.getFullYear()} pukul ${String(now.getHours()).padStart(2, "0")}.${String(now.getMinutes()).padStart(2, "0")}`;
+      const savedTimeStr = tipLastSaved || fallbackTimeStr;
+      const shareText = `Laporan T2 TIP Performance ${tipMonth} ${tipYear}
+Disimpan Pada ${savedTimeStr}`;
       let canShare = false;
       try {
         canShare = navigator.canShare && navigator.canShare({ files: [file] });
@@ -4304,7 +4350,7 @@ const TabTip = () => {
       a.download = `TIP_Performance_${tipMonth}_${tipYear}.jpg`;
       a.click();
       URL.revokeObjectURL(url);
-      const text = encodeURIComponent(shareText + " (Gambar telah otomatis diunduh)");
+      const text = encodeURIComponent(shareText);
       window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
     } catch (error) {
       console.error("Error generating image:", error);
@@ -4665,7 +4711,6 @@ const TabChecklist = () => {
     ] })
   ] });
 };
-const CollageEditor$1 = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabBriefing = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [briefingData, setBriefingData] = useState(() => {
@@ -4689,19 +4734,27 @@ const TabBriefing = () => {
     };
   });
   const [photos, setPhotos] = useState([]);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [customCollageFile, setCustomCollageFile] = useState(null);
-  const [customCollageUrl, setCustomCollageUrl] = useState(null);
+  React.useEffect(() => {
+    return () => {
+      photos.forEach((p) => {
+        if (p.preview && p.preview.startsWith("blob:")) {
+          URL.revokeObjectURL(p.preview);
+        }
+      });
+    };
+  }, [photos]);
   const handleBriefingChange = (e) => {
     const { name, value } = e.target;
     setBriefingData({ ...briefingData, [name]: value });
   };
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map((file) => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map((f) => compressImageFile(f)));
+      const newPhotos = compressedResults.map((res) => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setPhotos((prev) => [...prev, ...newPhotos]);
@@ -4738,17 +4791,14 @@ const TabBriefing = () => {
   };
   const handleBriefingSubmit = async (e) => {
     e.preventDefault();
-    let generatedCollageFile = customCollageFile;
-    if (photos.length > 0 && !generatedCollageFile) {
+    let generatedCollageFile = null;
+    if (photos.length > 0) {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
         const collageResult = await processPhotosToCollage(photos);
         if (collageResult) {
-          collageResult.url;
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          generatedCollageFile = new File([blob], `Dokumentasi_Briefing_${Date.now()}.jpg`, { type: "image/jpeg" });
+          generatedCollageFile = collageResult.file;
         }
       }
     }
@@ -4757,6 +4807,7 @@ const TabBriefing = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
+    if (generatedCollageUrl) ;
   };
   return /* @__PURE__ */ jsxs("form", { onSubmit: handleBriefingSubmit, className: "p-6 sm:p-8 space-y-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
@@ -4802,19 +4853,10 @@ const TabBriefing = () => {
         onRemove: removePhoto,
         onZoom: updatePhotoZoom,
         onDrop: handlePhotoDrop,
-        listType: "general",
-        onOpenEditor: () => setIsEditorOpen(true)
+        listType: "general"
       }
     ),
-    customCollageUrl && /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200", children: [
-      /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-800 mb-2", children: "Preview Kolase Kustom:" }),
-      /* @__PURE__ */ jsx("img", { src: customCollageUrl, alt: "Custom Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
-      /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
-        setCustomCollageUrl(null);
-        setCustomCollageFile(null);
-      }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
-    ] }),
-    !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
+    /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
     /* @__PURE__ */ jsx("div", { className: "space-y-4 mt-6", children: /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
       /* @__PURE__ */ jsxs("div", { children: [
         /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Tanggal" }),
@@ -4851,20 +4893,7 @@ const TabBriefing = () => {
         " Preview Laporan Briefing (Real-time)"
       ] }),
       /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_Briefing(briefingData) }) })
-    ] }),
-    /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor$1,
-      {
-        photos,
-        isOpen: isEditorOpen,
-        onClose: () => setIsEditorOpen(false),
-        onSave: (file, url) => {
-          setCustomCollageFile(file);
-          setCustomCollageUrl(url);
-          setIsEditorOpen(false);
-        }
-      }
-    ) })
+    ] })
   ] });
 };
 const useAuthStore = create((set) => ({
@@ -6347,7 +6376,6 @@ const TipDataManager = () => {
     ] }) })
   ] });
 };
-const CollageEditor = lazy(() => import("./CollageEditor-DPFEuQhx.js").then((m) => ({ default: m.CollageEditor })));
 const TabKegiatan = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [kegiatanData, setKegiatanData] = useState(() => {
@@ -6365,19 +6393,27 @@ const TabKegiatan = () => {
     };
   });
   const [photos, setPhotos] = useState([]);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [customCollageFile, setCustomCollageFile] = useState(null);
-  const [customCollageUrl, setCustomCollageUrl] = useState(null);
+  React.useEffect(() => {
+    return () => {
+      photos.forEach((p) => {
+        if (p.preview && p.preview.startsWith("blob:")) {
+          URL.revokeObjectURL(p.preview);
+        }
+      });
+    };
+  }, [photos]);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setKegiatanData({ ...kegiatanData, [name]: value });
   };
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map((file) => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map((f) => compressImageFile(f)));
+      const newPhotos = compressedResults.map((res) => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setPhotos((prev) => [...prev, ...newPhotos]);
@@ -6414,17 +6450,14 @@ const TabKegiatan = () => {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let generatedCollageFile = customCollageFile;
-    if (photos.length > 0 && !generatedCollageFile) {
+    let generatedCollageFile = null;
+    if (photos.length > 0) {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
         const collageResult = await processPhotosToCollage(photos);
         if (collageResult) {
-          collageResult.url;
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          generatedCollageFile = new File([blob], `Dokumentasi_Kegiatan_${Date.now()}.jpg`, { type: "image/jpeg" });
+          generatedCollageFile = collageResult.file;
         }
       }
     }
@@ -6445,12 +6478,13 @@ const TabKegiatan = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
+    if (generatedCollageUrl) ;
   };
   return /* @__PURE__ */ jsxs("form", { onSubmit: handleSubmit, className: "p-6 sm:p-8 space-y-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
       /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2", children: [
         /* @__PURE__ */ jsx(Briefcase, { className: "w-5 h-5 text-blue-600" }),
-        " Form Laporan Kegiatan"
+        " Informasi Laporan Kegiatan"
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
         /* @__PURE__ */ jsxs("div", { children: [
@@ -6503,19 +6537,10 @@ const TabKegiatan = () => {
         onRemove: removePhoto,
         onZoom: updatePhotoZoom,
         onDrop: handlePhotoDrop,
-        listType: "general",
-        onOpenEditor: () => setIsEditorOpen(true)
+        listType: "general"
       }
     ),
-    customCollageUrl && /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200", children: [
-      /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-800 mb-2", children: "Preview Kolase Kustom:" }),
-      /* @__PURE__ */ jsx("img", { src: customCollageUrl, alt: "Custom Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
-      /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
-        setCustomCollageUrl(null);
-        setCustomCollageFile(null);
-      }, className: "mt-2 text-xs text-red-600 font-semibold hover:text-red-700", children: "Hapus Kolase Kustom" })
-    ] }),
-    !customCollageUrl && /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
+    /* @__PURE__ */ jsx(LiveCollagePreview, { photos }),
     /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
       " Berhasil Disalin / Dibagikan!"
@@ -6529,20 +6554,7 @@ const TabKegiatan = () => {
         " Preview Laporan Kegiatan (Real-time)"
       ] }),
       /* @__PURE__ */ jsx("div", { className: "bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative", children: /* @__PURE__ */ jsx("div", { className: "bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]", children: generateWA_Kegiatan(kegiatanData) }) })
-    ] }),
-    /* @__PURE__ */ jsx(Suspense, { fallback: null, children: /* @__PURE__ */ jsx(
-      CollageEditor,
-      {
-        photos,
-        isOpen: isEditorOpen,
-        onClose: () => setIsEditorOpen(false),
-        onSave: (file, url) => {
-          setCustomCollageFile(file);
-          setCustomCollageUrl(url);
-          setIsEditorOpen(false);
-        }
-      }
-    ) })
+    ] })
   ] });
 };
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];

@@ -1,5 +1,57 @@
 // src/lib/utils/canvasUtils.ts
 
+export const compressImageFile = async (
+  file: File,
+  maxWidth = 1600,
+  maxHeight = 1600,
+  quality = 0.8
+): Promise<{ file: File; preview: string }> => {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve({ file, preview: objectUrl });
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(objectUrl);
+          if (!blob) {
+            resolve({ file, preview: URL.createObjectURL(file) });
+            return;
+          }
+          const compressedFile = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, '') + '.jpg',
+            { type: 'image/jpeg', lastModified: Date.now() }
+          );
+          const compressedPreview = URL.createObjectURL(blob);
+          resolve({ file: compressedFile, preview: compressedPreview });
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => {
+      resolve({ file, preview: objectUrl });
+    };
+    img.src = objectUrl;
+  });
+};
+
 export const processPhotosToCollage = async (
   photosArray: { preview: string; zoom?: number }[]
 ): Promise<{ url: string, file: File } | null> => {

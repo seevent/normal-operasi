@@ -5,12 +5,9 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
 import { generateWA_Kalibrasi } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
-import { lazy, Suspense } from 'react';
+import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LayoutGrid } from 'lucide-react';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
-
-const CollageEditor = lazy(() => import('../shared/CollageEditor').then(m => ({ default: m.CollageEditor })));
 
 export const TabKalibrasi: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -47,9 +44,20 @@ export const TabKalibrasi: React.FC = () => {
 
   // === STATE UNTUK FOTO KALIBRASI (MULTI KOLASE) ===
   const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState([
-    { id: Date.now(), photos: [] as any[], collageUrl: null as string | null, collageFile: null as File | null, isGenerating: false }
+    { id: Date.now(), photos: [] as any[], isGenerating: false }
   ]);
-  const [editorGroupId, setEditorGroupId] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      kalibrasiPhotoGroups.forEach(group => {
+        group.photos.forEach((p: any) => {
+          if (p.preview && p.preview.startsWith('blob:')) {
+            URL.revokeObjectURL(p.preview);
+          }
+        });
+      });
+    };
+  }, [kalibrasiPhotoGroups]);
 
   // === HANDLERS ===
   const handleKalibrasiGlobalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,12 +130,14 @@ export const TabKalibrasi: React.FC = () => {
   };
 
   // === PHOTO HANDLERS ===
-  const handleKalibrasiPhotoUpload = (groupId: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleKalibrasiPhotoUpload = async (groupId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).map((file: any) => ({
+      const files = Array.from(e.target.files);
+      const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
+      const newPhotos = compressedResults.map(res => ({
         id: Date.now() + Math.random(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: res.file,
+        preview: res.preview,
         zoom: 1
       }));
       setKalibrasiPhotoGroups(prev => prev.map(group => {
@@ -182,7 +192,7 @@ export const TabKalibrasi: React.FC = () => {
   };
 
   const addKalibrasiPhotoGroup = () => {
-    setKalibrasiPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], collageUrl: null, collageFile: null, isGenerating: false }]);
+    setKalibrasiPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], isGenerating: false }]);
   };
 
   const removeKalibrasiPhotoGroup = (groupId: number) => {
@@ -215,15 +225,6 @@ export const TabKalibrasi: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
               <div className="flex-1 w-full flex items-center gap-3">
                 <h3 className="font-bold text-blue-900 text-sm">Grup Kolase {groupIndex + 1}</h3>
-                {group.photos.length > 0 && (
-                  <button 
-                    type="button" 
-                    onClick={() => setEditorGroupId(group.id)} 
-                    className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm transition-colors"
-                  >
-                    <LayoutGrid className="w-3 h-3" /> Edit Kolase (Pro)
-                  </button>
-                )}
               </div>
               {kalibrasiPhotoGroups.length > 1 && (
                 <button 
@@ -293,22 +294,7 @@ export const TabKalibrasi: React.FC = () => {
               </div>
             )}
             
-            {group.collageUrl && (
-              <div className="mt-4 p-4 bg-white rounded-xl border border-blue-200">
-                <h3 className="text-sm font-bold text-blue-800 mb-2">Preview Kolase Kustom:</h3>
-                <img src={group.collageUrl} alt="Custom Collage" className="w-full max-w-sm rounded-lg shadow-sm border border-slate-200" />
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setKalibrasiPhotoGroups(prev => prev.map(g => g.id === group.id ? { ...g, collageUrl: null, collageFile: null } : g));
-                  }} 
-                  className="mt-2 text-xs text-red-600 font-semibold hover:text-red-700"
-                >
-                  Hapus Kolase Kustom
-                </button>
-              </div>
-            )}
-            {!group.collageUrl && <LiveCollagePreview photos={group.photos} />}
+            <LiveCollagePreview photos={group.photos} />
           </div>
         ))}
 
@@ -344,16 +330,10 @@ export const TabKalibrasi: React.FC = () => {
     // Process photos for each group
     for (let i = 0; i < kalibrasiPhotoGroups.length; i++) {
       const group = kalibrasiPhotoGroups[i];
-      if (group.collageFile) {
-        customFilesArray.push(group.collageFile);
-      } else if (group.photos.length > 1) {
-        // Build fallback grid collage
+      if (group.photos.length > 1) {
         const collageResult = await processPhotosToCollage(group.photos);
-        if (collageResult) {
-          const res = await fetch(collageResult.url);
-          const blob = await res.blob();
-          const file = new File([blob], `Dokumentasi_Kalibrasi_Kolase_${i+1}_${Date.now()}.jpg`, { type: 'image/jpeg' });
-          customFilesArray.push(file);
+        if (collageResult && collageResult.file) {
+          customFilesArray.push(collageResult.file);
         }
       } else if (group.photos.length === 1 && group.photos[0]?.file) {
         customFilesArray.push(group.photos[0].file);
@@ -776,20 +756,6 @@ export const TabKalibrasi: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      {editorGroupId !== null && (
-        <Suspense fallback={null}>
-          <CollageEditor 
-            photos={kalibrasiPhotoGroups.find(g => g.id === editorGroupId)?.photos || []} 
-            isOpen={editorGroupId !== null} 
-            onClose={() => setEditorGroupId(null)} 
-            onSave={(file, url) => {
-              setKalibrasiPhotoGroups(prev => prev.map(g => g.id === editorGroupId ? { ...g, collageUrl: url, collageFile: file } : g));
-              setEditorGroupId(null);
-            }}
-          />
-        </Suspense>
-      )}
     </form>
   );
 };
