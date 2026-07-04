@@ -336,6 +336,14 @@ export const TabPerbaikan: React.FC = () => {
     });
   };
 
+  const handlePhotoEdit = (index: number, updatedPhoto: any) => {
+    setPhotos(prev => {
+      const newPhotos = [...prev];
+      newPhotos[index] = updatedPhoto;
+      return newPhotos;
+    });
+  };
+
   // === Submit ===
   const handleRepairSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -668,6 +676,7 @@ export const TabPerbaikan: React.FC = () => {
           onRemove={removePhoto}
           onZoom={updatePhotoZoom}
           onDrop={handlePhotoDrop}
+          onEdit={handlePhotoEdit}
           listType="general"
         />
 

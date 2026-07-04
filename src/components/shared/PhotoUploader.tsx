@@ -1,12 +1,23 @@
 // src/components/shared/PhotoUploader.tsx
-import React from 'react';
-import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Type } from 'lucide-react';
+import { PhotoTextEditorModal } from './PhotoTextEditorModal';
+
+export type PhotoAnnotation = {
+  text: string;
+  position: 'top' | 'bottom' | 'center';
+  style: 'black' | 'red' | 'green' | 'yellow' | 'clear';
+  size: 'small' | 'medium' | 'large';
+};
 
 export type Photo = {
   id: number | string;
   file: File;
   preview: string;
   zoom?: number;
+  originalFile?: File;
+  originalPreview?: string;
+  annotation?: PhotoAnnotation;
 };
 
 type PhotoUploaderProps = {
@@ -15,12 +26,55 @@ type PhotoUploaderProps = {
   onRemove: (index: number) => void;
   onZoom: (index: number, delta: number) => void;
   onDrop: (e: any, targetIndex: number) => void;
+  onEdit?: (index: number, updatedPhoto: Photo) => void;
   listType: string;
 };
 
 export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
-  photos, onUpload, onRemove, onZoom, onDrop, listType
+  photos, onUpload, onRemove, onZoom, onDrop, onEdit, listType
 }) => {
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [, forceUpdate] = useState({});
+
+  const handleSaveText = (newFile: File, newPreviewUrl: string, annotation?: PhotoAnnotation) => {
+    if (editingIndex === null) return;
+    const currentPhoto = photos[editingIndex];
+    const updatedPhoto: Photo = {
+      ...currentPhoto,
+      originalFile: currentPhoto.originalFile || currentPhoto.file,
+      originalPreview: currentPhoto.originalPreview || currentPhoto.preview,
+      file: newFile,
+      preview: newPreviewUrl,
+      annotation
+    };
+    if (onEdit) {
+      onEdit(editingIndex, updatedPhoto);
+    } else {
+      photos[editingIndex] = updatedPhoto;
+      forceUpdate({});
+    }
+    setEditingIndex(null);
+  };
+
+  const handleResetText = () => {
+    if (editingIndex === null) return;
+    const currentPhoto = photos[editingIndex];
+    if (!currentPhoto.originalFile || !currentPhoto.originalPreview) return;
+    const resetPhoto: Photo = {
+      ...currentPhoto,
+      file: currentPhoto.originalFile,
+      preview: currentPhoto.originalPreview,
+      annotation: undefined
+    };
+    if (onEdit) {
+      onEdit(editingIndex, resetPhoto);
+    } else {
+      photos[editingIndex] = resetPhoto;
+      forceUpdate({});
+    }
+    setEditingIndex(null);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-3">
@@ -114,6 +168,20 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   </button>
                 </div>
 
+                <div className="absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                  <button 
+                    type="button" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingIndex(index); }} 
+                    className={`p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${
+                      photo.annotation ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white text-slate-700 hover:bg-slate-100'
+                    }`}
+                    title="Beri Teks / Watermark"
+                  >
+                    <Type className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">{photo.annotation ? 'Edit Teks' : 'Teks'}</span>
+                  </button>
+                </div>
+
                 <div className="absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity">
                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onZoom(index, 0.1); }} className="bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md">
                     <ZoomIn className="w-3.5 h-3.5" />
@@ -127,6 +195,19 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           </div>
         </div>
       )}
+
+      {editingIndex !== null && photos[editingIndex] && (
+        <PhotoTextEditorModal
+          isOpen={true}
+          onClose={() => setEditingIndex(null)}
+          photoUrl={photos[editingIndex].originalPreview || photos[editingIndex].preview}
+          initialAnnotation={photos[editingIndex].annotation}
+          onSave={handleSaveText}
+          onReset={handleResetText}
+          hasOriginal={!!photos[editingIndex].originalPreview}
+        />
+      )}
     </div>
   );
 };
+

@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import React, { useState, useRef, useEffect } from "react";
-import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Cpu, FileWarning, MapPin, Plus, Clock, Calendar, AlertCircle, CheckCircle, Share2, FileText, Users, Loader2, User, ClipboardList, Wrench, Trash2, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, LayoutGrid, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, MoreHorizontal } from "lucide-react";
+import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, Palette, Check, RotateCcw, Camera, Move, ImagePlus, ZoomIn, ZoomOut, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Users, Loader2, User, ClipboardList, Wrench, Trash2, CheckSquare, Save, RefreshCw, Square, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, LayoutGrid, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -32,14 +32,400 @@ const useAppStore = create((set) => ({
   isCopied: false,
   setIsCopied: (val) => set({ isCopied: val })
 }));
+const drawTextOnCanvas = (canvas, img, text, position, style, size) => {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  canvas.width = img.naturalWidth || img.width || 1200;
+  canvas.height = img.naturalHeight || img.height || 1200;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  if (!text.trim()) return;
+  const baseDim = Math.max(canvas.width, canvas.height);
+  let fontScale = 0.04;
+  if (size === "small") fontScale = 0.028;
+  if (size === "large") fontScale = 0.055;
+  const fontSize = Math.max(20, Math.round(baseDim * fontScale));
+  ctx.font = `bold ${fontSize}px sans-serif, Arial, Inter`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const lines = [];
+  const rawLines = text.split("\n");
+  const maxLineWidth = canvas.width * 0.9;
+  rawLines.forEach((rawLine) => {
+    const words = rawLine.split(" ");
+    let currentLine = "";
+    words.forEach((word) => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxLineWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+    if (currentLine) lines.push(currentLine);
+  });
+  if (lines.length === 0) return;
+  const lineHeight = fontSize * 1.35;
+  const paddingY = fontSize * 0.6;
+  const boxHeight = lines.length * lineHeight + paddingY * 2;
+  let boxY = canvas.height - boxHeight;
+  if (position === "top") boxY = 0;
+  if (position === "center") boxY = (canvas.height - boxHeight) / 2;
+  if (style !== "clear") {
+    let bgColor = "rgba(0, 0, 0, 0.65)";
+    if (style === "red") bgColor = "rgba(220, 38, 38, 0.85)";
+    if (style === "green") bgColor = "rgba(22, 163, 74, 0.85)";
+    if (style === "yellow") bgColor = "rgba(234, 179, 8, 0.85)";
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, boxY, canvas.width, boxHeight);
+  }
+  lines.forEach((line, index) => {
+    const textX = canvas.width / 2;
+    const textY = boxY + paddingY + (index + 0.5) * lineHeight;
+    if (style === "clear") {
+      ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+      ctx.shadowBlur = Math.round(fontSize * 0.3);
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
+      ctx.strokeStyle = "#000000";
+      ctx.strokeText(line, textX, textY);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(line, textX, textY);
+    } else if (style === "yellow") {
+      ctx.fillStyle = "#000000";
+      ctx.fillText(line, textX, textY);
+    } else {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(line, textX, textY);
+    }
+  });
+};
+const PhotoTextEditorModal = ({
+  isOpen,
+  onClose,
+  photoUrl,
+  initialAnnotation,
+  onSave,
+  onReset,
+  hasOriginal
+}) => {
+  const [text, setText] = useState("");
+  const [position, setPosition] = useState("bottom");
+  const [style, setStyle] = useState("black");
+  const [size, setSize] = useState("medium");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const canvasRef = useRef(null);
+  const imageRef = useRef(null);
+  useEffect(() => {
+    if (isOpen) {
+      setText(initialAnnotation?.text || "");
+      setPosition(initialAnnotation?.position || "bottom");
+      setStyle(initialAnnotation?.style || "black");
+      setSize(initialAnnotation?.size || "medium");
+    }
+  }, [isOpen, initialAnnotation]);
+  useEffect(() => {
+    if (!isOpen || !photoUrl) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imageRef.current = img;
+      if (canvasRef.current) {
+        drawTextOnCanvas(canvasRef.current, img, text, position, style, size);
+      }
+    };
+    img.src = photoUrl;
+  }, [isOpen, photoUrl, text, position, style, size]);
+  if (!isOpen) return null;
+  const handleSave = () => {
+    if (!canvasRef.current || !imageRef.current) return;
+    setIsProcessing(true);
+    drawTextOnCanvas(canvasRef.current, imageRef.current, text, position, style, size);
+    canvasRef.current.toBlob((blob) => {
+      setIsProcessing(false);
+      if (!blob) return;
+      const filename = `Photo_text_${Date.now()}.jpg`;
+      const newFile = new File([blob], filename, { type: "image/jpeg", lastModified: Date.now() });
+      const newPreviewUrl = URL.createObjectURL(blob);
+      const annotation = text.trim() ? {
+        text: text.trim(),
+        position,
+        style,
+        size
+      } : void 0;
+      onSave(newFile, newPreviewUrl, annotation);
+      onClose();
+    }, "image/jpeg", 0.92);
+  };
+  const presets = [
+    "Before",
+    "After",
+    "Process"
+  ];
+  const addTimestamp = () => {
+    const now = /* @__PURE__ */ new Date();
+    const timeStr = now.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }) + " WIB";
+    setText((prev) => prev ? `${prev}
+${timeStr}` : timeStr);
+  };
+  return /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200", children: /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]", children: [
+    /* @__PURE__ */ jsxs("div", { className: "px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-600 text-white", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+        /* @__PURE__ */ jsx(Type, { className: "w-5 h-5 text-blue-200" }),
+        /* @__PURE__ */ jsx("h3", { className: "font-bold text-lg", children: "Beri Teks / Watermark Foto" })
+      ] }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          className: "p-1 rounded-full hover:bg-white/20 transition-colors text-white",
+          children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "p-6 overflow-y-auto flex-1 space-y-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ jsxs("label", { className: "text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1", children: [
+          /* @__PURE__ */ jsx(Sparkles, { className: "w-3.5 h-3.5 text-amber-500" }),
+          " Preview Hasil Teks"
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "bg-slate-900 rounded-xl p-2 flex items-center justify-center border border-slate-200 shadow-inner min-h-[220px] max-h-[380px] overflow-hidden", children: /* @__PURE__ */ jsx(
+          "canvas",
+          {
+            ref: canvasRef,
+            className: "max-w-full max-h-[360px] w-auto h-auto object-contain rounded-lg shadow-md"
+          }
+        ) })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
+        /* @__PURE__ */ jsxs("label", { className: "text-sm font-bold text-slate-700 flex justify-between items-center", children: [
+          /* @__PURE__ */ jsx("span", { children: "Teks / Catatan Laporan" }),
+          /* @__PURE__ */ jsx("span", { className: "text-xs font-normal text-slate-400", children: "Bisa beberapa baris (Enter)" })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "textarea",
+          {
+            value: text,
+            onChange: (e) => setText(e.target.value),
+            placeholder: "Contoh: Mesin X-Ray Gate 1 - Rusak / Sebelum PM...",
+            rows: 2,
+            className: "w-full p-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-medium transition-all shadow-sm"
+          }
+        ),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500 font-medium", children: "Cepat tambahkan keterangan:" }),
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap gap-1.5", children: [
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: addTimestamp,
+                className: "px-2.5 py-1 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full transition-colors border border-blue-200 flex items-center gap-1 shadow-xs",
+                children: [
+                  /* @__PURE__ */ jsx(Clock, { className: "w-3 h-3" }),
+                  " + Waktu Sekarang"
+                ]
+              }
+            ),
+            presets.map((preset) => /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => setText((prev) => prev ? `${prev} - ${preset}` : preset),
+                className: "px-2.5 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition-colors border border-slate-200",
+                children: [
+                  "+ ",
+                  preset
+                ]
+              },
+              preset
+            ))
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1", children: "Posisi Teks" }),
+          /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200", children: [
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => setPosition("bottom"),
+                className: `py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${position === "bottom" ? "bg-white text-blue-600 shadow-sm" : "text-slate-600 hover:text-slate-900"}`,
+                children: [
+                  /* @__PURE__ */ jsx(ArrowDown, { className: "w-4 h-4" }),
+                  " Bawah"
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => setPosition("top"),
+                className: `py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${position === "top" ? "bg-white text-blue-600 shadow-sm" : "text-slate-600 hover:text-slate-900"}`,
+                children: [
+                  /* @__PURE__ */ jsx(ArrowUp, { className: "w-4 h-4" }),
+                  " Atas"
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => setPosition("center"),
+                className: `py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${position === "center" ? "bg-white text-blue-600 shadow-sm" : "text-slate-600 hover:text-slate-900"}`,
+                children: [
+                  /* @__PURE__ */ jsx(Minus, { className: "w-4 h-4" }),
+                  " Tengah"
+                ]
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsxs("label", { className: "text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx(Palette, { className: "w-3.5 h-3.5" }),
+            " Warna & Gaya"
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "grid grid-cols-5 gap-1.5", children: [
+            { id: "black", label: "Hitam", bg: "bg-black text-white" },
+            { id: "red", label: "Merah", bg: "bg-red-600 text-white" },
+            { id: "green", label: "Hijau", bg: "bg-green-600 text-white" },
+            { id: "yellow", label: "Kuning", bg: "bg-yellow-400 text-black font-bold" },
+            { id: "clear", label: "Transparan", bg: "bg-white border-2 border-slate-300 text-slate-800" }
+          ].map((item) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => setStyle(item.id),
+              className: `py-2 rounded-lg text-[10px] font-bold flex items-center justify-center transition-transform ${item.bg} ${style === item.id ? "ring-2 ring-blue-500 ring-offset-2 scale-105" : "opacity-80 hover:opacity-100"}`,
+              title: item.label,
+              children: style === item.id ? /* @__PURE__ */ jsx(Check, { className: "w-3.5 h-3.5" }) : item.label.slice(0, 3)
+            },
+            item.id
+          )) })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-xs font-bold text-slate-600 uppercase tracking-wider", children: "Ukuran Font" }),
+          /* @__PURE__ */ jsx("div", { className: "grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200", children: ["small", "medium", "large"].map((sz) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => setSize(sz),
+              className: `py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${size === sz ? "bg-white text-blue-600 shadow-sm" : "text-slate-600 hover:text-slate-900"}`,
+              children: sz === "small" ? "Kecil" : sz === "medium" ? "Sedang" : "Besar"
+            },
+            sz
+          )) })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3", children: [
+      /* @__PURE__ */ jsx("div", { children: hasOriginal && onReset && /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            onReset();
+            onClose();
+          },
+          className: "px-3.5 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs flex items-center gap-1.5 transition-colors",
+          children: [
+            /* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }),
+            " Hapus Teks"
+          ]
+        }
+      ) }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm transition-colors",
+            children: "Batal"
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: handleSave,
+            disabled: isProcessing,
+            className: "px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50",
+            children: [
+              /* @__PURE__ */ jsx(Check, { className: "w-4 h-4" }),
+              " ",
+              isProcessing ? "Memproses..." : "Simpan & Terapkan"
+            ]
+          }
+        )
+      ] })
+    ] })
+  ] }) });
+};
 const PhotoUploader = ({
   photos,
   onUpload,
   onRemove,
   onZoom,
   onDrop,
+  onEdit,
   listType
 }) => {
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [, forceUpdate] = useState({});
+  const handleSaveText = (newFile, newPreviewUrl, annotation) => {
+    if (editingIndex === null) return;
+    const currentPhoto = photos[editingIndex];
+    const updatedPhoto = {
+      ...currentPhoto,
+      originalFile: currentPhoto.originalFile || currentPhoto.file,
+      originalPreview: currentPhoto.originalPreview || currentPhoto.preview,
+      file: newFile,
+      preview: newPreviewUrl,
+      annotation
+    };
+    if (onEdit) {
+      onEdit(editingIndex, updatedPhoto);
+    } else {
+      photos[editingIndex] = updatedPhoto;
+      forceUpdate({});
+    }
+    setEditingIndex(null);
+  };
+  const handleResetText = () => {
+    if (editingIndex === null) return;
+    const currentPhoto = photos[editingIndex];
+    if (!currentPhoto.originalFile || !currentPhoto.originalPreview) return;
+    const resetPhoto = {
+      ...currentPhoto,
+      file: currentPhoto.originalFile,
+      preview: currentPhoto.originalPreview,
+      annotation: void 0
+    };
+    if (onEdit) {
+      onEdit(editingIndex, resetPhoto);
+    } else {
+      photos[editingIndex] = resetPhoto;
+      forceUpdate({});
+    }
+    setEditingIndex(null);
+  };
   return /* @__PURE__ */ jsxs("div", { children: [
     /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-3", children: [
       /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2", children: [
@@ -131,6 +517,23 @@ const PhotoUploader = ({
               e.stopPropagation();
               onRemove(index);
             }, className: "bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md", children: /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }) }) }),
+            /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditingIndex(index);
+                },
+                className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
+                title: "Beri Teks / Watermark",
+                children: [
+                  /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
+                  /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
+                ]
+              }
+            ) }),
             /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
               /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
                 e.preventDefault();
@@ -147,7 +550,19 @@ const PhotoUploader = ({
         },
         photo.id
       )) })
-    ] })
+    ] }),
+    editingIndex !== null && photos[editingIndex] && /* @__PURE__ */ jsx(
+      PhotoTextEditorModal,
+      {
+        isOpen: true,
+        onClose: () => setEditingIndex(null),
+        photoUrl: photos[editingIndex].originalPreview || photos[editingIndex].preview,
+        initialAnnotation: photos[editingIndex].annotation,
+        onSave: handleSaveText,
+        onReset: handleResetText,
+        hasOriginal: !!photos[editingIndex].originalPreview
+      }
+    )
   ] });
 };
 const toTitleCase = (str) => {
@@ -748,8 +1163,8 @@ const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) =
   const NON_TRANSFER_EQUIP = ["BODY SCANNER", "EXTENSION CONVEYOR", "ATRS", "MIRRORING X-RAY"];
   const intersected = getIntersectedLocations(equipArray);
   const hasHhmdOrWtmd = equipArray.some((e) => ["HHMD", "WTMD"].includes(e.trim().toUpperCase()));
-  if (hasHhmdOrWtmd) {
-    const hasNonTransferEquip = equipArray.some((e) => NON_TRANSFER_EQUIP.includes(e.trim().toUpperCase()));
+  const hasNonTransferEquip = equipArray.some((e) => NON_TRANSFER_EQUIP.includes(e.trim().toUpperCase()));
+  if (hasHhmdOrWtmd && !hasNonTransferEquip) {
     const transferLocs = /* @__PURE__ */ new Set();
     equipArray.forEach((e) => {
       if (["HHMD", "WTMD"].includes(e.trim().toUpperCase())) {
@@ -760,12 +1175,6 @@ const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) =
         });
       }
     });
-    if (hasNonTransferEquip && transferLocs.size > 0) {
-      const transferCompatEquip = equipArray.filter((e) => !NON_TRANSFER_EQUIP.includes(e.trim().toUpperCase()));
-      const transferCompatIntersected = transferCompatEquip.length > 0 ? getIntersectedLocations(transferCompatEquip) : [];
-      const combined2 = /* @__PURE__ */ new Set([...intersected, ...transferCompatIntersected.filter((loc) => loc.trim().toUpperCase().includes("TRANSFER")), ...transferLocs]);
-      return Array.from(combined2).sort();
-    }
     const combined = /* @__PURE__ */ new Set([...intersected, ...transferLocs]);
     return Array.from(combined).sort();
   }
@@ -1896,6 +2305,13 @@ ${nextNum}. ` + textAfter;
       return newPhotos;
     });
   };
+  const handlePhotoEdit = (index, updatedPhoto) => {
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      newPhotos[index] = updatedPhoto;
+      return newPhotos;
+    });
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     let generatedCollageFile = null;
@@ -2207,6 +2623,7 @@ ${nextNum}. ` + textAfter;
           onRemove: removePhoto,
           onZoom: updatePhotoZoom,
           onDrop: handlePhotoDrop,
+          onEdit: handlePhotoEdit,
           listType: "general"
         }
       ),
@@ -2867,6 +3284,13 @@ const TabPerbaikan = () => {
       return newPhotos;
     });
   };
+  const handlePhotoEdit = (index, updatedPhoto) => {
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      newPhotos[index] = updatedPhoto;
+      return newPhotos;
+    });
+  };
   const handleRepairSubmit = async (e) => {
     e.preventDefault();
     let generatedCollageFile = null;
@@ -3160,6 +3584,7 @@ const TabPerbaikan = () => {
           onRemove: removePhoto,
           onZoom: updatePhotoZoom,
           onDrop: handlePhotoDrop,
+          onEdit: handlePhotoEdit,
           listType: "general"
         }
       ),
@@ -3272,6 +3697,13 @@ const TabStoring = () => {
       const newPhotos = [...prev];
       const [movedPhoto] = newPhotos.splice(sourceIndex, 1);
       newPhotos.splice(targetIndex, 0, movedPhoto);
+      return newPhotos;
+    });
+  };
+  const handlePhotoEdit = (index, updatedPhoto) => {
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      newPhotos[index] = updatedPhoto;
       return newPhotos;
     });
   };
@@ -3447,6 +3879,7 @@ const TabStoring = () => {
         onRemove: removePhoto,
         onZoom: updatePhotoZoom,
         onDrop: handlePhotoDrop,
+        onEdit: handlePhotoEdit,
         listType: "general"
       }
     ),
@@ -3524,6 +3957,7 @@ const TabKalibrasi = () => {
   const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState([
     { id: Date.now(), photos: [], isGenerating: false }
   ]);
+  const [editingKalibrasiPhoto, setEditingKalibrasiPhoto] = useState(null);
   const photoGroupsRef = React.useRef(kalibrasiPhotoGroups);
   photoGroupsRef.current = kalibrasiPhotoGroups;
   React.useEffect(() => {
@@ -3655,6 +4089,43 @@ const TabKalibrasi = () => {
       return group;
     }));
   };
+  const handleKalibrasiSaveText = (newFile, newPreviewUrl, annotation) => {
+    if (!editingKalibrasiPhoto) return;
+    const { groupId, photoIndex } = editingKalibrasiPhoto;
+    setKalibrasiPhotoGroups((prev) => prev.map((group) => {
+      if (group.id !== groupId) return group;
+      const newPhotos = [...group.photos];
+      const currentPhoto = newPhotos[photoIndex];
+      newPhotos[photoIndex] = {
+        ...currentPhoto,
+        originalFile: currentPhoto.originalFile || currentPhoto.file,
+        originalPreview: currentPhoto.originalPreview || currentPhoto.preview,
+        file: newFile,
+        preview: newPreviewUrl,
+        annotation
+      };
+      return { ...group, photos: newPhotos };
+    }));
+    setEditingKalibrasiPhoto(null);
+  };
+  const handleKalibrasiResetText = () => {
+    if (!editingKalibrasiPhoto) return;
+    const { groupId, photoIndex } = editingKalibrasiPhoto;
+    setKalibrasiPhotoGroups((prev) => prev.map((group) => {
+      if (group.id !== groupId) return group;
+      const newPhotos = [...group.photos];
+      const currentPhoto = newPhotos[photoIndex];
+      if (!currentPhoto.originalFile || !currentPhoto.originalPreview) return group;
+      newPhotos[photoIndex] = {
+        ...currentPhoto,
+        file: currentPhoto.originalFile,
+        preview: currentPhoto.originalPreview,
+        annotation: void 0
+      };
+      return { ...group, photos: newPhotos };
+    }));
+    setEditingKalibrasiPhoto(null);
+  };
   const addKalibrasiPhotoGroup = () => {
     setKalibrasiPhotoGroups((prev) => [...prev, { id: Date.now(), photos: [], isGenerating: false }]);
   };
@@ -3740,6 +4211,23 @@ const TabKalibrasi = () => {
                   e.preventDefault();
                   removeKalibrasiPhoto(group.id, pIndex);
                 }, className: "bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md", children: /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }) }) }),
+                /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditingKalibrasiPhoto({ groupId: group.id, photoIndex: pIndex });
+                    },
+                    className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
+                    title: "Beri Teks / Watermark",
+                    children: [
+                      /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
+                      /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
+                    ]
+                  }
+                ) }),
                 /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
                   /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
                     e.preventDefault();
@@ -4182,6 +4670,23 @@ const TabKalibrasi = () => {
       }
     ),
     renderKalibrasiPhotoSection(),
+    editingKalibrasiPhoto && (() => {
+      const group = kalibrasiPhotoGroups.find((g) => g.id === editingKalibrasiPhoto.groupId);
+      const photo = group?.photos[editingKalibrasiPhoto.photoIndex];
+      if (!photo) return null;
+      return /* @__PURE__ */ jsx(
+        PhotoTextEditorModal,
+        {
+          isOpen: true,
+          onClose: () => setEditingKalibrasiPhoto(null),
+          photoUrl: photo.originalPreview || photo.preview,
+          initialAnnotation: photo.annotation,
+          onSave: handleKalibrasiSaveText,
+          onReset: handleKalibrasiResetText,
+          hasOriginal: !!photo.originalPreview
+        }
+      );
+    })(),
     /* @__PURE__ */ jsx("div", { className: "flex flex-col sm:flex-row gap-4 mt-8", children: /* @__PURE__ */ jsx("button", { type: "submit", className: `w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? "bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]" : "bg-[#25D366] hover:bg-[#20b858] hover:-translate-y-0.5 text-white"}`, children: isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-pulse" }),
       " Berhasil Disalin / Dibagikan!"
@@ -4876,6 +5381,13 @@ const TabBriefing = () => {
       return newPhotos;
     });
   };
+  const handlePhotoEdit = (index, updatedPhoto) => {
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      newPhotos[index] = updatedPhoto;
+      return newPhotos;
+    });
+  };
   const handleBriefingSubmit = async (e) => {
     e.preventDefault();
     let generatedCollageFile = null;
@@ -4940,6 +5452,7 @@ const TabBriefing = () => {
         onRemove: removePhoto,
         onZoom: updatePhotoZoom,
         onDrop: handlePhotoDrop,
+        onEdit: handlePhotoEdit,
         listType: "general"
       }
     ),
@@ -6540,6 +7053,13 @@ const TabKegiatan = () => {
       return newPhotos;
     });
   };
+  const handlePhotoEdit = (index, updatedPhoto) => {
+    setPhotos((prev) => {
+      const newPhotos = [...prev];
+      newPhotos[index] = updatedPhoto;
+      return newPhotos;
+    });
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     let generatedCollageFile = null;
@@ -6629,6 +7149,7 @@ const TabKegiatan = () => {
         onRemove: removePhoto,
         onZoom: updatePhotoZoom,
         onDrop: handlePhotoDrop,
+        onEdit: handlePhotoEdit,
         listType: "general"
       }
     ),

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X, ImagePlus } from 'lucide-react';
+import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X, ImagePlus, Type } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
@@ -8,6 +8,7 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LayoutGrid } from 'lucide-react';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
+import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
 
 export const TabKalibrasi: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -46,6 +47,7 @@ export const TabKalibrasi: React.FC = () => {
   const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState([
     { id: Date.now(), photos: [] as any[], isGenerating: false }
   ]);
+  const [editingKalibrasiPhoto, setEditingKalibrasiPhoto] = useState<{ groupId: number; photoIndex: number } | null>(null);
 
   const photoGroupsRef = React.useRef(kalibrasiPhotoGroups);
   photoGroupsRef.current = kalibrasiPhotoGroups;
@@ -197,6 +199,45 @@ export const TabKalibrasi: React.FC = () => {
     }));
   };
 
+  const handleKalibrasiSaveText = (newFile: File, newPreviewUrl: string, annotation?: any) => {
+    if (!editingKalibrasiPhoto) return;
+    const { groupId, photoIndex } = editingKalibrasiPhoto;
+    setKalibrasiPhotoGroups(prev => prev.map(group => {
+      if (group.id !== groupId) return group;
+      const newPhotos = [...group.photos];
+      const currentPhoto = newPhotos[photoIndex];
+      newPhotos[photoIndex] = {
+        ...currentPhoto,
+        originalFile: currentPhoto.originalFile || currentPhoto.file,
+        originalPreview: currentPhoto.originalPreview || currentPhoto.preview,
+        file: newFile,
+        preview: newPreviewUrl,
+        annotation
+      };
+      return { ...group, photos: newPhotos };
+    }));
+    setEditingKalibrasiPhoto(null);
+  };
+
+  const handleKalibrasiResetText = () => {
+    if (!editingKalibrasiPhoto) return;
+    const { groupId, photoIndex } = editingKalibrasiPhoto;
+    setKalibrasiPhotoGroups(prev => prev.map(group => {
+      if (group.id !== groupId) return group;
+      const newPhotos = [...group.photos];
+      const currentPhoto = newPhotos[photoIndex];
+      if (!currentPhoto.originalFile || !currentPhoto.originalPreview) return group;
+      newPhotos[photoIndex] = {
+        ...currentPhoto,
+        file: currentPhoto.originalFile,
+        preview: currentPhoto.originalPreview,
+        annotation: undefined
+      };
+      return { ...group, photos: newPhotos };
+    }));
+    setEditingKalibrasiPhoto(null);
+  };
+
   const addKalibrasiPhotoGroup = () => {
     setKalibrasiPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], isGenerating: false }]);
   };
@@ -283,6 +324,20 @@ export const TabKalibrasi: React.FC = () => {
                       <div className="absolute top-1 right-1 flex flex-col gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity">
                         <button type="button" onClick={(e) => { e.preventDefault(); removeKalibrasiPhoto(group.id, pIndex); }} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md">
                           <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                        <button 
+                          type="button" 
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingKalibrasiPhoto({ groupId: group.id, photoIndex: pIndex }); }} 
+                          className={`p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${
+                            photo.annotation ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white text-slate-700 hover:bg-slate-100'
+                          }`}
+                          title="Beri Teks / Watermark"
+                        >
+                          <Type className="w-3.5 h-3.5" />
+                          <span className="hidden md:inline">{photo.annotation ? 'Edit Teks' : 'Teks'}</span>
                         </button>
                       </div>
 
@@ -745,6 +800,23 @@ export const TabKalibrasi: React.FC = () => {
       </button>
 
       {renderKalibrasiPhotoSection()}
+
+      {editingKalibrasiPhoto && (() => {
+        const group = kalibrasiPhotoGroups.find(g => g.id === editingKalibrasiPhoto.groupId);
+        const photo = group?.photos[editingKalibrasiPhoto.photoIndex];
+        if (!photo) return null;
+        return (
+          <PhotoTextEditorModal
+            isOpen={true}
+            onClose={() => setEditingKalibrasiPhoto(null)}
+            photoUrl={photo.originalPreview || photo.preview}
+            initialAnnotation={photo.annotation}
+            onSave={handleKalibrasiSaveText}
+            onReset={handleKalibrasiResetText}
+            hasOriginal={!!photo.originalPreview}
+          />
+        );
+      })()}
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:-translate-y-0.5 text-white'}`}>

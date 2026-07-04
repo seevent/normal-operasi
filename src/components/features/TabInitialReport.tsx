@@ -358,6 +358,14 @@ export const TabInitialReport: React.FC = () => {
     });
   };
 
+  const handlePhotoEdit = (index: number, updatedPhoto: any) => {
+    setPhotos(prev => {
+      const newPhotos = [...prev];
+      newPhotos[index] = updatedPhoto;
+      return newPhotos;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -699,6 +707,7 @@ export const TabInitialReport: React.FC = () => {
           onRemove={removePhoto}
           onZoom={updatePhotoZoom}
           onDrop={handlePhotoDrop}
+          onEdit={handlePhotoEdit}
           listType="general"
         />
 
