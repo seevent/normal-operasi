@@ -38,7 +38,16 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             <span className="text-sm font-bold text-blue-700">Pilih / Ambil Foto</span>
             <span className="text-xs text-blue-500">Galeri, File, atau Kamera langsung</span>
           </div>
-          <input type="file" accept="image/*" multiple className="hidden" onChange={onUpload} />
+          <input 
+            type="file" 
+            accept="image/*" 
+            multiple 
+            className="hidden" 
+            onChange={(e) => {
+              onUpload(e);
+              e.target.value = '';
+            }} 
+          />
         </label>
       </div>
 

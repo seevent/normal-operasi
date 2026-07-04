@@ -47,9 +47,12 @@ export const TabKalibrasi: React.FC = () => {
     { id: Date.now(), photos: [] as any[], isGenerating: false }
   ]);
 
+  const photoGroupsRef = React.useRef(kalibrasiPhotoGroups);
+  photoGroupsRef.current = kalibrasiPhotoGroups;
+
   React.useEffect(() => {
     return () => {
-      kalibrasiPhotoGroups.forEach(group => {
+      photoGroupsRef.current.forEach(group => {
         group.photos.forEach((p: any) => {
           if (p.preview && p.preview.startsWith('blob:')) {
             URL.revokeObjectURL(p.preview);
@@ -57,7 +60,7 @@ export const TabKalibrasi: React.FC = () => {
         });
       });
     };
-  }, [kalibrasiPhotoGroups]);
+  }, []);
 
   // === HANDLERS ===
   const handleKalibrasiGlobalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,7 +169,10 @@ export const TabKalibrasi: React.FC = () => {
       if (group.id === groupId) {
         const newPhotos = [...group.photos];
         const currentZoom = newPhotos[photoIndex].zoom || 1;
-        newPhotos[photoIndex].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+        newPhotos[photoIndex] = {
+          ...newPhotos[photoIndex],
+          zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+        };
         return { ...group, photos: newPhotos };
       }
       return group;

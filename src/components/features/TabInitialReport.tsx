@@ -138,15 +138,18 @@ export const TabInitialReport: React.FC = () => {
 
   const [photos, setPhotos] = useState<Photo[]>([]);
 
+  const photosRef = React.useRef(photos);
+  photosRef.current = photos;
+
   React.useEffect(() => {
     return () => {
-      photos.forEach(p => {
+      photosRef.current.forEach(p => {
         if (p.preview && p.preview.startsWith('blob:')) {
           URL.revokeObjectURL(p.preview);
         }
       });
     };
-  }, [photos]);
+  }, []);
 
   const permasalahanRef = React.useRef<HTMLTextAreaElement>(null);
   const uraianRef = React.useRef<HTMLTextAreaElement>(null);
@@ -331,7 +334,10 @@ export const TabInitialReport: React.FC = () => {
     setPhotos(prev => {
       const newPhotos = [...prev];
       const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      newPhotos[index] = {
+        ...newPhotos[index],
+        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+      };
       return newPhotos;
     });
   };

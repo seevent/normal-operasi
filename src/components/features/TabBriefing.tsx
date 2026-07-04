@@ -36,15 +36,18 @@ export const TabBriefing: React.FC = () => {
 
   const [photos, setPhotos] = useState<Photo[]>([]);
 
+  const photosRef = React.useRef(photos);
+  photosRef.current = photos;
+
   React.useEffect(() => {
     return () => {
-      photos.forEach(p => {
+      photosRef.current.forEach(p => {
         if (p.preview && p.preview.startsWith('blob:')) {
           URL.revokeObjectURL(p.preview);
         }
       });
     };
-  }, [photos]);
+  }, []);
 
   // === Handlers ===
   const handleBriefingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -80,7 +83,10 @@ export const TabBriefing: React.FC = () => {
     setPhotos(prev => {
       const newPhotos = [...prev];
       const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      newPhotos[index] = {
+        ...newPhotos[index],
+        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+      };
       return newPhotos;
     });
   };

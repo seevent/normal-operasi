@@ -63,10 +63,41 @@ export const processPhotosToCollage = async (
 
 
   try {
+    const loadedImages = await Promise.all(photosArray.map(p => {
+      return new Promise<{img: HTMLImageElement, zoom: number}>((resolve) => {
+        const img = new Image();
+        let settled = false;
+        const finish = () => {
+          if (!settled) {
+            settled = true;
+            resolve({ img, zoom: p.zoom || 1 });
+          }
+        };
+        const timer = setTimeout(finish, 4000);
+        img.onload = () => { clearTimeout(timer); finish(); }; 
+        img.onerror = () => {
+          clearTimeout(timer);
+          console.warn("Gambar gagal dimuat untuk kolase:", p.preview);
+          finish();
+        }; 
+        img.src = p.preview;
+        if (img.complete && img.naturalWidth > 0) {
+          clearTimeout(timer);
+          finish();
+        }
+      });
+    }));
+    
+    const validImages = loadedImages.filter(item => item.img && item.img.naturalWidth > 0 && item.img.naturalHeight > 0);
+    if (validImages.length <= 1) {
+      resolve(null);
+      return;
+    }
+
     const CELL_SIZE = 800; 
     const SPACING = 24;    
-    const cols = Math.ceil(Math.sqrt(photosArray.length)); 
-    const rows = Math.ceil(photosArray.length / cols);
+    const cols = Math.ceil(Math.sqrt(validImages.length)); 
+    const rows = Math.ceil(validImages.length / cols);
     const canvas = document.createElement('canvas');
     canvas.width = cols * CELL_SIZE + (cols + 1) * SPACING; 
     canvas.height = rows * CELL_SIZE + (rows + 1) * SPACING;
@@ -78,16 +109,7 @@ export const processPhotosToCollage = async (
     ctx.fillStyle = '#ffffff'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    const loadedImages = await Promise.all(photosArray.map(p => {
-      return new Promise<{img: HTMLImageElement, zoom: number}>((resolve, reject) => {
-        const img = new Image(); 
-        img.onload = () => resolve({ img, zoom: p.zoom || 1 }); 
-        img.onerror = reject; 
-        img.src = p.preview;
-      });
-    }));
-    
-    loadedImages.forEach((item, index) => {
+    validImages.forEach((item, index) => {
       const { img, zoom } = item;
       const col = index % cols; 
       const row = Math.floor(index / cols);

@@ -1,5 +1,5 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Cpu, FileWarning, MapPin, Plus, Clock, Calendar, AlertCircle, CheckCircle, Share2, FileText, Users, Loader2, User, ClipboardList, Wrench, Trash2, CheckSquare, Save, RefreshCw, Square, Check, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, ArrowUp, ArrowDown, Edit2, LayoutGrid, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
@@ -57,7 +57,19 @@ const PhotoUploader = ({
         /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto" }),
         /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File, atau Kamera langsung" })
       ] }),
-      /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*", multiple: true, className: "hidden", onChange: onUpload })
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          type: "file",
+          accept: "image/*",
+          multiple: true,
+          className: "hidden",
+          onChange: (e) => {
+            onUpload(e);
+            e.target.value = "";
+          }
+        }
+      )
     ] }) }),
     photos.length > 0 && /* @__PURE__ */ jsxs("div", { className: "mt-4", children: [
       /* @__PURE__ */ jsx("div", { className: "flex justify-between items-center mb-2", children: /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-500", children: [
@@ -1329,10 +1341,42 @@ const processPhotosToCollage = async (photosArray) => {
       return;
     }
     try {
+      const loadedImages = await Promise.all(photosArray.map((p) => {
+        return new Promise((resolve2) => {
+          const img = new Image();
+          let settled = false;
+          const finish = () => {
+            if (!settled) {
+              settled = true;
+              resolve2({ img, zoom: p.zoom || 1 });
+            }
+          };
+          const timer = setTimeout(finish, 4e3);
+          img.onload = () => {
+            clearTimeout(timer);
+            finish();
+          };
+          img.onerror = () => {
+            clearTimeout(timer);
+            console.warn("Gambar gagal dimuat untuk kolase:", p.preview);
+            finish();
+          };
+          img.src = p.preview;
+          if (img.complete && img.naturalWidth > 0) {
+            clearTimeout(timer);
+            finish();
+          }
+        });
+      }));
+      const validImages = loadedImages.filter((item) => item.img && item.img.naturalWidth > 0 && item.img.naturalHeight > 0);
+      if (validImages.length <= 1) {
+        resolve(null);
+        return;
+      }
       const CELL_SIZE = 800;
       const SPACING = 24;
-      const cols = Math.ceil(Math.sqrt(photosArray.length));
-      const rows = Math.ceil(photosArray.length / cols);
+      const cols = Math.ceil(Math.sqrt(validImages.length));
+      const rows = Math.ceil(validImages.length / cols);
       const canvas = document.createElement("canvas");
       canvas.width = cols * CELL_SIZE + (cols + 1) * SPACING;
       canvas.height = rows * CELL_SIZE + (rows + 1) * SPACING;
@@ -1343,15 +1387,7 @@ const processPhotosToCollage = async (photosArray) => {
       }
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const loadedImages = await Promise.all(photosArray.map((p) => {
-        return new Promise((resolve2, reject) => {
-          const img = new Image();
-          img.onload = () => resolve2({ img, zoom: p.zoom || 1 });
-          img.onerror = reject;
-          img.src = p.preview;
-        });
-      }));
-      loadedImages.forEach((item, index) => {
+      validImages.forEach((item, index) => {
         const { img, zoom } = item;
         const col = index % cols;
         const row = Math.floor(index / cols);
@@ -1503,37 +1539,55 @@ const deleteSheetReport = async (rowIndex) => {
 };
 const LiveCollagePreview = ({ photos }) => {
   const [autoCollageUrl, setAutoCollageUrl] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const genRef = useRef(0);
+  const photosHash = photos.map((p, idx) => `${idx}_${p.preview}_${p.zoom || 1}`).join("|");
   useEffect(() => {
-    let active = true;
+    const currentGen = ++genRef.current;
     const generate = async () => {
       if (photos.length > 1) {
+        setIsGenerating(true);
         const result = await processPhotosToCollage(photos);
-        if (!active && result) {
-          URL.revokeObjectURL(result.url);
-        } else if (active && result) {
-          setAutoCollageUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return result.url;
-          });
+        if (currentGen !== genRef.current) {
+          if (result) URL.revokeObjectURL(result.url);
+          return;
+        }
+        setIsGenerating(false);
+        if (result) {
+          setAutoCollageUrl(result.url);
         }
       } else {
-        if (active) {
-          setAutoCollageUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return null;
-          });
-        }
+        setIsGenerating(false);
+        setAutoCollageUrl(null);
       }
     };
     generate();
+  }, [photosHash, photos.length]);
+  useEffect(() => {
     return () => {
-      active = false;
+      if (autoCollageUrl && autoCollageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(autoCollageUrl);
+      }
     };
-  }, [photos]);
-  if (!autoCollageUrl || photos.length <= 1) return null;
+  }, [autoCollageUrl]);
+  if (photos.length <= 1 || !autoCollageUrl && !isGenerating) return null;
   return /* @__PURE__ */ jsxs("div", { className: "mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200", children: [
-    /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-slate-700 mb-2", children: "Preview Auto-Kolase:" }),
-    /* @__PURE__ */ jsx("img", { src: autoCollageUrl, alt: "Auto Collage", className: "w-full max-w-sm rounded-lg shadow-sm border border-slate-200" }),
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between mb-2", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-slate-700", children: "Preview Auto-Kolase:" }),
+      isGenerating && /* @__PURE__ */ jsxs("span", { className: "text-xs bg-blue-100 text-blue-700 font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1.5", children: [
+        /* @__PURE__ */ jsx("span", { className: "w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping" }),
+        "Memperbarui..."
+      ] })
+    ] }),
+    autoCollageUrl ? /* @__PURE__ */ jsx(
+      "img",
+      {
+        src: autoCollageUrl,
+        alt: "Auto Collage",
+        className: `w-full max-w-sm rounded-lg shadow-sm border border-slate-200 transition-opacity duration-200 ${isGenerating ? "opacity-50" : "opacity-100"}`
+      },
+      autoCollageUrl
+    ) : /* @__PURE__ */ jsx("div", { className: "w-full max-w-sm h-48 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 text-sm", children: "Membuat kolase foto..." }),
     /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mt-2", children: 'Kolase ini akan digenerate otomatis saat dikirim. Anda dapat menyesuaikannya melalui tombol "Advanced Editor" (jika tersedia).' })
   ] });
 };
@@ -1640,15 +1694,17 @@ const TabInitialReport = () => {
     setSelectedTeknisi((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
   };
   const [photos, setPhotos] = useState([]);
+  const photosRef = React.useRef(photos);
+  photosRef.current = photos;
   React.useEffect(() => {
     return () => {
-      photos.forEach((p) => {
+      photosRef.current.forEach((p) => {
         if (p.preview && p.preview.startsWith("blob:")) {
           URL.revokeObjectURL(p.preview);
         }
       });
     };
-  }, [photos]);
+  }, []);
   const permasalahanRef = React.useRef(null);
   const uraianRef = React.useRef(null);
   const dampakRef = React.useRef(null);
@@ -1812,7 +1868,10 @@ ${nextNum}. ` + textAfter;
     setPhotos((prev) => {
       const newPhotos = [...prev];
       const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      newPhotos[index] = {
+        ...newPhotos[index],
+        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+      };
       return newPhotos;
     });
   };
@@ -2622,15 +2681,17 @@ const TabPerbaikan = () => {
   };
   const [isVerifikasiETD, setIsVerifikasiETD] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const photosRef = React.useRef(photos);
+  photosRef.current = photos;
   React.useEffect(() => {
     return () => {
-      photos.forEach((p) => {
+      photosRef.current.forEach((p) => {
         if (p.preview && p.preview.startsWith("blob:")) {
           URL.revokeObjectURL(p.preview);
         }
       });
     };
-  }, [photos]);
+  }, []);
   const permasalahanRef = React.useRef(null);
   const tindakLanjutRef = React.useRef(null);
   React.useEffect(() => {
@@ -2778,7 +2839,10 @@ const TabPerbaikan = () => {
     setPhotos((prev) => {
       const newPhotos = [...prev];
       const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      newPhotos[index] = {
+        ...newPhotos[index],
+        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+      };
       return newPhotos;
     });
   };
@@ -3128,15 +3192,17 @@ const TabStoring = () => {
     hasil: "Normal Operasi"
   });
   const [photos, setPhotos] = useState([]);
+  const photosRef = React.useRef(photos);
+  photosRef.current = photos;
   React.useEffect(() => {
     return () => {
-      photos.forEach((p) => {
+      photosRef.current.forEach((p) => {
         if (p.preview && p.preview.startsWith("blob:")) {
           URL.revokeObjectURL(p.preview);
         }
       });
     };
-  }, [photos]);
+  }, []);
   const handleStoringChange = (e) => {
     const { name, value } = e.target;
     setStoringData((prev) => ({ ...prev, [name]: value }));
@@ -3181,7 +3247,10 @@ const TabStoring = () => {
     setPhotos((prev) => {
       const newPhotos = [...prev];
       const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      newPhotos[index] = {
+        ...newPhotos[index],
+        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+      };
       return newPhotos;
     });
   };
@@ -3447,9 +3516,11 @@ const TabKalibrasi = () => {
   const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState([
     { id: Date.now(), photos: [], isGenerating: false }
   ]);
+  const photoGroupsRef = React.useRef(kalibrasiPhotoGroups);
+  photoGroupsRef.current = kalibrasiPhotoGroups;
   React.useEffect(() => {
     return () => {
-      kalibrasiPhotoGroups.forEach((group) => {
+      photoGroupsRef.current.forEach((group) => {
         group.photos.forEach((p) => {
           if (p.preview && p.preview.startsWith("blob:")) {
             URL.revokeObjectURL(p.preview);
@@ -3457,7 +3528,7 @@ const TabKalibrasi = () => {
         });
       });
     };
-  }, [kalibrasiPhotoGroups]);
+  }, []);
   const handleKalibrasiGlobalChange = (e) => {
     const { name, value } = e.target;
     setKalibrasiGlobal((prev) => ({ ...prev, [name]: value }));
@@ -3551,7 +3622,10 @@ const TabKalibrasi = () => {
       if (group.id === groupId) {
         const newPhotos = [...group.photos];
         const currentZoom = newPhotos[photoIndex].zoom || 1;
-        newPhotos[photoIndex].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+        newPhotos[photoIndex] = {
+          ...newPhotos[photoIndex],
+          zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+        };
         return { ...group, photos: newPhotos };
       }
       return group;
@@ -4734,15 +4808,17 @@ const TabBriefing = () => {
     };
   });
   const [photos, setPhotos] = useState([]);
+  const photosRef = React.useRef(photos);
+  photosRef.current = photos;
   React.useEffect(() => {
     return () => {
-      photos.forEach((p) => {
+      photosRef.current.forEach((p) => {
         if (p.preview && p.preview.startsWith("blob:")) {
           URL.revokeObjectURL(p.preview);
         }
       });
     };
-  }, [photos]);
+  }, []);
   const handleBriefingChange = (e) => {
     const { name, value } = e.target;
     setBriefingData({ ...briefingData, [name]: value });
@@ -4772,7 +4848,10 @@ const TabBriefing = () => {
     setPhotos((prev) => {
       const newPhotos = [...prev];
       const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      newPhotos[index] = {
+        ...newPhotos[index],
+        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+      };
       return newPhotos;
     });
   };
@@ -6393,15 +6472,17 @@ const TabKegiatan = () => {
     };
   });
   const [photos, setPhotos] = useState([]);
+  const photosRef = React.useRef(photos);
+  photosRef.current = photos;
   React.useEffect(() => {
     return () => {
-      photos.forEach((p) => {
+      photosRef.current.forEach((p) => {
         if (p.preview && p.preview.startsWith("blob:")) {
           URL.revokeObjectURL(p.preview);
         }
       });
     };
-  }, [photos]);
+  }, []);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setKegiatanData({ ...kegiatanData, [name]: value });
@@ -6431,7 +6512,10 @@ const TabKegiatan = () => {
     setPhotos((prev) => {
       const newPhotos = [...prev];
       const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index].zoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+      newPhotos[index] = {
+        ...newPhotos[index],
+        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+      };
       return newPhotos;
     });
   };
