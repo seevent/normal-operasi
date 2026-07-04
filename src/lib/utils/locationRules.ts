@@ -153,10 +153,16 @@ export const getStoringValidLocations = (equipArray: string[], storingLocAc: str
   if (equipArray.length === 0) return [];
   if (equipArray.includes('Access Control')) return getGeneralLokasiOptions('Access Control');
   
+  // Peralatan yang membatalkan munculnya Transfer Desk D/E
+  const NON_TRANSFER_EQUIP = ['BODY SCANNER', 'EXTENSION CONVEYOR', 'ATRS', 'MIRRORING X-RAY'];
+  
   const intersected = getIntersectedLocations(equipArray);
 
   const hasHhmdOrWtmd = equipArray.some(e => ['HHMD', 'WTMD'].includes(e.trim().toUpperCase()));
-  if (hasHhmdOrWtmd) {
+  const hasNonTransferEquip = equipArray.some(e => NON_TRANSFER_EQUIP.includes(e.trim().toUpperCase()));
+
+  // Transfer Desk hanya ditambahkan jika HHMD/WTMD dipilih DAN TIDAK ada peralatan non-transfer
+  if (hasHhmdOrWtmd && !hasNonTransferEquip) {
     const transferLocs = new Set<string>();
     equipArray.forEach(e => {
       if (['HHMD', 'WTMD'].includes(e.trim().toUpperCase())) {

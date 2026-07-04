@@ -745,9 +745,11 @@ const getLokasi2Options = (lokasi, peralatanArray = []) => {
 const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) => {
   if (equipArray.length === 0) return [];
   if (equipArray.includes("Access Control")) return getGeneralLokasiOptions("Access Control");
+  const NON_TRANSFER_EQUIP = ["BODY SCANNER", "EXTENSION CONVEYOR", "ATRS", "MIRRORING X-RAY"];
   const intersected = getIntersectedLocations(equipArray);
   const hasHhmdOrWtmd = equipArray.some((e) => ["HHMD", "WTMD"].includes(e.trim().toUpperCase()));
   if (hasHhmdOrWtmd) {
+    const hasNonTransferEquip = equipArray.some((e) => NON_TRANSFER_EQUIP.includes(e.trim().toUpperCase()));
     const transferLocs = /* @__PURE__ */ new Set();
     equipArray.forEach((e) => {
       if (["HHMD", "WTMD"].includes(e.trim().toUpperCase())) {
@@ -758,6 +760,12 @@ const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) =
         });
       }
     });
+    if (hasNonTransferEquip && transferLocs.size > 0) {
+      const transferCompatEquip = equipArray.filter((e) => !NON_TRANSFER_EQUIP.includes(e.trim().toUpperCase()));
+      const transferCompatIntersected = transferCompatEquip.length > 0 ? getIntersectedLocations(transferCompatEquip) : [];
+      const combined2 = /* @__PURE__ */ new Set([...intersected, ...transferCompatIntersected.filter((loc) => loc.trim().toUpperCase().includes("TRANSFER")), ...transferLocs]);
+      return Array.from(combined2).sort();
+    }
     const combined = /* @__PURE__ */ new Set([...intersected, ...transferLocs]);
     return Array.from(combined).sort();
   }
@@ -1588,7 +1596,7 @@ const LiveCollagePreview = ({ photos }) => {
       },
       autoCollageUrl
     ) : /* @__PURE__ */ jsx("div", { className: "w-full max-w-sm h-48 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 text-sm", children: "Membuat kolase foto..." }),
-    /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mt-2", children: 'Kolase ini akan digenerate otomatis saat dikirim. Anda dapat menyesuaikannya melalui tombol "Advanced Editor" (jika tersedia).' })
+    /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mt-2", children: "Kolase ini digenerate otomatis. Anda dapat mengedit urutan daftar foto dengan menggesernya." })
   ] });
 };
 function formatNamaPersonel$1(fullName) {
