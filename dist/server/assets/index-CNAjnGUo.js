@@ -2442,9 +2442,9 @@ ${nextNum}. ` + textAfter;
   };
   const renderPhotoSection = () => /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden", children: [
     /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-base font-bold text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
-        " Lampiran Foto (Initial Report Multi-Kolase)"
+        " Lampiran Foto"
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-end gap-1", children: [
         /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded w-fit", children: "Kirim multi kolase sekaligus" }),
@@ -3639,9 +3639,9 @@ const TabPerbaikan = () => {
   };
   const renderPhotoSection = () => /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden", children: [
     /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-base font-bold text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
-        " Lampiran Foto (Perbaikan Multi-Kolase)"
+        " Lampiran Foto"
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-end gap-1", children: [
         /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded w-fit", children: "Kirim multi kolase sekaligus" }),
@@ -4147,7 +4147,7 @@ const PhotoUploader = ({
   };
   return /* @__PURE__ */ jsxs("div", { children: [
     /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-3", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
         " Lampiran Foto"
       ] }),
@@ -4879,7 +4879,7 @@ const TabKalibrasi = () => {
   };
   const renderKalibrasiPhotoSection = () => /* @__PURE__ */ jsxs("div", { className: "space-y-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-2", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
         " Lampiran Foto"
       ] }),

@@ -1,6 +1,6 @@
 # SSES T2 - Generator Laporan
 
-Aplikasi web mobile-first untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan dan pengiriman laporan harian melalui WhatsApp.
+Aplikasi web mobile-first untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan dan pengiriman laporan harian melalui WhatsApp dengan **11 fitur tab** terintegrasi.
 
 ## Fitur Utama
 
@@ -10,12 +10,13 @@ Aplikasi web mobile-first untuk personel **T2 Safety & Security Electronic Servi
 | **Briefing** | Generator laporan giat briefing unit/MOT. |
 | **Storing** | Generator laporan kegiatan storing peralatan. Pilihan peralatan dari database `jenis_peralatan`, lokasi dari database relasional (`penempatan_peralatan`). |
 | **Checklist** | Checklist status operasi peralatan (toggle per item), konfigurasi checklist dapat diedit via Admin. |
+| **Initial Report** | Generator laporan awal (*Initial Report*) indikasi gangguan/kerusakan atau kondisi tidak normal peralatan, lengkap dengan lampiran kolase foto dan anotasi teks. |
 | **Perbaikan** | Generator laporan perbaikan/verifikasi peralatan keamanan. Pilihan tipe peralatan dan teknisi otomatis dari database. |
 | **Kalibrasi** | Generator laporan PM & kalibrasi multi-lokasi. Parameter dinamis per jenis peralatan (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control). |
 | **Kegiatan** | Generator laporan kegiatan harian personel di lapangan. |
 | **Report** | Generator rekapitulasi laporan pergantian shift (*Shift Report*). |
 | **TIP** | Tracker TIP Performance bulanan dengan export gambar. Data tersimpan ke Supabase (cloud). |
-| **Data** | Panel admin (login required) untuk mengelola master data, upload jadwal Excel, manajemen aset, konfigurasi checklist, peralatan kalibrasi, dan data TIP tersimpan. |
+| **Data** | Panel admin (login required) untuk mengelola master data, upload jadwal Excel, sinkronisasi Google Sheets, manajemen aset, konfigurasi checklist, peralatan kalibrasi, dan data TIP tersimpan. |
 
 ## Teknologi
 
@@ -28,8 +29,8 @@ Aplikasi web mobile-first untuk personel **T2 Safety & Security Electronic Servi
 | **Icons** | Lucide React |
 | **State Management** | Zustand |
 | **Backend/Database** | Supabase (Auth, PostgreSQL, Realtime) |
-| **Canvas/Editor** | Konva + React Konva (Collage Editor) |
-| **Spreadsheet** | SheetJS (xlsx) untuk import jadwal Excel |
+| **Canvas/Editor** | Konva + React Konva (Text Overlay / Anotasi Foto & Collage Preview) |
+| **Spreadsheet** | SheetJS (xlsx) & Google Sheets API Sync |
 | **Deployment** | Netlify |
 | **Language** | TypeScript 5 |
 
@@ -38,13 +39,13 @@ Aplikasi web mobile-first untuk personel **T2 Safety & Security Electronic Servi
 ```
 src/
 ├── components/
-│   ├── App.tsx                    # Root app: tab navigation untuk 10 fitur, layout utama
-│   ├── Calculator.tsx             # Kalkulator iOS-style (bonus tool)
+│   ├── App.tsx                    # Root app: tab navigation untuk 11 fitur, layout utama
 │   ├── features/                  # Komponen per-fitur (1 file per tab)
 │   │   ├── TabKehadiran.tsx       # Tab laporan kehadiran shift
 │   │   ├── TabBriefing.tsx        # Tab laporan briefing
 │   │   ├── TabStoring.tsx         # Tab laporan storing
 │   │   ├── TabChecklist.tsx       # Tab checklist status peralatan
+│   │   ├── TabInitialReport.tsx   # Tab laporan awal indikasi gangguan/kerusakan
 │   │   ├── TabPerbaikan.tsx       # Tab laporan perbaikan
 │   │   ├── TabKalibrasi.tsx       # Tab kalibrasi multi-lokasi
 │   │   ├── TabKegiatan.tsx        # Tab laporan kegiatan lapangan
@@ -57,26 +58,25 @@ src/
 │   │   ├── ChecklistDataEditor.tsx # Editor konfigurasi checklist
 │   │   └── ScheduleUploader.tsx   # Upload jadwal shift dari Excel
 │   └── shared/                    # Komponen reusable
-│       ├── Header.tsx             # Header aplikasi
-│       ├── BottomNav.tsx          # Navigasi bawah (tab bar)
-│       ├── PhotoUploader.tsx      # Upload & reorder foto
-│       └── CollageEditor.tsx      # Editor kolase foto (Konva canvas)
+│       ├── PhotoUploader.tsx      # Upload, reorder, dan manajemen lampiran foto
+│       ├── LiveCollagePreview.tsx # Preview live kolase foto multi-layout
+│       ├── PhotoTextEditorModal.tsx # Editor teks overlay / anotasi pada foto
+│       └── MonitorSearchIcon.tsx  # Ikon kustom MonitorSearch
 ├── lib/
 │   ├── data/
 │   │   ├── masterData.ts          # Default master data & helper toTitleCase
 │   │   └── constants.ts           # Konstanta aplikasi
 │   ├── services/
 │   │   ├── shareService.ts        # Web Share API + fallback clipboard
-│   │   └── supabaseService.ts     # Helper Supabase queries
+│   │   └── sheetsSyncService.ts   # Sinkronisasi jadwal/shift dengan Google Sheets
 │   ├── utils/
 │   │   ├── waGenerator.ts         # Generator teks WhatsApp semua tab
 │   │   ├── locationRules.ts       # Logika lokasi relasional dari database
 │   │   └── canvasUtils.ts         # Utility Canvas API (kolase foto)
 │   └── supabaseClient.ts          # Inisialisasi Supabase client
 ├── store/
-│   ├── useAppStore.ts             # State global UI (isCopied, etc.)
+│   ├── useAppStore.ts             # State global UI (isCopied, activeTab, dll.)
 │   ├── useAuthStore.ts            # State autentikasi admin
-│   ├── useCameraStore.ts          # State kamera/watermark
 │   └── useMasterDataStore.ts      # State master data + sync Supabase
 ├── routes/
 │   ├── __root.tsx                 # Root layout: HTML shell, meta tags
@@ -130,9 +130,10 @@ Deploy otomatis ke Netlify (konfigurasi di `netlify.toml`).
 
 ## Catatan Penggunaan
 
-- Aplikasi dioptimalkan untuk **mobile phone** (touch-friendly, font size 16px mencegah zoom iOS)
-- Tab **TIP** menyimpan progress ke **Supabase** (cloud) per bulan/tahun
-- Tab **Data** memerlukan login admin untuk mengakses pengaturan
-- Pilihan lokasi pada Tab Perbaikan, Storing, dan Kalibrasi menggunakan **database relasional** — lokasi muncul berdasarkan peralatan yang dipilih
-- Semua laporan dikirim via **Web Share API** (WhatsApp) atau fallback copy teks
-- Kolase foto otomatis dibuat via **Canvas API** di browser, dengan opsi editor lanjutan (Konva)
+- Aplikasi dioptimalkan untuk **mobile phone** (touch-friendly, font size 16px mencegah zoom iOS).
+- Memiliki **11 Tab Utama** termasuk tab baru **Initial Report** untuk pelaporan cepat indikasi kerusakan peralatan.
+- Fitur **Lampiran Foto** dilengkapi opsi multi-kolase, urutkan dengan geser (*drag & drop/move*), dan **Anotasi Teks (Text Overlay)** via Konva untuk penambahan catatan/label langsung pada gambar.
+- Tab **TIP** menyimpan progress ke **Supabase** (cloud) per bulan/tahun.
+- Tab **Data** memerlukan login admin untuk mengakses pengaturan, manajemen aset, dan upload atau sinkronisasi jadwal shift via **Excel & Google Sheets**.
+- Pilihan lokasi pada Tab Perbaikan, Initial Report, Storing, dan Kalibrasi menggunakan **database relasional** — lokasi muncul berdasarkan peralatan yang dipilih.
+- Semua laporan dikirim via **Web Share API** (WhatsApp) atau fallback copy teks.
