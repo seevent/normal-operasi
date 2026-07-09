@@ -1,4 +1,5 @@
 // src/lib/utils/canvasUtils.ts
+import { drawTextOverlay } from '../../components/shared/PhotoTextEditorModal';
 
 export const compressImageFile = async (
   file: File,
@@ -52,8 +53,133 @@ export const compressImageFile = async (
   });
 };
 
+export const drawCellTextOverlay = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cellW: number,
+  cellH: number,
+  annotation: {
+    text: string;
+    position: 'top' | 'bottom' | 'center';
+    style: 'black' | 'red' | 'green' | 'yellow' | 'clear';
+    size: 'small' | 'medium' | 'large' | number;
+    align?: 'left' | 'center' | 'right';
+  },
+  originalImgHeight?: number
+) => {
+  if (!annotation.text || !annotation.text.trim()) return;
+
+  ctx.save();
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, cellW, cellH, 16);
+  } else {
+    ctx.rect(x, y, cellW, cellH);
+  }
+  ctx.clip();
+
+  const baseDim = Math.max(cellW, cellH);
+  let fontSize = 28;
+  if (typeof annotation.size === 'number' && !isNaN(annotation.size)) {
+    const scaleFactor = originalImgHeight && originalImgHeight > 0 ? (cellH / originalImgHeight) : 0.67;
+    fontSize = Math.max(14, Math.min(Math.floor(cellH / 2), Math.round(annotation.size * scaleFactor)));
+  } else {
+    let fontScale = 0.12;
+    if (annotation.size === 'small') fontScale = 0.08;
+    if (annotation.size === 'large') fontScale = 0.18;
+    fontSize = Math.max(16, Math.round(baseDim * fontScale));
+  }
+
+  const align = annotation.align || 'center';
+  ctx.font = `bold ${fontSize}px sans-serif, Arial, Inter`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+
+  const lines: string[] = [];
+  const rawLines = annotation.text.split('\n');
+  const maxLineWidth = cellW * 0.9;
+
+  rawLines.forEach(rawLine => {
+    const words = rawLine.split(' ');
+    let currentLine = '';
+    words.forEach(word => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxLineWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+    if (currentLine) lines.push(currentLine);
+  });
+
+  if (lines.length === 0) {
+    ctx.restore();
+    return;
+  }
+
+  const lineHeight = fontSize * 1.35;
+  const paddingY = fontSize * 0.6;
+  const boxHeight = lines.length * lineHeight + paddingY * 2;
+
+  let boxY = y + cellH - boxHeight; // bottom
+  if (annotation.position === 'top') boxY = y; // top
+  if (annotation.position === 'center') boxY = y + (cellH - boxHeight) / 2; // center
+
+  if (annotation.style !== 'clear') {
+    let bgColor = 'rgba(0, 0, 0, 0.65)';
+    if (annotation.style === 'red') bgColor = 'rgba(220, 38, 38, 0.85)';
+    if (annotation.style === 'green') bgColor = 'rgba(22, 163, 74, 0.85)';
+    if (annotation.style === 'yellow') bgColor = 'rgba(234, 179, 8, 0.85)';
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, boxY, cellW, boxHeight);
+  }
+
+  const paddingX = cellW * 0.05;
+  lines.forEach((line, index) => {
+    let textX = x + cellW / 2;
+    if (align === 'left') textX = x + paddingX;
+    if (align === 'right') textX = x + cellW - paddingX;
+
+    const textY = boxY + paddingY + (index + 0.5) * lineHeight;
+
+    if (annotation.style === 'clear') {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+      ctx.shadowBlur = Math.round(fontSize * 0.3);
+      ctx.shadowOffsetX = Math.max(2, Math.round(fontSize * 0.05));
+      ctx.shadowOffsetY = Math.max(2, Math.round(fontSize * 0.05));
+      ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
+      ctx.strokeStyle = '#000000';
+      ctx.strokeText(line, textX, textY);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(line, textX, textY);
+    } else if (annotation.style === 'yellow') {
+      ctx.fillStyle = '#000000';
+      ctx.fillText(line, textX, textY);
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(line, textX, textY);
+    }
+  });
+
+  ctx.restore();
+};
+
 export const processPhotosToCollage = async (
-  photosArray: { preview: string; zoom?: number }[]
+  photosArray: { preview: string; zoom?: number; annotation?: any; originalPreview?: string }[],
+  annotation?: {
+    text: string;
+    position: 'top' | 'bottom' | 'center';
+    style: 'black' | 'red' | 'green' | 'yellow' | 'clear';
+    size: 'small' | 'medium' | 'large' | number;
+    align?: 'left' | 'center' | 'right';
+  }
 ): Promise<{ url: string, file: File } | null> => {
   return new Promise(async (resolve) => {
     if (photosArray.length <= 1) {
@@ -61,16 +187,15 @@ export const processPhotosToCollage = async (
       return;
     }
 
-
   try {
     const loadedImages = await Promise.all(photosArray.map(p => {
-      return new Promise<{img: HTMLImageElement, zoom: number}>((resolve) => {
+      return new Promise<{img: HTMLImageElement, zoom: number, annotation?: any}>((resolve) => {
         const img = new Image();
         let settled = false;
         const finish = () => {
           if (!settled) {
             settled = true;
-            resolve({ img, zoom: p.zoom || 1 });
+            resolve({ img, zoom: p.zoom || 1, annotation: p.annotation });
           }
         };
         const timer = setTimeout(finish, 4000);
@@ -80,7 +205,7 @@ export const processPhotosToCollage = async (
           console.warn("Gambar gagal dimuat untuk kolase:", p.preview);
           finish();
         }; 
-        img.src = p.preview;
+        img.src = (p.annotation && p.originalPreview) ? p.originalPreview : p.preview;
         if (img.complete && img.naturalWidth > 0) {
           clearTimeout(timer);
           finish();
@@ -110,7 +235,7 @@ export const processPhotosToCollage = async (
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     validImages.forEach((item, index) => {
-      const { img, zoom } = item;
+      const { img, zoom, annotation: itemAnnotation } = item;
       const col = index % cols; 
       const row = Math.floor(index / cols);
       const x = SPACING + col * (CELL_SIZE + SPACING); 
@@ -132,8 +257,17 @@ export const processPhotosToCollage = async (
       }
       ctx.clip();
       ctx.drawImage(img, x + ox, y + oy, nw, nh); 
+      
+      if (itemAnnotation && itemAnnotation.text && itemAnnotation.text.trim()) {
+        drawCellTextOverlay(ctx, x, y, CELL_SIZE, CELL_SIZE, itemAnnotation, img.naturalHeight || img.height);
+      }
+      
       ctx.restore();
     });
+    
+    if (annotation && annotation.text && annotation.text.trim()) {
+      drawTextOverlay(canvas, annotation.text, annotation.position, annotation.style, annotation.size, annotation.align || 'center');
+    }
     
     canvas.toBlob((blob) => {
       if (!blob) {

@@ -35,6 +35,8 @@ export const TabBriefing: React.FC = () => {
   });
 
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
+  const [collageAnnotation, setCollageAnnotation] = useState<any>(undefined);
 
   const photosRef = React.useRef(photos);
   photosRef.current = photos;
@@ -125,9 +127,13 @@ export const TabBriefing: React.FC = () => {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
-        const collageResult = await processPhotosToCollage(photos);
-        if (collageResult) {
-          generatedCollageFile = collageResult.file;
+        if (autoCollageFile) {
+          generatedCollageFile = autoCollageFile;
+        } else {
+          const collageResult = await processPhotosToCollage(photos, collageAnnotation);
+          if (collageResult) {
+            generatedCollageFile = collageResult.file;
+          }
         }
       }
     }
@@ -197,7 +203,13 @@ export const TabBriefing: React.FC = () => {
         listType="general"
       />
 
-      <LiveCollagePreview photos={photos} />
+      <LiveCollagePreview 
+        photos={photos} 
+        onCollageChange={(file, _url, annotation) => {
+          setAutoCollageFile(file);
+          setCollageAnnotation(annotation);
+        }} 
+      />
 
       <div className="space-y-4 mt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -30,6 +30,8 @@ export const TabStoring: React.FC = () => {
   });
 
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
+  const [collageAnnotation, setCollageAnnotation] = useState<any>(undefined);
 
   const photosRef = React.useRef(photos);
   photosRef.current = photos;
@@ -47,6 +49,25 @@ export const TabStoring: React.FC = () => {
   // === Handlers ===
   const handleStoringChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === 'waktuSelesai' && value) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (storingData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
+    if (name === 'tanggal' && value) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (value === todayStr && storingData.waktuSelesai && storingData.waktuSelesai > currentTimeStr) {
+        alert(`Pukul Selesai direset karena melebihi waktu saat ini (${currentTimeStr})`);
+        setStoringData(prev => ({ ...prev, tanggal: value, waktuSelesai: '' }));
+        return;
+      }
+    }
     setStoringData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -131,6 +152,13 @@ export const TabStoring: React.FC = () => {
   // === Submit ===
   const handleStoringSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (storingData.tanggal === todayStr && storingData.waktuSelesai && storingData.waktuSelesai > currentTimeStr) {
+      alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+      return;
+    }
     
     if (storingData.peralatan.length > 0 && (storingData.acLokasi || []).length === 0) {
       alert("Pastikan Anda memilih minimal 1 lokasi untuk peralatan terpilih!");
@@ -143,9 +171,13 @@ export const TabStoring: React.FC = () => {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
-        const collageResult = await processPhotosToCollage(photos);
-        if (collageResult) {
-          generatedCollageFile = collageResult.file;
+        if (autoCollageFile) {
+          generatedCollageFile = autoCollageFile;
+        } else {
+          const collageResult = await processPhotosToCollage(photos, collageAnnotation);
+          if (collageResult) {
+            generatedCollageFile = collageResult.file;
+          }
         }
       }
     }
@@ -202,7 +234,7 @@ export const TabStoring: React.FC = () => {
           </div>
           <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
-            <input type="time" name="waktuSelesai" required value={storingData.waktuSelesai} onChange={handleStoringChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="time" name="waktuSelesai" required max={storingData.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={storingData.waktuSelesai} onChange={handleStoringChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div className="col-span-2">
@@ -334,7 +366,13 @@ export const TabStoring: React.FC = () => {
         listType="general"
       />
 
-      <LiveCollagePreview photos={photos} />
+      <LiveCollagePreview 
+        photos={photos} 
+        onCollageChange={(file, _url, annotation) => {
+          setAutoCollageFile(file);
+          setCollageAnnotation(annotation);
+        }} 
+      />
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>

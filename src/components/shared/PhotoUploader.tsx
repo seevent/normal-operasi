@@ -7,7 +7,8 @@ export type PhotoAnnotation = {
   text: string;
   position: 'top' | 'bottom' | 'center';
   style: 'black' | 'red' | 'green' | 'yellow' | 'clear';
-  size: 'small' | 'medium' | 'large';
+  size: 'small' | 'medium' | 'large' | number;
+  align?: 'left' | 'center' | 'right';
 };
 
 export type Photo = {

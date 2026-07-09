@@ -1,6 +1,6 @@
 // src/components/shared/PhotoTextEditorModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, Type, RotateCcw, Sparkles, ArrowDown, ArrowUp, Minus, Palette, Clock } from 'lucide-react';
+import { X, Check, Type, RotateCcw, Sparkles, ArrowDown, ArrowUp, Minus, Palette, Clock, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { PhotoAnnotation } from './PhotoUploader';
 
 interface PhotoTextEditorModalProps {
@@ -13,34 +13,31 @@ interface PhotoTextEditorModalProps {
   hasOriginal?: boolean;
 }
 
-export const drawTextOnCanvas = (
+export const drawTextOverlay = (
   canvas: HTMLCanvasElement,
-  img: HTMLImageElement,
   text: string,
   position: 'top' | 'bottom' | 'center',
   style: 'black' | 'red' | 'green' | 'yellow' | 'clear',
-  size: 'small' | 'medium' | 'large'
+  size: 'small' | 'medium' | 'large' | number,
+  align: 'left' | 'center' | 'right' = 'center'
 ) => {
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  canvas.width = img.naturalWidth || img.width || 1200;
-  canvas.height = img.naturalHeight || img.height || 1200;
-
-  // 1. Draw image
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-  if (!text.trim()) return;
+  if (!ctx || !text.trim()) return;
 
   // 2. Calculate font size
   const baseDim = Math.max(canvas.width, canvas.height);
-  let fontScale = 0.04;
-  if (size === 'small') fontScale = 0.028;
-  if (size === 'large') fontScale = 0.055;
-  const fontSize = Math.max(20, Math.round(baseDim * fontScale));
+  let fontSize = 40;
+  if (typeof size === 'number' && !isNaN(size)) {
+    fontSize = Math.max(12, Math.min(Math.floor(canvas.height / 2), Math.round(size)));
+  } else {
+    let fontScale = 0.12;
+    if (size === 'small') fontScale = 0.08;
+    if (size === 'large') fontScale = 0.18;
+    fontSize = Math.max(20, Math.round(baseDim * fontScale));
+  }
 
   ctx.font = `bold ${fontSize}px sans-serif, Arial, Inter`;
-  ctx.textAlign = 'center';
+  ctx.textAlign = align;
   ctx.textBaseline = 'middle';
 
   // 3. Word wrap
@@ -86,15 +83,19 @@ export const drawTextOnCanvas = (
   }
 
   // 6. Draw text lines
+  const paddingX = canvas.width * 0.05;
   lines.forEach((line, index) => {
-    const textX = canvas.width / 2;
+    let textX = canvas.width / 2;
+    if (align === 'left') textX = paddingX;
+    if (align === 'right') textX = canvas.width - paddingX;
+
     const textY = boxY + paddingY + (index + 0.5) * lineHeight;
 
     if (style === 'clear') {
       ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
       ctx.shadowBlur = Math.round(fontSize * 0.3);
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
+      ctx.shadowOffsetX = Math.max(2, Math.round(fontSize * 0.05));
+      ctx.shadowOffsetY = Math.max(2, Math.round(fontSize * 0.05));
       ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
       ctx.strokeStyle = '#000000';
       ctx.strokeText(line, textX, textY);
@@ -113,13 +114,38 @@ export const drawTextOnCanvas = (
   });
 };
 
+export const drawTextOnCanvas = (
+  canvas: HTMLCanvasElement,
+  img: HTMLImageElement,
+  text: string,
+  position: 'top' | 'bottom' | 'center',
+  style: 'black' | 'red' | 'green' | 'yellow' | 'clear',
+  size: 'small' | 'medium' | 'large' | number,
+  align: 'left' | 'center' | 'right' = 'center'
+) => {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  canvas.width = img.naturalWidth || img.width || 1200;
+  canvas.height = img.naturalHeight || img.height || 1200;
+
+  // 1. Draw image
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // 2. Draw text overlay
+  drawTextOverlay(canvas, text, position, style, size, align);
+};
+
 export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
   isOpen, onClose, photoUrl, initialAnnotation, onSave, onReset, hasOriginal
 }) => {
   const [text, setText] = useState('');
   const [position, setPosition] = useState<'top' | 'bottom' | 'center'>('bottom');
-  const [style, setStyle] = useState<'black' | 'red' | 'green' | 'yellow' | 'clear'>('black');
-  const [size, setSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [style, setStyle] = useState<'black' | 'red' | 'green' | 'yellow' | 'clear'>('clear');
+  const [size, setSize] = useState<'small' | 'medium' | 'large' | number>('medium');
+  const [align, setAlign] = useState<'left' | 'center' | 'right'>('center');
+  const [maxFontSize, setMaxFontSize] = useState<number>(300);
+  const [minFontSize, setMinFontSize] = useState<number>(14);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -129,8 +155,13 @@ export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
     if (isOpen) {
       setText(initialAnnotation?.text || '');
       setPosition(initialAnnotation?.position || 'bottom');
-      setStyle(initialAnnotation?.style || 'black');
-      setSize(initialAnnotation?.size || 'medium');
+      setStyle(initialAnnotation?.style || 'clear');
+      setAlign(initialAnnotation?.align || 'center');
+      if (initialAnnotation?.size !== undefined) {
+        setSize(initialAnnotation.size);
+      } else {
+        setSize('medium');
+      }
     }
   }, [isOpen, initialAnnotation]);
 
@@ -141,12 +172,26 @@ export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       imageRef.current = img;
+      const imgH = img.naturalHeight || img.height || 1200;
+      const maxSz = Math.max(24, Math.floor(imgH / 2));
+      const minSz = Math.max(12, Math.floor(imgH * 0.02));
+      setMaxFontSize(maxSz);
+      setMinFontSize(minSz);
+
+      let currentNumericSize = typeof size === 'number' && !isNaN(size) ? size : Math.round(imgH * 0.12);
+      if (size === 'small') currentNumericSize = Math.round(imgH * 0.08);
+      if (size === 'medium') currentNumericSize = Math.round(imgH * 0.12);
+      if (size === 'large') currentNumericSize = Math.round(imgH * 0.18);
+      if (typeof size !== 'number') {
+        setSize(currentNumericSize);
+      }
+
       if (canvasRef.current) {
-        drawTextOnCanvas(canvasRef.current, img, text, position, style, size);
+        drawTextOnCanvas(canvasRef.current, img, text, position, style, typeof size === 'number' ? size : currentNumericSize, align);
       }
     };
     img.src = photoUrl;
-  }, [isOpen, photoUrl, text, position, style, size]);
+  }, [isOpen, photoUrl, text, position, style, size, align]);
 
   if (!isOpen) return null;
 
@@ -154,7 +199,9 @@ export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
     if (!canvasRef.current || !imageRef.current) return;
     setIsProcessing(true);
 
-    drawTextOnCanvas(canvasRef.current, imageRef.current, text, position, style, size);
+    const imgH = imageRef.current.naturalHeight || imageRef.current.height || 1200;
+    const finalSize = typeof size === 'number' ? size : Math.round(imgH * 0.12);
+    drawTextOnCanvas(canvasRef.current, imageRef.current, text, position, style, finalSize, align);
 
     canvasRef.current.toBlob((blob) => {
       setIsProcessing(false);
@@ -167,7 +214,8 @@ export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
         text: text.trim(),
         position,
         style,
-        size
+        size: finalSize,
+        align
       } : undefined;
 
       onSave(newFile, newPreviewUrl, annotation);
@@ -265,91 +313,132 @@ export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
             </div>
           </div>
 
-          {/* Styling & Position Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+          {/* Styling, Alignment & Position Controls */}
+          <div className="space-y-4 pt-2 border-t border-slate-100">
             
-            {/* Position */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
-                Posisi Teks
-              </label>
-              <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setPosition('bottom')}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
-                    position === 'bottom' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <ArrowDown className="w-4 h-4" /> Bawah
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPosition('top')}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
-                    position === 'top' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <ArrowUp className="w-4 h-4" /> Atas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPosition('center')}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
-                    position === 'center' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Minus className="w-4 h-4" /> Tengah
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Position */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                  Posisi Teks
+                </label>
+                <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setPosition('bottom')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                      position === 'bottom' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <ArrowDown className="w-4 h-4" /> Bawah
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPosition('top')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                      position === 'top' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <ArrowUp className="w-4 h-4" /> Atas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPosition('center')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                      position === 'center' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Minus className="w-4 h-4" /> Tengah
+                  </button>
+                </div>
+              </div>
+
+              {/* Text Alignment */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                  Rata Teks
+                </label>
+                <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setAlign('left')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                      align === 'left' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <AlignLeft className="w-4 h-4" /> Kiri
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAlign('center')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                      align === 'center' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <AlignCenter className="w-4 h-4" /> Tengah
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAlign('right')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                      align === 'right' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <AlignRight className="w-4 h-4" /> Kanan
+                  </button>
+                </div>
+              </div>
+
+              {/* Background Style */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                  <Palette className="w-3.5 h-3.5" /> Warna & Gaya
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[
+                    { id: 'clear', label: 'Transparan', bg: 'bg-white border-2 border-slate-300 text-slate-800' },
+                    { id: 'black', label: 'Hitam', bg: 'bg-black text-white' },
+                    { id: 'red', label: 'Merah', bg: 'bg-red-600 text-white' },
+                    { id: 'green', label: 'Hijau', bg: 'bg-green-600 text-white' },
+                    { id: 'yellow', label: 'Kuning', bg: 'bg-yellow-400 text-black font-bold' }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setStyle(item.id as any)}
+                      className={`py-2 rounded-lg text-[10px] font-bold flex items-center justify-center transition-transform ${item.bg} ${
+                        style === item.id ? 'ring-2 ring-blue-500 ring-offset-2 scale-105' : 'opacity-80 hover:opacity-100'
+                      }`}
+                      title={item.label}
+                    >
+                      {style === item.id ? <Check className="w-3.5 h-3.5" /> : item.label.slice(0, 3)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Background Style */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
-                <Palette className="w-3.5 h-3.5" /> Warna & Gaya
-              </label>
-              <div className="grid grid-cols-5 gap-1.5">
-                {[
-                  { id: 'black', label: 'Hitam', bg: 'bg-black text-white' },
-                  { id: 'red', label: 'Merah', bg: 'bg-red-600 text-white' },
-                  { id: 'green', label: 'Hijau', bg: 'bg-green-600 text-white' },
-                  { id: 'yellow', label: 'Kuning', bg: 'bg-yellow-400 text-black font-bold' },
-                  { id: 'clear', label: 'Transparan', bg: 'bg-white border-2 border-slate-300 text-slate-800' }
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setStyle(item.id as any)}
-                    className={`py-2 rounded-lg text-[10px] font-bold flex items-center justify-center transition-transform ${item.bg} ${
-                      style === item.id ? 'ring-2 ring-blue-500 ring-offset-2 scale-105' : 'opacity-80 hover:opacity-100'
-                    }`}
-                    title={item.label}
-                  >
-                    {style === item.id ? <Check className="w-3.5 h-3.5" /> : item.label.slice(0, 3)}
-                  </button>
-                ))}
+            {/* Font Size Slider */}
+            <div className="space-y-2 pt-1">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Ukuran Font (Maks: Setengah Tinggi Foto)
+                </label>
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                  {typeof size === 'number' ? `${size}px (${Math.round((size / maxFontSize) * 50)}% Tinggi Foto)` : 'Sedang'}
+                </span>
               </div>
-            </div>
-
-            {/* Text Size */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                Ukuran Font
-              </label>
-              <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                {(['small', 'medium', 'large'] as const).map((sz) => (
-                  <button
-                    key={sz}
-                    type="button"
-                    onClick={() => setSize(sz)}
-                    className={`py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${
-                      size === sz ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {sz === 'small' ? 'Kecil' : sz === 'medium' ? 'Sedang' : 'Besar'}
-                  </button>
-                ))}
+              <div className="bg-slate-100 p-3 rounded-xl border border-slate-200 flex items-center gap-4">
+                <span className="text-xs font-bold text-slate-500">A</span>
+                <input
+                  type="range"
+                  min={minFontSize}
+                  max={maxFontSize}
+                  value={typeof size === 'number' ? size : Math.round((minFontSize + maxFontSize) * 0.1)}
+                  onChange={(e) => setSize(Number(e.target.value))}
+                  className="w-full h-2.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <span className="text-lg font-black text-slate-800">A</span>
               </div>
             </div>
 

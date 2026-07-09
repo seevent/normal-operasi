@@ -44,8 +44,8 @@ export const TabKalibrasi: React.FC = () => {
   const [kalibrasiEntries, setKalibrasiEntries] = useState([createEmptyKalibrasiEntry()]);
 
   // === STATE UNTUK FOTO KALIBRASI (MULTI KOLASE) ===
-  const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState([
-    { id: Date.now(), photos: [] as any[], isGenerating: false }
+  const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState<any[]>([
+    { id: Date.now(), photos: [] as any[], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }
   ]);
   const [editingKalibrasiPhoto, setEditingKalibrasiPhoto] = useState<{ groupId: number; photoIndex: number } | null>(null);
 
@@ -67,6 +67,25 @@ export const TabKalibrasi: React.FC = () => {
   // === HANDLERS ===
   const handleKalibrasiGlobalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    if (name === 'waktuSelesai' && value) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (kalibrasiGlobal.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
+    if (name === 'tanggal' && value) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (value === todayStr && kalibrasiGlobal.waktuSelesai && kalibrasiGlobal.waktuSelesai > currentTimeStr) {
+        alert(`Pukul Selesai direset karena melebihi waktu saat ini (${currentTimeStr})`);
+        setKalibrasiGlobal(prev => ({ ...prev, tanggal: value, waktuSelesai: '' }));
+        return;
+      }
+    }
     setKalibrasiGlobal(prev => ({ ...prev, [name]: value }));
   };
 
@@ -239,7 +258,7 @@ export const TabKalibrasi: React.FC = () => {
   };
 
   const addKalibrasiPhotoGroup = () => {
-    setKalibrasiPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], isGenerating: false }]);
+    setKalibrasiPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }]);
   };
 
   const removeKalibrasiPhotoGroup = (groupId: number) => {
@@ -355,7 +374,12 @@ export const TabKalibrasi: React.FC = () => {
               </div>
             )}
             
-            <LiveCollagePreview photos={group.photos} />
+            <LiveCollagePreview 
+              photos={group.photos} 
+              onCollageChange={(file, _url, annotation) => {
+                setKalibrasiPhotoGroups(prev => prev.map(g => g.id === group.id ? { ...g, autoCollageFile: file, collageAnnotation: annotation } : g));
+              }}
+            />
           </div>
         ))}
 
@@ -376,6 +400,14 @@ export const TabKalibrasi: React.FC = () => {
 
   const handleKalibrasiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (kalibrasiGlobal.tanggal === todayStr && kalibrasiGlobal.waktuSelesai && kalibrasiGlobal.waktuSelesai > currentTimeStr) {
+      alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+      return;
+    }
+
     if (kalibrasiEntries.some(entry => entry.peralatan.length === 0)) {
       alert("Pastikan Anda memilih minimal 1 peralatan untuk setiap lokasi kalibrasi yang ditambahkan!");
       return;
@@ -390,11 +422,15 @@ export const TabKalibrasi: React.FC = () => {
     
     // Process photos for each group
     for (let i = 0; i < kalibrasiPhotoGroups.length; i++) {
-      const group = kalibrasiPhotoGroups[i];
+      const group: any = kalibrasiPhotoGroups[i];
       if (group.photos.length > 1) {
-        const collageResult = await processPhotosToCollage(group.photos);
-        if (collageResult && collageResult.file) {
-          customFilesArray.push(collageResult.file);
+        if (group.autoCollageFile) {
+          customFilesArray.push(group.autoCollageFile);
+        } else {
+          const collageResult = await processPhotosToCollage(group.photos, group.collageAnnotation);
+          if (collageResult && collageResult.file) {
+            customFilesArray.push(collageResult.file);
+          }
         }
       } else if (group.photos.length === 1 && group.photos[0]?.file) {
         customFilesArray.push(group.photos[0].file);
@@ -436,7 +472,7 @@ export const TabKalibrasi: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuSelesai" required value={kalibrasiGlobal.waktuSelesai} onChange={handleKalibrasiGlobalChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="time" name="waktuSelesai" required max={kalibrasiGlobal.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={kalibrasiGlobal.waktuSelesai} onChange={handleKalibrasiGlobalChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
           </div>
         </div>

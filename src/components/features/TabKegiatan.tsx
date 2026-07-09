@@ -29,6 +29,8 @@ export const TabKegiatan: React.FC = () => {
   });
 
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
+  const [collageAnnotation, setCollageAnnotation] = useState<any>(undefined);
 
   const photosRef = React.useRef(photos);
   photosRef.current = photos;
@@ -119,9 +121,13 @@ export const TabKegiatan: React.FC = () => {
       if (photos.length === 1) {
         generatedCollageFile = photos[0].file || null;
       } else {
-        const collageResult = await processPhotosToCollage(photos);
-        if (collageResult) {
-          generatedCollageFile = collageResult.file;
+        if (autoCollageFile) {
+          generatedCollageFile = autoCollageFile;
+        } else {
+          const collageResult = await processPhotosToCollage(photos, collageAnnotation);
+          if (collageResult) {
+            generatedCollageFile = collageResult.file;
+          }
         }
       }
     }
@@ -212,7 +218,13 @@ export const TabKegiatan: React.FC = () => {
         listType="general"
       />
 
-      <LiveCollagePreview photos={photos} />
+      <LiveCollagePreview 
+        photos={photos} 
+        onCollageChange={(file, _url, annotation) => {
+          setAutoCollageFile(file);
+          setCollageAnnotation(annotation);
+        }} 
+      />
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>

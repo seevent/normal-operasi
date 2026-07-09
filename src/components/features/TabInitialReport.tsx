@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Cpu, FileText, MapPin, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, FileWarning } from 'lucide-react';
+import { Cpu, FileText, MapPin, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, FileWarning, Camera, Move, ZoomIn, ZoomOut, ImagePlus, Type, Trash2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
-import { PhotoUploader, Photo } from '../shared/PhotoUploader';
+import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
 import { generateWA_InitialReport } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
@@ -136,17 +136,23 @@ export const TabInitialReport: React.FC = () => {
     setSelectedTeknisi(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
   };
 
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<any[]>([]); // fallback/deprecated state kept if needed or replaced
+  const [photoGroups, setPhotoGroups] = useState<any[]>([
+    { id: Date.now(), photos: [] as any[], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }
+  ]);
+  const [editingPhoto, setEditingPhoto] = useState<{ groupId: number; photoIndex: number } | null>(null);
 
-  const photosRef = React.useRef(photos);
-  photosRef.current = photos;
+  const photoGroupsRef = React.useRef(photoGroups);
+  photoGroupsRef.current = photoGroups;
 
   React.useEffect(() => {
     return () => {
-      photosRef.current.forEach(p => {
-        if (p.preview && p.preview.startsWith('blob:')) {
-          URL.revokeObjectURL(p.preview);
-        }
+      photoGroupsRef.current.forEach(group => {
+        group.photos.forEach((p: any) => {
+          if (p.preview && p.preview.startsWith('blob:')) {
+            URL.revokeObjectURL(p.preview);
+          }
+        });
       });
     };
   }, []);
@@ -307,7 +313,7 @@ export const TabInitialReport: React.FC = () => {
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (groupId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
@@ -317,32 +323,38 @@ export const TabInitialReport: React.FC = () => {
         preview: res.preview,
         zoom: 1
       }));
-      setPhotos(prev => [...prev, ...newPhotos]);
+      setPhotoGroups(prev => prev.map(g => g.id === groupId ? { ...g, photos: [...g.photos, ...newPhotos] } : g));
     }
   };
 
-  const removePhoto = (index: number) => {
-    setPhotos(prev => {
-      const newPhotos = [...prev];
-      URL.revokeObjectURL(newPhotos[index].preview);
-      newPhotos.splice(index, 1);
-      return newPhotos;
-    });
+  const removePhoto = (groupId: number, photoIndex: number) => {
+    setPhotoGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        const newPhotos = [...group.photos];
+        URL.revokeObjectURL(newPhotos[photoIndex].preview);
+        newPhotos.splice(photoIndex, 1);
+        return { ...group, photos: newPhotos };
+      }
+      return group;
+    }));
   };
 
-  const updatePhotoZoom = (index: number, delta: number) => {
-    setPhotos(prev => {
-      const newPhotos = [...prev];
-      const currentZoom = newPhotos[index].zoom || 1;
-      newPhotos[index] = {
-        ...newPhotos[index],
-        zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
-      };
-      return newPhotos;
-    });
+  const updatePhotoZoom = (groupId: number, photoIndex: number, delta: number) => {
+    setPhotoGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        const newPhotos = [...group.photos];
+        const currentZoom = newPhotos[photoIndex].zoom || 1;
+        newPhotos[photoIndex] = {
+          ...newPhotos[photoIndex],
+          zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
+        };
+        return { ...group, photos: newPhotos };
+      }
+      return group;
+    }));
   };
 
-  const handlePhotoDrop = (e: React.DragEvent | any, targetIndex: number) => {
+  const handlePhotoDrop = (e: React.DragEvent | any, groupId: number, targetIndex: number) => {
     e.preventDefault();
     const sourceIndexStr = e.dataTransfer?.getData('text/plain');
     if (!sourceIndexStr) return;
@@ -350,35 +362,218 @@ export const TabInitialReport: React.FC = () => {
     const sourceIndex = parseInt(sourceIndexStr, 10);
     if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
     
-    setPhotos(prev => {
-      const newPhotos = [...prev];
-      const [movedPhoto] = newPhotos.splice(sourceIndex, 1);
-      newPhotos.splice(targetIndex, 0, movedPhoto);
-      return newPhotos;
-    });
+    setPhotoGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        const newPhotos = [...group.photos];
+        const [movedPhoto] = newPhotos.splice(sourceIndex, 1);
+        newPhotos.splice(targetIndex, 0, movedPhoto);
+        return { ...group, photos: newPhotos };
+      }
+      return group;
+    }));
   };
 
-  const handlePhotoEdit = (index: number, updatedPhoto: any) => {
-    setPhotos(prev => {
-      const newPhotos = [...prev];
-      newPhotos[index] = updatedPhoto;
-      return newPhotos;
-    });
+  const handleSaveText = (newFile: File, newPreviewUrl: string, annotation?: any) => {
+    if (!editingPhoto) return;
+    const { groupId, photoIndex } = editingPhoto;
+    setPhotoGroups(prev => prev.map(group => {
+      if (group.id !== groupId) return group;
+      const newPhotos = [...group.photos];
+      const currentPhoto = newPhotos[photoIndex];
+      newPhotos[photoIndex] = {
+        ...currentPhoto,
+        originalFile: currentPhoto.originalFile || currentPhoto.file,
+        originalPreview: currentPhoto.originalPreview || currentPhoto.preview,
+        file: newFile,
+        preview: newPreviewUrl,
+        annotation
+      };
+      return { ...group, photos: newPhotos };
+    }));
+    setEditingPhoto(null);
   };
+
+  const handleResetText = () => {
+    if (!editingPhoto) return;
+    const { groupId, photoIndex } = editingPhoto;
+    setPhotoGroups(prev => prev.map(group => {
+      if (group.id !== groupId) return group;
+      const newPhotos = [...group.photos];
+      const currentPhoto = newPhotos[photoIndex];
+      if (!currentPhoto.originalFile || !currentPhoto.originalPreview) return group;
+      newPhotos[photoIndex] = {
+        ...currentPhoto,
+        file: currentPhoto.originalFile,
+        preview: currentPhoto.originalPreview,
+        annotation: undefined
+      };
+      return { ...group, photos: newPhotos };
+    }));
+    setEditingPhoto(null);
+  };
+
+  const addPhotoGroup = () => {
+    setPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }]);
+  };
+
+  const removePhotoGroup = (groupId: number) => {
+    if (photoGroups.length <= 1) return;
+    setPhotoGroups(prev => {
+      const groupToRemove = prev.find(g => g.id === groupId);
+      if (groupToRemove) {
+        groupToRemove.photos.forEach((p: any) => URL.revokeObjectURL(p.preview));
+      }
+      return prev.filter(g => g.id !== groupId);
+    });
+    if (editingPhoto?.groupId === groupId) {
+      setEditingPhoto(null);
+    }
+  };
+
+  const renderPhotoSection = () => (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+          <Camera className="w-5 h-5 text-blue-600" /> Lampiran Foto (Initial Report Multi-Kolase)
+        </h2>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded w-fit">Kirim multi kolase sekaligus</span>
+          <span className="text-xs text-slate-500 font-medium flex items-center gap-1"><Move className="w-3 h-3" /> Geser foto untuk urutkan</span>
+        </div>
+      </div>
+      
+      <div className="p-6 space-y-6">
+        {photoGroups.map((group, groupIndex) => (
+          <div key={group.id} className="p-4 sm:p-5 bg-blue-50/30 border border-blue-100 rounded-xl space-y-4 relative shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+              <div className="flex-1 w-full flex items-center gap-3">
+                <h3 className="font-bold text-blue-900 text-sm">Grup Kolase {groupIndex + 1}</h3>
+              </div>
+              {photoGroups.length > 1 && (
+                <button 
+                  type="button" 
+                  onClick={() => removePhotoGroup(group.id)} 
+                  className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors flex items-center gap-1 self-end sm:self-center text-sm font-bold"
+                >
+                  <Trash2 className="w-4 h-4" /> <span className="sm:hidden">Hapus Grup</span>
+                </button>
+              )}
+            </div>
+
+            <div>
+              <label className="flex items-center justify-center w-full p-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors group">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <ImagePlus className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-bold text-blue-700">Pilih / Ambil Foto</span>
+                  <span className="text-xs text-blue-500">Galeri, File, atau Kamera langsung</span>
+                </div>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handlePhotoUpload(group.id, e)} />
+              </label>
+            </div>
+
+            {group.photos.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-slate-500 mb-2">Daftar Foto ({group.photos.length}):</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {group.photos.map((photo: any, pIndex: number) => (
+                    <div 
+                      key={photo.id} 
+                      draggable
+                      onDragStart={(e) => e.dataTransfer.setData('text/plain', pIndex.toString())}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => handlePhotoDrop(e, group.id, pIndex)}
+                      className="relative bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm group/photo hover:shadow-md transition-shadow aspect-square cursor-move flex flex-col"
+                    >
+                      <div className="flex-1 relative overflow-hidden bg-black flex items-center justify-center">
+                        <img 
+                          src={photo.preview} 
+                          alt="Preview" 
+                          className="absolute w-full h-full object-cover transition-transform"
+                          style={{ transform: `scale(${photo.zoom || 1})` }}
+                        />
+                      </div>
+                      
+                      <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded backdrop-blur-sm z-10">
+                        {pIndex + 1}
+                      </div>
+
+                      <div className="absolute top-1 right-1 flex flex-col gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                        <button type="button" onClick={(e) => { e.preventDefault(); removePhoto(group.id, pIndex); }} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                        <button 
+                          type="button" 
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingPhoto({ groupId: group.id, photoIndex: pIndex }); }} 
+                          className={`p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${
+                            photo.annotation ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white text-slate-700 hover:bg-slate-100'
+                          }`}
+                          title="Beri Teks / Watermark"
+                        >
+                          <Type className="w-3.5 h-3.5" />
+                          <span className="hidden md:inline">{photo.annotation ? 'Edit Teks' : 'Teks'}</span>
+                        </button>
+                      </div>
+
+                      <div className="absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                        <button type="button" onClick={(e) => { e.preventDefault(); updatePhotoZoom(group.id, pIndex, 0.1); }} className="bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md">
+                          <ZoomIn className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); updatePhotoZoom(group.id, pIndex, -0.1); }} className="bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md">
+                          <ZoomOut className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <LiveCollagePreview 
+              photos={group.photos} 
+              onCollageChange={(file, _url, annotation) => {
+                setPhotoGroups(prev => prev.map(g => g.id === group.id ? { ...g, autoCollageFile: file, collageAnnotation: annotation } : g));
+              }}
+            />
+          </div>
+        ))}
+
+        <button 
+          type="button" 
+          onClick={addPhotoGroup} 
+          className="w-full p-5 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors group flex flex-col items-center justify-center gap-1.5 text-center"
+        >
+          <div className="w-10 h-10 rounded-full bg-blue-100 group-hover:scale-110 transition-transform flex items-center justify-center text-blue-600 shadow-sm">
+            <Plus className="w-5 h-5" />
+          </div>
+          <span className="text-sm font-bold text-blue-700 block">Tambah Grup Kolase Baru</span>
+          <span className="text-xs text-blue-500 block">Klik untuk membuat grup kolase foto baru</span>
+        </button>
+      </div>
+    </div>
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    let generatedCollageFile: File | null = null;
+    let customFilesArray: File[] = [];
 
-    if (photos.length > 0) {
-      if (photos.length === 1) {
-        generatedCollageFile = photos[0].file || null;
-      } else {
-        const collageResult = await processPhotosToCollage(photos);
-        if (collageResult) {
-          generatedCollageFile = collageResult.file;
+    // Process photos for each group
+    for (let i = 0; i < photoGroups.length; i++) {
+      const group: any = photoGroups[i];
+      if (group.photos.length > 1) {
+        if (group.autoCollageFile) {
+          customFilesArray.push(group.autoCollageFile);
+        } else {
+          const collageResult = await processPhotosToCollage(group.photos, group.collageAnnotation);
+          if (collageResult && collageResult.file) {
+            customFilesArray.push(collageResult.file);
+          }
         }
+      } else if (group.photos.length === 1 && group.photos[0]?.file) {
+        customFilesArray.push(group.photos[0].file);
       }
     }
 
@@ -402,10 +597,10 @@ export const TabInitialReport: React.FC = () => {
       tindakLanjut: `[Mitigasi: ${formData.tindakanMitigasi}] [Tindakan: ${formData.tindakan}] [Hasil: ${formData.hasilTindakan}]`,
       status: formData.status || '-',
       teknisi: formData.teknisi,
-      imageFile: generatedCollageFile
+      imageFile: customFilesArray.length > 0 ? customFilesArray[0] : null
     });
 
-    await shareToWhatsApp(message, generatedCollageFile, () => {
+    await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     });
@@ -701,17 +896,24 @@ export const TabInitialReport: React.FC = () => {
           </div>
         </div>
 
-        <PhotoUploader 
-          photos={photos}
-          onUpload={handlePhotoUpload}
-          onRemove={removePhoto}
-          onZoom={updatePhotoZoom}
-          onDrop={handlePhotoDrop}
-          onEdit={handlePhotoEdit}
-          listType="general"
-        />
+        {renderPhotoSection()}
 
-        <LiveCollagePreview photos={photos} />
+        {editingPhoto && (() => {
+          const group = photoGroups.find(g => g.id === editingPhoto.groupId);
+          const photo = group?.photos[editingPhoto.photoIndex];
+          if (!photo) return null;
+          return (
+            <PhotoTextEditorModal
+              isOpen={true}
+              onClose={() => setEditingPhoto(null)}
+              photoUrl={photo.originalPreview || photo.preview}
+              initialAnnotation={photo.annotation}
+              onSave={handleSaveText}
+              onReset={handleResetText}
+              hasOriginal={!!photo.originalPreview}
+            />
+          );
+        })()}
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>

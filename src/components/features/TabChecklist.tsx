@@ -20,6 +20,25 @@ export const TabChecklist: React.FC = () => {
 
   const handleChecklistChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    if (name === 'waktuSelesai' && value) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (checklistData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
+    if (name === 'tanggal' && value) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (value === todayStr && checklistData.waktuSelesai && checklistData.waktuSelesai > currentTimeStr) {
+        alert(`Pukul Selesai direset karena melebihi waktu saat ini (${currentTimeStr})`);
+        setChecklistData(prev => ({ ...prev, tanggal: value, waktuSelesai: '' }));
+        return;
+      }
+    }
     setChecklistData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -28,11 +47,18 @@ export const TabChecklist: React.FC = () => {
   };
 
   const toggleChecklistItem = (key: string) => {
-    setToggles(prev => ({ ...prev, [key]: prev[key] === false ? true : false }));
+    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleChecklistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (checklistData.tanggal === todayStr && checklistData.waktuSelesai && checklistData.waktuSelesai > currentTimeStr) {
+      alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+      return;
+    }
     const message = generateWA_Checklist(checklistData, checklistDataMaster, toggles);
     await shareToWhatsApp(message, null, () => {
       setIsCopied(true);
@@ -68,7 +94,7 @@ export const TabChecklist: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuSelesai" required value={checklistData.waktuSelesai} onChange={handleChecklistChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="time" name="waktuSelesai" required max={checklistData.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={checklistData.waktuSelesai} onChange={handleChecklistChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
           </div>
         </div>
