@@ -152,6 +152,7 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
 export const getStoringValidLocations = (equipArray: string[], storingLocAc: string[], storingLocDefault: string[]) => {
   if (equipArray.length === 0) return [];
   if (equipArray.includes('Access Control')) return getGeneralLokasiOptions('Access Control');
+  if (equipArray.some(e => e.trim().toLowerCase() === 'mirroring x-ray')) return getGeneralLokasiOptions('Mirroring X-Ray');
   
   // Peralatan yang membatalkan munculnya Transfer Desk D/E
   const NON_TRANSFER_EQUIP = ['BODY SCANNER', 'EXTENSION CONVEYOR', 'ATRS', 'MIRRORING X-RAY'];

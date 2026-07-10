@@ -194,12 +194,26 @@ export const generateWA_Storing = (storingData: any) => {
     }
   }
   
+  const isACChecked = (storingData.peralatan || []).includes('Access Control');
+  const isMirroringChecked = (storingData.peralatan || []).some((e: string) => e.toLowerCase() === 'mirroring x-ray');
+  const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
+    (loc: string) => loc.trim().toLowerCase() === 'ruang monitoring e1'
+  );
+  const showSupervisorAvsec = isMirroringChecked
+    ? false
+    : isACChecked
+    ? hasRuangMonitoringE1
+    : true;
+
+  const supervisorAvsecLine = showSupervisorAvsec
+    ? `\nSupervisor Avsec : ${storingData.supervisorAvsec || '-'}`
+    : '';
+  
   return `*KEGIATAN STORING PERALATAN SSES T2*
 Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}
 Peralatan : ${equipString}
 Lokasi : ${locString}
-Hasil : ${storingData.hasil}
-Supervisor Avsec : ${storingData.supervisorAvsec || '-'}`;
+Hasil : ${storingData.hasil}${supervisorAvsecLine}`;
 };
 
 export const generateWA_Checklist = (checklistData: any, checklistDataMaster: any[], toggles: any) => {
@@ -238,6 +252,19 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
           result += `* Off : ${summaryCounts[sKey].off}\n`;
       });
       result += `\n`;
+      
+      if (block.title === 'HBSCP' || (block.title.includes('HBSCP') && !block.title.includes('UMROH'))) {
+        const sup1 = checklistData.supervisorAvsec?.['HBSCP 1.1 - 1.6'] || '-';
+        const sup2 = checklistData.supervisorAvsec?.['HBSCP 2.1 - 2.6'] || '-';
+        result += `Supervisor Avsec HBSCP 1.1 - 1.6 : ${sup1}\n`;
+        result += `Supervisor Avsec HBSCP 2.1 - 2.6 : ${sup2}\n\n`;
+      } else if (block.title === 'ACCESS CONTROL' || block.title.includes('ACCESS CONTROL')) {
+        const sup = checklistData.supervisorAvsec?.[block.title] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
+        result += `Supervisor Avsec Monitoring Access E1 : ${sup}\n\n`;
+      } else {
+        const supAvsec = checklistData.supervisorAvsec?.[block.title] || '-';
+        result += `Supervisor Avsec ${block.title} : ${supAvsec}\n\n`;
+      }
 
     } else if (block.type === 'group') {
       let summaryCounts: any = {};
@@ -259,6 +286,19 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
           });
           result += `\n`;
         });
+        
+        if (loc.title === 'HBSCP' || (loc.title.includes('HBSCP') && !loc.title.includes('UMROH'))) {
+          const sup1 = checklistData.supervisorAvsec?.['HBSCP 1.1 - 1.6'] || '-';
+          const sup2 = checklistData.supervisorAvsec?.['HBSCP 2.1 - 2.6'] || '-';
+          result += `Supervisor Avsec HBSCP 1.1 - 1.6 : ${sup1}\n`;
+          result += `Supervisor Avsec HBSCP 2.1 - 2.6 : ${sup2}\n\n`;
+        } else if (loc.title === 'ACCESS CONTROL' || loc.title.includes('ACCESS CONTROL')) {
+          const sup = checklistData.supervisorAvsec?.[loc.title] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
+          result += `Supervisor Avsec Monitoring Access E1 : ${sup}\n\n`;
+        } else {
+          const supAvsecLoc = checklistData.supervisorAvsec?.[loc.title] || '-';
+          result += `Supervisor Avsec ${loc.title} : ${supAvsecLoc}\n\n`;
+        }
       });
 
       result += `${block.summary}\n`;
@@ -292,7 +332,10 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
 
       result += `${block.summary} : ${totalAc}\n`;
       result += `OPERASI : ${operasiAc}\n`;
-      result += `OFF : ${offAc}\n\n`;
+      result += `OFF : ${offAc}\n`;
+      result += `\n`;
+      const supAvsec = checklistData.supervisorAvsec?.[block.title] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
+      result += `Supervisor Avsec Monitoring Access E1 : ${supAvsec}\n\n`;
     }
   });
 

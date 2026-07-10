@@ -1059,6 +1059,7 @@ const getLokasi2Options = (lokasi, peralatanArray = []) => {
 const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) => {
   if (equipArray.length === 0) return [];
   if (equipArray.includes("Access Control")) return getGeneralLokasiOptions("Access Control");
+  if (equipArray.some((e) => e.trim().toLowerCase() === "mirroring x-ray")) return getGeneralLokasiOptions("Mirroring X-Ray");
   const NON_TRANSFER_EQUIP = ["BODY SCANNER", "EXTENSION CONVEYOR", "ATRS", "MIRRORING X-RAY"];
   const intersected = getIntersectedLocations(equipArray);
   const hasHhmdOrWtmd = equipArray.some((e) => ["HHMD", "WTMD"].includes(e.trim().toUpperCase()));
@@ -1271,11 +1272,19 @@ const generateWA_Storing = (storingData) => {
       locString = storingData.lokasi;
     }
   }
+  const isACChecked = (storingData.peralatan || []).includes("Access Control");
+  const isMirroringChecked = (storingData.peralatan || []).some((e) => e.toLowerCase() === "mirroring x-ray");
+  const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
+    (loc) => loc.trim().toLowerCase() === "ruang monitoring e1"
+  );
+  const showSupervisorAvsec = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : true;
+  const supervisorAvsecLine = showSupervisorAvsec ? `
+Supervisor Avsec : ${storingData.supervisorAvsec || "-"}` : "";
   return `*KEGIATAN STORING PERALATAN SSES T2*
 Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}
 Peralatan : ${equipString}
 Lokasi : ${locString}
-Hasil : ${storingData.hasil}`;
+Hasil : ${storingData.hasil}${supervisorAvsecLine}`;
 };
 const generateWA_Checklist = (checklistData, checklistDataMaster, toggles) => {
   const formattedDate = formatTanggalIndo(checklistData.tanggal);
@@ -1319,6 +1328,25 @@ const generateWA_Checklist = (checklistData, checklistDataMaster, toggles) => {
       });
       result += `
 `;
+      if (block.title === "HBSCP" || block.title.includes("HBSCP") && !block.title.includes("UMROH")) {
+        const sup1 = checklistData.supervisorAvsec?.["HBSCP 1.1 - 1.6"] || "-";
+        const sup2 = checklistData.supervisorAvsec?.["HBSCP 2.1 - 2.6"] || "-";
+        result += `Supervisor Avsec HBSCP 1.1 - 1.6 : ${sup1}
+`;
+        result += `Supervisor Avsec HBSCP 2.1 - 2.6 : ${sup2}
+
+`;
+      } else if (block.title === "ACCESS CONTROL" || block.title.includes("ACCESS CONTROL")) {
+        const sup = checklistData.supervisorAvsec?.[block.title] || checklistData.supervisorAvsec?.["Monitoring Access E1"] || "-";
+        result += `Supervisor Avsec Monitoring Access E1 : ${sup}
+
+`;
+      } else {
+        const supAvsec = checklistData.supervisorAvsec?.[block.title] || "-";
+        result += `Supervisor Avsec ${block.title} : ${supAvsec}
+
+`;
+      }
     } else if (block.type === "group") {
       let summaryCounts = {};
       block.locations.forEach((loc) => {
@@ -1340,6 +1368,25 @@ const generateWA_Checklist = (checklistData, checklistDataMaster, toggles) => {
           result += `
 `;
         });
+        if (loc.title === "HBSCP" || loc.title.includes("HBSCP") && !loc.title.includes("UMROH")) {
+          const sup1 = checklistData.supervisorAvsec?.["HBSCP 1.1 - 1.6"] || "-";
+          const sup2 = checklistData.supervisorAvsec?.["HBSCP 2.1 - 2.6"] || "-";
+          result += `Supervisor Avsec HBSCP 1.1 - 1.6 : ${sup1}
+`;
+          result += `Supervisor Avsec HBSCP 2.1 - 2.6 : ${sup2}
+
+`;
+        } else if (loc.title === "ACCESS CONTROL" || loc.title.includes("ACCESS CONTROL")) {
+          const sup = checklistData.supervisorAvsec?.[loc.title] || checklistData.supervisorAvsec?.["Monitoring Access E1"] || "-";
+          result += `Supervisor Avsec Monitoring Access E1 : ${sup}
+
+`;
+        } else {
+          const supAvsecLoc = checklistData.supervisorAvsec?.[loc.title] || "-";
+          result += `Supervisor Avsec ${loc.title} : ${supAvsecLoc}
+
+`;
+        }
       });
       result += `${block.summary}
 `;
@@ -1381,6 +1428,11 @@ const generateWA_Checklist = (checklistData, checklistDataMaster, toggles) => {
       result += `OPERASI : ${operasiAc}
 `;
       result += `OFF : ${offAc}
+`;
+      result += `
+`;
+      const supAvsec = checklistData.supervisorAvsec?.[block.title] || checklistData.supervisorAvsec?.["Monitoring Access E1"] || "-";
+      result += `Supervisor Avsec Monitoring Access E1 : ${supAvsec}
 
 `;
     }
@@ -2442,7 +2494,7 @@ ${nextNum}. ` + textAfter;
   };
   const renderPhotoSection = () => /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden", children: [
     /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
         " Lampiran Foto"
       ] }),
@@ -3639,7 +3691,7 @@ const TabPerbaikan = () => {
   };
   const renderPhotoSection = () => /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden", children: [
     /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
         " Lampiran Foto"
       ] }),
@@ -4147,7 +4199,7 @@ const PhotoUploader = ({
   };
   return /* @__PURE__ */ jsxs("div", { children: [
     /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-3", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
         " Lampiran Foto"
       ] }),
@@ -4300,7 +4352,8 @@ const TabStoring = () => {
     acLokasi: [],
     acNomor: {},
     nomor: "",
-    hasil: "Normal Operasi"
+    hasil: "Normal Operasi",
+    supervisorAvsec: ""
   });
   const [photos, setPhotos] = useState([]);
   const [autoCollageFile, setAutoCollageFile] = useState(null);
@@ -4345,13 +4398,24 @@ const TabStoring = () => {
       if (newPeralatan.includes(equip)) {
         newPeralatan = newPeralatan.filter((e) => e !== equip);
       } else {
-        if (equip === "Access Control") {
-          newPeralatan = ["Access Control"];
-        } else if (!newPeralatan.includes("Access Control")) {
+        if (equip === "Access Control" || equip.toLowerCase() === "mirroring x-ray") {
+          newPeralatan = [equip];
+        } else if (!newPeralatan.some((e) => e === "Access Control" || e.toLowerCase() === "mirroring x-ray")) {
           newPeralatan.push(equip);
         }
       }
-      return { ...prev, peralatan: newPeralatan, lokasi: "", acLokasi: [], acNomor: {}, nomor: "" };
+      const isACChecked = newPeralatan.includes("Access Control");
+      const isMirroringChecked = newPeralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
+      const newShowSupervisor = isMirroringChecked ? false : isACChecked ? false : true;
+      return {
+        ...prev,
+        peralatan: newPeralatan,
+        lokasi: "",
+        acLokasi: [],
+        acNomor: {},
+        nomor: "",
+        supervisorAvsec: newShowSupervisor ? prev.supervisorAvsec : ""
+      };
     });
   };
   const handlePhotoUpload = async (e) => {
@@ -4444,7 +4508,8 @@ const TabStoring = () => {
       waktu: waktuFull,
       lokasi: lokasiFull,
       peralatan: alatFull,
-      uraian: `Kegiatan Storing : ${alatFull}`,
+      uraian: `Kegiatan Storing : ${alatFull}${storingData.supervisorAvsec ? `
+Supervisor Avsec : ${storingData.supervisorAvsec}` : ""}`,
       tindakLanjut: "-",
       status: storingData.hasil || "Normal Operasi",
       imageFile: generatedCollageFile
@@ -4453,7 +4518,6 @@ const TabStoring = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
-    if (generatedCollageUrl) ;
   };
   return /* @__PURE__ */ jsxs("form", { onSubmit: handleStoringSubmit, className: "p-6 sm:p-8 space-y-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
@@ -4484,8 +4548,9 @@ const TabStoring = () => {
           ] }),
           /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 md:grid-cols-3 gap-3", children: storingEquipments.map((equip) => {
             const isACChecked = storingData.peralatan.includes("Access Control");
+            const isMirroringChecked = storingData.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
             const isChecked = storingData.peralatan.includes(equip);
-            const isDisabled = isACChecked && equip !== "Access Control";
+            const isDisabled = isACChecked && equip !== "Access Control" || isMirroringChecked && equip.toLowerCase() !== "mirroring x-ray";
             return /* @__PURE__ */ jsxs(
               "label",
               {
@@ -4514,7 +4579,7 @@ const TabStoring = () => {
             storingData.peralatan.length > 0 && /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-400 font-normal", children: " (Pilih 1 atau lebih)" })
           ] }),
           /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2", children: (() => {
-            const locOpts = storingData.peralatan.includes("Access Control") ? getGeneralLokasiOptions("Access Control") : getStoringValidLocations(storingData.peralatan);
+            const locOpts = storingData.peralatan.includes("Access Control") ? getGeneralLokasiOptions("Access Control") : storingData.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray") ? getGeneralLokasiOptions("Mirroring X-Ray") : getStoringValidLocations(storingData.peralatan);
             if (locOpts.length === 0) {
               return /* @__PURE__ */ jsx("div", { className: "col-span-full p-3 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-sm text-center", children: storingData.peralatan.length === 0 ? "Pilih peralatan terlebih dahulu untuk melihat daftar lokasi." : "Data lokasi belum tersedia di database." });
             }
@@ -4542,7 +4607,16 @@ const TabStoring = () => {
                               } else if (exists) {
                                 delete newNomor[loc];
                               }
-                              return { ...prev, acLokasi: newLocs, acNomor: newNomor };
+                              const isACChecked = prev.peralatan.includes("Access Control");
+                              const isMirroringChecked = prev.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
+                              const hasRuangMonitoringE1 = newLocs.some((l) => l.trim().toLowerCase() === "ruang monitoring e1");
+                              const newShowSupervisor = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : true;
+                              return {
+                                ...prev,
+                                acLokasi: newLocs,
+                                acNomor: newNomor,
+                                supervisorAvsec: newShowSupervisor ? prev.supervisorAvsec : ""
+                              };
                             });
                           },
                           className: "w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 flex-shrink-0"
@@ -4578,7 +4652,23 @@ const TabStoring = () => {
             /* @__PURE__ */ jsx(AlertCircle, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
             /* @__PURE__ */ jsx("input", { type: "text", name: "hasil", required: true, value: storingData.hasil, onChange: handleStoringChange, className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" })
           ] })
-        ] })
+        ] }),
+        (() => {
+          const isACChecked = storingData.peralatan.includes("Access Control");
+          const isMirroringChecked = storingData.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
+          const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
+            (loc) => loc.trim().toLowerCase() === "ruang monitoring e1"
+          );
+          const showSupervisorAvsec = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : true;
+          if (!showSupervisorAvsec) return null;
+          return /* @__PURE__ */ jsxs("div", { className: "col-span-2", children: [
+            /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec" }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+              /* @__PURE__ */ jsx("input", { type: "text", name: "supervisorAvsec", value: storingData.supervisorAvsec, onChange: handleStoringChange, placeholder: "Nama Supervisor Avsec", className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" })
+            ] })
+          ] });
+        })()
       ] })
     ] }),
     /* @__PURE__ */ jsx(
@@ -4879,7 +4969,7 @@ const TabKalibrasi = () => {
   };
   const renderKalibrasiPhotoSection = () => /* @__PURE__ */ jsxs("div", { className: "space-y-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-2", children: [
-      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-normal text-slate-800 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
         " Lampiran Foto"
       ] }),
@@ -5868,8 +5958,18 @@ const TabChecklist = () => {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     })(),
     waktuMulai: "",
-    waktuSelesai: ""
+    waktuSelesai: "",
+    supervisorAvsec: {}
   });
+  const handleSupervisorChange = (locTitle, value) => {
+    setChecklistData((prev) => ({
+      ...prev,
+      supervisorAvsec: {
+        ...prev.supervisorAvsec || {},
+        [locTitle]: value
+      }
+    }));
+  };
   const [toggles, setToggles] = useState({});
   const [expandedAreas, setExpandedAreas] = useState({});
   const handleChecklistChange = (e) => {
@@ -5988,17 +6088,89 @@ const TabChecklist = () => {
                 ]
               }
             ),
-            expandedAreas[block.title] && /* @__PURE__ */ jsx("div", { className: "p-4 space-y-6", children: block.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
-              /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3", children: cat.items.map((item, iIdx) => {
-                const key = `${block.title}|${cat.title}|${iIdx}`;
-                const isOperasi = toggles[key] !== false;
-                return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400" : "bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400"}`, children: [
-                  /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
-                  /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
-                ] }, `item-${iIdx}`);
-              }) })
-            ] }, `cat-${cIdx}`)) })
+            expandedAreas[block.title] && /* @__PURE__ */ jsxs("div", { className: "p-4 space-y-6", children: [
+              block.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
+                /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3", children: cat.items.map((item, iIdx) => {
+                  const key = `${block.title}|${cat.title}|${iIdx}`;
+                  const isOperasi = toggles[key] !== false;
+                  return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400" : "bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400"}`, children: [
+                    /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
+                    /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
+                  ] }, `item-${iIdx}`);
+                }) })
+              ] }, `cat-${cIdx}`)),
+              block.title === "HBSCP" || block.title.includes("HBSCP") && !block.title.includes("UMROH") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200 space-y-4", children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 1.1 - 1.6" }),
+                  /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                    /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                    /* @__PURE__ */ jsx(
+                      "input",
+                      {
+                        type: "text",
+                        value: (checklistData.supervisorAvsec || {})["HBSCP 1.1 - 1.6"] || "",
+                        onChange: (e) => handleSupervisorChange("HBSCP 1.1 - 1.6", e.target.value),
+                        placeholder: "Nama Supervisor Avsec HBSCP 1.1 - 1.6",
+                        className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                      }
+                    )
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 2.1 - 2.6" }),
+                  /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                    /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                    /* @__PURE__ */ jsx(
+                      "input",
+                      {
+                        type: "text",
+                        value: (checklistData.supervisorAvsec || {})["HBSCP 2.1 - 2.6"] || "",
+                        onChange: (e) => handleSupervisorChange("HBSCP 2.1 - 2.6", e.target.value),
+                        placeholder: "Nama Supervisor Avsec HBSCP 2.1 - 2.6",
+                        className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                      }
+                    )
+                  ] })
+                ] })
+              ] }) : block.title === "ACCESS CONTROL" || block.title.includes("ACCESS CONTROL") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
+                /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec Monitoring Access E1" }),
+                /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                  /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "text",
+                      value: (checklistData.supervisorAvsec || {})[block.title] || (checklistData.supervisorAvsec || {})["Monitoring Access E1"] || "",
+                      onChange: (e) => {
+                        handleSupervisorChange(block.title, e.target.value);
+                        handleSupervisorChange("Monitoring Access E1", e.target.value);
+                      },
+                      placeholder: "Nama Supervisor Avsec Monitoring Access E1",
+                      className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                    }
+                  )
+                ] })
+              ] }) : /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
+                /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: [
+                  "Supervisor Avsec ",
+                  block.title
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                  /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "text",
+                      value: (checklistData.supervisorAvsec || {})[block.title] || "",
+                      onChange: (e) => handleSupervisorChange(block.title, e.target.value),
+                      placeholder: `Nama Supervisor Avsec ${block.title}`,
+                      className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                    }
+                  )
+                ] })
+              ] })
+            ] })
           ] }, `loc-${bIdx}`);
         } else if (block.type === "group") {
           return /* @__PURE__ */ jsx("div", { className: "space-y-6", children: block.locations.map((loc, lIdx) => /* @__PURE__ */ jsxs("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: [
@@ -6017,17 +6189,89 @@ const TabChecklist = () => {
                 ]
               }
             ),
-            expandedAreas[loc.title] && /* @__PURE__ */ jsx("div", { className: "p-4 space-y-6", children: loc.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
-              /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3", children: cat.items.map((item, iIdx) => {
-                const key = `${loc.title}|${cat.title}|${iIdx}`;
-                const isOperasi = toggles[key] !== false;
-                return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100" : "bg-red-50 border-red-300 hover:bg-red-100"}`, children: [
-                  /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
-                  /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
-                ] }, `gitem-${iIdx}`);
-              }) })
-            ] }, `gcat-${cIdx}`)) })
+            expandedAreas[loc.title] && /* @__PURE__ */ jsxs("div", { className: "p-4 space-y-6", children: [
+              loc.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
+                /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3", children: cat.items.map((item, iIdx) => {
+                  const key = `${loc.title}|${cat.title}|${iIdx}`;
+                  const isOperasi = toggles[key] !== false;
+                  return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100" : "bg-red-50 border-red-300 hover:bg-red-100"}`, children: [
+                    /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
+                    /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
+                  ] }, `gitem-${iIdx}`);
+                }) })
+              ] }, `gcat-${cIdx}`)),
+              loc.title === "HBSCP" || loc.title.includes("HBSCP") && !loc.title.includes("UMROH") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200 space-y-4", children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 1.1 - 1.6" }),
+                  /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                    /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                    /* @__PURE__ */ jsx(
+                      "input",
+                      {
+                        type: "text",
+                        value: (checklistData.supervisorAvsec || {})["HBSCP 1.1 - 1.6"] || "",
+                        onChange: (e) => handleSupervisorChange("HBSCP 1.1 - 1.6", e.target.value),
+                        placeholder: "Nama Supervisor Avsec HBSCP 1.1 - 1.6",
+                        className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                      }
+                    )
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 2.1 - 2.6" }),
+                  /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                    /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                    /* @__PURE__ */ jsx(
+                      "input",
+                      {
+                        type: "text",
+                        value: (checklistData.supervisorAvsec || {})["HBSCP 2.1 - 2.6"] || "",
+                        onChange: (e) => handleSupervisorChange("HBSCP 2.1 - 2.6", e.target.value),
+                        placeholder: "Nama Supervisor Avsec HBSCP 2.1 - 2.6",
+                        className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                      }
+                    )
+                  ] })
+                ] })
+              ] }) : loc.title === "ACCESS CONTROL" || loc.title.includes("ACCESS CONTROL") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
+                /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec Monitoring Access E1" }),
+                /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                  /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "text",
+                      value: (checklistData.supervisorAvsec || {})[loc.title] || (checklistData.supervisorAvsec || {})["Monitoring Access E1"] || "",
+                      onChange: (e) => {
+                        handleSupervisorChange(loc.title, e.target.value);
+                        handleSupervisorChange("Monitoring Access E1", e.target.value);
+                      },
+                      placeholder: "Nama Supervisor Avsec Monitoring Access E1",
+                      className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                    }
+                  )
+                ] })
+              ] }) : /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
+                /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: [
+                  "Supervisor Avsec ",
+                  loc.title
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                  /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "text",
+                      value: (checklistData.supervisorAvsec || {})[loc.title] || "",
+                      onChange: (e) => handleSupervisorChange(loc.title, e.target.value),
+                      placeholder: `Nama Supervisor Avsec ${loc.title}`,
+                      className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                    }
+                  )
+                ] })
+              ] })
+            ] })
           ] }, `gloc-${lIdx}`)) }, `grp-${bIdx}`);
         } else if (block.type === "access_control") {
           return /* @__PURE__ */ jsxs("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: [
@@ -6046,20 +6290,41 @@ const TabChecklist = () => {
                 ]
               }
             ),
-            expandedAreas[block.title] && /* @__PURE__ */ jsx("div", { className: "p-4 space-y-8", children: block.terminals.map((term, tIdx) => /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-              term.title && /* @__PURE__ */ jsx("h3", { className: "text-base font-bold text-slate-800 border-b pb-2", children: term.title }),
-              /* @__PURE__ */ jsx("div", { className: "space-y-6 pl-0 md:pl-4", children: term.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("h4", { className: "text-sm font-bold text-indigo-900 mb-3 bg-indigo-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
-                /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3", children: cat.items.map((item, iIdx) => {
-                  const key = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
-                  const isOperasi = toggles[key] !== false;
-                  return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100" : "bg-red-50 border-red-300 hover:bg-red-100"}`, children: [
-                    /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
-                    /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
-                  ] }, `titem-${iIdx}`);
-                }) })
-              ] }, `tcat-${cIdx}`)) })
-            ] }, `term-${tIdx}`)) })
+            expandedAreas[block.title] && /* @__PURE__ */ jsxs("div", { className: "p-4 space-y-8", children: [
+              block.terminals.map((term, tIdx) => /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+                term.title && /* @__PURE__ */ jsx("h3", { className: "text-base font-bold text-slate-800 border-b pb-2", children: term.title }),
+                /* @__PURE__ */ jsx("div", { className: "space-y-6 pl-0 md:pl-4", children: term.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("h4", { className: "text-sm font-bold text-indigo-900 mb-3 bg-indigo-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
+                  /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3", children: cat.items.map((item, iIdx) => {
+                    const key = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
+                    const isOperasi = toggles[key] !== false;
+                    return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100" : "bg-red-50 border-red-300 hover:bg-red-100"}`, children: [
+                      /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
+                      /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
+                    ] }, `titem-${iIdx}`);
+                  }) })
+                ] }, `tcat-${cIdx}`)) })
+              ] }, `term-${tIdx}`)),
+              /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
+                /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec Monitoring Access E1" }),
+                /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                  /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "text",
+                      value: (checklistData.supervisorAvsec || {})[block.title] || (checklistData.supervisorAvsec || {})["Monitoring Access E1"] || "",
+                      onChange: (e) => {
+                        handleSupervisorChange(block.title, e.target.value);
+                        handleSupervisorChange("Monitoring Access E1", e.target.value);
+                      },
+                      placeholder: "Nama Supervisor Avsec Monitoring Access E1",
+                      className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                    }
+                  )
+                ] })
+              ] })
+            ] })
           ] }, `ac-${bIdx}`);
         }
         return null;

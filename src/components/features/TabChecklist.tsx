@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, CheckSquare, MapPin, Check, X, ChevronUp, ChevronDown, Cpu, Share2, CheckCircle, FileText } from 'lucide-react';
+import { Clock, Calendar, CheckSquare, MapPin, Check, X, ChevronUp, ChevronDown, Cpu, Share2, CheckCircle, FileText, User } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { generateWA_Checklist } from '../../lib/utils/waGenerator';
@@ -13,7 +13,18 @@ export const TabChecklist: React.FC = () => {
     tanggal: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
     waktuMulai: '',
     waktuSelesai: '',
+    supervisorAvsec: {} as Record<string, string>,
   });
+
+  const handleSupervisorChange = (locTitle: string, value: string) => {
+    setChecklistData(prev => ({
+      ...prev,
+      supervisorAvsec: {
+        ...(prev.supervisorAvsec || {}),
+        [locTitle]: value
+      }
+    }));
+  };
 
   const [toggles, setToggles] = useState<Record<string, boolean>>({});
   const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
@@ -152,6 +163,75 @@ export const TabChecklist: React.FC = () => {
                           </div>
                         </div>
                       ))}
+                      {block.title === 'HBSCP' || (block.title.includes('HBSCP') && !block.title.includes('UMROH')) ? (
+                        <div className="pt-4 border-t border-slate-200 space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                              Supervisor Avsec HBSCP 1.1 - 1.6
+                            </label>
+                            <div className="relative">
+                              <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                              <input
+                                type="text"
+                                value={(checklistData.supervisorAvsec || {})['HBSCP 1.1 - 1.6'] || ''}
+                                onChange={(e) => handleSupervisorChange('HBSCP 1.1 - 1.6', e.target.value)}
+                                placeholder="Nama Supervisor Avsec HBSCP 1.1 - 1.6"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                              Supervisor Avsec HBSCP 2.1 - 2.6
+                            </label>
+                            <div className="relative">
+                              <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                              <input
+                                type="text"
+                                value={(checklistData.supervisorAvsec || {})['HBSCP 2.1 - 2.6'] || ''}
+                                onChange={(e) => handleSupervisorChange('HBSCP 2.1 - 2.6', e.target.value)}
+                                placeholder="Nama Supervisor Avsec HBSCP 2.1 - 2.6"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : block.title === 'ACCESS CONTROL' || block.title.includes('ACCESS CONTROL') ? (
+                        <div className="pt-4 border-t border-slate-200">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
+                            Supervisor Avsec Monitoring Access E1
+                          </label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <input
+                              type="text"
+                              value={(checklistData.supervisorAvsec || {})[block.title] || (checklistData.supervisorAvsec || {})['Monitoring Access E1'] || ''}
+                              onChange={(e) => {
+                                handleSupervisorChange(block.title, e.target.value);
+                                handleSupervisorChange('Monitoring Access E1', e.target.value);
+                              }}
+                              placeholder="Nama Supervisor Avsec Monitoring Access E1"
+                              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="pt-4 border-t border-slate-200">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
+                            Supervisor Avsec {block.title}
+                          </label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <input
+                              type="text"
+                              value={(checklistData.supervisorAvsec || {})[block.title] || ''}
+                              onChange={(e) => handleSupervisorChange(block.title, e.target.value)}
+                              placeholder={`Nama Supervisor Avsec ${block.title}`}
+                              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -191,6 +271,75 @@ export const TabChecklist: React.FC = () => {
                               </div>
                             </div>
                           ))}
+                          {loc.title === 'HBSCP' || (loc.title.includes('HBSCP') && !loc.title.includes('UMROH')) ? (
+                            <div className="pt-4 border-t border-slate-200 space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                  Supervisor Avsec HBSCP 1.1 - 1.6
+                                </label>
+                                <div className="relative">
+                                  <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                                  <input
+                                    type="text"
+                                    value={(checklistData.supervisorAvsec || {})['HBSCP 1.1 - 1.6'] || ''}
+                                    onChange={(e) => handleSupervisorChange('HBSCP 1.1 - 1.6', e.target.value)}
+                                    placeholder="Nama Supervisor Avsec HBSCP 1.1 - 1.6"
+                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                  Supervisor Avsec HBSCP 2.1 - 2.6
+                                </label>
+                                <div className="relative">
+                                  <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                                  <input
+                                    type="text"
+                                    value={(checklistData.supervisorAvsec || {})['HBSCP 2.1 - 2.6'] || ''}
+                                    onChange={(e) => handleSupervisorChange('HBSCP 2.1 - 2.6', e.target.value)}
+                                    placeholder="Nama Supervisor Avsec HBSCP 2.1 - 2.6"
+                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ) : loc.title === 'ACCESS CONTROL' || loc.title.includes('ACCESS CONTROL') ? (
+                            <div className="pt-4 border-t border-slate-200">
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Supervisor Avsec Monitoring Access E1
+                              </label>
+                              <div className="relative">
+                                <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                                <input
+                                  type="text"
+                                  value={(checklistData.supervisorAvsec || {})[loc.title] || (checklistData.supervisorAvsec || {})['Monitoring Access E1'] || ''}
+                                  onChange={(e) => {
+                                    handleSupervisorChange(loc.title, e.target.value);
+                                    handleSupervisorChange('Monitoring Access E1', e.target.value);
+                                  }}
+                                  placeholder="Nama Supervisor Avsec Monitoring Access E1"
+                                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="pt-4 border-t border-slate-200">
+                              <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Supervisor Avsec {loc.title}
+                              </label>
+                              <div className="relative">
+                                <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                                <input
+                                  type="text"
+                                  value={(checklistData.supervisorAvsec || {})[loc.title] || ''}
+                                  onChange={(e) => handleSupervisorChange(loc.title, e.target.value)}
+                                  placeholder={`Nama Supervisor Avsec ${loc.title}`}
+                                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -237,6 +386,24 @@ export const TabChecklist: React.FC = () => {
                           </div>
                         </div>
                       ))}
+                      <div className="pt-4 border-t border-slate-200">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Supervisor Avsec Monitoring Access E1
+                        </label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                          <input
+                            type="text"
+                            value={(checklistData.supervisorAvsec || {})[block.title] || (checklistData.supervisorAvsec || {})['Monitoring Access E1'] || ''}
+                            onChange={(e) => {
+                              handleSupervisorChange(block.title, e.target.value);
+                              handleSupervisorChange('Monitoring Access E1', e.target.value);
+                            }}
+                            placeholder="Nama Supervisor Avsec Monitoring Access E1"
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

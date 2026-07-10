@@ -78,15 +78,27 @@ export const TabStoring: React.FC = () => {
       if (newPeralatan.includes(equip)) {
         newPeralatan = newPeralatan.filter(e => e !== equip);
       } else {
-        if (equip === 'Access Control') {
-          newPeralatan = ['Access Control'];
-        } else if (!newPeralatan.includes('Access Control')) {
+        if (equip === 'Access Control' || equip.toLowerCase() === 'mirroring x-ray') {
+          newPeralatan = [equip];
+        } else if (!newPeralatan.some(e => e === 'Access Control' || e.toLowerCase() === 'mirroring x-ray')) {
           newPeralatan.push(equip);
         }
       }
       
+      const isACChecked = newPeralatan.includes('Access Control');
+      const isMirroringChecked = newPeralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
+      const newShowSupervisor = isMirroringChecked ? false : isACChecked ? false : true;
+
       // Reset lokasi & nomor jika kombinasi peralatan berubah drastis
-      return { ...prev, peralatan: newPeralatan, lokasi: '', acLokasi: [], acNomor: {}, nomor: '' };
+      return { 
+        ...prev, 
+        peralatan: newPeralatan, 
+        lokasi: '', 
+        acLokasi: [], 
+        acNomor: {}, 
+        nomor: '',
+        supervisorAvsec: newShowSupervisor ? prev.supervisorAvsec : ''
+      };
     });
   };
 
@@ -239,8 +251,9 @@ export const TabStoring: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {storingEquipments.map(equip => {
                 const isACChecked = storingData.peralatan.includes('Access Control');
+                const isMirroringChecked = storingData.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
                 const isChecked = storingData.peralatan.includes(equip);
-                const isDisabled = isACChecked && equip !== 'Access Control';
+                const isDisabled = (isACChecked && equip !== 'Access Control') || (isMirroringChecked && equip.toLowerCase() !== 'mirroring x-ray');
 
                 return (
                   <label 
@@ -274,6 +287,8 @@ export const TabStoring: React.FC = () => {
               {(() => {
                 const locOpts = storingData.peralatan.includes('Access Control')
                   ? getGeneralLokasiOptions('Access Control')
+                  : storingData.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray')
+                  ? getGeneralLokasiOptions('Mirroring X-Ray')
                   : getStoringValidLocations(storingData.peralatan, storingLocAc, storingLocDefault);
 
                 if (locOpts.length === 0) {
@@ -309,7 +324,17 @@ export const TabStoring: React.FC = () => {
                               } else if (exists) {
                                 delete newNomor[loc];
                               }
-                              return { ...prev, acLokasi: newLocs, acNomor: newNomor };
+                              const isACChecked = prev.peralatan.includes('Access Control');
+                              const isMirroringChecked = prev.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
+                              const hasRuangMonitoringE1 = newLocs.some(l => l.trim().toLowerCase() === 'ruang monitoring e1');
+                              const newShowSupervisor = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : true;
+
+                              return { 
+                                ...prev, 
+                                acLokasi: newLocs, 
+                                acNomor: newNomor,
+                                supervisorAvsec: newShowSupervisor ? prev.supervisorAvsec : ''
+                              };
                             });
                           }}
                           className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 flex-shrink-0"
@@ -351,13 +376,30 @@ export const TabStoring: React.FC = () => {
             </div>
           </div>
 
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Supervisor Avsec</label>
-            <div className="relative">
-              <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="text" name="supervisorAvsec" value={storingData.supervisorAvsec} onChange={handleStoringChange} placeholder="Nama Supervisor Avsec" className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" />
-            </div>
-          </div>
+          {(() => {
+            const isACChecked = storingData.peralatan.includes('Access Control');
+            const isMirroringChecked = storingData.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
+            const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
+              loc => loc.trim().toLowerCase() === 'ruang monitoring e1'
+            );
+            const showSupervisorAvsec = isMirroringChecked
+              ? false
+              : isACChecked
+              ? hasRuangMonitoringE1
+              : true;
+
+            if (!showSupervisorAvsec) return null;
+
+            return (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Supervisor Avsec</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                  <input type="text" name="supervisorAvsec" value={storingData.supervisorAvsec} onChange={handleStoringChange} placeholder="Nama Supervisor Avsec" className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" />
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
