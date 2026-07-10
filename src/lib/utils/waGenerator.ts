@@ -198,7 +198,8 @@ export const generateWA_Storing = (storingData: any) => {
 Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}
 Peralatan : ${equipString}
 Lokasi : ${locString}
-Hasil : ${storingData.hasil}`;
+Hasil : ${storingData.hasil}
+Supervisor Avsec : ${storingData.supervisorAvsec || '-'}`;
 };
 
 export const generateWA_Checklist = (checklistData: any, checklistDataMaster: any[], toggles: any) => {

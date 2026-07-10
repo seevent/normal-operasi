@@ -79,7 +79,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-normal text-slate-800 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Camera className="w-5 h-5 text-blue-600" /> Lampiran Foto
         </h2>
         <span className="text-xs text-slate-500 font-medium flex items-center gap-1">

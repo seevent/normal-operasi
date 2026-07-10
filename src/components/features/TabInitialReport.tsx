@@ -433,7 +433,7 @@ export const TabInitialReport: React.FC = () => {
   const renderPhotoSection = () => (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <h2 className="text-lg font-normal text-slate-800 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Camera className="w-5 h-5 text-blue-600" /> Lampiran Foto
         </h2>
         <div className="flex flex-col items-end gap-1">

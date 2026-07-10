@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Hash, AlertCircle, Share2, CheckCircle, FileText } from 'lucide-react';
+import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User } from 'lucide-react';
 import { MonitorSearchIcon } from '../shared/MonitorSearchIcon';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
-import { getStoringValidLocations, getStoringValidNumbers, getGeneralLokasiOptions, getAcNomorOptions } from '../../lib/utils/locationRules';
+import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
@@ -26,7 +26,8 @@ export const TabStoring: React.FC = () => {
     acLokasi: [] as string[],
     acNomor: {} as Record<string, string>,
     nomor: '',
-    hasil: 'Normal Operasi'
+    hasil: 'Normal Operasi',
+    supervisorAvsec: ''
   });
 
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -194,7 +195,7 @@ export const TabStoring: React.FC = () => {
       waktu: waktuFull,
       lokasi: lokasiFull,
       peralatan: alatFull,
-      uraian: `Kegiatan Storing : ${alatFull}`,
+      uraian: `Kegiatan Storing : ${alatFull}${storingData.supervisorAvsec ? `\nSupervisor Avsec : ${storingData.supervisorAvsec}` : ''}`,
       tindakLanjut: '-',
       status: storingData.hasil || 'Normal Operasi',
       imageFile: generatedCollageFile
@@ -204,10 +205,6 @@ export const TabStoring: React.FC = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     });
-
-    if (generatedCollageUrl) {
-      // Optional: Store to global context if needed
-    }
   };
 
   return (
@@ -351,6 +348,14 @@ export const TabStoring: React.FC = () => {
             <div className="relative">
               <AlertCircle className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
               <input type="text" name="hasil" required value={storingData.hasil} onChange={handleStoringChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" />
+            </div>
+          </div>
+
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Supervisor Avsec</label>
+            <div className="relative">
+              <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+              <input type="text" name="supervisorAvsec" value={storingData.supervisorAvsec} onChange={handleStoringChange} placeholder="Nama Supervisor Avsec" className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" />
             </div>
           </div>
         </div>
