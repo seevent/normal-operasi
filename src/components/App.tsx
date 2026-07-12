@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { 
   Wrench, Users, Megaphone, CheckSquare, Settings, AlertTriangle, 
-  RefreshCw, Check, Database, CheckCircle, FileText, MoreHorizontal, Briefcase, FileWarning
+  RefreshCw, Check, Database, CheckCircle, FileText, MoreHorizontal, Briefcase, FileWarning, Plane
 } from 'lucide-react';
 import { MonitorSearchIcon } from './shared/MonitorSearchIcon';
+import { KaabaIcon } from './shared/KaabaIcon';
 
 import { TabInitialReport } from './features/TabInitialReport';
 import { TabKehadiran } from './features/TabKehadiran';
@@ -16,6 +17,7 @@ import { TabBriefing } from './features/TabBriefing';
 import { TabData } from './features/TabData';
 import { TabKegiatan } from './features/TabKegiatan';
 import { TabShiftReport } from './features/TabShiftReport';
+import { TabTUmrah } from './features/TabTUmrah';
 import { useAppStore } from '../store/useAppStore';
 import { useMasterDataStore } from '../store/useMasterDataStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -79,6 +81,7 @@ export default function App() {
                activeTab === 'tip' ? <AlertTriangle className="text-white w-7 h-7" /> : 
                activeTab === 'data' ? <Database className="text-white w-7 h-7" /> : 
                activeTab === 'kegiatan' ? <Briefcase className="text-white w-7 h-7" /> : 
+               activeTab === 'umrah' ? <KaabaIcon className="text-white w-7 h-7" /> : 
                <Settings className="text-white w-7 h-7" />}
               <div>
                 <h1 className="text-xl font-bold text-white">Laporan SSES T2</h1>
@@ -125,13 +128,13 @@ export default function App() {
             <Settings className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">Kalibrasi</span>
           </button>
           <div className="relative flex">
-            <button onClick={() => setShowMoreMenu(!showMoreMenu)} className={`w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${(activeTab === 'kegiatan' || activeTab === 'tip' || activeTab === 'data' || activeTab === 'report' || showMoreMenu) ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+            <button onClick={() => setShowMoreMenu(!showMoreMenu)} className={`w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${(activeTab === 'kegiatan' || activeTab === 'tip' || activeTab === 'data' || activeTab === 'report' || activeTab === 'umrah' || showMoreMenu) ? 'shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
               <MoreHorizontal className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="truncate w-full text-center">More</span>
             </button>
             {showMoreMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)}></div>
-                <div className="absolute top-full right-0 mt-1 w-36 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                <div className="absolute top-full right-0 mt-1 w-40 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
                   <button onClick={() => switchTab('kegiatan')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'kegiatan' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
                     <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" /> Kegiatan
                   </button>
@@ -141,8 +144,11 @@ export default function App() {
                   <button onClick={() => switchTab('tip')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'tip' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
                     <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" /> TIP
                   </button>
-                  <button onClick={() => switchTab('data')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === 'data' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                  <button onClick={() => switchTab('data')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === 'data' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
                     <Database className="w-4 h-4 sm:w-5 sm:h-5" /> Data
+                  </button>
+                  <button onClick={() => switchTab('umrah')} className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === 'umrah' ? 'text-blue-700 font-bold bg-blue-50' : 'text-slate-700 font-medium'}`}>
+                    <KaabaIcon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" /> T Umrah
                   </button>
                 </div>
               </>
@@ -164,6 +170,7 @@ export default function App() {
         {activeTab === 'tip' && <TabTip />}
         {activeTab === 'data' && <TabData />}
         {activeTab === 'kegiatan' && <TabKegiatan />}
+        {activeTab === 'umrah' && <TabTUmrah />}
 
       </div>
     </div>

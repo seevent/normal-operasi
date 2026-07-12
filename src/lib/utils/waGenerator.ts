@@ -501,3 +501,48 @@ Demikian laporan kronologis dan tindak lanjut kami sampaikan
 Terimakasih atas perhatiannya.`;
 };
 
+export const generateWA_TUmrah = (data: any, formatMode: 'original' | 'laporan' = 'laporan'): string => {
+  if (formatMode === 'original' && data.rawText && typeof data.rawText === 'string' && data.rawText.trim().length > 0) {
+    return data.rawText;
+  }
+
+  let result = `*${data.headerTitle || 'Rencana Penerbangan Umroh'}*\n`;
+  if (data.dateText) result += `*${data.dateText}*\n`;
+  if (data.airportText) result += `*${data.airportText}*\n`;
+  if (data.shift) result += `Shift : ${data.shift}\n`;
+  if (data.supervisorAvsec) result += `Supervisor Avsec : ${data.supervisorAvsec}\n`;
+  result += `\n*DEPARTURE :*\n`;
+
+  const deps = data.departures || [];
+  if (deps.length === 0) {
+    result += `- Tidak ada jadwal keberangkatan umroh -\n`;
+  } else {
+    deps.forEach((f: any, idx: number) => {
+      const statusBadge = f.status === 'Selesai' ? ' [✓ Selesai]' : f.status === 'Proses' ? ' [⏳ Proses]' : '';
+      const actualText = f.actualPaxUmroh && f.actualPaxUmroh.trim() !== '' ? ` // AKTUAL PAX : ${f.actualPaxUmroh}` : '';
+      const noteText = f.catatan && f.catatan.trim() !== '' ? ` (${f.catatan})` : '';
+      result += `${idx + 1}. ${f.flightCode} // ${f.route} // ${f.time} // EST TOTAL FLIGHT : ${f.estTotalFlight} // EST PAX UMROH : ${f.estPaxUmroh}${actualText}${statusBadge}${noteText}\n`;
+    });
+  }
+
+  result += `\n*ARRIVAL :*\n`;
+  const arrs = data.arrivals || [];
+  if (arrs.length === 0) {
+    result += `- Tidak ada jadwal kedatangan umroh -\n`;
+  } else {
+    arrs.forEach((f: any, idx: number) => {
+      const statusBadge = f.status === 'Selesai' ? ' [✓ Selesai]' : f.status === 'Proses' ? ' [⏳ Proses]' : '';
+      const actualText = f.actualPaxUmroh && f.actualPaxUmroh.trim() !== '' ? ` // AKTUAL PAX : ${f.actualPaxUmroh}` : '';
+      const noteText = f.catatan && f.catatan.trim() !== '' ? ` (${f.catatan})` : '';
+      result += `${idx + 1}. ${f.flightCode} // ${f.route} // ${f.time} // EST TOTAL FLIGHT : ${f.estTotalFlight} // EST PAX UMROH : ${f.estPaxUmroh}${actualText}${statusBadge}${noteText}\n`;
+    });
+  }
+
+  if (data.catatanUmum && data.catatanUmum.trim() !== '') {
+    result += `\n*Catatan :*\n${data.catatanUmum}\n`;
+  }
+
+  result += `\n*${data.footerText ? data.footerText.replace(/\*/g, '') : 'Airport Operation Control Center'}*`;
+  return result;
+};
+

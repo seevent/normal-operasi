@@ -38,7 +38,7 @@ function RootDocument({ children }) {
     ] })
   ] });
 }
-const $$splitComponentImporter = () => import("./index-DsvY72Ao.js");
+const $$splitComponentImporter = () => import("./index-OizNfsFf.js");
 const Route = createFileRoute("/")({
   component: lazyRouteComponent($$splitComponentImporter, "component")
 });
