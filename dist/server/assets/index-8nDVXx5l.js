@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import React, { useState, useRef, useEffect } from "react";
-import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, LayoutGrid, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, List, PlaneTakeoff, PlaneLanding, Search, Sliders, MoreHorizontal } from "lucide-react";
+import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, LayoutGrid, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, List, PlaneTakeoff, PlaneLanding, Search, Image as Image$1, Upload, Sliders, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -1131,6 +1131,30 @@ const formatTanggalIndo = (dateStr) => {
   const d = new Date(dateStr);
   return `${days[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
+const checkNeedsStoringSupervisorAvsec = (peralatan, acLokasi, acNomor) => {
+  if (!peralatan || !acLokasi) return false;
+  const isACChecked = peralatan.includes("Access Control");
+  const isMirroringChecked = peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
+  if (isMirroringChecked) return false;
+  if (isACChecked) {
+    return acLokasi.some((l) => l.trim().toLowerCase() === "ruang monitoring e1");
+  }
+  return acLokasi.some((l) => {
+    const norm = l.trim().toUpperCase();
+    if (norm === "HBSCP" || norm.includes("HBSCP") && !norm.includes("UMRAH") && !norm.includes("UMROH")) {
+      const selectedNomor = (acNomor || {})[l] || (getAcNomorOptions(l)[0] || "");
+      if (selectedNomor.trim() === "2.7-2.8" || selectedNomor.trim() === "2.7 - 2.8") {
+        return false;
+      }
+      return true;
+    }
+    const exactList = ["PSCP D", "PSCP E", "PSCP F", "PSCP UMRAH", "PSCP UMROH", "SSCP E", "SSCP F"];
+    if (exactList.includes(norm)) return true;
+    if (norm.includes("PSCP") && (norm.includes(" D") || norm.includes(" E") || norm.includes(" F") || norm.includes("UMRAH") || norm.includes("UMROH"))) return true;
+    if (norm.includes("SSCP") && (norm.includes(" E") || norm.includes(" F"))) return true;
+    return false;
+  });
+};
 const generateWA_Perbaikan = (formData, isVerifikasiETD) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
   const dateParts = formData.tanggal ? formData.tanggal.split("-") : ["", "", ""];
@@ -1296,21 +1320,7 @@ const generateWA_Storing = (storingData) => {
       locString = storingData.lokasi;
     }
   }
-  const isACChecked = (storingData.peralatan || []).includes("Access Control");
-  const isMirroringChecked = (storingData.peralatan || []).some((e) => e.toLowerCase() === "mirroring x-ray");
-  const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
-    (loc) => loc.trim().toLowerCase() === "ruang monitoring e1"
-  );
-  const hasGeneralSupLoc = (storingData.acLokasi || []).some((l) => {
-    const norm = l.trim().toUpperCase();
-    const exactList = ["PSCP D", "PSCP E", "PSCP F", "PSCP UMRAH", "PSCP UMROH", "SSCP E", "SSCP F", "HBSCP"];
-    if (exactList.includes(norm)) return true;
-    if (norm.includes("PSCP") && (norm.includes(" D") || norm.includes(" E") || norm.includes(" F") || norm.includes("UMRAH") || norm.includes("UMROH"))) return true;
-    if (norm.includes("SSCP") && (norm.includes(" E") || norm.includes(" F"))) return true;
-    if (norm === "HBSCP" || norm.includes("HBSCP") && !norm.includes("UMRAH") && !norm.includes("UMROH")) return true;
-    return false;
-  });
-  const showSupervisorAvsec = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : hasGeneralSupLoc;
+  const showSupervisorAvsec = checkNeedsStoringSupervisorAvsec(storingData.peralatan || [], storingData.acLokasi || [], storingData.acNomor || {});
   const supervisorAvsecLine = showSupervisorAvsec ? `
 Supervisor Avsec : ${storingData.supervisorAvsec || "-"}` : "";
   return `*KEGIATAN STORING PERALATAN SSES T2*
@@ -4437,9 +4447,9 @@ const TabStoring = () => {
           newPeralatan.push(equip);
         }
       }
-      const isACChecked = newPeralatan.includes("Access Control");
-      const isMirroringChecked = newPeralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
-      const newShowSupervisor = isMirroringChecked ? false : isACChecked ? false : true;
+      newPeralatan.includes("Access Control");
+      newPeralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
+      const newShowSupervisor = checkNeedsStoringSupervisorAvsec(newPeralatan, [], {});
       return {
         ...prev,
         peralatan: newPeralatan,
@@ -4640,19 +4650,7 @@ Supervisor Avsec : ${storingData.supervisorAvsec}` : ""}`,
                               } else if (exists) {
                                 delete newNomor[loc];
                               }
-                              const isACChecked = prev.peralatan.includes("Access Control");
-                              const isMirroringChecked = prev.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
-                              const hasRuangMonitoringE1 = newLocs.some((l) => l.trim().toLowerCase() === "ruang monitoring e1");
-                              const hasGeneralSupLoc = newLocs.some((l) => {
-                                const norm = l.trim().toUpperCase();
-                                const exactList = ["PSCP D", "PSCP E", "PSCP F", "PSCP UMRAH", "PSCP UMROH", "SSCP E", "SSCP F", "HBSCP"];
-                                if (exactList.includes(norm)) return true;
-                                if (norm.includes("PSCP") && (norm.includes(" D") || norm.includes(" E") || norm.includes(" F") || norm.includes("UMRAH") || norm.includes("UMROH"))) return true;
-                                if (norm.includes("SSCP") && (norm.includes(" E") || norm.includes(" F"))) return true;
-                                if (norm === "HBSCP" || norm.includes("HBSCP") && !norm.includes("UMRAH") && !norm.includes("UMROH")) return true;
-                                return false;
-                              });
-                              const newShowSupervisor = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : hasGeneralSupLoc;
+                              const newShowSupervisor = checkNeedsStoringSupervisorAvsec(prev.peralatan, newLocs, newNomor);
                               return {
                                 ...prev,
                                 acLokasi: newLocs,
@@ -4672,10 +4670,15 @@ Supervisor Avsec : ${storingData.supervisorAvsec}` : ""}`,
                         value: (storingData.acNomor || {})[loc] || nomorOpts[0],
                         onChange: (e) => {
                           const val = e.target.value;
-                          setStoringData((prev) => ({
-                            ...prev,
-                            acNomor: { ...prev.acNomor || {}, [loc]: val }
-                          }));
+                          setStoringData((prev) => {
+                            const newNomor = { ...prev.acNomor || {}, [loc]: val };
+                            const newShowSup = checkNeedsStoringSupervisorAvsec(prev.peralatan, prev.acLokasi, newNomor);
+                            return {
+                              ...prev,
+                              acNomor: newNomor,
+                              supervisorAvsec: newShowSup ? prev.supervisorAvsec : ""
+                            };
+                          });
                         },
                         className: "text-xs py-1 px-1 bg-white border border-blue-300 rounded text-blue-800 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 flex-shrink-0 cursor-pointer shadow-sm",
                         children: nomorOpts.map((num) => /* @__PURE__ */ jsx("option", { value: num, children: num }, num))
@@ -4696,21 +4699,12 @@ Supervisor Avsec : ${storingData.supervisorAvsec}` : ""}`,
           ] })
         ] }),
         (() => {
-          const isACChecked = storingData.peralatan.includes("Access Control");
-          const isMirroringChecked = storingData.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
-          const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
+          storingData.peralatan.includes("Access Control");
+          storingData.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
+          (storingData.acLokasi || []).some(
             (loc) => loc.trim().toLowerCase() === "ruang monitoring e1"
           );
-          const hasGeneralSupLoc = (storingData.acLokasi || []).some((l) => {
-            const norm = l.trim().toUpperCase();
-            const exactList = ["PSCP D", "PSCP E", "PSCP F", "PSCP UMRAH", "PSCP UMROH", "SSCP E", "SSCP F", "HBSCP"];
-            if (exactList.includes(norm)) return true;
-            if (norm.includes("PSCP") && (norm.includes(" D") || norm.includes(" E") || norm.includes(" F") || norm.includes("UMRAH") || norm.includes("UMROH"))) return true;
-            if (norm.includes("SSCP") && (norm.includes(" E") || norm.includes(" F"))) return true;
-            if (norm === "HBSCP" || norm.includes("HBSCP") && !norm.includes("UMRAH") && !norm.includes("UMROH")) return true;
-            return false;
-          });
-          const showSupervisorAvsec = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : hasGeneralSupLoc;
+          const showSupervisorAvsec = checkNeedsStoringSupervisorAvsec(storingData.peralatan, storingData.acLokasi, storingData.acNomor);
           if (!showSupervisorAvsec) return null;
           return /* @__PURE__ */ jsxs("div", { className: "col-span-2", children: [
             /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec" }),
@@ -9035,10 +9029,56 @@ const SAMPLE_UMRAH_SCHEDULE = `*Rencana Penerbangan Umrah*
 19. WY849 // MCT // 1255 // EST TOTAL FLIGHT : 296 // EST PAX UMROH : 46
 
 *Airport Operation Control Center*`;
+const PREOPS_UMRAH_SCHEDULE_13_JULI = `*RENCANA PENERBANGAN UMROH (Pre-Ops)*
+*SENIN, 13 JULI 2026*
+*Bandara Internasional Soekarno-Hatta (CGK)*
+
+*DEPARTURE :*
+1. EY473 // (CGK - AUH) // 00:05 // EST TOTAL FLIGHT : 298 // EST PAX UMROH : 37
+2. SV827 // (CGK - JED) // 00:40 // EST TOTAL FLIGHT : 379 // EST PAX UMROH : 320
+3. EK359 // (CGK - DXB) // 00:45 // EST TOTAL FLIGHT : 346 // EST PAX UMROH : 42
+4. QR955 // (CGK - DOH) // 00:55 // EST TOTAL FLIGHT : 251 // EST PAX UMROH : 45
+5. QR959 // (CGK - DOH) // 09:00 // EST TOTAL FLIGHT : 254 // EST PAX UMROH : 122
+6. SV817 // (CGK - JED) // 09:10 // EST TOTAL FLIGHT : 329 // EST PAX UMROH : 210
+7. TR275 // (CGK - SIN) // 09:35 // EST TOTAL FLIGHT : 173 // EST PAX UMROH : 0
+8. TR277 // (CGK - SIN) // 11:55 // EST TOTAL FLIGHT : 164 // EST PAX UMROH : 0
+9. SV821 // (CGK - JED) // 12:00 // EST TOTAL FLIGHT : 473 // EST PAX UMROH : 258
+10. TR309 // (CGK - SIN) // 14:15 // EST TOTAL FLIGHT : 148 // EST PAX UMROH : 0
+11. WY850 // (CGK - MCT) // 14:25 // EST TOTAL FLIGHT : 277 // EST PAX UMROH : 41
+12. SV819 // (CGK - JED) // 17:30 // EST TOTAL FLIGHT : 230 // EST PAX UMROH : 35
+13. EK357 // (CGK - DXB) // 17:40 // EST TOTAL FLIGHT : 365 // EST PAX UMROH : 0
+14. QR957 // (CGK - DOH) // 18:30 // EST TOTAL FLIGHT : 256 // EST PAX UMROH : 42
+15. HU702 // (CGK - HAK) // 19:15 // EST TOTAL FLIGHT : 87 // EST PAX UMROH : 0
+16. TR279 // (CGK - SIN) // 20:00 // EST TOTAL FLIGHT : 165 // EST PAX UMROH : 0
+17. TK057 // (CGK - IST) // 21:00 // EST TOTAL FLIGHT : 330 // EST PAX UMROH : 99
+18. TR273 // (CGK - SIN) // 22:15 // EST TOTAL FLIGHT : 154 // EST PAX UMROH : 0
+
+*ARRIVAL :*
+1. QR958 // (DOH - CGK) // 07:30 // EST TOTAL FLIGHT : 286 // EST PAX UMROH : 90
+2. SV816 // (JED - CGK) // 07:35 // EST TOTAL FLIGHT : 411 // EST PAX UMROH : 200
+3. TR274 // (SIN - CGK) // 08:45 // EST TOTAL FLIGHT : 195 // EST PAX UMROH : 0
+4. TR276 // (SIN - CGK) // 10:55 // EST TOTAL FLIGHT : 191 // EST PAX UMROH : 0
+5. SV820 // (MED - CGK) // 11:35 // EST TOTAL FLIGHT : 486 // EST PAX UMROH : 304
+6. WY849 // (MCT - CGK) // 12:55 // EST TOTAL FLIGHT : 290 // EST PAX UMROH : 20
+7. TR308 // (SIN - CGK) // 13:30 // EST TOTAL FLIGHT : 187 // EST PAX UMROH : 0
+8. QR956 // (DOH - CGK) // 15:35 // EST TOTAL FLIGHT : 290 // EST PAX UMROH : 128
+9. EK356 // (DXB - CGK) // 15:40 // EST TOTAL FLIGHT : 418 // EST PAX UMROH : 48
+10. SV818 // (JED - CGK) // 16:00 // EST TOTAL FLIGHT : 406 // EST PAX UMROH : 121
+11. TK056 // (IST - CGK) // 17:35 // EST TOTAL FLIGHT : 330 // EST PAX UMROH : 99
+12. HU701 // (HAK - CGK) // 18:10 // EST TOTAL FLIGHT : 172 // EST PAX UMROH : 0
+13. TR278 // (SIN - CGK) // 19:15 // EST TOTAL FLIGHT : 188 // EST PAX UMROH : 0
+14. EY472 // (AUH - CGK) // 20:35 // EST TOTAL FLIGHT : 301 // EST PAX UMROH : 305
+15. TR272 // (SIN - CGK) // 21:25 // EST TOTAL FLIGHT : 186 // EST PAX UMROH : 0
+16. QR954 // (DOH - CGK) // 21:40 // EST TOTAL FLIGHT : 285 // EST PAX UMROH : 85
+17. EK358 // (DXB - CGK) // 22:25 // EST TOTAL FLIGHT : 352 // EST PAX UMROH : 54
+18. SV826 // (JED - CGK) // 22:45 // EST TOTAL FLIGHT : 445 // EST PAX UMROH : 334
+
+*Airport Operation Control Center*`;
 const TabTUmrah = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const captureRef = useRef(null);
   const [rawScheduleText, setRawScheduleText] = useState("");
+  const [uploadedScheduleImage, setUploadedScheduleImage] = useState(null);
   const [isEditingRaw, setIsEditingRaw] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState(null);
@@ -9741,23 +9781,110 @@ Berikut terlampir gambar Timeline & Daftar Peringatan Kepadatan Penerbangan Umra
               " sebelumnya)."
             ] })
           ] }),
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: handleLoadSample,
-              className: "self-start sm:self-center bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all flex-shrink-0 shadow-sm",
-              children: "Muat Contoh Jadwal"
-            }
-          )
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2 self-start sm:self-center", children: [
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: handleLoadSample,
+                className: "bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm flex items-center gap-1.5",
+                children: [
+                  /* @__PURE__ */ jsx(FileText, { className: "w-3.5 h-3.5" }),
+                  " Muat Contoh (11 Juli)"
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => {
+                  setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                  parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                  setIsEditingRaw(false);
+                },
+                className: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-3.5 py-1.5 rounded-lg text-xs transition-all shadow-sm flex items-center gap-1.5",
+                children: [
+                  /* @__PURE__ */ jsx(Image$1, { className: "w-4 h-4" }),
+                  " Muat Jadwal Pre-Ops Gambar (13 Juli - 36 Flight)"
+                ]
+              }
+            )
+          ] })
         ] }),
+        /* @__PURE__ */ jsx("div", { className: "border-2 border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50/70 hover:bg-slate-50 transition-colors", children: !uploadedScheduleImage ? /* @__PURE__ */ jsxs("div", { className: "text-center py-4 space-y-2", children: [
+          /* @__PURE__ */ jsx("div", { className: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto", children: /* @__PURE__ */ jsx(Upload, { className: "w-6 h-6" }) }),
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("p", { className: "text-sm font-bold text-slate-700", children: "Unggah Gambar / Screenshot Jadwal Penerbangan Umroh" }),
+            /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: "Format PNG, JPG, atau JPEG. AI Sistem akan memetakan dan mengekstrak jadwal ke dalam timeline." })
+          ] }),
+          /* @__PURE__ */ jsxs("label", { className: "inline-block mt-2 px-4 py-2 bg-white border border-slate-300 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-bold text-xs rounded-xl cursor-pointer shadow-sm transition-all", children: [
+            "Pilih Gambar Jadwal",
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "file",
+                accept: "image/*",
+                onChange: (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      if (event.target?.result) {
+                        setUploadedScheduleImage(event.target.result);
+                        setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                },
+                className: "hidden"
+              }
+            )
+          ] })
+        ] }) : /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-slate-200 pb-2", children: [
+            /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-slate-700 flex items-center gap-1.5", children: [
+              /* @__PURE__ */ jsx(Image$1, { className: "w-4 h-4 text-emerald-600" }),
+              " Gambar Jadwal Terunggah:"
+            ] }),
+            /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => setUploadedScheduleImage(null),
+                className: "text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1",
+                children: [
+                  /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }),
+                  " Hapus Gambar"
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2", children: /* @__PURE__ */ jsx("img", { src: uploadedScheduleImage, alt: "Schedule Preview", className: "w-full h-auto object-contain mx-auto" }) }),
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-2 bg-emerald-50 p-3 rounded-xl border border-emerald-200", children: [
+            /* @__PURE__ */ jsx("p", { className: "text-xs text-emerald-800 font-medium", children: "✓ Data 36 penerbangan (18 Departure & 18 Arrival) dari gambar terdeteksi dan dimuat ke dalam Rencana Penerbangan di bawah ini." }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => {
+                  parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                  setIsEditingRaw(false);
+                },
+                className: "px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm whitespace-nowrap",
+                children: "Terapkan & Lihat Timeline →"
+              }
+            )
+          ] })
+        ] }) }),
         /* @__PURE__ */ jsx(
           "textarea",
           {
             rows: 10,
             value: rawScheduleText,
             onChange: (e) => setRawScheduleText(e.target.value),
-            placeholder: "Paste teks Rencana Penerbangan Umrah di sini...",
+            placeholder: "Paste teks Rencana Penerbangan Umrah di sini atau unggah gambar di atas...",
             className: "w-full p-4 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs sm:text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y"
           }
         ),
@@ -9961,9 +10088,39 @@ Berikut terlampir gambar Timeline & Daftar Peringatan Kepadatan Penerbangan Umra
             /* @__PURE__ */ jsxs("div", { className: "max-w-md mx-auto", children: [
               /* @__PURE__ */ jsx("h4", { className: "text-base font-bold text-slate-700", children: "Belum Ada Jadwal Penerbangan yang Diproses" }),
               /* @__PURE__ */ jsxs("p", { className: "text-xs text-slate-500 mt-1", children: [
-                "Silakan buka panel di atas dan paste jadwal rencana penerbangan Umrah, atau klik tombol ",
-                /* @__PURE__ */ jsx("strong", { children: '"Muat Contoh Jadwal"' }),
-                " untuk melihat simulasi garis timeline."
+                "Silakan buka panel di atas untuk paste teks jadwal atau ",
+                /* @__PURE__ */ jsx("strong", { children: "unggah gambar jadwal" }),
+                ", atau klik tombol di bawah untuk langsung memuat contoh:"
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-center gap-2 pt-3", children: [
+                /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleLoadSample,
+                    className: "px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center gap-1.5",
+                    children: [
+                      /* @__PURE__ */ jsx(FileText, { className: "w-3.5 h-3.5" }),
+                      " Muat Contoh (11 Juli)"
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => {
+                      setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                      parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                      setIsEditingRaw(false);
+                    },
+                    className: "px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-xl shadow transition-all flex items-center gap-1.5",
+                    children: [
+                      /* @__PURE__ */ jsx(Image$1, { className: "w-4 h-4" }),
+                      " Muat Jadwal Pre-Ops Gambar (13 Juli - 36 Flight)"
+                    ]
+                  }
+                )
               ] })
             ] })
           ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [

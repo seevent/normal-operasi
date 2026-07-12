@@ -1,6 +1,6 @@
 // src/lib/utils/waGenerator.ts
 
-import { formatTanggalIndo } from './locationRules';
+import { formatTanggalIndo, checkNeedsStoringSupervisorAvsec } from './locationRules';
 import { sortPersonelByJabatan } from '../data/masterData';
 
 export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
@@ -194,25 +194,7 @@ export const generateWA_Storing = (storingData: any) => {
     }
   }
   
-  const isACChecked = (storingData.peralatan || []).includes('Access Control');
-  const isMirroringChecked = (storingData.peralatan || []).some((e: string) => e.toLowerCase() === 'mirroring x-ray');
-  const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
-    (loc: string) => loc.trim().toLowerCase() === 'ruang monitoring e1'
-  );
-  const hasGeneralSupLoc = (storingData.acLokasi || []).some((l: string) => {
-    const norm = l.trim().toUpperCase();
-    const exactList = ['PSCP D', 'PSCP E', 'PSCP F', 'PSCP UMRAH', 'PSCP UMROH', 'SSCP E', 'SSCP F', 'HBSCP'];
-    if (exactList.includes(norm)) return true;
-    if (norm.includes('PSCP') && (norm.includes(' D') || norm.includes(' E') || norm.includes(' F') || norm.includes('UMRAH') || norm.includes('UMROH'))) return true;
-    if (norm.includes('SSCP') && (norm.includes(' E') || norm.includes(' F'))) return true;
-    if (norm === 'HBSCP' || (norm.includes('HBSCP') && !norm.includes('UMRAH') && !norm.includes('UMROH'))) return true;
-    return false;
-  });
-  const showSupervisorAvsec = isMirroringChecked
-    ? false
-    : isACChecked
-    ? hasRuangMonitoringE1
-    : hasGeneralSupLoc;
+  const showSupervisorAvsec = checkNeedsStoringSupervisorAvsec(storingData.peralatan || [], storingData.acLokasi || [], storingData.acNomor || {});
 
   const supervisorAvsecLine = showSupervisorAvsec
     ? `\nSupervisor Avsec : ${storingData.supervisorAvsec || '-'}`

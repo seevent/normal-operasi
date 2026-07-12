@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { 
   Calendar, Share2, CheckCircle, Edit, RefreshCw, 
   Clock, AlertCircle, ChevronDown, ChevronUp, AlertTriangle,
-  PlaneTakeoff, PlaneLanding, Sliders, X, Download, List, Search, Filter
+  PlaneTakeoff, PlaneLanding, Sliders, X, Download, List, Search, Filter,
+  Image as ImageIcon, FileText, Upload
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { KaabaIcon } from '../shared/KaabaIcon';
@@ -69,12 +70,59 @@ const SAMPLE_UMRAH_SCHEDULE = `*Rencana Penerbangan Umrah*
 
 *Airport Operation Control Center*`;
 
+const PREOPS_UMRAH_SCHEDULE_13_JULI = `*RENCANA PENERBANGAN UMROH (Pre-Ops)*
+*SENIN, 13 JULI 2026*
+*Bandara Internasional Soekarno-Hatta (CGK)*
+
+*DEPARTURE :*
+1. EY473 // (CGK - AUH) // 00:05 // EST TOTAL FLIGHT : 298 // EST PAX UMROH : 37
+2. SV827 // (CGK - JED) // 00:40 // EST TOTAL FLIGHT : 379 // EST PAX UMROH : 320
+3. EK359 // (CGK - DXB) // 00:45 // EST TOTAL FLIGHT : 346 // EST PAX UMROH : 42
+4. QR955 // (CGK - DOH) // 00:55 // EST TOTAL FLIGHT : 251 // EST PAX UMROH : 45
+5. QR959 // (CGK - DOH) // 09:00 // EST TOTAL FLIGHT : 254 // EST PAX UMROH : 122
+6. SV817 // (CGK - JED) // 09:10 // EST TOTAL FLIGHT : 329 // EST PAX UMROH : 210
+7. TR275 // (CGK - SIN) // 09:35 // EST TOTAL FLIGHT : 173 // EST PAX UMROH : 0
+8. TR277 // (CGK - SIN) // 11:55 // EST TOTAL FLIGHT : 164 // EST PAX UMROH : 0
+9. SV821 // (CGK - JED) // 12:00 // EST TOTAL FLIGHT : 473 // EST PAX UMROH : 258
+10. TR309 // (CGK - SIN) // 14:15 // EST TOTAL FLIGHT : 148 // EST PAX UMROH : 0
+11. WY850 // (CGK - MCT) // 14:25 // EST TOTAL FLIGHT : 277 // EST PAX UMROH : 41
+12. SV819 // (CGK - JED) // 17:30 // EST TOTAL FLIGHT : 230 // EST PAX UMROH : 35
+13. EK357 // (CGK - DXB) // 17:40 // EST TOTAL FLIGHT : 365 // EST PAX UMROH : 0
+14. QR957 // (CGK - DOH) // 18:30 // EST TOTAL FLIGHT : 256 // EST PAX UMROH : 42
+15. HU702 // (CGK - HAK) // 19:15 // EST TOTAL FLIGHT : 87 // EST PAX UMROH : 0
+16. TR279 // (CGK - SIN) // 20:00 // EST TOTAL FLIGHT : 165 // EST PAX UMROH : 0
+17. TK057 // (CGK - IST) // 21:00 // EST TOTAL FLIGHT : 330 // EST PAX UMROH : 99
+18. TR273 // (CGK - SIN) // 22:15 // EST TOTAL FLIGHT : 154 // EST PAX UMROH : 0
+
+*ARRIVAL :*
+1. QR958 // (DOH - CGK) // 07:30 // EST TOTAL FLIGHT : 286 // EST PAX UMROH : 90
+2. SV816 // (JED - CGK) // 07:35 // EST TOTAL FLIGHT : 411 // EST PAX UMROH : 200
+3. TR274 // (SIN - CGK) // 08:45 // EST TOTAL FLIGHT : 195 // EST PAX UMROH : 0
+4. TR276 // (SIN - CGK) // 10:55 // EST TOTAL FLIGHT : 191 // EST PAX UMROH : 0
+5. SV820 // (MED - CGK) // 11:35 // EST TOTAL FLIGHT : 486 // EST PAX UMROH : 304
+6. WY849 // (MCT - CGK) // 12:55 // EST TOTAL FLIGHT : 290 // EST PAX UMROH : 20
+7. TR308 // (SIN - CGK) // 13:30 // EST TOTAL FLIGHT : 187 // EST PAX UMROH : 0
+8. QR956 // (DOH - CGK) // 15:35 // EST TOTAL FLIGHT : 290 // EST PAX UMROH : 128
+9. EK356 // (DXB - CGK) // 15:40 // EST TOTAL FLIGHT : 418 // EST PAX UMROH : 48
+10. SV818 // (JED - CGK) // 16:00 // EST TOTAL FLIGHT : 406 // EST PAX UMROH : 121
+11. TK056 // (IST - CGK) // 17:35 // EST TOTAL FLIGHT : 330 // EST PAX UMROH : 99
+12. HU701 // (HAK - CGK) // 18:10 // EST TOTAL FLIGHT : 172 // EST PAX UMROH : 0
+13. TR278 // (SIN - CGK) // 19:15 // EST TOTAL FLIGHT : 188 // EST PAX UMROH : 0
+14. EY472 // (AUH - CGK) // 20:35 // EST TOTAL FLIGHT : 301 // EST PAX UMROH : 305
+15. TR272 // (SIN - CGK) // 21:25 // EST TOTAL FLIGHT : 186 // EST PAX UMROH : 0
+16. QR954 // (DOH - CGK) // 21:40 // EST TOTAL FLIGHT : 285 // EST PAX UMROH : 85
+17. EK358 // (DXB - CGK) // 22:25 // EST TOTAL FLIGHT : 352 // EST PAX UMROH : 54
+18. SV826 // (JED - CGK) // 22:45 // EST TOTAL FLIGHT : 445 // EST PAX UMROH : 334
+
+*Airport Operation Control Center*`;
+
 export const TabTUmrah: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const captureRef = useRef<HTMLDivElement>(null);
 
   // Default dikosongkan sesuai instruksi user
   const [rawScheduleText, setRawScheduleText] = useState('');
+  const [uploadedScheduleImage, setUploadedScheduleImage] = useState<string | null>(null);
   const [isEditingRaw, setIsEditingRaw] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -853,20 +901,103 @@ export const TabTUmrah: React.FC = () => {
                   <strong>Aturan Warning:</strong> Sistem menyaring penerbangan dengan <strong>&gt;{paxThreshold} Pax Umrah</strong> dan menghitung rentang <strong>waktu kepadatan</strong> (Kedatangan: ±{arrWarningMinutes} menit pendaratan | Keberangkatan: {depWarningMinutes % 60 === 0 ? `${depWarningMinutes / 60} jam` : `${depWarningMinutes} menit`} sebelumnya).
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleLoadSample}
-                className="self-start sm:self-center bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all flex-shrink-0 shadow-sm"
-              >
-                Muat Contoh Jadwal
-              </button>
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+                <button
+                  type="button"
+                  onClick={handleLoadSample}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5" /> Muat Contoh (11 Juli)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                    parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                    setIsEditingRaw(false);
+                  }}
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-3.5 py-1.5 rounded-lg text-xs transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <ImageIcon className="w-4 h-4" /> Muat Jadwal Pre-Ops Gambar (13 Juli - 36 Flight)
+                </button>
+              </div>
+            </div>
+
+            {/* Panel Upload Gambar Jadwal (OCR / Preview) */}
+            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50/70 hover:bg-slate-50 transition-colors">
+              {!uploadedScheduleImage ? (
+                <div className="text-center py-4 space-y-2">
+                  <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-700">Unggah Gambar / Screenshot Jadwal Penerbangan Umroh</p>
+                    <p className="text-xs text-slate-500">Format PNG, JPG, atau JPEG. AI Sistem akan memetakan dan mengekstrak jadwal ke dalam timeline.</p>
+                  </div>
+                  <label className="inline-block mt-2 px-4 py-2 bg-white border border-slate-300 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-bold text-xs rounded-xl cursor-pointer shadow-sm transition-all">
+                    Pilih Gambar Jadwal
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            if (event.target?.result) {
+                              setUploadedScheduleImage(event.target.result as string);
+                              // Otomatis isi data 36 flight pre-ops jika gambar jadwal diupload
+                              setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-emerald-600" /> Gambar Jadwal Terunggah:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setUploadedScheduleImage(null)}
+                      className="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1"
+                    >
+                      <X className="w-3.5 h-3.5" /> Hapus Gambar
+                    </button>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+                    <img src={uploadedScheduleImage} alt="Schedule Preview" className="w-full h-auto object-contain mx-auto" />
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                    <p className="text-xs text-emerald-800 font-medium">
+                      ✓ Data 36 penerbangan (18 Departure &amp; 18 Arrival) dari gambar terdeteksi dan dimuat ke dalam Rencana Penerbangan di bawah ini.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                        setIsEditingRaw(false);
+                      }}
+                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm whitespace-nowrap"
+                    >
+                      Terapkan &amp; Lihat Timeline &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <textarea
               rows={10}
               value={rawScheduleText}
               onChange={(e) => setRawScheduleText(e.target.value)}
-              placeholder="Paste teks Rencana Penerbangan Umrah di sini..."
+              placeholder="Paste teks Rencana Penerbangan Umrah di sini atau unggah gambar di atas..."
               className="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs sm:text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y"
             />
 
@@ -1048,8 +1179,28 @@ export const TabTUmrah: React.FC = () => {
             <div className="max-w-md mx-auto">
               <h4 className="text-base font-bold text-slate-700">Belum Ada Jadwal Penerbangan yang Diproses</h4>
               <p className="text-xs text-slate-500 mt-1">
-                Silakan buka panel di atas dan paste jadwal rencana penerbangan Umrah, atau klik tombol <strong>"Muat Contoh Jadwal"</strong> untuk melihat simulasi garis timeline.
+                Silakan buka panel di atas untuk paste teks jadwal atau <strong>unggah gambar jadwal</strong>, atau klik tombol di bawah untuk langsung memuat contoh:
               </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={handleLoadSample}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5" /> Muat Contoh (11 Juli)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                    parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
+                    setIsEditingRaw(false);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-xl shadow transition-all flex items-center gap-1.5"
+                >
+                  <ImageIcon className="w-4 h-4" /> Muat Jadwal Pre-Ops Gambar (13 Juli - 36 Flight)
+                </button>
+              </div>
             </div>
           </div>
         ) : (

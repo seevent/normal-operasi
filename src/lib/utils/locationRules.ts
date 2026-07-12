@@ -221,3 +221,28 @@ export const formatTanggalIndo = (dateStr: string) => {
   const d = new Date(dateStr);
   return `${days[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
+
+export const checkNeedsStoringSupervisorAvsec = (peralatan: string[], acLokasi: string[], acNomor?: Record<string, string>) => {
+  if (!peralatan || !acLokasi) return false;
+  const isACChecked = peralatan.includes('Access Control');
+  const isMirroringChecked = peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
+  if (isMirroringChecked) return false;
+  if (isACChecked) {
+    return acLokasi.some(l => l.trim().toLowerCase() === 'ruang monitoring e1');
+  }
+  return acLokasi.some(l => {
+    const norm = l.trim().toUpperCase();
+    if (norm === 'HBSCP' || (norm.includes('HBSCP') && !norm.includes('UMRAH') && !norm.includes('UMROH'))) {
+      const selectedNomor = (acNomor || {})[l] || (getAcNomorOptions(l)[0] || '');
+      if (selectedNomor.trim() === '2.7-2.8' || selectedNomor.trim() === '2.7 - 2.8') {
+        return false;
+      }
+      return true;
+    }
+    const exactList = ['PSCP D', 'PSCP E', 'PSCP F', 'PSCP UMRAH', 'PSCP UMROH', 'SSCP E', 'SSCP F'];
+    if (exactList.includes(norm)) return true;
+    if (norm.includes('PSCP') && (norm.includes(' D') || norm.includes(' E') || norm.includes(' F') || norm.includes('UMRAH') || norm.includes('UMROH'))) return true;
+    if (norm.includes('SSCP') && (norm.includes(' E') || norm.includes(' F'))) return true;
+    return false;
+  });
+};
