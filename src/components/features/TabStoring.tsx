@@ -327,7 +327,20 @@ export const TabStoring: React.FC = () => {
                               const isACChecked = prev.peralatan.includes('Access Control');
                               const isMirroringChecked = prev.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
                               const hasRuangMonitoringE1 = newLocs.some(l => l.trim().toLowerCase() === 'ruang monitoring e1');
-                              const newShowSupervisor = isMirroringChecked ? false : isACChecked ? hasRuangMonitoringE1 : true;
+                              const hasGeneralSupLoc = newLocs.some(l => {
+                                const norm = l.trim().toUpperCase();
+                                const exactList = ['PSCP D', 'PSCP E', 'PSCP F', 'PSCP UMRAH', 'PSCP UMROH', 'SSCP E', 'SSCP F', 'HBSCP'];
+                                if (exactList.includes(norm)) return true;
+                                if (norm.includes('PSCP') && (norm.includes(' D') || norm.includes(' E') || norm.includes(' F') || norm.includes('UMRAH') || norm.includes('UMROH'))) return true;
+                                if (norm.includes('SSCP') && (norm.includes(' E') || norm.includes(' F'))) return true;
+                                if (norm === 'HBSCP' || (norm.includes('HBSCP') && !norm.includes('UMRAH') && !norm.includes('UMROH'))) return true;
+                                return false;
+                              });
+                              const newShowSupervisor = isMirroringChecked
+                                ? false
+                                : isACChecked
+                                ? hasRuangMonitoringE1
+                                : hasGeneralSupLoc;
 
                               return { 
                                 ...prev, 
@@ -382,11 +395,20 @@ export const TabStoring: React.FC = () => {
             const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
               loc => loc.trim().toLowerCase() === 'ruang monitoring e1'
             );
+            const hasGeneralSupLoc = (storingData.acLokasi || []).some(l => {
+              const norm = l.trim().toUpperCase();
+              const exactList = ['PSCP D', 'PSCP E', 'PSCP F', 'PSCP UMRAH', 'PSCP UMROH', 'SSCP E', 'SSCP F', 'HBSCP'];
+              if (exactList.includes(norm)) return true;
+              if (norm.includes('PSCP') && (norm.includes(' D') || norm.includes(' E') || norm.includes(' F') || norm.includes('UMRAH') || norm.includes('UMROH'))) return true;
+              if (norm.includes('SSCP') && (norm.includes(' E') || norm.includes(' F'))) return true;
+              if (norm === 'HBSCP' || (norm.includes('HBSCP') && !norm.includes('UMRAH') && !norm.includes('UMROH'))) return true;
+              return false;
+            });
             const showSupervisorAvsec = isMirroringChecked
               ? false
               : isACChecked
               ? hasRuangMonitoringE1
-              : true;
+              : hasGeneralSupLoc;
 
             if (!showSupervisorAvsec) return null;
 
