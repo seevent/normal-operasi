@@ -8,11 +8,9 @@ export const AssetMasterLokasi: React.FC = () => {
   
   const [isAdding, setIsAdding] = useState(false);
   const [formNama, setFormNama] = useState('');
-  const [formKategori, setFormKategori] = useState('');
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNama, setEditNama] = useState('');
-  const [editKategori, setEditKategori] = useState('');
   
   useEffect(() => {
     loadLokasi();
@@ -20,7 +18,7 @@ export const AssetMasterLokasi: React.FC = () => {
 
   const loadLokasi = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('lokasi').select('*').order('nama');
+    const { data, error } = await supabase.from('lokasi').select('id, nama').order('nama');
     if (!error && data) {
       setLokasiList(data);
     }
@@ -31,12 +29,10 @@ export const AssetMasterLokasi: React.FC = () => {
     if (!formNama.trim()) return alert('Nama lokasi harus diisi!');
     setLoading(true);
     const { error } = await supabase.from('lokasi').insert({
-      nama: formNama.trim(),
-      kategori: formKategori.trim() || null
+      nama: formNama.trim()
     });
     if (!error) {
       setFormNama('');
-      setFormKategori('');
       setIsAdding(false);
       await loadLokasi();
     } else {
@@ -49,8 +45,7 @@ export const AssetMasterLokasi: React.FC = () => {
     if (!editNama.trim()) return alert('Nama lokasi harus diisi!');
     setLoading(true);
     const { error } = await supabase.from('lokasi').update({
-      nama: editNama.trim(),
-      kategori: editKategori.trim() || null
+      nama: editNama.trim()
     }).eq('id', id);
     if (!error) {
       setEditingId(null);
@@ -96,10 +91,6 @@ export const AssetMasterLokasi: React.FC = () => {
             <label className="block text-xs font-semibold text-blue-800 mb-1">Nama Lokasi</label>
             <input type="text" value={formNama} onChange={(e) => setFormNama(e.target.value)} className="w-full p-2 border border-blue-200 rounded-lg text-sm" placeholder="Contoh: SSCP D" />
           </div>
-          <div className="w-full sm:flex-1">
-            <label className="block text-xs font-semibold text-blue-800 mb-1">Kategori (Opsional)</label>
-            <input type="text" value={formKategori} onChange={(e) => setFormKategori(e.target.value)} className="w-full p-2 border border-blue-200 rounded-lg text-sm" placeholder="Contoh: Terminal 2D" />
-          </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={handleAdd} className="flex-1 sm:flex-none flex justify-center items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700">
               <Save className="w-4 h-4" /> Simpan
@@ -116,7 +107,6 @@ export const AssetMasterLokasi: React.FC = () => {
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
             <tr>
               <th className="p-3 font-semibold">Nama Lokasi</th>
-              <th className="p-3 font-semibold">Kategori</th>
               <th className="p-3 font-semibold text-right">Aksi</th>
             </tr>
           </thead>
@@ -130,13 +120,6 @@ export const AssetMasterLokasi: React.FC = () => {
                     <span className="font-medium text-slate-800">{loc.nama}</span>
                   )}
                 </td>
-                <td className="p-3">
-                  {editingId === loc.id ? (
-                    <input type="text" value={editKategori} onChange={e => setEditKategori(e.target.value)} className="w-full p-1.5 border rounded" />
-                  ) : (
-                    <span className="text-slate-600">{loc.kategori || '-'}</span>
-                  )}
-                </td>
                 <td className="p-3 text-right">
                   {editingId === loc.id ? (
                     <div className="flex justify-end gap-2">
@@ -145,7 +128,7 @@ export const AssetMasterLokasi: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => { setEditingId(loc.id); setEditNama(loc.nama); setEditKategori(loc.kategori || ''); }} className="text-blue-600 hover:bg-blue-50 p-1.5 rounded" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => { setEditingId(loc.id); setEditNama(loc.nama); }} className="text-blue-600 hover:bg-blue-50 p-1.5 rounded" title="Edit"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={() => handleDelete(loc.id)} className="text-red-600 hover:bg-red-50 p-1.5 rounded" title="Hapus"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   )}
@@ -154,7 +137,7 @@ export const AssetMasterLokasi: React.FC = () => {
             ))}
             {lokasiList.length === 0 && (
               <tr>
-                <td colSpan={3} className="p-4 text-center text-slate-500">Belum ada data lokasi.</td>
+                <td colSpan={2} className="p-4 text-center text-slate-500">Belum ada data lokasi.</td>
               </tr>
             )}
           </tbody>

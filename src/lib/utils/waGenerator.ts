@@ -12,9 +12,12 @@ export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) =>
     : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
     
   const lokasiFinal = locList.map((loc: any) => {
+    if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
     return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
   }).join(', ');
   const judulLaporan = isVerifikasiETD ? `Laporan Verifikasi ${formData.peralatan}` : `Laporan Perbaikan ${formData.peralatan}`;
+
+  const statusIcon = (formData.status === 'Pekerjaan Selesai' || formData.status === 'Normal Operasi') ? '✅' : '⚠️';
 
   return `${judulLaporan}
 
@@ -32,7 +35,7 @@ ${formData.permasalahan}
 🪛 Tindak lanjut  : 
 ${formData.tindakLanjut}
 
-✅ Status : ${formData.status}
+${statusIcon} Status : ${formData.status}
 
 Demikian laporan tindak lanjut kami sampaikan.
 Terimakasih atas perhatiannya`;
@@ -435,6 +438,7 @@ export const generateWA_InitialReport = (formData: any) => {
     : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
     
   const lokasiFinal = locList.map((loc: any) => {
+    if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
     return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
   }).join(', ') || '-';
 

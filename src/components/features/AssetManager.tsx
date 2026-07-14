@@ -4,8 +4,9 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { MapPin, Cpu, Hash, Trash2, Plus, Loader2, AlertCircle, LayoutGrid, Database, Layers } from 'lucide-react';
 import { AssetMasterLokasi } from './AssetMasterLokasi';
 import { AssetMasterPeralatan } from './AssetMasterPeralatan';
+import { UnitPeralatanManager } from './UnitPeralatanManager';
 
-type TabType = 'penempatan' | 'lokasi' | 'peralatan';
+type TabType = 'penempatan' | 'lokasi' | 'peralatan' | 'unit';
 
 export const AssetManager: React.FC = () => {
   const { initializeSupabaseData } = useMasterDataStore();
@@ -16,6 +17,7 @@ export const AssetManager: React.FC = () => {
   const [locations, setLocations] = useState<any[]>([]);
   const [jenisData, setJenisData] = useState<any[]>([]);
   const [tipeData, setTipeData] = useState<any[]>([]);
+  const [unitsData, setUnitsData] = useState<any[]>([]);
   const [allAssets, setAllAssets] = useState<any[]>([]);
   
   const [loadingBase, setLoadingBase] = useState(true);
@@ -28,6 +30,7 @@ export const AssetManager: React.FC = () => {
   // Form State for Adding Asset
   const [formJenis, setFormJenis] = useState<string>('');
   const [formTipe, setFormTipe] = useState<string>('');
+  const [formUnit, setFormUnit] = useState<string>('');
   const [formLokasi, setFormLokasi] = useState<string>('');
   const [formTitik, setFormTitik] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -41,15 +44,18 @@ export const AssetManager: React.FC = () => {
   const loadBaseData = async () => {
     setLoadingBase(true);
     try {
-      const [lokRes, jenisRes, tipeRes, assetRes] = await Promise.all([
+      const [lokRes, jenisRes, tipeRes, unitRes, assetRes] = await Promise.all([
         supabase.from('lokasi').select('id, nama').order('nama'),
         supabase.from('jenis_peralatan').select('id, nama').order('nama'),
         supabase.from('tipe_peralatan').select('id, id_jenis, nama, varian').order('nama'),
+        supabase.from('unit_peralatan').select('id, id_tipe, serial_number, milik, status').order('serial_number'),
         supabase.from('penempatan_peralatan').select(`
           id,
           is_active,
           id_lokasi,
+          id_unit,
           tipe_peralatan ( id, id_jenis, nama, jenis_peralatan ( nama ) ),
+          unit_peralatan ( id, serial_number, milik, status ),
           titik_lokasi ( id, nomor ),
           lokasi ( id, nama )
         `)
@@ -58,6 +64,7 @@ export const AssetManager: React.FC = () => {
       if (lokRes.data) setLocations(lokRes.data);
       if (jenisRes.data) setJenisData(jenisRes.data);
       if (tipeRes.data) setTipeData(tipeRes.data);
+      if (unitRes.data) setUnitsData(unitRes.data);
       if (assetRes.data) {
         // Sort
         const sorted = assetRes.data.sort((a: any, b: any) => {
@@ -119,6 +126,7 @@ export const AssetManager: React.FC = () => {
           .from('penempatan_peralatan')
           .insert({
             id_tipe: formTipe,
+            id_unit: formUnit || null,
             id_lokasi: formLokasi,
             id_titik: titikId,
             is_active: true
@@ -181,6 +189,7 @@ export const AssetManager: React.FC = () => {
 
   // --- Form Select Options ---
   const filteredTipeForForm = tipeData.filter(t => t.id_jenis === formJenis);
+  const filteredUnitsForForm = unitsData.filter(u => u.id_tipe === formTipe);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -192,6 +201,12 @@ export const AssetManager: React.FC = () => {
           className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'penempatan' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
         >
           <LayoutGrid className="w-4 h-4" /> Penempatan Mesin
+        </button>
+        <button 
+          onClick={() => setActiveTab('unit')}
+          className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'unit' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+        >
+          <Layers className="w-4 h-4" /> Unit Peralatan
         </button>
         <button 
           onClick={() => setActiveTab('lokasi')}
@@ -208,6 +223,7 @@ export const AssetManager: React.FC = () => {
       </div>
 
       <div className="p-6">
+        {activeTab === 'unit' && <UnitPeralatanManager />}
         {activeTab === 'lokasi' && <AssetMasterLokasi />}
         {activeTab === 'peralatan' && <AssetMasterPeralatan />}
         
@@ -253,7 +269,10 @@ export const AssetManager: React.FC = () => {
                       <label className="block text-xs font-semibold text-blue-800 mb-1">Tipe / Model Mesin</label>
                       <select 
                         value={formTipe}
-                        onChange={(e) => setFormTipe(e.target.value)}
+                        onChange={(e) => {
+                          setFormTipe(e.target.value);
+                          setFormUnit('');
+                        }}
                         disabled={!formJenis}
                         className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:opacity-50"
                       >
@@ -262,6 +281,26 @@ export const AssetManager: React.FC = () => {
                           <option key={t.id} value={t.id}>{t.nama}</option>
                         ))}
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-blue-800 mb-1">Pilih Unit Spesifik (S/N) <span className="font-normal text-slate-500">(Opsional)</span></label>
+                      <select 
+                        value={formUnit}
+                        onChange={(e) => setFormUnit(e.target.value)}
+                        disabled={!formTipe || filteredUnitsForForm.length === 0}
+                        className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:opacity-50"
+                      >
+                        <option value="">-- Semua / Umum (Tanpa S/N) --</option>
+                        {filteredUnitsForForm.map(u => (
+                          <option key={u.id} value={u.id}>
+                            S/N: {u.serial_number || 'Tanpa S/N'} ({u.milik || 'API'})
+                          </option>
+                        ))}
+                      </select>
+                      {formTipe && filteredUnitsForForm.length === 0 && (
+                        <p className="text-[11px] text-amber-700 mt-1">Belum ada data unit fisik untuk tipe ini.</p>
+                      )}
                     </div>
 
                     <div>
@@ -363,8 +402,16 @@ export const AssetManager: React.FC = () => {
                               {!asset.is_active && (
                                 <span className="text-xs font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded">Nonaktif</span>
                               )}
-                            </div>
+                             </div>
                             <p className="font-bold text-slate-800">{asset.tipe_peralatan?.nama || 'Tipe Tidak Diketahui'}</p>
+                            
+                            {asset.unit_peralatan?.serial_number && (
+                              <div className="flex items-center gap-1.5 mt-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 w-fit">
+                                <span>S/N: <strong className="font-mono">{asset.unit_peralatan.serial_number}</strong></span>
+                                {asset.unit_peralatan.milik && <span className="text-blue-500">• {asset.unit_peralatan.milik}</span>}
+                              </div>
+                            )}
+
                             <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
                               <Hash className="w-3.5 h-3.5" /> Titik: <strong className="text-slate-700">{asset.titik_lokasi?.nomor || '-'}</strong>
                             </div>

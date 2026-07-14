@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import React, { useState, useRef, useEffect } from "react";
-import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, LayoutGrid, Database, Layers, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, List, PlaneTakeoff, PlaneLanding, Search, Image as Image$1, Upload, Sliders, MoreHorizontal } from "lucide-react";
+import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, Layers, Tag, Building2, ShieldCheck, Zap, Search, Box, CheckCircle2, LayoutGrid, Database, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, List, PlaneTakeoff, PlaneLanding, Image as Image$1, Upload, Sliders, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -783,6 +783,8 @@ const useMasterDataStore = create((set, get) => ({
   },
   penempatanData: [],
   setPenempatanData: (data) => set({ penempatanData: data }),
+  unitPeralatanData: [],
+  setUnitPeralatanData: (data) => set({ unitPeralatanData: data }),
   jenisPeralatanData: [],
   setJenisPeralatanData: (data) => set({ jenisPeralatanData: data }),
   toggleKalibrasiEquipmentDb: async (id, tampil) => {
@@ -900,8 +902,10 @@ const useMasterDataStore = create((set, get) => ({
   initializeSupabaseData: async () => {
     try {
       const { data, error } = await supabase.from("penempatan_peralatan").select(`
-          id, 
+          id,
+          id_unit,
           tipe_peralatan ( nama, varian, jenis_peralatan ( nama ) ),
+          unit_peralatan ( id, serial_number, milik, status, no_sertifikasi, tahun_instalasi, ampere ),
           lokasi ( nama ),
           titik_lokasi ( nomor )
         `);
@@ -910,6 +914,13 @@ const useMasterDataStore = create((set, get) => ({
       } else if (data && data.length > 0) {
         console.log("✅ Berhasil terhubung ke Supabase! Menemukan", data.length, "data penempatan.");
         set({ penempatanData: data });
+      }
+      const { data: unitData, error: unitError } = await supabase.from("unit_peralatan").select(`
+          *,
+          tipe_peralatan ( id, nama, varian, jenis_peralatan ( id, nama ) )
+        `).order("created_at", { ascending: false });
+      if (!unitError && unitData) {
+        set({ unitPeralatanData: unitData });
       }
       const { data: jenisData, error: jenisError } = await supabase.from("jenis_peralatan").select("id, nama, tampil_di_kalibrasi").order("nama");
       if (!jenisError && jenisData) {
@@ -1161,9 +1172,11 @@ const generateWA_Perbaikan = (formData, isVerifikasiETD) => {
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : "";
   const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0 ? formData.lokasiList.filter((l) => l.lokasi1) : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
   const lokasiFinal = locList.map((loc) => {
+    if (loc.isManual || loc.lokasi2 === "-" && !loc.lokasi2) return loc.lokasi1;
     return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== "-" ? formData.peralatan === "Access Control" || loc.lokasi1 === "HBSCP" ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}` : "");
   }).join(", ");
   const judulLaporan = isVerifikasiETD ? `Laporan Verifikasi ${formData.peralatan}` : `Laporan Perbaikan ${formData.peralatan}`;
+  const statusIcon = formData.status === "Pekerjaan Selesai" || formData.status === "Normal Operasi" ? "✅" : "⚠️";
   return `${judulLaporan}
 
 Lokasi : ${lokasiFinal}
@@ -1180,7 +1193,7 @@ ${formData.permasalahan}
 🪛 Tindak lanjut  : 
 ${formData.tindakLanjut}
 
-✅ Status : ${formData.status}
+${statusIcon} Status : ${formData.status}
 
 Demikian laporan tindak lanjut kami sampaikan.
 Terimakasih atas perhatiannya`;
@@ -1607,6 +1620,7 @@ const generateWA_InitialReport = (formData) => {
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : "";
   const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0 ? formData.lokasiList.filter((l) => l.lokasi1) : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
   const lokasiFinal = locList.map((loc) => {
+    if (loc.isManual || loc.lokasi2 === "-" && !loc.lokasi2) return loc.lokasi1;
     return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== "-" ? formData.peralatan === "Access Control" || loc.lokasi1 === "HBSCP" ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}` : "");
   }).join(", ") || "-";
   const pukulStr = formData.waktuMulai ? `${formData.waktuMulai} WIB` : "- WIB";
@@ -2196,7 +2210,7 @@ const TabInitialReport = () => {
       peralatan: "",
       lokasi1: "",
       lokasi2: "",
-      lokasiList: [{ lokasi1: "", lokasi2: "" }],
+      lokasiList: [{ lokasi1: "", lokasi2: "", isManual: false }],
       tanggal: realDate,
       waktuMulai: `${currentHour}:${currentMin}`,
       jamPengerjaan: "",
@@ -2314,7 +2328,7 @@ const TabInitialReport = () => {
     if (name === "peralatan") {
       newFormData.lokasi1 = "";
       newFormData.lokasi2 = "";
-      newFormData.lokasiList = [{ lokasi1: "", lokasi2: "" }];
+      newFormData.lokasiList = [{ lokasi1: "", lokasi2: "", isManual: false }];
     }
     setFormData(newFormData);
   };
@@ -2347,12 +2361,42 @@ const TabInitialReport = () => {
     });
   };
   const handleLokasiEntryChange = (index, field, value) => {
+    if (field === "isManualToggle") {
+      setFormData((prev) => {
+        const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
+        newList[index] = { ...newList[index], lokasi1: "", lokasi2: "", isManual: false };
+        return {
+          ...prev,
+          lokasiList: newList,
+          lokasi1: newList[0]?.lokasi1 || "",
+          lokasi2: newList[0]?.lokasi2 || ""
+        };
+      });
+      return;
+    }
+    if (field === "lokasi1" && value === "MANUAL_ENTRY") {
+      setFormData((prev) => {
+        const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
+        newList[index] = { ...newList[index], lokasi1: "", lokasi2: "-", isManual: true };
+        return {
+          ...prev,
+          lokasiList: newList,
+          lokasi1: newList[0]?.lokasi1 || "",
+          lokasi2: newList[0]?.lokasi2 || ""
+        };
+      });
+      return;
+    }
     setFormData((prev) => {
       const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
       newList[index] = { ...newList[index], [field]: value };
       if (field === "lokasi1") {
-        const pts = getLokasi2Options(value, [prev.peralatan]);
-        newList[index].lokasi2 = pts.length === 0 || pts.length === 1 && pts[0] === "-" ? "-" : "";
+        if (newList[index].isManual || isManualPeralatan) {
+          newList[index].lokasi2 = "-";
+        } else {
+          const pts = getLokasi2Options(value, [prev.peralatan]);
+          newList[index].lokasi2 = pts.length === 0 || pts.length === 1 && pts[0] === "-" ? "-" : "";
+        }
       }
       return {
         ...prev,
@@ -2364,7 +2408,7 @@ const TabInitialReport = () => {
   };
   const addLokasiEntry = () => {
     setFormData((prev) => {
-      const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }], { lokasi1: "", lokasi2: "" }];
+      const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }], { lokasi1: "", lokasi2: isManualPeralatan ? "-" : "", isManual: isManualPeralatan }];
       return { ...prev, lokasiList: newList };
     });
   };
@@ -2372,7 +2416,7 @@ const TabInitialReport = () => {
     setFormData((prev) => {
       const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
       newList.splice(index, 1);
-      if (newList.length === 0) newList.push({ lokasi1: "", lokasi2: "" });
+      if (newList.length === 0) newList.push({ lokasi1: "", lokasi2: isManualPeralatan ? "-" : "", isManual: isManualPeralatan });
       return {
         ...prev,
         lokasiList: newList,
@@ -2385,10 +2429,10 @@ const TabInitialReport = () => {
     const value = e.target.value;
     if (value === "MANUAL_ENTRY") {
       setIsManualPeralatan(true);
-      setFormData((prev) => ({ ...prev, peralatan: "", lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "" }] }));
+      setFormData((prev) => ({ ...prev, peralatan: "", lokasi1: "", lokasi2: "-", lokasiList: [{ lokasi1: "", lokasi2: "-", isManual: true }] }));
       return;
     }
-    setFormData((prev) => ({ ...prev, peralatan: value, lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "" }] }));
+    setFormData((prev) => ({ ...prev, peralatan: value, lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "", isManual: false }] }));
   };
   const handleBulletChange = (e, field) => {
     let value = e.target.value;
@@ -2728,7 +2772,7 @@ ${nextNum}. ` + textAfter;
             type: "button",
             onClick: () => {
               setIsManualPeralatan(false);
-              setFormData((prev) => ({ ...prev, peralatan: "" }));
+              setFormData((prev) => ({ ...prev, peralatan: "", lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "", isManual: false }] }));
             },
             className: "px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs shrink-0 transition-colors",
             children: "Pilih dari Daftar"
@@ -2764,37 +2808,65 @@ ${nextNum}. ` + textAfter;
             const takenOptions2ForThisLoc1 = otherRows.filter((r) => r.lokasi1 === loc.lokasi1).map((r) => r.lokasi2).filter(Boolean);
             const options2 = allOptions2.filter((opt) => !takenOptions2ForThisLoc1.includes(opt) || opt === loc.lokasi2);
             const isDisabled2 = allOptions2.length === 0 || allOptions2.length === 1 && allOptions2[0] === "-";
+            const isRowManual = loc.isManual || isManualPeralatan;
             return /* @__PURE__ */ jsxs("div", { className: "flex gap-2 items-center", children: [
-              /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
-                /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
-                /* @__PURE__ */ jsxs(
-                  "select",
+              isRowManual ? /* @__PURE__ */ jsxs("div", { className: "flex gap-2 flex-1 items-center", children: [
+                /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
+                  /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "text",
+                      required: index === 0,
+                      placeholder: "Ketik nama lokasi / nomor titik secara manual...",
+                      value: loc.lokasi1,
+                      onChange: (e) => handleLokasiEntryChange(index, "lokasi1", e.target.value),
+                      className: "w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800 font-medium shadow-sm"
+                    }
+                  )
+                ] }),
+                !isManualPeralatan && /* @__PURE__ */ jsx(
+                  "button",
                   {
-                    required: index === 0,
-                    disabled: !formData.peralatan,
-                    value: loc.lokasi1,
-                    onChange: (e) => handleLokasiEntryChange(index, "lokasi1", e.target.value),
-                    className: "w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm",
-                    children: [
-                      /* @__PURE__ */ jsx("option", { value: "", children: index === 0 ? "- Pilih Lokasi -" : "- Pilih Lokasi Tambahan (Opsional) -" }),
-                      availableOptions.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-                    ]
+                    type: "button",
+                    onClick: () => handleLokasiEntryChange(index, "isManualToggle", "false"),
+                    className: "px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs shrink-0 transition-colors",
+                    children: "Pilih dari Daftar"
                   }
                 )
+              ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+                /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
+                  /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                  /* @__PURE__ */ jsxs(
+                    "select",
+                    {
+                      required: index === 0,
+                      disabled: !formData.peralatan,
+                      value: loc.lokasi1,
+                      onChange: (e) => handleLokasiEntryChange(index, "lokasi1", e.target.value),
+                      className: "w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm",
+                      children: [
+                        /* @__PURE__ */ jsx("option", { value: "", children: index === 0 ? "- Pilih Lokasi -" : "- Pilih Lokasi Tambahan (Opsional) -" }),
+                        availableOptions.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt)),
+                        /* @__PURE__ */ jsx("option", { value: "MANUAL_ENTRY", children: "+ Ketik Manual (Lokasi Lainnya)" })
+                      ]
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsx("div", { className: "w-1/3", children: /* @__PURE__ */ jsxs(
+                  "select",
+                  {
+                    value: loc.lokasi2,
+                    onChange: (e) => handleLokasiEntryChange(index, "lokasi2", e.target.value),
+                    disabled: isDisabled2,
+                    className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`,
+                    children: [
+                      /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
+                      options2.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+                    ]
+                  }
+                ) })
               ] }),
-              /* @__PURE__ */ jsx("div", { className: "w-1/3", children: /* @__PURE__ */ jsxs(
-                "select",
-                {
-                  value: loc.lokasi2,
-                  onChange: (e) => handleLokasiEntryChange(index, "lokasi2", e.target.value),
-                  disabled: isDisabled2,
-                  className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`,
-                  children: [
-                    /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
-                    options2.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-                  ]
-                }
-              ) }),
               index > 0 && /* @__PURE__ */ jsx(
                 "button",
                 {
@@ -3391,7 +3463,7 @@ const TabPerbaikan = () => {
       peralatan: "",
       lokasi1: "",
       lokasi2: "",
-      lokasiList: [{ lokasi1: "", lokasi2: "" }],
+      lokasiList: [{ lokasi1: "", lokasi2: "", isManual: false }],
       sumberLaporan: "Avsec",
       indikasiAwal: "",
       tanggal: realDate,
@@ -3523,7 +3595,7 @@ const TabPerbaikan = () => {
     if (name === "peralatan") {
       newFormData.lokasi1 = "";
       newFormData.lokasi2 = "";
-      newFormData.lokasiList = [{ lokasi1: "", lokasi2: "" }];
+      newFormData.lokasiList = [{ lokasi1: "", lokasi2: "", isManual: false }];
     }
     if (name === "waktuMulai" || name === "waktuSelesai") {
       const start = name === "waktuMulai" ? value : formData.waktuMulai;
@@ -3541,12 +3613,42 @@ const TabPerbaikan = () => {
     setFormData(newFormData);
   };
   const handleLokasiEntryChange = (index, field, value) => {
+    if (field === "isManualToggle") {
+      setFormData((prev) => {
+        const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
+        newList[index] = { ...newList[index], lokasi1: "", lokasi2: "", isManual: false };
+        return {
+          ...prev,
+          lokasiList: newList,
+          lokasi1: newList[0]?.lokasi1 || "",
+          lokasi2: newList[0]?.lokasi2 || ""
+        };
+      });
+      return;
+    }
+    if (field === "lokasi1" && value === "MANUAL_ENTRY") {
+      setFormData((prev) => {
+        const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
+        newList[index] = { ...newList[index], lokasi1: "", lokasi2: "-", isManual: true };
+        return {
+          ...prev,
+          lokasiList: newList,
+          lokasi1: newList[0]?.lokasi1 || "",
+          lokasi2: newList[0]?.lokasi2 || ""
+        };
+      });
+      return;
+    }
     setFormData((prev) => {
       const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
       newList[index] = { ...newList[index], [field]: value };
       if (field === "lokasi1") {
-        const pts = getLokasi2Options(value, [prev.peralatan]);
-        newList[index].lokasi2 = pts.length === 0 || pts.length === 1 && pts[0] === "-" ? "-" : "";
+        if (newList[index].isManual || isManualPeralatan) {
+          newList[index].lokasi2 = "-";
+        } else {
+          const pts = getLokasi2Options(value, [prev.peralatan]);
+          newList[index].lokasi2 = pts.length === 0 || pts.length === 1 && pts[0] === "-" ? "-" : "";
+        }
       }
       return {
         ...prev,
@@ -3558,7 +3660,7 @@ const TabPerbaikan = () => {
   };
   const addLokasiEntry = () => {
     setFormData((prev) => {
-      const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }], { lokasi1: "", lokasi2: "" }];
+      const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }], { lokasi1: "", lokasi2: isManualPeralatan ? "-" : "", isManual: isManualPeralatan }];
       return { ...prev, lokasiList: newList };
     });
   };
@@ -3566,7 +3668,7 @@ const TabPerbaikan = () => {
     setFormData((prev) => {
       const newList = [...prev.lokasiList || [{ lokasi1: prev.lokasi1 || "", lokasi2: prev.lokasi2 || "" }]];
       newList.splice(index, 1);
-      if (newList.length === 0) newList.push({ lokasi1: "", lokasi2: "" });
+      if (newList.length === 0) newList.push({ lokasi1: "", lokasi2: isManualPeralatan ? "-" : "", isManual: isManualPeralatan });
       return {
         ...prev,
         lokasiList: newList,
@@ -3579,15 +3681,15 @@ const TabPerbaikan = () => {
     const value = e.target.value;
     if (value === "MANUAL_ENTRY") {
       setIsManualPeralatan(true);
-      setFormData((prev) => ({ ...prev, peralatan: "", lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "" }] }));
+      setFormData((prev) => ({ ...prev, peralatan: "", lokasi1: "", lokasi2: "-", lokasiList: [{ lokasi1: "", lokasi2: "-", isManual: true }] }));
       return;
     }
     const isETD = value === "ETD Leidos QS-B220";
     if (!isETD && isVerifikasiETD) {
       setIsVerifikasiETD(false);
-      setFormData((prev) => ({ ...prev, peralatan: value, lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "" }], permasalahan: "• ", tindakLanjut: "• " }));
+      setFormData((prev) => ({ ...prev, peralatan: value, lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "", isManual: false }], permasalahan: "• ", tindakLanjut: "• " }));
     } else {
-      setFormData((prev) => ({ ...prev, peralatan: value, lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "" }] }));
+      setFormData((prev) => ({ ...prev, peralatan: value, lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "", isManual: false }] }));
     }
   };
   const handleVerifikasiChange = (e) => {
@@ -3598,7 +3700,7 @@ const TabPerbaikan = () => {
         newData.peralatan = "ETD Leidos QS-B220";
         newData.lokasi1 = "";
         newData.lokasi2 = "";
-        newData.lokasiList = [{ lokasi1: "", lokasi2: "" }];
+        newData.lokasiList = [{ lokasi1: "", lokasi2: "", isManual: false }];
       }
       if (checked) {
         newData.permasalahan = "• Verification Required";
@@ -3889,7 +3991,10 @@ const TabPerbaikan = () => {
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
     const uraianText = `Permasalahan : ${formData.permasalahan}`;
     const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l) => l.lokasi1);
-    const lokasiFull = activeLocs.map((l) => l.lokasi1 + (l.lokasi2 && l.lokasi2 !== "-" ? ` - ${l.lokasi2}` : "")).join(", ");
+    const lokasiFull = activeLocs.map((l) => {
+      if (l.isManual || l.lokasi2 === "-" && !l.lokasi2) return l.lokasi1;
+      return l.lokasi1 + (l.lokasi2 && l.lokasi2 !== "-" ? ` - ${l.lokasi2}` : "");
+    }).join(", ");
     const waktuFull = formData.waktuSelesai ? `${formData.waktuMulai} - ${formData.waktuSelesai}` : formData.waktuMulai;
     syncToGoogleSheets({
       jenis: "Perbaikan",
@@ -3933,7 +4038,7 @@ const TabPerbaikan = () => {
               type: "button",
               onClick: () => {
                 setIsManualPeralatan(false);
-                setFormData((prev) => ({ ...prev, peralatan: "" }));
+                setFormData((prev) => ({ ...prev, peralatan: "", lokasi1: "", lokasi2: "", lokasiList: [{ lokasi1: "", lokasi2: "", isManual: false }] }));
               },
               className: "px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs shrink-0 transition-colors",
               children: "Pilih dari Daftar"
@@ -3975,37 +4080,65 @@ const TabPerbaikan = () => {
               const takenOptions2ForThisLoc1 = otherRows.filter((r) => r.lokasi1 === loc.lokasi1).map((r) => r.lokasi2).filter(Boolean);
               const options2 = allOptions2.filter((opt) => !takenOptions2ForThisLoc1.includes(opt) || opt === loc.lokasi2);
               const isDisabled2 = allOptions2.length === 0 || allOptions2.length === 1 && allOptions2[0] === "-";
+              const isRowManual = loc.isManual || isManualPeralatan;
               return /* @__PURE__ */ jsxs("div", { className: "flex gap-2 items-center", children: [
-                /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
-                  /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
-                  /* @__PURE__ */ jsxs(
-                    "select",
+                isRowManual ? /* @__PURE__ */ jsxs("div", { className: "flex gap-2 flex-1 items-center", children: [
+                  /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
+                    /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                    /* @__PURE__ */ jsx(
+                      "input",
+                      {
+                        type: "text",
+                        required: index === 0,
+                        placeholder: "Ketik nama lokasi / nomor titik secara manual...",
+                        value: loc.lokasi1,
+                        onChange: (e) => handleLokasiEntryChange(index, "lokasi1", e.target.value),
+                        className: "w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800 font-medium shadow-sm"
+                      }
+                    )
+                  ] }),
+                  !isManualPeralatan && /* @__PURE__ */ jsx(
+                    "button",
                     {
-                      required: index === 0,
-                      disabled: !formData.peralatan,
-                      value: loc.lokasi1,
-                      onChange: (e) => handleLokasiEntryChange(index, "lokasi1", e.target.value),
-                      className: "w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm",
-                      children: [
-                        /* @__PURE__ */ jsx("option", { value: "", children: index === 0 ? "- Pilih Lokasi -" : "- Pilih Lokasi Tambahan (Opsional) -" }),
-                        availableOptions.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-                      ]
+                      type: "button",
+                      onClick: () => handleLokasiEntryChange(index, "isManualToggle", "false"),
+                      className: "px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs shrink-0 transition-colors",
+                      children: "Pilih dari Daftar"
                     }
                   )
+                ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+                  /* @__PURE__ */ jsxs("div", { className: "relative flex-1", children: [
+                    /* @__PURE__ */ jsx(MapPin, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                    /* @__PURE__ */ jsxs(
+                      "select",
+                      {
+                        required: index === 0,
+                        disabled: !formData.peralatan,
+                        value: loc.lokasi1,
+                        onChange: (e) => handleLokasiEntryChange(index, "lokasi1", e.target.value),
+                        className: "w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm",
+                        children: [
+                          /* @__PURE__ */ jsx("option", { value: "", children: index === 0 ? "- Pilih Lokasi -" : "- Pilih Lokasi Tambahan (Opsional) -" }),
+                          availableOptions.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt)),
+                          /* @__PURE__ */ jsx("option", { value: "MANUAL_ENTRY", children: "+ Ketik Manual (Lokasi Lainnya)" })
+                        ]
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "w-1/3", children: /* @__PURE__ */ jsxs(
+                    "select",
+                    {
+                      value: loc.lokasi2,
+                      onChange: (e) => handleLokasiEntryChange(index, "lokasi2", e.target.value),
+                      disabled: isDisabled2,
+                      className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`,
+                      children: [
+                        /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
+                        options2.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+                      ]
+                    }
+                  ) })
                 ] }),
-                /* @__PURE__ */ jsx("div", { className: "w-1/3", children: /* @__PURE__ */ jsxs(
-                  "select",
-                  {
-                    value: loc.lokasi2,
-                    onChange: (e) => handleLokasiEntryChange(index, "lokasi2", e.target.value),
-                    disabled: isDisabled2,
-                    className: `w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? "opacity-50 cursor-not-allowed bg-slate-200" : ""}`,
-                    children: [
-                      /* @__PURE__ */ jsx("option", { value: "", children: "- No -" }),
-                      options2.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
-                    ]
-                  }
-                ) }),
                 index > 0 && /* @__PURE__ */ jsx(
                   "button",
                   {
@@ -7119,16 +7252,14 @@ const AssetMasterLokasi = () => {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [formNama, setFormNama] = useState("");
-  const [formKategori, setFormKategori] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editNama, setEditNama] = useState("");
-  const [editKategori, setEditKategori] = useState("");
   useEffect(() => {
     loadLokasi();
   }, []);
   const loadLokasi = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("lokasi").select("*").order("nama");
+    const { data, error } = await supabase.from("lokasi").select("id, nama").order("nama");
     if (!error && data) {
       setLokasiList(data);
     }
@@ -7138,12 +7269,10 @@ const AssetMasterLokasi = () => {
     if (!formNama.trim()) return alert("Nama lokasi harus diisi!");
     setLoading(true);
     const { error } = await supabase.from("lokasi").insert({
-      nama: formNama.trim(),
-      kategori: formKategori.trim() || null
+      nama: formNama.trim()
     });
     if (!error) {
       setFormNama("");
-      setFormKategori("");
       setIsAdding(false);
       await loadLokasi();
     } else {
@@ -7155,8 +7284,7 @@ const AssetMasterLokasi = () => {
     if (!editNama.trim()) return alert("Nama lokasi harus diisi!");
     setLoading(true);
     const { error } = await supabase.from("lokasi").update({
-      nama: editNama.trim(),
-      kategori: editKategori.trim() || null
+      nama: editNama.trim()
     }).eq("id", id);
     if (!error) {
       setEditingId(null);
@@ -7196,10 +7324,6 @@ const AssetMasterLokasi = () => {
         /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Nama Lokasi" }),
         /* @__PURE__ */ jsx("input", { type: "text", value: formNama, onChange: (e) => setFormNama(e.target.value), className: "w-full p-2 border border-blue-200 rounded-lg text-sm", placeholder: "Contoh: SSCP D" })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "w-full sm:flex-1", children: [
-        /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Kategori (Opsional)" }),
-        /* @__PURE__ */ jsx("input", { type: "text", value: formKategori, onChange: (e) => setFormKategori(e.target.value), className: "w-full p-2 border border-blue-200 rounded-lg text-sm", placeholder: "Contoh: Terminal 2D" })
-      ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex gap-2 w-full sm:w-auto", children: [
         /* @__PURE__ */ jsxs("button", { onClick: handleAdd, className: "flex-1 sm:flex-none flex justify-center items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700", children: [
           /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }),
@@ -7214,13 +7338,11 @@ const AssetMasterLokasi = () => {
     /* @__PURE__ */ jsx("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden", children: /* @__PURE__ */ jsxs("table", { className: "w-full text-left text-sm", children: [
       /* @__PURE__ */ jsx("thead", { className: "bg-slate-50 border-b border-slate-200 text-slate-600", children: /* @__PURE__ */ jsxs("tr", { children: [
         /* @__PURE__ */ jsx("th", { className: "p-3 font-semibold", children: "Nama Lokasi" }),
-        /* @__PURE__ */ jsx("th", { className: "p-3 font-semibold", children: "Kategori" }),
         /* @__PURE__ */ jsx("th", { className: "p-3 font-semibold text-right", children: "Aksi" })
       ] }) }),
       /* @__PURE__ */ jsxs("tbody", { className: "divide-y divide-slate-200", children: [
         lokasiList.map((loc) => /* @__PURE__ */ jsxs("tr", { className: "hover:bg-slate-50", children: [
           /* @__PURE__ */ jsx("td", { className: "p-3", children: editingId === loc.id ? /* @__PURE__ */ jsx("input", { type: "text", value: editNama, onChange: (e) => setEditNama(e.target.value), className: "w-full p-1.5 border rounded" }) : /* @__PURE__ */ jsx("span", { className: "font-medium text-slate-800", children: loc.nama }) }),
-          /* @__PURE__ */ jsx("td", { className: "p-3", children: editingId === loc.id ? /* @__PURE__ */ jsx("input", { type: "text", value: editKategori, onChange: (e) => setEditKategori(e.target.value), className: "w-full p-1.5 border rounded" }) : /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: loc.kategori || "-" }) }),
           /* @__PURE__ */ jsx("td", { className: "p-3 text-right", children: editingId === loc.id ? /* @__PURE__ */ jsxs("div", { className: "flex justify-end gap-2", children: [
             /* @__PURE__ */ jsx("button", { onClick: () => handleUpdate(loc.id), className: "text-emerald-600 hover:bg-emerald-50 p-1.5 rounded", children: /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }) }),
             /* @__PURE__ */ jsx("button", { onClick: () => setEditingId(null), className: "text-slate-500 hover:bg-slate-100 p-1.5 rounded", children: /* @__PURE__ */ jsx(X, { className: "w-4 h-4" }) })
@@ -7228,12 +7350,11 @@ const AssetMasterLokasi = () => {
             /* @__PURE__ */ jsx("button", { onClick: () => {
               setEditingId(loc.id);
               setEditNama(loc.nama);
-              setEditKategori(loc.kategori || "");
             }, className: "text-blue-600 hover:bg-blue-50 p-1.5 rounded", title: "Edit", children: /* @__PURE__ */ jsx(Edit2, { className: "w-4 h-4" }) }),
             /* @__PURE__ */ jsx("button", { onClick: () => handleDelete(loc.id), className: "text-red-600 hover:bg-red-50 p-1.5 rounded", title: "Hapus", children: /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" }) })
           ] }) })
         ] }, loc.id)),
-        lokasiList.length === 0 && /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 3, className: "p-4 text-center text-slate-500", children: "Belum ada data lokasi." }) })
+        lokasiList.length === 0 && /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 2, className: "p-4 text-center text-slate-500", children: "Belum ada data lokasi." }) })
       ] })
     ] }) })
   ] });
@@ -7431,12 +7552,568 @@ const AssetMasterPeralatan = () => {
     ] })
   ] });
 };
+const UnitPeralatanManager = () => {
+  const { initializeSupabaseData } = useMasterDataStore();
+  const [unitList, setUnitList] = useState([]);
+  const [jenisList, setJenisList] = useState([]);
+  const [tipeList, setTipeList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [filterJenis, setFilterJenis] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formJenis, setFormJenis] = useState("");
+  const [formTipe, setFormTipe] = useState("");
+  const [formSn, setFormSn] = useState("");
+  const [formNoSertifikasi, setFormNoSertifikasi] = useState("");
+  const [formTahunInstalasi, setFormTahunInstalasi] = useState("");
+  const [formAmpere, setFormAmpere] = useState("");
+  const [formMilik, setFormMilik] = useState("API");
+  const [formCustomMilik, setFormCustomMilik] = useState("");
+  const [formStatus, setFormStatus] = useState("operasi");
+  const [formCatatan, setFormCatatan] = useState("");
+  const MILIK_OPTIONS = [
+    "API",
+    "Bea Cukai",
+    "Sewa",
+    "Lainnya"
+  ];
+  useEffect(() => {
+    loadData();
+  }, []);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [jenisRes, tipeRes, unitRes] = await Promise.all([
+        supabase.from("jenis_peralatan").select("id, nama").order("nama"),
+        supabase.from("tipe_peralatan").select("id, id_jenis, nama, varian").order("nama"),
+        supabase.from("unit_peralatan").select(`
+          *,
+          tipe_peralatan ( id, id_jenis, nama, varian, jenis_peralatan ( id, nama ) )
+        `).order("created_at", { ascending: false })
+      ]);
+      if (jenisRes.data) setJenisList(jenisRes.data);
+      if (tipeRes.data) setTipeList(tipeRes.data);
+      if (unitRes.data) setUnitList(unitRes.data);
+    } catch (err) {
+      console.error("Failed to load unit equipment data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const resetForm = () => {
+    setEditingId(null);
+    setFormJenis("");
+    setFormTipe("");
+    setFormSn("");
+    setFormNoSertifikasi("");
+    setFormTahunInstalasi("");
+    setFormAmpere("");
+    setFormMilik("API");
+    setFormCustomMilik("");
+    setFormStatus("operasi");
+    setFormCatatan("");
+    setErrorMsg("");
+  };
+  const handleOpenAdd = () => {
+    resetForm();
+    setIsFormOpen(true);
+  };
+  const handleOpenEdit = (unit) => {
+    setEditingId(unit.id);
+    const idJenis = unit.tipe_peralatan?.id_jenis || "";
+    setFormJenis(idJenis);
+    setFormTipe(unit.id_tipe || "");
+    setFormSn(unit.serial_number || "");
+    setFormNoSertifikasi(unit.no_sertifikasi || "");
+    setFormTahunInstalasi(unit.tahun_instalasi ? String(unit.tahun_instalasi) : "");
+    setFormAmpere(unit.ampere ? String(unit.ampere) : "");
+    const milikVal = unit.milik || "API";
+    if (MILIK_OPTIONS.includes(milikVal)) {
+      setFormMilik(milikVal);
+      setFormCustomMilik("");
+    } else {
+      setFormMilik("Lainnya");
+      setFormCustomMilik(milikVal);
+    }
+    setFormStatus(unit.status || "operasi");
+    setFormCatatan(unit.catatan || "");
+    setErrorMsg("");
+    setIsFormOpen(true);
+  };
+  const handleSave = async () => {
+    if (!formTipe) {
+      setErrorMsg("Mohon pilih Jenis dan Tipe Mesin terlebih dahulu!");
+      return;
+    }
+    const finalMilik = formMilik === "Lainnya" ? formCustomMilik.trim() || "Lainnya" : formMilik;
+    const payload = {
+      id_tipe: formTipe,
+      serial_number: formSn.trim() || null,
+      no_sertifikasi: formNoSertifikasi.trim() || null,
+      tahun_instalasi: formTahunInstalasi ? parseInt(formTahunInstalasi, 10) : null,
+      ampere: formAmpere.trim() || null,
+      milik: finalMilik,
+      status: formStatus,
+      catatan: formCatatan.trim() || null
+    };
+    setSaving(true);
+    setErrorMsg("");
+    try {
+      if (editingId) {
+        const { error } = await supabase.from("unit_peralatan").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("unit_peralatan").insert(payload);
+        if (error) throw error;
+      }
+      await loadData();
+      initializeSupabaseData();
+      setIsFormOpen(false);
+      resetForm();
+    } catch (err) {
+      console.error("Error saving unit:", err);
+      setErrorMsg(err.message || "Terjadi kesalahan saat menyimpan data unit.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleDelete = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus unit fisik peralatan ini? Jika unit ini sedang terpasang di lokasi penempatan, mohon lepas atau hapus penempatannya terlebih dahulu.")) return;
+    try {
+      const { error } = await supabase.from("unit_peralatan").delete().eq("id", id);
+      if (error) {
+        if (error.message?.includes("foreign key constraint")) {
+          alert("Gagal menghapus: Unit ini masih terhubung dengan data penempatan mesin aktif. Hapus dari tabel penempatan terlebih dahulu.");
+        } else {
+          throw error;
+        }
+      } else {
+        await loadData();
+        initializeSupabaseData();
+      }
+    } catch (err) {
+      console.error("Failed delete unit:", err);
+      alert("Gagal menghapus unit: " + (err.message || "Unknown error"));
+    }
+  };
+  const filteredTipeForForm = tipeList.filter((t) => t.id_jenis === formJenis);
+  const displayUnits = unitList.filter((u) => {
+    if (filterJenis && u.tipe_peralatan?.id_jenis !== filterJenis) return false;
+    if (filterStatus && u.status !== filterStatus) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const snMatch = u.serial_number?.toLowerCase().includes(q);
+      const tipeMatch = u.tipe_peralatan?.nama?.toLowerCase().includes(q);
+      const milikMatch = u.milik?.toLowerCase().includes(q);
+      const sertMatch = u.no_sertifikasi?.toLowerCase().includes(q);
+      if (!snMatch && !tipeMatch && !milikMatch && !sertMatch) return false;
+    }
+    return true;
+  });
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "operasi":
+        return /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200", children: [
+          /* @__PURE__ */ jsx(CheckCircle2, { className: "w-3.5 h-3.5 text-emerald-600" }),
+          " Operasi"
+        ] });
+      case "standby":
+        return /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200", children: [
+          /* @__PURE__ */ jsx(Clock, { className: "w-3.5 h-3.5 text-blue-600" }),
+          " Standby"
+        ] });
+      case "gudang":
+        return /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300", children: [
+          /* @__PURE__ */ jsx(Box, { className: "w-3.5 h-3.5 text-slate-500" }),
+          " Gudang"
+        ] });
+      case "rusak":
+        return /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200", children: [
+          /* @__PURE__ */ jsx(AlertTriangle, { className: "w-3.5 h-3.5 text-rose-600" }),
+          " Rusak"
+        ] });
+      default:
+        return /* @__PURE__ */ jsx("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700", children: status });
+    }
+  };
+  return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4", children: [
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsxs("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx(Layers, { className: "w-5 h-5 text-blue-600" }),
+          " Manajemen Unit Fisik Peralatan"
+        ] }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mt-0.5", children: "Kelola data fisik setiap unit mesin (S/N, sertifikasi, status operasional & kepemilikan)." })
+      ] }),
+      !isFormOpen && /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: handleOpenAdd,
+          className: "flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-colors shrink-0",
+          children: [
+            /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }),
+            " Tambah Unit Fisik"
+          ]
+        }
+      )
+    ] }),
+    isFormOpen && /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/70 border border-blue-200 rounded-2xl p-5 sm:p-6 shadow-sm relative transition-all", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-blue-200/80 pb-3 mb-4", children: [
+        /* @__PURE__ */ jsxs("h4", { className: "font-bold text-blue-950 flex items-center gap-2 text-base", children: [
+          editingId ? /* @__PURE__ */ jsx(Edit2, { className: "w-4 h-4 text-blue-600" }) : /* @__PURE__ */ jsx(Plus, { className: "w-4 h-4 text-blue-600" }),
+          editingId ? "Edit Data Unit Fisik" : "Tambah Unit Fisik Baru"
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => {
+              setIsFormOpen(false);
+              resetForm();
+            },
+            className: "text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-white/60 transition-colors",
+            children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+          }
+        )
+      ] }),
+      errorMsg && /* @__PURE__ */ jsxs("div", { className: "mb-4 p-3 bg-red-100 text-red-700 text-sm rounded-xl flex items-start gap-2 border border-red-200", children: [
+        /* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 mt-0.5 shrink-0 text-red-600" }),
+        /* @__PURE__ */ jsx("p", { children: errorMsg })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1", children: [
+            "Jenis Peralatan ",
+            /* @__PURE__ */ jsx("span", { className: "text-red-500", children: "*" })
+          ] }),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: formJenis,
+              onChange: (e) => {
+                setFormJenis(e.target.value);
+                setFormTipe("");
+              },
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "", children: "-- Pilih Jenis --" }),
+                jenisList.map((j) => /* @__PURE__ */ jsx("option", { value: j.id, children: j.nama }, j.id))
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1", children: [
+            "Tipe / Model Mesin ",
+            /* @__PURE__ */ jsx("span", { className: "text-red-500", children: "*" })
+          ] }),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: formTipe,
+              onChange: (e) => setFormTipe(e.target.value),
+              disabled: !formJenis,
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "", children: "-- Pilih Tipe --" }),
+                filteredTipeForForm.map((t) => /* @__PURE__ */ jsx("option", { value: t.id, children: t.nama }, t.id))
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1 flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx(Tag, { className: "w-3.5 h-3.5 text-blue-600" }),
+            " Serial Number (S/N)"
+          ] }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: formSn,
+              onChange: (e) => setFormSn(e.target.value),
+              placeholder: "Contoh: SN-90210-B",
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1 flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx(Building2, { className: "w-3.5 h-3.5 text-blue-600" }),
+            " Kepemilikan Mesin"
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+            /* @__PURE__ */ jsx(
+              "select",
+              {
+                value: formMilik,
+                onChange: (e) => setFormMilik(e.target.value),
+                className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none",
+                children: MILIK_OPTIONS.map((opt) => /* @__PURE__ */ jsx("option", { value: opt, children: opt }, opt))
+              }
+            ),
+            formMilik === "Lainnya" && /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "text",
+                value: formCustomMilik,
+                onChange: (e) => setFormCustomMilik(e.target.value),
+                placeholder: "Tulis nama instansi kepemilikan...",
+                className: "w-full p-2 border border-blue-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1", children: [
+            "Status Operasional ",
+            /* @__PURE__ */ jsx("span", { className: "text-red-500", children: "*" })
+          ] }),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: formStatus,
+              onChange: (e) => setFormStatus(e.target.value),
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "operasi", children: "🟢 Operasi" }),
+                /* @__PURE__ */ jsx("option", { value: "standby", children: "🟡 Standby" }),
+                /* @__PURE__ */ jsx("option", { value: "gudang", children: "⚪ Gudang" }),
+                /* @__PURE__ */ jsx("option", { value: "rusak", children: "🔴 Rusak" })
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1 flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-blue-600" }),
+            " Nomor Sertifikasi"
+          ] }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: formNoSertifikasi,
+              onChange: (e) => setFormNoSertifikasi(e.target.value),
+              placeholder: "Contoh: SERT/DGCA/2026/019",
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1 flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx(Calendar, { className: "w-3.5 h-3.5 text-blue-600" }),
+            " Tahun Instalasi"
+          ] }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "number",
+              value: formTahunInstalasi,
+              onChange: (e) => setFormTahunInstalasi(e.target.value),
+              placeholder: "Contoh: 2021",
+              min: "1990",
+              max: "2100",
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-bold text-blue-900 mb-1 flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx(Zap, { className: "w-3.5 h-3.5 text-amber-500" }),
+            " Ampere (Arus Listrik)"
+          ] }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: formAmpere,
+              onChange: (e) => setFormAmpere(e.target.value),
+              placeholder: "Contoh: 16A atau 32 Ampere",
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "md:col-span-2 lg:col-span-2", children: [
+          /* @__PURE__ */ jsx("label", { className: "block text-xs font-bold text-blue-900 mb-1", children: "Catatan Tambahan (Opsional)" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: formCatatan,
+              onChange: (e) => setFormCatatan(e.target.value),
+              placeholder: "Contoh: Kondisi fisik baik, cadangan dari Terminal 2F...",
+              className: "w-full p-2.5 border border-blue-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-3 mt-6 pt-4 border-t border-blue-200/80", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => {
+              setIsFormOpen(false);
+              resetForm();
+            },
+            disabled: saving,
+            className: "px-5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-200 transition-colors",
+            children: "Batal"
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: handleSave,
+            disabled: saving || !formTipe,
+            className: "px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-sm shadow-sm transition-colors flex items-center gap-2",
+            children: [
+              saving ? /* @__PURE__ */ jsx(Loader2, { className: "w-4 h-4 animate-spin" }) : /* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }),
+              editingId ? "Simpan Perubahan" : "Simpan Unit"
+            ]
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row gap-3", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex-1 relative", children: [
+        /* @__PURE__ */ jsx(Search, { className: "w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" }),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "text",
+            value: searchQuery,
+            onChange: (e) => setSearchQuery(e.target.value),
+            placeholder: "Cari Serial Number, Tipe Mesin, Sertifikat, atau Kepemilikan...",
+            className: "w-full pl-10 pr-4 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex gap-3", children: [
+        /* @__PURE__ */ jsx("div", { className: "w-44 sm:w-48", children: /* @__PURE__ */ jsxs(
+          "select",
+          {
+            value: filterJenis,
+            onChange: (e) => setFilterJenis(e.target.value),
+            className: "w-full p-2 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none",
+            children: [
+              /* @__PURE__ */ jsx("option", { value: "", children: "Semua Jenis" }),
+              jenisList.map((j) => /* @__PURE__ */ jsx("option", { value: j.id, children: j.nama }, j.id))
+            ]
+          }
+        ) }),
+        /* @__PURE__ */ jsx("div", { className: "w-36 sm:w-40", children: /* @__PURE__ */ jsxs(
+          "select",
+          {
+            value: filterStatus,
+            onChange: (e) => setFilterStatus(e.target.value),
+            className: "w-full p-2 border border-slate-300 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none",
+            children: [
+              /* @__PURE__ */ jsx("option", { value: "", children: "Semua Status" }),
+              /* @__PURE__ */ jsx("option", { value: "operasi", children: "Operasi" }),
+              /* @__PURE__ */ jsx("option", { value: "standby", children: "Standby" }),
+              /* @__PURE__ */ jsx("option", { value: "gudang", children: "Gudang" }),
+              /* @__PURE__ */ jsx("option", { value: "rusak", children: "Rusak" })
+            ]
+          }
+        ) })
+      ] })
+    ] }),
+    loading ? /* @__PURE__ */ jsx("div", { className: "flex justify-center items-center py-16", children: /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 text-blue-500 animate-spin" }) }) : displayUnits.length === 0 ? /* @__PURE__ */ jsxs("div", { className: "p-12 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50", children: [
+      /* @__PURE__ */ jsx(Box, { className: "w-10 h-10 text-slate-300 mx-auto mb-3" }),
+      /* @__PURE__ */ jsx("p", { className: "font-bold text-slate-700 text-base", children: "Belum ada unit peralatan yang sesuai." }),
+      /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500 mt-1", children: 'Tekan tombol "Tambah Unit Fisik" di atas untuk menambahkan data baru.' })
+    ] }) : /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: displayUnits.map((unit) => {
+      const jenisNama = unit.tipe_peralatan?.jenis_peralatan?.nama || "Unknown Jenis";
+      const tipeNama = unit.tipe_peralatan?.nama || "Unknown Tipe";
+      const sn = unit.serial_number || "Tanpa S/N";
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-md transition-all flex flex-col justify-between",
+          children: [
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2 mb-3", children: [
+                /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg flex items-center gap-1.5 border border-slate-200/80", children: [
+                  /* @__PURE__ */ jsx(Cpu, { className: "w-3.5 h-3.5 text-blue-600" }),
+                  " ",
+                  jenisNama
+                ] }),
+                getStatusBadge(unit.status)
+              ] }),
+              /* @__PURE__ */ jsx("h4", { className: "font-bold text-slate-900 text-base leading-snug", children: tipeNama }),
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 text-sm font-semibold text-blue-600 mt-1", children: [
+                /* @__PURE__ */ jsx(Tag, { className: "w-4 h-4" }),
+                /* @__PURE__ */ jsxs("span", { children: [
+                  "S/N: ",
+                  /* @__PURE__ */ jsx("strong", { className: "font-mono text-slate-800", children: sn })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "mt-4 space-y-1.5 text-xs text-slate-600 bg-slate-50/80 p-3 rounded-xl border border-slate-100", children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-slate-400 font-medium", children: "Kepemilikan:" }),
+                  /* @__PURE__ */ jsx("span", { className: "font-bold text-slate-700", children: unit.milik || "API" })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-slate-400 font-medium", children: "No. Sertifikasi:" }),
+                  /* @__PURE__ */ jsx("span", { className: "font-semibold text-slate-700", children: unit.no_sertifikasi || "-" })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-slate-400 font-medium", children: "Tahun Instalasi:" }),
+                  /* @__PURE__ */ jsx("span", { className: "font-semibold text-slate-700", children: unit.tahun_instalasi || "-" })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-slate-400 font-medium", children: "Ampere:" }),
+                  /* @__PURE__ */ jsx("span", { className: "font-semibold text-slate-700", children: unit.ampere || "-" })
+                ] }),
+                unit.catatan && /* @__PURE__ */ jsxs("div", { className: "pt-1.5 mt-1.5 border-t border-slate-200/60 text-slate-500 italic line-clamp-2", children: [
+                  '"',
+                  unit.catatan,
+                  '"'
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-2 mt-5 pt-3 border-t border-slate-100", children: [
+              /* @__PURE__ */ jsxs(
+                "button",
+                {
+                  onClick: () => handleOpenEdit(unit),
+                  className: "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors",
+                  children: [
+                    /* @__PURE__ */ jsx(Edit2, { className: "w-3.5 h-3.5" }),
+                    " Edit"
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxs(
+                "button",
+                {
+                  onClick: () => handleDelete(unit.id),
+                  className: "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors",
+                  children: [
+                    /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" }),
+                    " Hapus"
+                  ]
+                }
+              )
+            ] })
+          ]
+        },
+        unit.id
+      );
+    }) })
+  ] });
+};
 const AssetManager = () => {
   const { initializeSupabaseData } = useMasterDataStore();
   const [activeTab, setActiveTab] = useState("penempatan");
   const [locations, setLocations] = useState([]);
   const [jenisData, setJenisData] = useState([]);
   const [tipeData, setTipeData] = useState([]);
+  const [unitsData, setUnitsData] = useState([]);
   const [allAssets, setAllAssets] = useState([]);
   const [loadingBase, setLoadingBase] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -7444,6 +8121,7 @@ const AssetManager = () => {
   const [filterLokasi, setFilterLokasi] = useState("");
   const [formJenis, setFormJenis] = useState("");
   const [formTipe, setFormTipe] = useState("");
+  const [formUnit, setFormUnit] = useState("");
   const [formLokasi, setFormLokasi] = useState("");
   const [formTitik, setFormTitik] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -7455,15 +8133,18 @@ const AssetManager = () => {
   const loadBaseData = async () => {
     setLoadingBase(true);
     try {
-      const [lokRes, jenisRes, tipeRes, assetRes] = await Promise.all([
+      const [lokRes, jenisRes, tipeRes, unitRes, assetRes] = await Promise.all([
         supabase.from("lokasi").select("id, nama").order("nama"),
         supabase.from("jenis_peralatan").select("id, nama").order("nama"),
         supabase.from("tipe_peralatan").select("id, id_jenis, nama, varian").order("nama"),
+        supabase.from("unit_peralatan").select("id, id_tipe, serial_number, milik, status").order("serial_number"),
         supabase.from("penempatan_peralatan").select(`
           id,
           is_active,
           id_lokasi,
+          id_unit,
           tipe_peralatan ( id, id_jenis, nama, jenis_peralatan ( nama ) ),
+          unit_peralatan ( id, serial_number, milik, status ),
           titik_lokasi ( id, nomor ),
           lokasi ( id, nama )
         `)
@@ -7471,6 +8152,7 @@ const AssetManager = () => {
       if (lokRes.data) setLocations(lokRes.data);
       if (jenisRes.data) setJenisData(jenisRes.data);
       if (tipeRes.data) setTipeData(tipeRes.data);
+      if (unitRes.data) setUnitsData(unitRes.data);
       if (assetRes.data) {
         const sorted = assetRes.data.sort((a, b) => {
           const numA = parseInt(a.titik_lokasi?.nomor?.replace(/[^0-9]/g, "") || "0", 10);
@@ -7509,6 +8191,7 @@ const AssetManager = () => {
         }
         const { error: penempatanErr } = await supabase.from("penempatan_peralatan").insert({
           id_tipe: formTipe,
+          id_unit: formUnit || null,
           id_lokasi: formLokasi,
           id_titik: titikId,
           is_active: true
@@ -7553,6 +8236,7 @@ const AssetManager = () => {
     return true;
   });
   const filteredTipeForForm = tipeData.filter((t) => t.id_jenis === formJenis);
+  const filteredUnitsForForm = unitsData.filter((u) => u.id_tipe === formTipe);
   return /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden", children: [
     /* @__PURE__ */ jsxs("div", { className: "flex border-b border-slate-200 bg-slate-50 overflow-x-auto hide-scrollbar", children: [
       /* @__PURE__ */ jsxs(
@@ -7563,6 +8247,17 @@ const AssetManager = () => {
           children: [
             /* @__PURE__ */ jsx(LayoutGrid, { className: "w-4 h-4" }),
             " Penempatan Mesin"
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("unit"),
+          className: `flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === "unit" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`,
+          children: [
+            /* @__PURE__ */ jsx(Layers, { className: "w-4 h-4" }),
+            " Unit Peralatan"
           ]
         }
       ),
@@ -7590,6 +8285,7 @@ const AssetManager = () => {
       )
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "p-6", children: [
+      activeTab === "unit" && /* @__PURE__ */ jsx(UnitPeralatanManager, {}),
       activeTab === "lokasi" && /* @__PURE__ */ jsx(AssetMasterLokasi, {}),
       activeTab === "peralatan" && /* @__PURE__ */ jsx(AssetMasterPeralatan, {}),
       activeTab === "penempatan" && (loadingBase ? /* @__PURE__ */ jsx("div", { className: "flex justify-center p-12", children: /* @__PURE__ */ jsx(Loader2, { className: "w-8 h-8 text-blue-500 animate-spin" }) }) : /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-8", children: [
@@ -7627,7 +8323,10 @@ const AssetManager = () => {
                 "select",
                 {
                   value: formTipe,
-                  onChange: (e) => setFormTipe(e.target.value),
+                  onChange: (e) => {
+                    setFormTipe(e.target.value);
+                    setFormUnit("");
+                  },
                   disabled: !formJenis,
                   className: "w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:opacity-50",
                   children: [
@@ -7636,6 +8335,32 @@ const AssetManager = () => {
                   ]
                 }
               )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsxs("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: [
+                "Pilih Unit Spesifik (S/N) ",
+                /* @__PURE__ */ jsx("span", { className: "font-normal text-slate-500", children: "(Opsional)" })
+              ] }),
+              /* @__PURE__ */ jsxs(
+                "select",
+                {
+                  value: formUnit,
+                  onChange: (e) => setFormUnit(e.target.value),
+                  disabled: !formTipe || filteredUnitsForForm.length === 0,
+                  className: "w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:opacity-50",
+                  children: [
+                    /* @__PURE__ */ jsx("option", { value: "", children: "-- Semua / Umum (Tanpa S/N) --" }),
+                    filteredUnitsForForm.map((u) => /* @__PURE__ */ jsxs("option", { value: u.id, children: [
+                      "S/N: ",
+                      u.serial_number || "Tanpa S/N",
+                      " (",
+                      u.milik || "API",
+                      ")"
+                    ] }, u.id))
+                  ]
+                }
+              ),
+              formTipe && filteredUnitsForForm.length === 0 && /* @__PURE__ */ jsx("p", { className: "text-[11px] text-amber-700 mt-1", children: "Belum ada data unit fisik untuk tipe ini." })
             ] }),
             /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-blue-800 mb-1", children: "Lokasi" }),
@@ -7733,6 +8458,16 @@ const AssetManager = () => {
                   !asset.is_active && /* @__PURE__ */ jsx("span", { className: "text-xs font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded", children: "Nonaktif" })
                 ] }),
                 /* @__PURE__ */ jsx("p", { className: "font-bold text-slate-800", children: asset.tipe_peralatan?.nama || "Tipe Tidak Diketahui" }),
+                asset.unit_peralatan?.serial_number && /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 mt-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 w-fit", children: [
+                  /* @__PURE__ */ jsxs("span", { children: [
+                    "S/N: ",
+                    /* @__PURE__ */ jsx("strong", { className: "font-mono", children: asset.unit_peralatan.serial_number })
+                  ] }),
+                  asset.unit_peralatan.milik && /* @__PURE__ */ jsxs("span", { className: "text-blue-500", children: [
+                    "• ",
+                    asset.unit_peralatan.milik
+                  ] })
+                ] }),
                 /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1 text-sm text-slate-500 mt-1", children: [
                   /* @__PURE__ */ jsx(Hash, { className: "w-3.5 h-3.5" }),
                   " Titik: ",

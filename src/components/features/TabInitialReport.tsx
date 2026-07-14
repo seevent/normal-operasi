@@ -42,7 +42,7 @@ export const TabInitialReport: React.FC = () => {
       peralatan: '',
       lokasi1: '',
       lokasi2: '',
-      lokasiList: [{ lokasi1: '', lokasi2: '' }] as { lokasi1: string; lokasi2: string }[],
+      lokasiList: [{ lokasi1: '', lokasi2: '', isManual: false }] as { lokasi1: string; lokasi2: string; isManual?: boolean }[],
       tanggal: realDate,
       waktuMulai: `${currentHour}:${currentMin}`,
       jamPengerjaan: '',
@@ -185,7 +185,7 @@ export const TabInitialReport: React.FC = () => {
     if (name === 'peralatan') {
       newFormData.lokasi1 = '';
       newFormData.lokasi2 = '';
-      newFormData.lokasiList = [{ lokasi1: '', lokasi2: '' }];
+      newFormData.lokasiList = [{ lokasi1: '', lokasi2: '', isManual: false }];
     }
 
     setFormData(newFormData);
@@ -221,13 +221,45 @@ export const TabInitialReport: React.FC = () => {
     });
   };
 
-  const handleLokasiEntryChange = (index: number, field: 'lokasi1' | 'lokasi2', value: string) => {
+  const handleLokasiEntryChange = (index: number, field: 'lokasi1' | 'lokasi2' | 'isManualToggle', value: string) => {
+    if (field === 'isManualToggle') {
+      setFormData(prev => {
+        const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }])];
+        newList[index] = { ...newList[index], lokasi1: '', lokasi2: '', isManual: false };
+        return {
+          ...prev,
+          lokasiList: newList,
+          lokasi1: newList[0]?.lokasi1 || '',
+          lokasi2: newList[0]?.lokasi2 || ''
+        };
+      });
+      return;
+    }
+
+    if (field === 'lokasi1' && value === 'MANUAL_ENTRY') {
+      setFormData(prev => {
+        const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }])];
+        newList[index] = { ...newList[index], lokasi1: '', lokasi2: '-', isManual: true };
+        return {
+          ...prev,
+          lokasiList: newList,
+          lokasi1: newList[0]?.lokasi1 || '',
+          lokasi2: newList[0]?.lokasi2 || ''
+        };
+      });
+      return;
+    }
+
     setFormData(prev => {
       const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }])];
       newList[index] = { ...newList[index], [field]: value };
       if (field === 'lokasi1') {
-        const pts = getLokasi2Options(value, [prev.peralatan]);
-        newList[index].lokasi2 = (pts.length === 0 || (pts.length === 1 && pts[0] === '-')) ? '-' : '';
+        if (newList[index].isManual || isManualPeralatan) {
+          newList[index].lokasi2 = '-';
+        } else {
+          const pts = getLokasi2Options(value, [prev.peralatan]);
+          newList[index].lokasi2 = (pts.length === 0 || (pts.length === 1 && pts[0] === '-')) ? '-' : '';
+        }
       }
       return {
         ...prev,
@@ -240,7 +272,7 @@ export const TabInitialReport: React.FC = () => {
 
   const addLokasiEntry = () => {
     setFormData(prev => {
-      const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }]), { lokasi1: '', lokasi2: '' }];
+      const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }]), { lokasi1: '', lokasi2: isManualPeralatan ? '-' : '', isManual: isManualPeralatan }];
       return { ...prev, lokasiList: newList };
     });
   };
@@ -249,7 +281,7 @@ export const TabInitialReport: React.FC = () => {
     setFormData(prev => {
       const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }])];
       newList.splice(index, 1);
-      if (newList.length === 0) newList.push({ lokasi1: '', lokasi2: '' });
+      if (newList.length === 0) newList.push({ lokasi1: '', lokasi2: isManualPeralatan ? '-' : '', isManual: isManualPeralatan });
       return {
         ...prev,
         lokasiList: newList,
@@ -263,10 +295,10 @@ export const TabInitialReport: React.FC = () => {
     const value = e.target.value;
     if (value === 'MANUAL_ENTRY') {
       setIsManualPeralatan(true);
-      setFormData(prev => ({ ...prev, peralatan: '', lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] }));
+      setFormData(prev => ({ ...prev, peralatan: '', lokasi1: '', lokasi2: '-', lokasiList: [{ lokasi1: '', lokasi2: '-', isManual: true }] }));
       return;
     }
-    setFormData(prev => ({ ...prev, peralatan: value, lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '' }] }));
+    setFormData(prev => ({ ...prev, peralatan: value, lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '', isManual: false }] }));
   };
 
   const handleBulletChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: string) => {
@@ -628,7 +660,7 @@ export const TabInitialReport: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setIsManualPeralatan(false);
-                    setFormData(prev => ({ ...prev, peralatan: '' }));
+                    setFormData(prev => ({ ...prev, peralatan: '', lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '', isManual: false }] }));
                   }}
                   className="px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs shrink-0 transition-colors"
                 >
@@ -680,32 +712,61 @@ export const TabInitialReport: React.FC = () => {
                 const options2 = allOptions2.filter(opt => !takenOptions2ForThisLoc1.includes(opt) || opt === loc.lokasi2);
                 const isDisabled2 = allOptions2.length === 0 || (allOptions2.length === 1 && allOptions2[0] === '-');
 
+                const isRowManual = loc.isManual || isManualPeralatan;
                 return (
                   <div key={index} className="flex gap-2 items-center">
-                    <div className="relative flex-1">
-                      <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                      <select 
-                        required={index === 0}
-                        disabled={!formData.peralatan}
-                        value={loc.lokasi1} 
-                        onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)} 
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm"
-                      >
-                        <option value="">{index === 0 ? '- Pilih Lokasi -' : '- Pilih Lokasi Tambahan (Opsional) -'}</option>
-                        {availableOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    </div>
-                    <div className="w-1/3">
-                      <select 
-                        value={loc.lokasi2} 
-                        onChange={(e) => handleLokasiEntryChange(index, 'lokasi2', e.target.value)} 
-                        disabled={isDisabled2} 
-                        className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}
-                      >
-                        <option value="">- No -</option>
-                        {options2.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    </div>
+                    {isRowManual ? (
+                      <div className="flex gap-2 flex-1 items-center">
+                        <div className="relative flex-1">
+                          <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                          <input
+                            type="text"
+                            required={index === 0}
+                            placeholder="Ketik nama lokasi / nomor titik secara manual..."
+                            value={loc.lokasi1}
+                            onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800 font-medium shadow-sm"
+                          />
+                        </div>
+                        {!isManualPeralatan && (
+                          <button
+                            type="button"
+                            onClick={() => handleLokasiEntryChange(index, 'isManualToggle', 'false')}
+                            className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs shrink-0 transition-colors"
+                          >
+                            Pilih dari Daftar
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="relative flex-1">
+                          <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                          <select 
+                            required={index === 0}
+                            disabled={!formData.peralatan}
+                            value={loc.lokasi1} 
+                            onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)} 
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm"
+                          >
+                            <option value="">{index === 0 ? '- Pilih Lokasi -' : '- Pilih Lokasi Tambahan (Opsional) -'}</option>
+                            {availableOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                            <option value="MANUAL_ENTRY">+ Ketik Manual (Lokasi Lainnya)</option>
+                          </select>
+                        </div>
+                        <div className="w-1/3">
+                          <select 
+                            value={loc.lokasi2} 
+                            onChange={(e) => handleLokasiEntryChange(index, 'lokasi2', e.target.value)} 
+                            disabled={isDisabled2} 
+                            className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}
+                          >
+                            <option value="">- No -</option>
+                            {options2.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    )}
                     {index > 0 && (
                       <button 
                         type="button" 

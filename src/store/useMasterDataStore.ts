@@ -59,6 +59,8 @@ interface MasterDataState {
   
   penempatanData: any[];
   setPenempatanData: (data: any[]) => void;
+  unitPeralatanData: any[];
+  setUnitPeralatanData: (data: any[]) => void;
   jenisPeralatanData: any[];
   setJenisPeralatanData: (data: any[]) => void;
   toggleKalibrasiEquipmentDb: (id: string, tampil: boolean) => Promise<void>;
@@ -153,6 +155,8 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
 
   penempatanData: [],
   setPenempatanData: (data) => set({ penempatanData: data }),
+  unitPeralatanData: [],
+  setUnitPeralatanData: (data) => set({ unitPeralatanData: data }),
   jenisPeralatanData: [],
   setJenisPeralatanData: (data) => set({ jenisPeralatanData: data }),
   toggleKalibrasiEquipmentDb: async (id: string, tampil: boolean) => {
@@ -255,8 +259,10 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
       const { data, error } = await supabase
         .from('penempatan_peralatan')
         .select(`
-          id, 
+          id,
+          id_unit,
           tipe_peralatan ( nama, varian, jenis_peralatan ( nama ) ),
+          unit_peralatan ( id, serial_number, milik, status, no_sertifikasi, tahun_instalasi, ampere ),
           lokasi ( nama ),
           titik_lokasi ( nomor )
         `);
@@ -266,6 +272,18 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
       } else if (data && data.length > 0) {
         console.log('✅ Berhasil terhubung ke Supabase! Menemukan', data.length, 'data penempatan.');
         set({ penempatanData: data });
+      }
+
+      // 1.2 Fetch Unit Peralatan
+      const { data: unitData, error: unitError } = await supabase
+        .from('unit_peralatan')
+        .select(`
+          *,
+          tipe_peralatan ( id, nama, varian, jenis_peralatan ( id, nama ) )
+        `)
+        .order('created_at', { ascending: false });
+      if (!unitError && unitData) {
+        set({ unitPeralatanData: unitData });
       }
 
       // 1.5 Fetch Jenis Peralatan
