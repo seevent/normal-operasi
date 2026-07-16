@@ -157,6 +157,39 @@ export const TabChecklist: React.FC = () => {
     });
   };
 
+  const getOffCountForLocation = (block: any) => {
+    let count = 0;
+    if (block.type === 'location') {
+      block.categories?.forEach((cat: any) => {
+        cat.items?.forEach((_: any, iIdx: number) => {
+          const key = `${block.title}|${cat.title}|${iIdx}`;
+          if (toggles[key] === false) count++;
+        });
+      });
+    } else if (block.type === 'access_control') {
+      block.terminals?.forEach((term: any) => {
+        term.categories?.forEach((cat: any) => {
+          cat.items?.forEach((_: any, iIdx: number) => {
+            const key = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
+            if (toggles[key] === false) count++;
+          });
+        });
+      });
+    }
+    return count;
+  };
+
+  const getOffCountForGroupLoc = (loc: any) => {
+    let count = 0;
+    loc.categories?.forEach((cat: any) => {
+      cat.items?.forEach((_: any, iIdx: number) => {
+        const key = `${loc.title}|${cat.title}|${iIdx}`;
+        if (toggles[key] === false) count++;
+      });
+    });
+    return count;
+  };
+
   const handleChecklistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const now = new Date();
@@ -266,16 +299,26 @@ export const TabChecklist: React.FC = () => {
         <div className="space-y-6">
           {checklistDataMaster.map((block: any, bIdx: number) => {
             if (block.type === 'location') {
+              const offCount = getOffCountForLocation(block);
               return (
                 <div key={`loc-${bIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                   <div 
                     onClick={() => toggleArea(block.title)}
-                    className="bg-slate-100 p-4 border-b border-slate-200 font-bold text-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-200 transition-colors"
+                    className={`${offCount > 0 ? 'bg-red-50/90 border-b border-red-200 hover:bg-red-100/90' : 'bg-slate-100 border-b border-slate-200 hover:bg-slate-200'} p-4 font-bold text-slate-800 flex items-center justify-between cursor-pointer transition-colors`}
                   >
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-slate-500" /> {block.title}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <MapPin className={`w-5 h-5 ${offCount > 0 ? 'text-red-600 animate-pulse' : 'text-slate-500'}`} />
+                        <span className={offCount > 0 ? 'text-red-900 font-extrabold' : ''}>{block.title}</span>
+                      </div>
+                      {offCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold text-red-800 bg-red-100 border border-red-300 rounded-full shadow-sm animate-bounce">
+                          <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                          ⚠️ {offCount} Peralatan Off
+                        </span>
+                      )}
                     </div>
-                    {expandedAreas[block.title] ? <ChevronUp className="w-5 h-5 text-slate-500"/> : <ChevronDown className="w-5 h-5 text-slate-500"/>}
+                    {expandedAreas[block.title] ? <ChevronUp className={`w-5 h-5 ${offCount > 0 ? 'text-red-700' : 'text-slate-500'}`}/> : <ChevronDown className={`w-5 h-5 ${offCount > 0 ? 'text-red-700' : 'text-slate-500'}`}/>}
                   </div>
                   {expandedAreas[block.title] && (
                     <div className="p-4 space-y-6">
@@ -374,16 +417,27 @@ export const TabChecklist: React.FC = () => {
             } else if (block.type === 'group') {
               return (
                 <div key={`grp-${bIdx}`} className="space-y-6">
-                  {block.locations.map((loc: any, lIdx: number) => (
+                  {block.locations.map((loc: any, lIdx: number) => {
+                    const offCount = getOffCountForGroupLoc(loc);
+                    return (
                     <div key={`gloc-${lIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                       <div 
                         onClick={() => toggleArea(loc.title)}
-                        className="bg-slate-100 p-4 border-b border-slate-200 font-bold text-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-200 transition-colors"
+                        className={`${offCount > 0 ? 'bg-red-50/90 border-b border-red-200 hover:bg-red-100/90' : 'bg-slate-100 border-b border-slate-200 hover:bg-slate-200'} p-4 font-bold text-slate-800 flex items-center justify-between cursor-pointer transition-colors`}
                       >
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-slate-500" /> {loc.title}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <MapPin className={`w-5 h-5 ${offCount > 0 ? 'text-red-600 animate-pulse' : 'text-slate-500'}`} />
+                            <span className={offCount > 0 ? 'text-red-900 font-extrabold' : ''}>{loc.title}</span>
+                          </div>
+                          {offCount > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold text-red-800 bg-red-100 border border-red-300 rounded-full shadow-sm animate-bounce">
+                              <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                              ⚠️ {offCount} Peralatan Off
+                            </span>
+                          )}
                         </div>
-                        {expandedAreas[loc.title] ? <ChevronUp className="w-5 h-5 text-slate-500"/> : <ChevronDown className="w-5 h-5 text-slate-500"/>}
+                        {expandedAreas[loc.title] ? <ChevronUp className={`w-5 h-5 ${offCount > 0 ? 'text-red-700' : 'text-slate-500'}`}/> : <ChevronDown className={`w-5 h-5 ${offCount > 0 ? 'text-red-700' : 'text-slate-500'}`}/>}
                       </div>
                       {expandedAreas[loc.title] && (
                         <div className="p-4 space-y-6">
@@ -478,20 +532,31 @@ export const TabChecklist: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               );
             } else if (block.type === 'access_control') {
+              const offCount = getOffCountForLocation(block);
               return (
                 <div key={`ac-${bIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                   <div 
                     onClick={() => toggleArea(block.title)}
-                    className="bg-slate-800 p-4 border-b border-slate-700 font-bold text-white flex items-center justify-between cursor-pointer hover:bg-slate-700 transition-colors"
+                    className={`${offCount > 0 ? 'bg-red-900/90 border-b border-red-800 hover:bg-red-800' : 'bg-slate-800 border-b border-slate-700 hover:bg-slate-700'} p-4 font-bold text-white flex items-center justify-between cursor-pointer transition-colors`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Cpu className="w-5 h-5 text-slate-300" /> {block.title}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Cpu className={`w-5 h-5 ${offCount > 0 ? 'text-red-300 animate-pulse' : 'text-slate-300'}`} />
+                        <span className={offCount > 0 ? 'text-red-100 font-extrabold' : ''}>{block.title}</span>
+                      </div>
+                      {offCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold text-red-900 bg-red-200 border border-red-400 rounded-full shadow-sm animate-bounce">
+                          <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                          ⚠️ {offCount} Peralatan Off
+                        </span>
+                      )}
                     </div>
-                    {expandedAreas[block.title] ? <ChevronUp className="w-5 h-5 text-slate-300"/> : <ChevronDown className="w-5 h-5 text-slate-300"/>}
+                    {expandedAreas[block.title] ? <ChevronUp className={`w-5 h-5 ${offCount > 0 ? 'text-red-200' : 'text-slate-300'}`}/> : <ChevronDown className={`w-5 h-5 ${offCount > 0 ? 'text-red-200' : 'text-slate-300'}`}/>}
                   </div>
                   {expandedAreas[block.title] && (
                     <div className="p-4 space-y-8">

@@ -6256,6 +6256,37 @@ const TabChecklist = () => {
       return newToggles;
     });
   };
+  const getOffCountForLocation = (block) => {
+    let count = 0;
+    if (block.type === "location") {
+      block.categories?.forEach((cat) => {
+        cat.items?.forEach((_, iIdx) => {
+          const key = `${block.title}|${cat.title}|${iIdx}`;
+          if (toggles[key] === false) count++;
+        });
+      });
+    } else if (block.type === "access_control") {
+      block.terminals?.forEach((term) => {
+        term.categories?.forEach((cat) => {
+          cat.items?.forEach((_, iIdx) => {
+            const key = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
+            if (toggles[key] === false) count++;
+          });
+        });
+      });
+    }
+    return count;
+  };
+  const getOffCountForGroupLoc = (loc) => {
+    let count = 0;
+    loc.categories?.forEach((cat) => {
+      cat.items?.forEach((_, iIdx) => {
+        const key = `${loc.title}|${cat.title}|${iIdx}`;
+        if (toggles[key] === false) count++;
+      });
+    });
+    return count;
+  };
   const handleChecklistSubmit = async (e) => {
     e.preventDefault();
     const now = /* @__PURE__ */ new Date();
@@ -6361,19 +6392,27 @@ const TabChecklist = () => {
       ] }),
       /* @__PURE__ */ jsx("div", { className: "space-y-6", children: checklistDataMaster.map((block, bIdx) => {
         if (block.type === "location") {
+          const offCount = getOffCountForLocation(block);
           return /* @__PURE__ */ jsxs("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: [
             /* @__PURE__ */ jsxs(
               "div",
               {
                 onClick: () => toggleArea(block.title),
-                className: "bg-slate-100 p-4 border-b border-slate-200 font-bold text-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-200 transition-colors",
+                className: `${offCount > 0 ? "bg-red-50/90 border-b border-red-200 hover:bg-red-100/90" : "bg-slate-100 border-b border-slate-200 hover:bg-slate-200"} p-4 font-bold text-slate-800 flex items-center justify-between cursor-pointer transition-colors`,
                 children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsx(MapPin, { className: "w-5 h-5 text-slate-500" }),
-                    " ",
-                    block.title
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5 flex-wrap", children: [
+                    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                      /* @__PURE__ */ jsx(MapPin, { className: `w-5 h-5 ${offCount > 0 ? "text-red-600 animate-pulse" : "text-slate-500"}` }),
+                      /* @__PURE__ */ jsx("span", { className: offCount > 0 ? "text-red-900 font-extrabold" : "", children: block.title })
+                    ] }),
+                    offCount > 0 && /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold text-red-800 bg-red-100 border border-red-300 rounded-full shadow-sm animate-bounce", children: [
+                      /* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-red-600 animate-ping" }),
+                      "⚠️ ",
+                      offCount,
+                      " Peralatan Off"
+                    ] })
                   ] }),
-                  expandedAreas[block.title] ? /* @__PURE__ */ jsx(ChevronUp, { className: "w-5 h-5 text-slate-500" }) : /* @__PURE__ */ jsx(ChevronDown, { className: "w-5 h-5 text-slate-500" })
+                  expandedAreas[block.title] ? /* @__PURE__ */ jsx(ChevronUp, { className: `w-5 h-5 ${offCount > 0 ? "text-red-700" : "text-slate-500"}` }) : /* @__PURE__ */ jsx(ChevronDown, { className: `w-5 h-5 ${offCount > 0 ? "text-red-700" : "text-slate-500"}` })
                 ]
               }
             ),
@@ -6462,120 +6501,138 @@ const TabChecklist = () => {
             ] })
           ] }, `loc-${bIdx}`);
         } else if (block.type === "group") {
-          return /* @__PURE__ */ jsx("div", { className: "space-y-6", children: block.locations.map((loc, lIdx) => /* @__PURE__ */ jsxs("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: [
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                onClick: () => toggleArea(loc.title),
-                className: "bg-slate-100 p-4 border-b border-slate-200 font-bold text-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-200 transition-colors",
-                children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsx(MapPin, { className: "w-5 h-5 text-slate-500" }),
-                    " ",
+          return /* @__PURE__ */ jsx("div", { className: "space-y-6", children: block.locations.map((loc, lIdx) => {
+            const offCount = getOffCountForGroupLoc(loc);
+            return /* @__PURE__ */ jsxs("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: [
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  onClick: () => toggleArea(loc.title),
+                  className: `${offCount > 0 ? "bg-red-50/90 border-b border-red-200 hover:bg-red-100/90" : "bg-slate-100 border-b border-slate-200 hover:bg-slate-200"} p-4 font-bold text-slate-800 flex items-center justify-between cursor-pointer transition-colors`,
+                  children: [
+                    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5 flex-wrap", children: [
+                      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                        /* @__PURE__ */ jsx(MapPin, { className: `w-5 h-5 ${offCount > 0 ? "text-red-600 animate-pulse" : "text-slate-500"}` }),
+                        /* @__PURE__ */ jsx("span", { className: offCount > 0 ? "text-red-900 font-extrabold" : "", children: loc.title })
+                      ] }),
+                      offCount > 0 && /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold text-red-800 bg-red-100 border border-red-300 rounded-full shadow-sm animate-bounce", children: [
+                        /* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-red-600 animate-ping" }),
+                        "⚠️ ",
+                        offCount,
+                        " Peralatan Off"
+                      ] })
+                    ] }),
+                    expandedAreas[loc.title] ? /* @__PURE__ */ jsx(ChevronUp, { className: `w-5 h-5 ${offCount > 0 ? "text-red-700" : "text-slate-500"}` }) : /* @__PURE__ */ jsx(ChevronDown, { className: `w-5 h-5 ${offCount > 0 ? "text-red-700" : "text-slate-500"}` })
+                  ]
+                }
+              ),
+              expandedAreas[loc.title] && /* @__PURE__ */ jsxs("div", { className: "p-4 space-y-6", children: [
+                loc.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
+                  /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3", children: cat.items.map((item, iIdx) => {
+                    const key = `${loc.title}|${cat.title}|${iIdx}`;
+                    const isOperasi = toggles[key] !== false;
+                    return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100" : "bg-red-50 border-red-300 hover:bg-red-100"}`, children: [
+                      /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
+                      /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
+                    ] }, `gitem-${iIdx}`);
+                  }) })
+                ] }, `gcat-${cIdx}`)),
+                loc.title === "HBSCP" || loc.title.includes("HBSCP") && !loc.title.includes("UMROH") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200 space-y-4", children: [
+                  /* @__PURE__ */ jsxs("div", { children: [
+                    /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 1.1 - 1.6" }),
+                    /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                      /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                      /* @__PURE__ */ jsx(
+                        "input",
+                        {
+                          type: "text",
+                          value: (checklistData.supervisorAvsec || {})["HBSCP 1.1 - 1.6"] || "",
+                          onChange: (e) => handleSupervisorChange("HBSCP 1.1 - 1.6", e.target.value),
+                          placeholder: "Nama Supervisor Avsec HBSCP 1.1 - 1.6",
+                          className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                        }
+                      )
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsxs("div", { children: [
+                    /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 2.1 - 2.6" }),
+                    /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                      /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                      /* @__PURE__ */ jsx(
+                        "input",
+                        {
+                          type: "text",
+                          value: (checklistData.supervisorAvsec || {})["HBSCP 2.1 - 2.6"] || "",
+                          onChange: (e) => handleSupervisorChange("HBSCP 2.1 - 2.6", e.target.value),
+                          placeholder: "Nama Supervisor Avsec HBSCP 2.1 - 2.6",
+                          className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                        }
+                      )
+                    ] })
+                  ] })
+                ] }) : loc.title === "ACCESS CONTROL" || loc.title.includes("ACCESS CONTROL") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec Monitoring Access E1" }),
+                  /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                    /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
+                    /* @__PURE__ */ jsx(
+                      "input",
+                      {
+                        type: "text",
+                        value: (checklistData.supervisorAvsec || {})[loc.title] || (checklistData.supervisorAvsec || {})["Monitoring Access E1"] || "",
+                        onChange: (e) => {
+                          handleSupervisorChange(loc.title, e.target.value);
+                          handleSupervisorChange("Monitoring Access E1", e.target.value);
+                        },
+                        placeholder: "Nama Supervisor Avsec Monitoring Access E1",
+                        className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                      }
+                    )
+                  ] })
+                ] }) : /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
+                  /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: [
+                    "Supervisor Avsec ",
                     loc.title
                   ] }),
-                  expandedAreas[loc.title] ? /* @__PURE__ */ jsx(ChevronUp, { className: "w-5 h-5 text-slate-500" }) : /* @__PURE__ */ jsx(ChevronDown, { className: "w-5 h-5 text-slate-500" })
-                ]
-              }
-            ),
-            expandedAreas[loc.title] && /* @__PURE__ */ jsxs("div", { className: "p-4 space-y-6", children: [
-              loc.categories.map((cat, cIdx) => /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("h3", { className: "text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block", children: cat.title }),
-                /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3", children: cat.items.map((item, iIdx) => {
-                  const key = `${loc.title}|${cat.title}|${iIdx}`;
-                  const isOperasi = toggles[key] !== false;
-                  return /* @__PURE__ */ jsxs("div", { onClick: () => toggleChecklistItem(key), className: `flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all select-none shadow-sm hover:-translate-y-0.5 ${isOperasi ? "bg-emerald-50/50 border-emerald-300 hover:bg-emerald-100" : "bg-red-50 border-red-300 hover:bg-red-100"}`, children: [
-                    /* @__PURE__ */ jsx("span", { className: `text-sm font-semibold ${isOperasi ? "text-emerald-900" : "text-red-900"}`, children: item }),
-                    /* @__PURE__ */ jsx("button", { type: "button", className: `w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full transition-colors shadow-sm ${isOperasi ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`, children: isOperasi ? /* @__PURE__ */ jsx(Check, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) })
-                  ] }, `gitem-${iIdx}`);
-                }) })
-              ] }, `gcat-${cIdx}`)),
-              loc.title === "HBSCP" || loc.title.includes("HBSCP") && !loc.title.includes("UMROH") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200 space-y-4", children: [
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 1.1 - 1.6" }),
                   /* @__PURE__ */ jsxs("div", { className: "relative", children: [
                     /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
                     /* @__PURE__ */ jsx(
                       "input",
                       {
                         type: "text",
-                        value: (checklistData.supervisorAvsec || {})["HBSCP 1.1 - 1.6"] || "",
-                        onChange: (e) => handleSupervisorChange("HBSCP 1.1 - 1.6", e.target.value),
-                        placeholder: "Nama Supervisor Avsec HBSCP 1.1 - 1.6",
+                        value: (checklistData.supervisorAvsec || {})[loc.title] || "",
+                        onChange: (e) => handleSupervisorChange(loc.title, e.target.value),
+                        placeholder: `Nama Supervisor Avsec ${loc.title}`,
                         className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
                       }
                     )
                   ] })
-                ] }),
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec HBSCP 2.1 - 2.6" }),
-                  /* @__PURE__ */ jsxs("div", { className: "relative", children: [
-                    /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
-                    /* @__PURE__ */ jsx(
-                      "input",
-                      {
-                        type: "text",
-                        value: (checklistData.supervisorAvsec || {})["HBSCP 2.1 - 2.6"] || "",
-                        onChange: (e) => handleSupervisorChange("HBSCP 2.1 - 2.6", e.target.value),
-                        placeholder: "Nama Supervisor Avsec HBSCP 2.1 - 2.6",
-                        className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
-                      }
-                    )
-                  ] })
-                ] })
-              ] }) : loc.title === "ACCESS CONTROL" || loc.title.includes("ACCESS CONTROL") ? /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
-                /* @__PURE__ */ jsx("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: "Supervisor Avsec Monitoring Access E1" }),
-                /* @__PURE__ */ jsxs("div", { className: "relative", children: [
-                  /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
-                  /* @__PURE__ */ jsx(
-                    "input",
-                    {
-                      type: "text",
-                      value: (checklistData.supervisorAvsec || {})[loc.title] || (checklistData.supervisorAvsec || {})["Monitoring Access E1"] || "",
-                      onChange: (e) => {
-                        handleSupervisorChange(loc.title, e.target.value);
-                        handleSupervisorChange("Monitoring Access E1", e.target.value);
-                      },
-                      placeholder: "Nama Supervisor Avsec Monitoring Access E1",
-                      className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
-                    }
-                  )
-                ] })
-              ] }) : /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-200", children: [
-                /* @__PURE__ */ jsxs("label", { className: "block text-sm font-medium text-slate-700 mb-1", children: [
-                  "Supervisor Avsec ",
-                  loc.title
-                ] }),
-                /* @__PURE__ */ jsxs("div", { className: "relative", children: [
-                  /* @__PURE__ */ jsx(User, { className: "absolute left-3 top-2.5 h-5 w-5 text-slate-400" }),
-                  /* @__PURE__ */ jsx(
-                    "input",
-                    {
-                      type: "text",
-                      value: (checklistData.supervisorAvsec || {})[loc.title] || "",
-                      onChange: (e) => handleSupervisorChange(loc.title, e.target.value),
-                      placeholder: `Nama Supervisor Avsec ${loc.title}`,
-                      className: "w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
-                    }
-                  )
                 ] })
               ] })
-            ] })
-          ] }, `gloc-${lIdx}`)) }, `grp-${bIdx}`);
+            ] }, `gloc-${lIdx}`);
+          }) }, `grp-${bIdx}`);
         } else if (block.type === "access_control") {
+          const offCount = getOffCountForLocation(block);
           return /* @__PURE__ */ jsxs("div", { className: "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", children: [
             /* @__PURE__ */ jsxs(
               "div",
               {
                 onClick: () => toggleArea(block.title),
-                className: "bg-slate-800 p-4 border-b border-slate-700 font-bold text-white flex items-center justify-between cursor-pointer hover:bg-slate-700 transition-colors",
+                className: `${offCount > 0 ? "bg-red-900/90 border-b border-red-800 hover:bg-red-800" : "bg-slate-800 border-b border-slate-700 hover:bg-slate-700"} p-4 font-bold text-white flex items-center justify-between cursor-pointer transition-colors`,
                 children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsx(Cpu, { className: "w-5 h-5 text-slate-300" }),
-                    " ",
-                    block.title
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5 flex-wrap", children: [
+                    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                      /* @__PURE__ */ jsx(Cpu, { className: `w-5 h-5 ${offCount > 0 ? "text-red-300 animate-pulse" : "text-slate-300"}` }),
+                      /* @__PURE__ */ jsx("span", { className: offCount > 0 ? "text-red-100 font-extrabold" : "", children: block.title })
+                    ] }),
+                    offCount > 0 && /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold text-red-900 bg-red-200 border border-red-400 rounded-full shadow-sm animate-bounce", children: [
+                      /* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-red-600 animate-ping" }),
+                      "⚠️ ",
+                      offCount,
+                      " Peralatan Off"
+                    ] })
                   ] }),
-                  expandedAreas[block.title] ? /* @__PURE__ */ jsx(ChevronUp, { className: "w-5 h-5 text-slate-300" }) : /* @__PURE__ */ jsx(ChevronDown, { className: "w-5 h-5 text-slate-300" })
+                  expandedAreas[block.title] ? /* @__PURE__ */ jsx(ChevronUp, { className: `w-5 h-5 ${offCount > 0 ? "text-red-200" : "text-slate-300"}` }) : /* @__PURE__ */ jsx(ChevronDown, { className: `w-5 h-5 ${offCount > 0 ? "text-red-200" : "text-slate-300"}` })
                 ]
               }
             ),
