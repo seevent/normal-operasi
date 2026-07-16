@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Clock, Calendar, CheckSquare, MapPin, Check, X, ChevronUp, ChevronDown, Cpu, Share2, CheckCircle, FileText, User } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Clock, Calendar, CheckSquare, MapPin, Check, X, ChevronUp, ChevronDown, Cpu, Share2, CheckCircle, FileText, User, RefreshCw, Loader2, Cloud } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { generateWA_Checklist } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
+import { supabase } from '../../lib/supabaseClient';
 
 export const TabChecklist: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -28,6 +29,96 @@ export const TabChecklist: React.FC = () => {
 
   const [toggles, setToggles] = useState<Record<string, boolean>>({});
   const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
+  const [syncStatus, setSyncStatus] = useState<'loading' | 'synced' | 'saving' | 'error'>('loading');
+  const clientIdRef = useRef<string>(`client_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`);
+  const channelRef = useRef<any>(null);
+
+  const fetchActiveToggles = useCallback(async () => {
+    setSyncStatus('loading');
+    try {
+      const { data, error } = await supabase
+        .from('master_configs')
+        .select('value')
+        .eq('key', 'checklist_active_toggles')
+        .maybeSingle();
+
+      if (!error && data && data.value) {
+        setToggles(data.value.toggles || {});
+      }
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Gagal memuat status checklist dari Supabase:', err);
+      setSyncStatus('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActiveToggles();
+
+    const channel = supabase.channel('checklist_toggles_sync')
+      .on('broadcast', { event: 'toggles_update' }, (payload) => {
+        if (payload?.payload?.senderId !== clientIdRef.current && payload?.payload?.toggles) {
+          setToggles(payload.payload.toggles);
+          setSyncStatus('synced');
+        }
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'master_configs', 
+        filter: 'key=eq.checklist_active_toggles' 
+      }, (payload: any) => {
+        const newValue = payload?.new?.value;
+        if (newValue && newValue.senderId !== clientIdRef.current && newValue.toggles) {
+          setToggles(newValue.toggles);
+          setSyncStatus('synced');
+        }
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [fetchActiveToggles]);
+
+  const saveAndBroadcastToggles = async (newToggles: Record<string, boolean>) => {
+    setSyncStatus('saving');
+    const payload = {
+      toggles: newToggles,
+      senderId: clientIdRef.current,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'toggles_update',
+        payload
+      }).catch((err: any) => console.error('Broadcast error:', err));
+    }
+
+    try {
+      const { error } = await supabase
+        .from('master_configs')
+        .upsert(
+          { key: 'checklist_active_toggles', value: payload, updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        );
+      if (error) {
+        console.error('Upsert error:', error);
+        setSyncStatus('error');
+      } else {
+        setSyncStatus('synced');
+      }
+    } catch (err) {
+      console.error('Error saving toggles to Supabase:', err);
+      setSyncStatus('error');
+    }
+  };
 
   const handleChecklistChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -58,7 +149,12 @@ export const TabChecklist: React.FC = () => {
   };
 
   const toggleChecklistItem = (key: string) => {
-    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
+    setToggles(prev => {
+      const currentVal = prev[key] !== false;
+      const newToggles = { ...prev, [key]: !currentVal };
+      saveAndBroadcastToggles(newToggles);
+      return newToggles;
+    });
   };
 
   const handleChecklistSubmit = async (e: React.FormEvent) => {
@@ -118,6 +214,45 @@ export const TabChecklist: React.FC = () => {
       </div>
 
       <div className="space-y-6">
+        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-medium">
+            {syncStatus === 'loading' && (
+              <>
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+                <span className="text-slate-600">Memuat status operasi peralatan dari database...</span>
+              </>
+            )}
+            {syncStatus === 'saving' && (
+              <>
+                <Loader2 className="w-4 h-4 text-amber-600 animate-spin flex-shrink-0" />
+                <span className="text-amber-700">Menyimpan dan menyinkronkan status operasi secara real-time...</span>
+              </>
+            )}
+            {syncStatus === 'synced' && (
+              <>
+                <Cloud className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span className="text-emerald-700 font-semibold">Status Operasi (Operasi/Off) Terhubung Real-time ke Database</span>
+              </>
+            )}
+            {syncStatus === 'error' && (
+              <>
+                <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <span className="text-red-600">Gagal menyinkronkan ke database. Periksa koneksi internet Anda.</span>
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={fetchActiveToggles}
+            disabled={syncStatus === 'loading'}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+            title="Muat ulang status terbaru dari database"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncStatus === 'loading' ? 'animate-spin' : ''}`} />
+            Sync Ulang
+          </button>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-2 gap-2">
           <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
             <CheckSquare className="w-5 h-5 text-blue-600" /> Daftar Peralatan & Status

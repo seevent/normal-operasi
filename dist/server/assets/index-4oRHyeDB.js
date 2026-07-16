@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import React, { useState, useRef, useEffect } from "react";
-import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, Layers, Tag, Building2, ShieldCheck, Zap, Search, Box, CheckCircle2, LayoutGrid, Database, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, List, PlaneTakeoff, PlaneLanding, Image as Image$1, Upload, Sliders, MoreHorizontal } from "lucide-react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, Cloud, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, Layers, Tag, Building2, ShieldCheck, Zap, Search, Box, CheckCircle2, LayoutGrid, Database, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, List, PlaneTakeoff, PlaneLanding, Image as Image$1, Upload, Sliders, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -6150,6 +6150,78 @@ const TabChecklist = () => {
   };
   const [toggles, setToggles] = useState({});
   const [expandedAreas, setExpandedAreas] = useState({});
+  const [syncStatus, setSyncStatus] = useState("loading");
+  const clientIdRef = useRef(`client_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`);
+  const channelRef = useRef(null);
+  const fetchActiveToggles = useCallback(async () => {
+    setSyncStatus("loading");
+    try {
+      const { data, error } = await supabase.from("master_configs").select("value").eq("key", "checklist_active_toggles").maybeSingle();
+      if (!error && data && data.value) {
+        setToggles(data.value.toggles || {});
+      }
+      setSyncStatus("synced");
+    } catch (err) {
+      console.error("Gagal memuat status checklist dari Supabase:", err);
+      setSyncStatus("error");
+    }
+  }, []);
+  useEffect(() => {
+    fetchActiveToggles();
+    const channel = supabase.channel("checklist_toggles_sync").on("broadcast", { event: "toggles_update" }, (payload) => {
+      if (payload?.payload?.senderId !== clientIdRef.current && payload?.payload?.toggles) {
+        setToggles(payload.payload.toggles);
+        setSyncStatus("synced");
+      }
+    }).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "master_configs",
+      filter: "key=eq.checklist_active_toggles"
+    }, (payload) => {
+      const newValue = payload?.new?.value;
+      if (newValue && newValue.senderId !== clientIdRef.current && newValue.toggles) {
+        setToggles(newValue.toggles);
+        setSyncStatus("synced");
+      }
+    }).subscribe();
+    channelRef.current = channel;
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [fetchActiveToggles]);
+  const saveAndBroadcastToggles = async (newToggles) => {
+    setSyncStatus("saving");
+    const payload = {
+      toggles: newToggles,
+      senderId: clientIdRef.current,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: "broadcast",
+        event: "toggles_update",
+        payload
+      }).catch((err) => console.error("Broadcast error:", err));
+    }
+    try {
+      const { error } = await supabase.from("master_configs").upsert(
+        { key: "checklist_active_toggles", value: payload, updated_at: (/* @__PURE__ */ new Date()).toISOString() },
+        { onConflict: "key" }
+      );
+      if (error) {
+        console.error("Upsert error:", error);
+        setSyncStatus("error");
+      } else {
+        setSyncStatus("synced");
+      }
+    } catch (err) {
+      console.error("Error saving toggles to Supabase:", err);
+      setSyncStatus("error");
+    }
+  };
   const handleChecklistChange = (e) => {
     const { name, value } = e.target;
     if (name === "waktuSelesai" && value) {
@@ -6177,7 +6249,12 @@ const TabChecklist = () => {
     setExpandedAreas((prev) => ({ ...prev, [areaId]: !prev[areaId] }));
   };
   const toggleChecklistItem = (key) => {
-    setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+    setToggles((prev) => {
+      const currentVal = prev[key] !== false;
+      const newToggles = { ...prev, [key]: !currentVal };
+      saveAndBroadcastToggles(newToggles);
+      return newToggles;
+    });
   };
   const handleChecklistSubmit = async (e) => {
     e.preventDefault();
@@ -6232,6 +6309,40 @@ const TabChecklist = () => {
       " Share Checklist ke WA"
     ] }) }) }),
     /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5 text-xs sm:text-sm font-medium", children: [
+          syncStatus === "loading" && /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsx(Loader2, { className: "w-4 h-4 text-blue-600 animate-spin flex-shrink-0" }),
+            /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "Memuat status operasi peralatan dari database..." })
+          ] }),
+          syncStatus === "saving" && /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsx(Loader2, { className: "w-4 h-4 text-amber-600 animate-spin flex-shrink-0" }),
+            /* @__PURE__ */ jsx("span", { className: "text-amber-700", children: "Menyimpan dan menyinkronkan status operasi secara real-time..." })
+          ] }),
+          syncStatus === "synced" && /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsx(Cloud, { className: "w-4 h-4 text-emerald-600 flex-shrink-0" }),
+            /* @__PURE__ */ jsx("span", { className: "text-emerald-700 font-semibold", children: "Status Operasi (Operasi/Off) Terhubung Real-time ke Database" })
+          ] }),
+          syncStatus === "error" && /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsx(X, { className: "w-4 h-4 text-red-600 flex-shrink-0" }),
+            /* @__PURE__ */ jsx("span", { className: "text-red-600", children: "Gagal menyinkronkan ke database. Periksa koneksi internet Anda." })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: fetchActiveToggles,
+            disabled: syncStatus === "loading",
+            className: "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50",
+            title: "Muat ulang status terbaru dari database",
+            children: [
+              /* @__PURE__ */ jsx(RefreshCw, { className: `w-3.5 h-3.5 ${syncStatus === "loading" ? "animate-spin" : ""}` }),
+              "Sync Ulang"
+            ]
+          }
+        )
+      ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between border-b pb-2 gap-2", children: [
         /* @__PURE__ */ jsxs("h2", { className: "text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2", children: [
           /* @__PURE__ */ jsx(CheckSquare, { className: "w-5 h-5 text-blue-600" }),
