@@ -122,25 +122,31 @@ export const TabBriefing: React.FC = () => {
     e.preventDefault();
     
     let generatedCollageFile: File | null = null;
+    let finalFilesToShare: File[] = [];
 
     if (photos.length > 0) {
-      if (photos.length === 1) {
-        generatedCollageFile = photos[0].file || null;
-      } else {
+      const imagePhotos = photos.filter(p => !p.file?.type?.startsWith('video/'));
+      const videoFiles = photos.filter(p => p.file?.type?.startsWith('video/')).map(p => p.file);
+
+      if (imagePhotos.length === 1) {
+        generatedCollageFile = imagePhotos[0].file || null;
+      } else if (imagePhotos.length > 1) {
         if (autoCollageFile) {
           generatedCollageFile = autoCollageFile;
         } else {
-          const collageResult = await processPhotosToCollage(photos, collageAnnotation);
+          const collageResult = await processPhotosToCollage(imagePhotos, collageAnnotation);
           if (collageResult) {
             generatedCollageFile = collageResult.file;
           }
         }
       }
+      if (generatedCollageFile) finalFilesToShare.push(generatedCollageFile);
+      if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
 
     const message = generateWA_Briefing(briefingData);
     
-    await shareToWhatsApp(message, generatedCollageFile, () => {
+    await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     });

@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, Cloud, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, Layers, Tag, Building2, ShieldCheck, Zap, Search, Box, CheckCircle2, LayoutGrid, Database, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, List, PlaneTakeoff, PlaneLanding, Image as Image$1, Upload, Sliders, MoreHorizontal } from "lucide-react";
+import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, FileWarning, MapPin, Plus, Calendar, AlertCircle, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, Cloud, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, Layers, Tag, Building2, ShieldCheck, Zap, Search, Box, CheckCircle2, LayoutGrid, Database, Hash, Mail, KeyRound, LogOut, Briefcase, Edit, Download, MoreHorizontal } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -22,30 +22,6 @@ const MonitorSearchIcon = ({ className }) => {
         /* @__PURE__ */ jsx("line", { x1: "12", x2: "12", y1: "17", y2: "21" }),
         /* @__PURE__ */ jsx("circle", { cx: "11", cy: "9", r: "3" }),
         /* @__PURE__ */ jsx("line", { x1: "13.1", x2: "16", y1: "11.1", y2: "14" })
-      ]
-    }
-  );
-};
-const KaabaIcon = ({ className }) => {
-  return /* @__PURE__ */ jsxs(
-    "svg",
-    {
-      xmlns: "http://www.w3.org/2000/svg",
-      viewBox: "0 0 24 24",
-      fill: "none",
-      stroke: "currentColor",
-      strokeWidth: "2",
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
-      className,
-      children: [
-        /* @__PURE__ */ jsx("path", { d: "M4 5.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 5.5v14a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5v-14z" }),
-        /* @__PURE__ */ jsx("line", { x1: "4", y1: "9", x2: "20", y2: "9" }),
-        /* @__PURE__ */ jsx("line", { x1: "4", y1: "12", x2: "20", y2: "12" }),
-        /* @__PURE__ */ jsx("path", { d: "M14 14.5v6.5" }),
-        /* @__PURE__ */ jsx("path", { d: "M18 14.5v6.5" }),
-        /* @__PURE__ */ jsx("path", { d: "M14 14.5h4" }),
-        /* @__PURE__ */ jsx("circle", { cx: "7.5", cy: "16.5", r: "1", fill: "currentColor" })
       ]
     }
   );
@@ -1714,6 +1690,9 @@ const shareToWhatsApp = async (message, filesArray, setIsCopied) => {
   fallbackShare(message, finalFiles.length > 0, setIsCopied);
 };
 const compressImageFile = async (file, maxWidth = 1600, maxHeight = 1600, quality = 0.8) => {
+  if (file.type.startsWith("video/")) {
+    return { file, preview: URL.createObjectURL(file) };
+  }
   return new Promise((resolve) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
@@ -1850,12 +1829,13 @@ const drawCellTextOverlay = (ctx, x, y, cellW, cellH, annotation, originalImgHei
 };
 const processPhotosToCollage = async (photosArray, annotation) => {
   return new Promise(async (resolve) => {
-    if (photosArray.length <= 1) {
+    const imagePhotos = photosArray.filter((p) => !p.file?.type?.startsWith("video/"));
+    if (imagePhotos.length <= 1) {
       resolve(null);
       return;
     }
     try {
-      const loadedImages = await Promise.all(photosArray.map((p) => {
+      const loadedImages = await Promise.all(imagePhotos.map((p) => {
         return new Promise((resolve2) => {
           const img = new Image();
           let settled = false;
@@ -2583,7 +2563,7 @@ ${nextNum}. ` + textAfter;
     /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2", children: [
       /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
-        " Lampiran Foto"
+        " Lampiran Foto/Video"
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-end gap-1", children: [
         /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded w-fit", children: "Kirim multi kolase sekaligus" }),
@@ -2617,14 +2597,14 @@ ${nextNum}. ` + textAfter;
         /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("label", { className: "flex items-center justify-center w-full p-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors group", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-2 text-center", children: [
             /* @__PURE__ */ jsx(ImagePlus, { className: "w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" }),
-            /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto" }),
-            /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File, atau Kamera langsung" })
+            /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto/Video" }),
+            /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File (Foto/Video), atau Kamera langsung" })
           ] }),
-          /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*", multiple: true, className: "hidden", onChange: (e) => handlePhotoUpload(group.id, e) })
+          /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*,video/*", multiple: true, className: "hidden", onChange: (e) => handlePhotoUpload(group.id, e) })
         ] }) }),
         group.photos.length > 0 && /* @__PURE__ */ jsxs("div", { children: [
           /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-500 mb-2", children: [
-            "Daftar Foto (",
+            "Daftar Foto/Video (",
             group.photos.length,
             "):"
           ] }),
@@ -2637,7 +2617,19 @@ ${nextNum}. ` + textAfter;
               onDrop: (e) => handlePhotoDrop(e, group.id, pIndex),
               className: "relative bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm group/photo hover:shadow-md transition-shadow aspect-square cursor-move flex flex-col",
               children: [
-                /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: /* @__PURE__ */ jsx(
+                /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: photo.file?.type?.startsWith("video/") ? /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex items-center justify-center bg-slate-900", children: [
+                  /* @__PURE__ */ jsx(
+                    "video",
+                    {
+                      src: photo.preview,
+                      className: "absolute w-full h-full object-cover",
+                      muted: true,
+                      playsInline: true,
+                      onLoadedData: (e) => e.target.currentTime = 0.1
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("div", { className: "absolute z-10 bg-black/60 p-2 rounded-full text-white backdrop-blur-sm pointer-events-none shadow-lg border border-white/20", children: /* @__PURE__ */ jsx("svg", { className: "w-6 h-6 fill-white", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) })
+                ] }) : /* @__PURE__ */ jsx(
                   "img",
                   {
                     src: photo.preview,
@@ -2651,32 +2643,34 @@ ${nextNum}. ` + textAfter;
                   e.preventDefault();
                   removePhoto(group.id, pIndex);
                 }, className: "bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md", children: /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }) }) }),
-                /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: (e) => {
+                !photo.file?.type?.startsWith("video/") && /* @__PURE__ */ jsxs(Fragment, { children: [
+                  /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingPhoto({ groupId: group.id, photoIndex: pIndex });
+                      },
+                      className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
+                      title: "Beri Teks / Watermark",
+                      children: [
+                        /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
+                        /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
+                      ]
+                    }
+                  ) }),
+                  /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
+                    /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
                       e.preventDefault();
-                      e.stopPropagation();
-                      setEditingPhoto({ groupId: group.id, photoIndex: pIndex });
-                    },
-                    className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
-                    title: "Beri Teks / Watermark",
-                    children: [
-                      /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
-                      /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
-                    ]
-                  }
-                ) }),
-                /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
-                  /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                    e.preventDefault();
-                    updatePhotoZoom(group.id, pIndex, 0.1);
-                  }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
-                  /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                    e.preventDefault();
-                    updatePhotoZoom(group.id, pIndex, -0.1);
-                  }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+                      updatePhotoZoom(group.id, pIndex, 0.1);
+                    }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
+                    /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
+                      e.preventDefault();
+                      updatePhotoZoom(group.id, pIndex, -0.1);
+                    }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+                  ] })
                 ] })
               ]
             },
@@ -2713,17 +2707,22 @@ ${nextNum}. ` + textAfter;
     let customFilesArray = [];
     for (let i = 0; i < photoGroups.length; i++) {
       const group = photoGroups[i];
-      if (group.photos.length > 1) {
+      const imagePhotos = group.photos.filter((p) => !p.file?.type?.startsWith("video/"));
+      const videoFiles = group.photos.filter((p) => p.file?.type?.startsWith("video/")).map((p) => p.file);
+      if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {
           customFilesArray.push(group.autoCollageFile);
         } else {
-          const collageResult = await processPhotosToCollage(group.photos, group.collageAnnotation);
+          const collageResult = await processPhotosToCollage(imagePhotos, group.collageAnnotation);
           if (collageResult && collageResult.file) {
             customFilesArray.push(collageResult.file);
           }
         }
-      } else if (group.photos.length === 1 && group.photos[0]?.file) {
-        customFilesArray.push(group.photos[0].file);
+      } else if (imagePhotos.length === 1 && imagePhotos[0]?.file) {
+        customFilesArray.push(imagePhotos[0].file);
+      }
+      if (videoFiles.length > 0) {
+        customFilesArray.push(...videoFiles);
       }
     }
     const message = generateWA_InitialReport(formData);
@@ -3838,7 +3837,7 @@ const TabPerbaikan = () => {
     /* @__PURE__ */ jsxs("div", { className: "bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2", children: [
       /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
-        " Lampiran Foto"
+        " Lampiran Foto/Video"
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-end gap-1", children: [
         /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded w-fit", children: "Kirim multi kolase sekaligus" }),
@@ -3872,14 +3871,14 @@ const TabPerbaikan = () => {
         /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("label", { className: "flex items-center justify-center w-full p-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors group", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-2 text-center", children: [
             /* @__PURE__ */ jsx(ImagePlus, { className: "w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" }),
-            /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto" }),
-            /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File, atau Kamera langsung" })
+            /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto/Video" }),
+            /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File (Foto/Video), atau Kamera langsung" })
           ] }),
-          /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*", multiple: true, className: "hidden", onChange: (e) => handlePhotoUpload(group.id, e) })
+          /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*,video/*", multiple: true, className: "hidden", onChange: (e) => handlePhotoUpload(group.id, e) })
         ] }) }),
         group.photos.length > 0 && /* @__PURE__ */ jsxs("div", { children: [
           /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-500 mb-2", children: [
-            "Daftar Foto (",
+            "Daftar Foto/Video (",
             group.photos.length,
             "):"
           ] }),
@@ -3892,7 +3891,19 @@ const TabPerbaikan = () => {
               onDrop: (e) => handlePhotoDrop(e, group.id, pIndex),
               className: "relative bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm group/photo hover:shadow-md transition-shadow aspect-square cursor-move flex flex-col",
               children: [
-                /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: /* @__PURE__ */ jsx(
+                /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: photo.file?.type?.startsWith("video/") ? /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex items-center justify-center bg-slate-900", children: [
+                  /* @__PURE__ */ jsx(
+                    "video",
+                    {
+                      src: photo.preview,
+                      className: "absolute w-full h-full object-cover",
+                      muted: true,
+                      playsInline: true,
+                      onLoadedData: (e) => e.target.currentTime = 0.1
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("div", { className: "absolute z-10 bg-black/60 p-2 rounded-full text-white backdrop-blur-sm pointer-events-none shadow-lg border border-white/20", children: /* @__PURE__ */ jsx("svg", { className: "w-6 h-6 fill-white", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) })
+                ] }) : /* @__PURE__ */ jsx(
                   "img",
                   {
                     src: photo.preview,
@@ -3906,32 +3917,34 @@ const TabPerbaikan = () => {
                   e.preventDefault();
                   removePhoto(group.id, pIndex);
                 }, className: "bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md", children: /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }) }) }),
-                /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: (e) => {
+                !photo.file?.type?.startsWith("video/") && /* @__PURE__ */ jsxs(Fragment, { children: [
+                  /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingPhoto({ groupId: group.id, photoIndex: pIndex });
+                      },
+                      className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
+                      title: "Beri Teks / Watermark",
+                      children: [
+                        /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
+                        /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
+                      ]
+                    }
+                  ) }),
+                  /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
+                    /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
                       e.preventDefault();
-                      e.stopPropagation();
-                      setEditingPhoto({ groupId: group.id, photoIndex: pIndex });
-                    },
-                    className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
-                    title: "Beri Teks / Watermark",
-                    children: [
-                      /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
-                      /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
-                    ]
-                  }
-                ) }),
-                /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
-                  /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                    e.preventDefault();
-                    updatePhotoZoom(group.id, pIndex, 0.1);
-                  }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
-                  /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                    e.preventDefault();
-                    updatePhotoZoom(group.id, pIndex, -0.1);
-                  }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+                      updatePhotoZoom(group.id, pIndex, 0.1);
+                    }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
+                    /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
+                      e.preventDefault();
+                      updatePhotoZoom(group.id, pIndex, -0.1);
+                    }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+                  ] })
                 ] })
               ]
             },
@@ -3975,17 +3988,22 @@ const TabPerbaikan = () => {
     let customFilesArray = [];
     for (let i = 0; i < photoGroups.length; i++) {
       const group = photoGroups[i];
-      if (group.photos.length > 1) {
+      const imagePhotos = group.photos.filter((p) => !p.file?.type?.startsWith("video/"));
+      const videoFiles = group.photos.filter((p) => p.file?.type?.startsWith("video/")).map((p) => p.file);
+      if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {
           customFilesArray.push(group.autoCollageFile);
         } else {
-          const collageResult = await processPhotosToCollage(group.photos, group.collageAnnotation);
+          const collageResult = await processPhotosToCollage(imagePhotos, group.collageAnnotation);
           if (collageResult && collageResult.file) {
             customFilesArray.push(collageResult.file);
           }
         }
-      } else if (group.photos.length === 1 && group.photos[0]?.file) {
-        customFilesArray.push(group.photos[0].file);
+      } else if (imagePhotos.length === 1 && imagePhotos[0]?.file) {
+        customFilesArray.push(imagePhotos[0].file);
+      }
+      if (videoFiles.length > 0) {
+        customFilesArray.push(...videoFiles);
       }
     }
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
@@ -4377,7 +4395,7 @@ const PhotoUploader = ({
     /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center mb-3", children: [
       /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
-        " Lampiran Foto"
+        " Lampiran Foto/Video"
       ] }),
       /* @__PURE__ */ jsxs("span", { className: "text-xs text-slate-500 font-medium flex items-center gap-1", children: [
         /* @__PURE__ */ jsx(Move, { className: "w-3 h-3" }),
@@ -4387,14 +4405,14 @@ const PhotoUploader = ({
     /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("label", { className: "flex items-center justify-center w-full p-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors group", children: [
       /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-2 text-center", children: [
         /* @__PURE__ */ jsx(ImagePlus, { className: "w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" }),
-        /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto" }),
-        /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File, atau Kamera langsung" })
+        /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto/Video" }),
+        /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File (Foto/Video), atau Kamera langsung" })
       ] }),
       /* @__PURE__ */ jsx(
         "input",
         {
           type: "file",
-          accept: "image/*",
+          accept: "image/*,video/*",
           multiple: true,
           className: "hidden",
           onChange: (e) => {
@@ -4406,7 +4424,7 @@ const PhotoUploader = ({
     ] }) }),
     photos.length > 0 && /* @__PURE__ */ jsxs("div", { className: "mt-4", children: [
       /* @__PURE__ */ jsx("div", { className: "flex justify-between items-center mb-2", children: /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-500", children: [
-        "Daftar Foto (",
+        "Daftar Foto/Video (",
         photos.length,
         "):"
       ] }) }),
@@ -4449,7 +4467,19 @@ const PhotoUploader = ({
           },
           className: "relative bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm group/photo hover:shadow-md transition-shadow aspect-square cursor-move flex flex-col touch-pan-y",
           children: [
-            /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: photo.file?.type?.startsWith("video/") ? /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex items-center justify-center bg-slate-900", children: [
+              /* @__PURE__ */ jsx(
+                "video",
+                {
+                  src: photo.preview,
+                  className: "absolute w-full h-full object-cover",
+                  muted: true,
+                  playsInline: true,
+                  onLoadedData: (e) => e.target.currentTime = 0.1
+                }
+              ),
+              /* @__PURE__ */ jsx("div", { className: "absolute z-10 bg-black/60 p-2 rounded-full text-white backdrop-blur-sm pointer-events-none shadow-lg border border-white/20", children: /* @__PURE__ */ jsx("svg", { className: "w-6 h-6 fill-white", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) })
+            ] }) : /* @__PURE__ */ jsx(
               "img",
               {
                 src: photo.preview,
@@ -4464,34 +4494,36 @@ const PhotoUploader = ({
               e.stopPropagation();
               onRemove(index);
             }, className: "bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md", children: /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }) }) }),
-            /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                onClick: (e) => {
+            !photo.file?.type?.startsWith("video/") && /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
+                "button",
+                {
+                  type: "button",
+                  onClick: (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setEditingIndex(index);
+                  },
+                  className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
+                  title: "Beri Teks / Watermark",
+                  children: [
+                    /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
+                    /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
+                  ]
+                }
+              ) }),
+              /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
+                /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setEditingIndex(index);
-                },
-                className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
-                title: "Beri Teks / Watermark",
-                children: [
-                  /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
-                  /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
-                ]
-              }
-            ) }),
-            /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
-              /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onZoom(index, 0.1);
-              }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
-              /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onZoom(index, -0.1);
-              }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+                  onZoom(index, 0.1);
+                }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
+                /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onZoom(index, -0.1);
+                }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+              ] })
             ] })
           ]
         },
@@ -4660,19 +4692,24 @@ const TabStoring = () => {
       return;
     }
     let generatedCollageFile = null;
+    let finalFilesToShare = [];
     if (photos.length > 0) {
-      if (photos.length === 1) {
-        generatedCollageFile = photos[0].file || null;
-      } else {
+      const imagePhotos = photos.filter((p) => !p.file?.type?.startsWith("video/"));
+      const videoFiles = photos.filter((p) => p.file?.type?.startsWith("video/")).map((p) => p.file);
+      if (imagePhotos.length === 1) {
+        generatedCollageFile = imagePhotos[0].file || null;
+      } else if (imagePhotos.length > 1) {
         if (autoCollageFile) {
           generatedCollageFile = autoCollageFile;
         } else {
-          const collageResult = await processPhotosToCollage(photos, collageAnnotation);
+          const collageResult = await processPhotosToCollage(imagePhotos, collageAnnotation);
           if (collageResult) {
             generatedCollageFile = collageResult.file;
           }
         }
       }
+      if (generatedCollageFile) finalFilesToShare.push(generatedCollageFile);
+      if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
     const message = generateWA_Storing(storingData);
     const waktuFull = storingData.waktuSelesai ? `${storingData.waktuMulai} - ${storingData.waktuSelesai}` : storingData.waktuMulai;
@@ -4688,9 +4725,9 @@ const TabStoring = () => {
 Supervisor Avsec : ${storingData.supervisorAvsec}` : ""}`,
       tindakLanjut: "-",
       status: storingData.hasil || "Normal Operasi",
-      imageFile: generatedCollageFile
+      imageFile: generatedCollageFile || (finalFilesToShare.length > 0 ? finalFilesToShare[0] : null)
     });
-    await shareToWhatsApp(message, generatedCollageFile, () => {
+    await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
@@ -5149,7 +5186,7 @@ const TabKalibrasi = () => {
     /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-2", children: [
       /* @__PURE__ */ jsxs("h2", { className: "text-lg font-bold text-slate-800 flex items-center gap-2", children: [
         /* @__PURE__ */ jsx(Camera, { className: "w-5 h-5 text-blue-600" }),
-        " Lampiran Foto"
+        " Lampiran Foto/Video"
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-end gap-1", children: [
         /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded w-fit", children: "Kirim multi kolase sekaligus" }),
@@ -5183,14 +5220,14 @@ const TabKalibrasi = () => {
         /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("label", { className: "flex items-center justify-center w-full p-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors group", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-2 text-center", children: [
             /* @__PURE__ */ jsx(ImagePlus, { className: "w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" }),
-            /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto" }),
-            /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File, atau Kamera langsung" })
+            /* @__PURE__ */ jsx("span", { className: "text-sm font-bold text-blue-700", children: "Pilih / Ambil Foto/Video" }),
+            /* @__PURE__ */ jsx("span", { className: "text-xs text-blue-500", children: "Galeri, File (Foto/Video), atau Kamera langsung" })
           ] }),
-          /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*", multiple: true, className: "hidden", onChange: (e) => handleKalibrasiPhotoUpload(group.id, e) })
+          /* @__PURE__ */ jsx("input", { type: "file", accept: "image/*,video/*", multiple: true, className: "hidden", onChange: (e) => handleKalibrasiPhotoUpload(group.id, e) })
         ] }) }),
         group.photos.length > 0 && /* @__PURE__ */ jsxs("div", { children: [
           /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-slate-500 mb-2", children: [
-            "Daftar Foto (",
+            "Daftar Foto/Video (",
             group.photos.length,
             "):"
           ] }),
@@ -5203,7 +5240,19 @@ const TabKalibrasi = () => {
               onDrop: (e) => handleKalibrasiPhotoDrop(e, group.id, pIndex),
               className: "relative bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm group/photo hover:shadow-md transition-shadow aspect-square cursor-move flex flex-col",
               children: [
-                /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: /* @__PURE__ */ jsx(
+                /* @__PURE__ */ jsx("div", { className: "flex-1 relative overflow-hidden bg-black flex items-center justify-center", children: photo.file?.type?.startsWith("video/") ? /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex items-center justify-center bg-slate-900", children: [
+                  /* @__PURE__ */ jsx(
+                    "video",
+                    {
+                      src: photo.preview,
+                      className: "absolute w-full h-full object-cover",
+                      muted: true,
+                      playsInline: true,
+                      onLoadedData: (e) => e.target.currentTime = 0.1
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("div", { className: "absolute z-10 bg-black/60 p-2 rounded-full text-white backdrop-blur-sm pointer-events-none shadow-lg border border-white/20", children: /* @__PURE__ */ jsx("svg", { className: "w-6 h-6 fill-white", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) })
+                ] }) : /* @__PURE__ */ jsx(
                   "img",
                   {
                     src: photo.preview,
@@ -5217,32 +5266,34 @@ const TabKalibrasi = () => {
                   e.preventDefault();
                   removeKalibrasiPhoto(group.id, pIndex);
                 }, className: "bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md", children: /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }) }) }),
-                /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: (e) => {
+                !photo.file?.type?.startsWith("video/") && /* @__PURE__ */ jsxs(Fragment, { children: [
+                  /* @__PURE__ */ jsx("div", { className: "absolute bottom-1 left-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingKalibrasiPhoto({ groupId: group.id, photoIndex: pIndex });
+                      },
+                      className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
+                      title: "Beri Teks / Watermark",
+                      children: [
+                        /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
+                        /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
+                      ]
+                    }
+                  ) }),
+                  /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
+                    /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
                       e.preventDefault();
-                      e.stopPropagation();
-                      setEditingKalibrasiPhoto({ groupId: group.id, photoIndex: pIndex });
-                    },
-                    className: `p-1.5 rounded-full shadow-md flex items-center gap-1 text-xs font-semibold px-2.5 py-1 transition-colors ${photo.annotation ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white text-slate-700 hover:bg-slate-100"}`,
-                    title: "Beri Teks / Watermark",
-                    children: [
-                      /* @__PURE__ */ jsx(Type, { className: "w-3.5 h-3.5" }),
-                      /* @__PURE__ */ jsx("span", { className: "hidden md:inline", children: photo.annotation ? "Edit Teks" : "Teks" })
-                    ]
-                  }
-                ) }),
-                /* @__PURE__ */ jsxs("div", { className: "absolute bottom-1 right-1 flex gap-1 z-10 opacity-100 sm:opacity-0 group-hover/photo:opacity-100 transition-opacity", children: [
-                  /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                    e.preventDefault();
-                    updateKalibrasiPhotoZoom(group.id, pIndex, 0.1);
-                  }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
-                  /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
-                    e.preventDefault();
-                    updateKalibrasiPhotoZoom(group.id, pIndex, -0.1);
-                  }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+                      updateKalibrasiPhotoZoom(group.id, pIndex, 0.1);
+                    }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomIn, { className: "w-3.5 h-3.5" }) }),
+                    /* @__PURE__ */ jsx("button", { type: "button", onClick: (e) => {
+                      e.preventDefault();
+                      updateKalibrasiPhotoZoom(group.id, pIndex, -0.1);
+                    }, className: "bg-white text-slate-700 p-1.5 rounded-full hover:bg-slate-100 shadow-md", children: /* @__PURE__ */ jsx(ZoomOut, { className: "w-3.5 h-3.5" }) })
+                  ] })
                 ] })
               ]
             },
@@ -5294,17 +5345,22 @@ const TabKalibrasi = () => {
     let customFilesArray = [];
     for (let i = 0; i < kalibrasiPhotoGroups.length; i++) {
       const group = kalibrasiPhotoGroups[i];
-      if (group.photos.length > 1) {
+      const imagePhotos = group.photos.filter((p) => !p.file?.type?.startsWith("video/"));
+      const videoFiles = group.photos.filter((p) => p.file?.type?.startsWith("video/")).map((p) => p.file);
+      if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {
           customFilesArray.push(group.autoCollageFile);
         } else {
-          const collageResult = await processPhotosToCollage(group.photos, group.collageAnnotation);
+          const collageResult = await processPhotosToCollage(imagePhotos, group.collageAnnotation);
           if (collageResult && collageResult.file) {
             customFilesArray.push(collageResult.file);
           }
         }
-      } else if (group.photos.length === 1 && group.photos[0]?.file) {
-        customFilesArray.push(group.photos[0].file);
+      } else if (imagePhotos.length === 1 && imagePhotos[0]?.file) {
+        customFilesArray.push(imagePhotos[0].file);
+      }
+      if (videoFiles.length > 0) {
+        customFilesArray.push(...videoFiles);
       }
     }
     const message = generateWA_Kalibrasi(kalibrasiGlobal, kalibrasiEntries);
@@ -6787,22 +6843,27 @@ const TabBriefing = () => {
   const handleBriefingSubmit = async (e) => {
     e.preventDefault();
     let generatedCollageFile = null;
+    let finalFilesToShare = [];
     if (photos.length > 0) {
-      if (photos.length === 1) {
-        generatedCollageFile = photos[0].file || null;
-      } else {
+      const imagePhotos = photos.filter((p) => !p.file?.type?.startsWith("video/"));
+      const videoFiles = photos.filter((p) => p.file?.type?.startsWith("video/")).map((p) => p.file);
+      if (imagePhotos.length === 1) {
+        generatedCollageFile = imagePhotos[0].file || null;
+      } else if (imagePhotos.length > 1) {
         if (autoCollageFile) {
           generatedCollageFile = autoCollageFile;
         } else {
-          const collageResult = await processPhotosToCollage(photos, collageAnnotation);
+          const collageResult = await processPhotosToCollage(imagePhotos, collageAnnotation);
           if (collageResult) {
             generatedCollageFile = collageResult.file;
           }
         }
       }
+      if (generatedCollageFile) finalFilesToShare.push(generatedCollageFile);
+      if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
     const message = generateWA_Briefing(briefingData);
-    await shareToWhatsApp(message, generatedCollageFile, () => {
+    await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
@@ -9076,19 +9137,24 @@ const TabKegiatan = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     let generatedCollageFile = null;
+    let finalFilesToShare = [];
     if (photos.length > 0) {
-      if (photos.length === 1) {
-        generatedCollageFile = photos[0].file || null;
-      } else {
+      const imagePhotos = photos.filter((p) => !p.file?.type?.startsWith("video/"));
+      const videoFiles = photos.filter((p) => p.file?.type?.startsWith("video/")).map((p) => p.file);
+      if (imagePhotos.length === 1) {
+        generatedCollageFile = imagePhotos[0].file || null;
+      } else if (imagePhotos.length > 1) {
         if (autoCollageFile) {
           generatedCollageFile = autoCollageFile;
         } else {
-          const collageResult = await processPhotosToCollage(photos, collageAnnotation);
+          const collageResult = await processPhotosToCollage(imagePhotos, collageAnnotation);
           if (collageResult) {
             generatedCollageFile = collageResult.file;
           }
         }
       }
+      if (generatedCollageFile) finalFilesToShare.push(generatedCollageFile);
+      if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
     const message = generateWA_Kegiatan(kegiatanData);
     const waktuFull = kegiatanData.waktuSelesai ? `${kegiatanData.waktuMulai} - ${kegiatanData.waktuSelesai}` : kegiatanData.waktuMulai;
@@ -9101,9 +9167,9 @@ const TabKegiatan = () => {
       uraian: kegiatanData.kegiatan || "-",
       tindakLanjut: "-",
       status: "Normal Operasi",
-      imageFile: generatedCollageFile
+      imageFile: generatedCollageFile || (finalFilesToShare.length > 0 ? finalFilesToShare[0] : null)
     });
-    await shareToWhatsApp(message, generatedCollageFile, () => {
+    await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
@@ -9885,1320 +9951,6 @@ const TabShiftReport = () => {
     ] }) })
   ] });
 };
-const SAMPLE_UMRAH_SCHEDULE = `*Rencana Penerbangan Umrah*
-*Sabtu, 11 Juli 2026*
-*Bandara Internasional Soekarno-Hatta (CGK)*
-
-*DEPARTURE :*
-1. EK357 // DXB // 1740 // EST TOTAL FLIGHT : 404 // EST PAX UMROH : 121
-2. EK359 // DXB // 0045 // EST TOTAL FLIGHT : 338 // EST PAX UMROH : 44
-3. EY473 // AUH // 0005 // EST TOTAL FLIGHT : 238 // EST PAX UMROH : 66
-4. EY475 // AUH // 1810 // EST TOTAL FLIGHT : 271 // EST PAX UMROH : 52
-5. HU702 // HAK // 1915 // EST TOTAL FLIGHT : 93 // EST PAX UMROH : 0
-6. QR955 // DOH // 0055 // EST TOTAL FLIGHT : 258 // EST PAX UMROH : 70
-7. QR957 // DOH // 1830 // EST TOTAL FLIGHT : 339 // EST PAX UMROH : 23
-8. QR959 // DOH // 0900 // EST TOTAL FLIGHT : 260 // EST PAX UMROH : 120
-9. SV817 // JED // 0910 // EST TOTAL FLIGHT : 446 // EST PAX UMROH : 283
-10. SV819 // JED // 1730 // EST TOTAL FLIGHT : 351 // EST PAX UMROH : 230
-11. SV821 // MED // 1200 // EST TOTAL FLIGHT : 166 // EST PAX UMROH : 11
-12. SV827 // JED // 0040 // EST TOTAL FLIGHT : 345 // EST PAX UMROH : 127
-13. TK057 // IST // 2100 // EST TOTAL FLIGHT : 325 // EST PAX UMROH : 98
-14. TR273 // SIN // 2215 // EST TOTAL FLIGHT : 150 // EST PAX UMROH : 85
-15. TR275 // SIN // 0935 // EST TOTAL FLIGHT : 159 // EST PAX UMROH : 86
-16. TR277 // SIN // 1155 // EST TOTAL FLIGHT : 155 // EST PAX UMROH : 83
-17. TR279 // SIN // 2000 // EST TOTAL FLIGHT : 167 // EST PAX UMROH : 86
-18. TR309 // SIN // 1415 // EST TOTAL FLIGHT : 159 // EST PAX UMROH : 89
-19. WY850 // MCT // 1425 // EST TOTAL FLIGHT : 263 // EST PAX UMROH : 107
-
-*ARRIVAL :*
-1. EK356 // DXB // 1540 // EST TOTAL FLIGHT : 421 // EST PAX UMROH : 126
-2. EK358 // DXB // 2225 // EST TOTAL FLIGHT : 351 // EST PAX UMROH : 105
-3. EY472 // AUH // 2035 // EST TOTAL FLIGHT : 305 // EST PAX UMROH : 26
-4. EY474 // AUH // 0900 // EST TOTAL FLIGHT : 337 // EST PAX UMROH : 59
-5. HU701 // HAK // 1810 // EST TOTAL FLIGHT : 171 // EST PAX UMROH : 0
-6. QR954 // DOH // 2140 // EST TOTAL FLIGHT : 290 // EST PAX UMROH : 0
-7. QR956 // DOH // 1535 // EST TOTAL FLIGHT : 368 // EST PAX UMROH : 75
-8. QR958 // DOH // 0730 // EST TOTAL FLIGHT : 288 // EST PAX UMROH : 75
-9. SV816 // JED // 0735 // EST TOTAL FLIGHT : 448 // EST PAX UMROH : 150
-10. SV818 // JED // 1600 // EST TOTAL FLIGHT : 445 // EST PAX UMROH : 143
-11. SV820 // MED // 1025 // EST TOTAL FLIGHT : 485 // EST PAX UMROH : 376
-12. SV826 // JED // 2245 // EST TOTAL FLIGHT : 406 // EST PAX UMROH : 347
-13. TK056 // IST // 1735 // EST TOTAL FLIGHT : 330 // EST PAX UMROH : 99
-14. TR272 // SIN // 2125 // EST TOTAL FLIGHT : 180 // EST PAX UMROH : 86
-15. TR274 // SIN // 0845 // EST TOTAL FLIGHT : 191 // EST PAX UMROH : 89
-16. TR276 // SIN // 1055 // EST TOTAL FLIGHT : 185 // EST PAX UMROH : 90
-17. TR278 // SIN // 1915 // EST TOTAL FLIGHT : 183 // EST PAX UMROH : 83
-18. TR308 // SIN // 1330 // EST TOTAL FLIGHT : 191 // EST PAX UMROH : 85
-19. WY849 // MCT // 1255 // EST TOTAL FLIGHT : 296 // EST PAX UMROH : 46
-
-*Airport Operation Control Center*`;
-const PREOPS_UMRAH_SCHEDULE_13_JULI = `*RENCANA PENERBANGAN UMROH (Pre-Ops)*
-*SENIN, 13 JULI 2026*
-*Bandara Internasional Soekarno-Hatta (CGK)*
-
-*DEPARTURE :*
-1. EY473 // (CGK - AUH) // 00:05 // EST TOTAL FLIGHT : 298 // EST PAX UMROH : 37
-2. SV827 // (CGK - JED) // 00:40 // EST TOTAL FLIGHT : 379 // EST PAX UMROH : 320
-3. EK359 // (CGK - DXB) // 00:45 // EST TOTAL FLIGHT : 346 // EST PAX UMROH : 42
-4. QR955 // (CGK - DOH) // 00:55 // EST TOTAL FLIGHT : 251 // EST PAX UMROH : 45
-5. QR959 // (CGK - DOH) // 09:00 // EST TOTAL FLIGHT : 254 // EST PAX UMROH : 122
-6. SV817 // (CGK - JED) // 09:10 // EST TOTAL FLIGHT : 329 // EST PAX UMROH : 210
-7. TR275 // (CGK - SIN) // 09:35 // EST TOTAL FLIGHT : 173 // EST PAX UMROH : 0
-8. TR277 // (CGK - SIN) // 11:55 // EST TOTAL FLIGHT : 164 // EST PAX UMROH : 0
-9. SV821 // (CGK - JED) // 12:00 // EST TOTAL FLIGHT : 473 // EST PAX UMROH : 258
-10. TR309 // (CGK - SIN) // 14:15 // EST TOTAL FLIGHT : 148 // EST PAX UMROH : 0
-11. WY850 // (CGK - MCT) // 14:25 // EST TOTAL FLIGHT : 277 // EST PAX UMROH : 41
-12. SV819 // (CGK - JED) // 17:30 // EST TOTAL FLIGHT : 230 // EST PAX UMROH : 35
-13. EK357 // (CGK - DXB) // 17:40 // EST TOTAL FLIGHT : 365 // EST PAX UMROH : 0
-14. QR957 // (CGK - DOH) // 18:30 // EST TOTAL FLIGHT : 256 // EST PAX UMROH : 42
-15. HU702 // (CGK - HAK) // 19:15 // EST TOTAL FLIGHT : 87 // EST PAX UMROH : 0
-16. TR279 // (CGK - SIN) // 20:00 // EST TOTAL FLIGHT : 165 // EST PAX UMROH : 0
-17. TK057 // (CGK - IST) // 21:00 // EST TOTAL FLIGHT : 330 // EST PAX UMROH : 99
-18. TR273 // (CGK - SIN) // 22:15 // EST TOTAL FLIGHT : 154 // EST PAX UMROH : 0
-
-*ARRIVAL :*
-1. QR958 // (DOH - CGK) // 07:30 // EST TOTAL FLIGHT : 286 // EST PAX UMROH : 90
-2. SV816 // (JED - CGK) // 07:35 // EST TOTAL FLIGHT : 411 // EST PAX UMROH : 200
-3. TR274 // (SIN - CGK) // 08:45 // EST TOTAL FLIGHT : 195 // EST PAX UMROH : 0
-4. TR276 // (SIN - CGK) // 10:55 // EST TOTAL FLIGHT : 191 // EST PAX UMROH : 0
-5. SV820 // (MED - CGK) // 11:35 // EST TOTAL FLIGHT : 486 // EST PAX UMROH : 304
-6. WY849 // (MCT - CGK) // 12:55 // EST TOTAL FLIGHT : 290 // EST PAX UMROH : 20
-7. TR308 // (SIN - CGK) // 13:30 // EST TOTAL FLIGHT : 187 // EST PAX UMROH : 0
-8. QR956 // (DOH - CGK) // 15:35 // EST TOTAL FLIGHT : 290 // EST PAX UMROH : 128
-9. EK356 // (DXB - CGK) // 15:40 // EST TOTAL FLIGHT : 418 // EST PAX UMROH : 48
-10. SV818 // (JED - CGK) // 16:00 // EST TOTAL FLIGHT : 406 // EST PAX UMROH : 121
-11. TK056 // (IST - CGK) // 17:35 // EST TOTAL FLIGHT : 330 // EST PAX UMROH : 99
-12. HU701 // (HAK - CGK) // 18:10 // EST TOTAL FLIGHT : 172 // EST PAX UMROH : 0
-13. TR278 // (SIN - CGK) // 19:15 // EST TOTAL FLIGHT : 188 // EST PAX UMROH : 0
-14. EY472 // (AUH - CGK) // 20:35 // EST TOTAL FLIGHT : 301 // EST PAX UMROH : 305
-15. TR272 // (SIN - CGK) // 21:25 // EST TOTAL FLIGHT : 186 // EST PAX UMROH : 0
-16. QR954 // (DOH - CGK) // 21:40 // EST TOTAL FLIGHT : 285 // EST PAX UMROH : 85
-17. EK358 // (DXB - CGK) // 22:25 // EST TOTAL FLIGHT : 352 // EST PAX UMROH : 54
-18. SV826 // (JED - CGK) // 22:45 // EST TOTAL FLIGHT : 445 // EST PAX UMROH : 334
-
-*Airport Operation Control Center*`;
-const TabTUmrah = () => {
-  const { isCopied, setIsCopied } = useAppStore();
-  const captureRef = useRef(null);
-  const [rawScheduleText, setRawScheduleText] = useState("");
-  const [uploadedScheduleImage, setUploadedScheduleImage] = useState(null);
-  const [isEditingRaw, setIsEditingRaw] = useState(true);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState(null);
-  const [showAllFlightsModal, setShowAllFlightsModal] = useState(false);
-  const [allFlightsTab, setAllFlightsTab] = useState("ALL");
-  const [allFlightsSearch, setAllFlightsSearch] = useState("");
-  const [headerTitle, setHeaderTitle] = useState("Timeline Warning Umrah");
-  const [dateText, setDateText] = useState("");
-  const [airportText, setAirportText] = useState("Bandara Internasional Soekarno-Hatta (CGK)");
-  const [departures, setDepartures] = useState([]);
-  const [arrivals, setArrivals] = useState([]);
-  const [paxThreshold, setPaxThreshold] = useState(100);
-  const [depWarningMinutes, setDepWarningMinutes] = useState(180);
-  const [arrWarningMinutes, setArrWarningMinutes] = useState(30);
-  const parseTimeMinutes = (timeStr) => {
-    const clean = (timeStr || "").replace(/[^0-9]/g, "");
-    if (clean.length === 4) {
-      const h = parseInt(clean.substring(0, 2), 10);
-      const m = parseInt(clean.substring(2, 4), 10);
-      return h * 60 + m;
-    } else if (clean.length === 3) {
-      const h = parseInt(clean.substring(0, 1), 10);
-      const m = parseInt(clean.substring(1, 3), 10);
-      return h * 60 + m;
-    }
-    return 0;
-  };
-  const formatMinutesToTime = (mins) => {
-    let normalized = mins % 1440;
-    if (normalized < 0) normalized += 1440;
-    const h = Math.floor(normalized / 60);
-    const m = normalized % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-  };
-  const formatFlightTime = (timeStr) => {
-    const clean = (timeStr || "").replace(/[^0-9]/g, "");
-    if (clean.length >= 3) {
-      const padded = clean.padStart(4, "0");
-      return `${padded.substring(0, 2)}:${padded.substring(2, 4)}`;
-    }
-    return timeStr;
-  };
-  const parseTextToSchedule = (text) => {
-    if (!text || text.trim() === "") {
-      setDepartures([]);
-      setArrivals([]);
-      setDateText("");
-      return;
-    }
-    const lines = text.split(/\r?\n/);
-    let section = "HEADER";
-    let headTitle = "Timeline Warning Umrah";
-    let dText = "";
-    let aText = "Bandara Internasional Soekarno-Hatta (CGK)";
-    const deps = [];
-    const arrs = [];
-    lines.forEach((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-      if (/^\*?DEPARTURE\s*:?\*?$/i.test(trimmed)) {
-        section = "DEPARTURE";
-        return;
-      }
-      if (/^\*?(AERRIVAL|ARRIVAL)\s*:?\*?$/i.test(trimmed)) {
-        section = "ARRIVAL";
-        return;
-      }
-      if (/^\*?Airport Operation Control Center\*?$/i.test(trimmed) || /^\*?AOCC\*?$/i.test(trimmed)) {
-        section = "FOOTER";
-        return;
-      }
-      if (section === "HEADER") {
-        if (/Rencana Penerbangan/i.test(trimmed)) {
-          headTitle = trimmed.replace(/\*/g, "");
-        } else if (/\d{1,2}\s+[a-zA-Z]+\s+\d{4}/.test(trimmed) || /Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu/i.test(trimmed)) {
-          dText = trimmed.replace(/\*/g, "");
-        } else if (/Bandara|CGK|Soekarno-Hatta/i.test(trimmed)) {
-          aText = trimmed.replace(/\*/g, "");
-        }
-      } else if (section === "DEPARTURE" || section === "ARRIVAL") {
-        if (trimmed.includes("//")) {
-          const parts = trimmed.split("//").map((p) => p.trim());
-          const firstPart = parts[0] || "";
-          const noMatch = firstPart.match(/^(\d+)\.\s*(.*)$/);
-          const no = noMatch ? parseInt(noMatch[1], 10) : section === "DEPARTURE" ? deps.length + 1 : arrs.length + 1;
-          const flightCode = noMatch ? noMatch[2].trim() : firstPart.trim();
-          const route = parts[1] || "-";
-          const time = parts[2] || "-";
-          let estTotal = "0";
-          let estPax = "0";
-          let actualPax = "";
-          parts.slice(3).forEach((p) => {
-            const upperP = p.toUpperCase();
-            if (upperP.includes("EST TOTAL FLIGHT")) {
-              const m = p.match(/:\s*(\d+)/);
-              if (m) estTotal = m[1];
-            } else if (upperP.includes("EST PAX UMROH") || upperP.includes("EST PAX UMROA") || upperP.includes("EST PAX UMRAH")) {
-              const m = p.match(/:\s*(\d+)/);
-              if (m) estPax = m[1];
-            } else if (upperP.includes("AKTUAL PAX") || upperP.includes("ACTUAL PAX")) {
-              const m = p.match(/:\s*(\d+)/);
-              if (m) actualPax = m[1];
-            }
-          });
-          const item = {
-            id: `${section.toLowerCase()}-${no}-${flightCode}-${Math.random().toString(36).substring(2, 7)}`,
-            no,
-            flightCode,
-            route,
-            time,
-            estTotalFlight: estTotal,
-            estPaxUmroh: estPax,
-            actualPaxUmroh: actualPax,
-            type: section
-          };
-          if (section === "DEPARTURE") {
-            deps.push(item);
-          } else {
-            arrs.push(item);
-          }
-        }
-      }
-    });
-    setHeaderTitle(headTitle);
-    if (dText) setDateText(dText);
-    if (aText) setAirportText(aText);
-    setDepartures(deps);
-    setArrivals(arrs);
-  };
-  const handleApplyRawPaste = () => {
-    parseTextToSchedule(rawScheduleText);
-    setIsEditingRaw(false);
-  };
-  const handleLoadSample = () => {
-    setRawScheduleText(SAMPLE_UMRAH_SCHEDULE);
-    parseTextToSchedule(SAMPLE_UMRAH_SCHEDULE);
-    setIsEditingRaw(false);
-  };
-  const isWarningFlight = (item) => {
-    const pax = parseInt((item.estPaxUmroh || "0").replace(/[^0-9]/g, ""), 10) || 0;
-    return pax > paxThreshold;
-  };
-  const warningDepartures = departures.filter(isWarningFlight);
-  const warningArrivals = arrivals.filter(isWarningFlight);
-  const getDensityInfo = (item) => {
-    const flightMins = parseTimeMinutes(item.time);
-    let startMins = 0;
-    let endMins = 0;
-    let desc = "";
-    if (item.type === "ARRIVAL") {
-      startMins = flightMins - arrWarningMinutes;
-      endMins = flightMins + arrWarningMinutes;
-      desc = `±${arrWarningMinutes} Menit Pendaratan (${formatFlightTime(item.time)} WIB)`;
-    } else {
-      startMins = flightMins - depWarningMinutes;
-      endMins = flightMins;
-      const depHoursText = depWarningMinutes % 60 === 0 ? `${depWarningMinutes / 60} Jam` : `${+(depWarningMinutes / 60).toFixed(1)} Jam`;
-      desc = `${depHoursText} Sebelum Keberangkatan (${formatFlightTime(item.time)} WIB)`;
-    }
-    return {
-      startMins,
-      endMins,
-      startTimeStr: `${formatMinutesToTime(startMins)} WIB`,
-      endTimeStr: `${formatMinutesToTime(endMins)} WIB`,
-      windowText: `${formatMinutesToTime(startMins)} - ${formatMinutesToTime(endMins)} WIB`,
-      desc,
-      pax: parseInt((item.estPaxUmroh || "0").replace(/[^0-9]/g, ""), 10) || 0
-    };
-  };
-  const sortedWarnings = [...warningDepartures, ...warningArrivals].sort((a, b) => {
-    const infoA = getDensityInfo(a);
-    const infoB = getDensityInfo(b);
-    return infoA.startMins - infoB.startMins;
-  });
-  const allFlightsList = [...departures, ...arrivals].sort((a, b) => {
-    return parseTimeMinutes(a.time) - parseTimeMinutes(b.time);
-  });
-  const filteredAllFlights = allFlightsList.filter((f) => {
-    const matchTab = allFlightsTab === "ALL" || f.type === allFlightsTab;
-    const q = allFlightsSearch.toLowerCase();
-    const matchSearch = !q || f.flightCode.toLowerCase().includes(q) || f.route.toLowerCase().includes(q) || f.time.includes(q);
-    return matchTab && matchSearch;
-  });
-  const sumTotalPax = filteredAllFlights.reduce((acc, f) => {
-    return acc + (parseInt((f.estTotalFlight || "0").replace(/[^0-9]/g, ""), 10) || 0);
-  }, 0);
-  const sumUmrahPax = filteredAllFlights.reduce((acc, f) => {
-    return acc + (parseInt((f.estPaxUmroh || "0").replace(/[^0-9]/g, ""), 10) || 0);
-  }, 0);
-  const percentageUmrah = sumTotalPax > 0 ? (sumUmrahPax / sumTotalPax * 100).toFixed(1) : "0";
-  const generatePreviewImage = () => {
-    setIsGeneratingImage(true);
-    setTimeout(() => {
-      try {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          throw new Error("Gagal menginisialisasi context canvas 2D");
-        }
-        const width = 850;
-        const rowHeight = 120;
-        const baseHeight = 260;
-        const eventsHeight = sortedWarnings.length > 0 ? sortedWarnings.length * rowHeight : 120;
-        const height = baseHeight + eventsHeight;
-        canvas.width = width;
-        canvas.height = height;
-        ctx.fillStyle = "#f8fafc";
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = "#065f46";
-        ctx.fillRect(0, 0, width, 140);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 36px Arial, sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText(headerTitle || "Timeline Warning Umrah", 40, 65);
-        ctx.fillStyle = "#a7f3d0";
-        ctx.font = "22px Arial, sans-serif";
-        const dateStr = dateText || "Jadwal Penerbangan Umrah";
-        const airportStr = airportText || "Bandara Internasional Soekarno-Hatta (CGK)";
-        ctx.fillText(`${dateStr} | ${airportStr}`, 40, 105);
-        let y = 210;
-        const startX = 240;
-        if (sortedWarnings.length === 0) {
-          ctx.fillStyle = "#475569";
-          ctx.font = "italic 24px Arial, sans-serif";
-          ctx.fillText(`✅ Tidak ada peringatan penerbangan > ${paxThreshold} Pax Umrah.`, 40, y);
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(startX, y - 20);
-          ctx.lineTo(startX, y + sortedWarnings.length * rowHeight - 80);
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = "#cbd5e1";
-          ctx.stroke();
-          sortedWarnings.forEach((evt) => {
-            const info = getDensityInfo(evt);
-            const isDeparture = evt.type === "DEPARTURE";
-            const typeLabel = isDeparture ? "KEBERANGKATAN" : "KEDATANGAN";
-            const color = isDeparture ? "#be123c" : "#0369a1";
-            const icon = isDeparture ? "🛫" : "🛬";
-            ctx.textAlign = "right";
-            ctx.fillStyle = "#0f172a";
-            ctx.font = "bold 24px Arial, sans-serif";
-            ctx.fillText(formatMinutesToTime(info.startMins) + " WIB", startX - 30, y - 2);
-            ctx.fillStyle = "#64748b";
-            ctx.font = "18px Arial, sans-serif";
-            ctx.fillText(`s/d ${formatMinutesToTime(info.endMins)} WIB`, startX - 30, y + 22);
-            ctx.beginPath();
-            ctx.arc(startX, y + 8, 12, 0, 2 * Math.PI);
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = "#ffffff";
-            ctx.stroke();
-            ctx.textAlign = "left";
-            ctx.fillStyle = color;
-            ctx.font = "bold 22px Arial, sans-serif";
-            ctx.fillText(`${icon} ${typeLabel} - ${evt.flightCode}`, startX + 30, y - 2);
-            ctx.fillStyle = "#475569";
-            ctx.font = "18px Arial, sans-serif";
-            ctx.fillText(`Jadwal: ${formatFlightTime(evt.time)} WIB  |  Rute: ${evt.route}`, startX + 30, y + 24);
-            ctx.fillStyle = "#be123c";
-            ctx.font = "bold 18px Arial, sans-serif";
-            ctx.fillText(`🔥 ${evt.estPaxUmroh || 0} Pax Umrah`, startX + 30, y + 50);
-            y += rowHeight;
-          });
-        }
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "italic 16px Arial, sans-serif";
-        ctx.fillText("Generated by Airport Operation Control Center", 40, height - 30);
-        setGeneratedImage(canvas.toDataURL("image/png"));
-        const depHoursText = depWarningMinutes % 60 === 0 ? `${depWarningMinutes / 60} Jam` : `${+(depWarningMinutes / 60).toFixed(1)} Jam`;
-        const summaryText = `*Timeline Warning Umrah*
-*${dateText || "Jadwal Penerbangan Umrah"}*
-*${airportText}*
-*Batas Warning:* >${paxThreshold} Pax | Keberangkatan: -${depHoursText} | Kedatangan: ±${arrWarningMinutes} Menit
-
-*WARNING KEBERANGKATAN (>${paxThreshold} PAX)*
-${warningDepartures.map((f) => {
-          const d = getDensityInfo(f);
-          return `• ${f.flightCode} → ${f.route} | ${formatFlightTime(f.time)} WIB | ${f.estPaxUmroh} Pax | Kepadatan: ${d.windowText}`;
-        }).join("\n") || "- Tidak ada -"}
-
-*WARNING KEDATANGAN (>${paxThreshold} PAX)*
-${warningArrivals.map((f) => {
-          const d = getDensityInfo(f);
-          return `• ${f.flightCode} → ${f.route} | ${formatFlightTime(f.time)} WIB | ${f.estPaxUmroh} Pax | Kepadatan: ${d.windowText}`;
-        }).join("\n") || "- Tidak ada -"}`;
-        navigator.clipboard.writeText(summaryText).catch(() => {
-        });
-      } catch (error) {
-        console.error("Gagal membuat gambar timeline:", error);
-        alert("Gagal memproses gambar. Silakan coba lagi.");
-      } finally {
-        setIsGeneratingImage(false);
-      }
-    }, 100);
-  };
-  const handleDownloadImage = () => {
-    if (!generatedImage) return;
-    const cleanDate = (dateText || "Jadwal").replace(/[^a-zA-Z0-9]/g, "_");
-    const a = document.createElement("a");
-    a.href = generatedImage;
-    a.download = `Warning_Kepadatan_Umrah_${cleanDate}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-  const handleDirectShareImage = async () => {
-    if (!generatedImage) return;
-    try {
-      const res = await fetch(generatedImage);
-      const blob = await res.blob();
-      const cleanDate = (dateText || "Jadwal").replace(/[^a-zA-Z0-9]/g, "_");
-      const fileName = `Warning_Kepadatan_Umrah_${cleanDate}.png`;
-      const file = new File([blob], fileName, { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Warning Kepadatan Penerbangan Umrah T2",
-          text: `*Timeline Warning Umrah*
-*${dateText || "Jadwal Penerbangan Umrah"}*
-*${airportText}*
-
-Berikut terlampir gambar Timeline & Daftar Peringatan Kepadatan Penerbangan Umrah (>${paxThreshold} Pax) di Terminal 2.`
-        });
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2500);
-      } else {
-        alert("Browser Anda tidak mendukung share gambar langsung. Silakan gunakan tombol 'Download' atau tekan tahan gambarnya.");
-      }
-    } catch (err) {
-      if (err && err.name === "AbortError") return;
-      console.log("Share dibatalkan atau gagal", err);
-    }
-  };
-  return /* @__PURE__ */ jsxs("div", { className: "space-y-6 max-w-7xl mx-auto pb-12", children: [
-    generatedImage && /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in", children: /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl w-full max-w-xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden", children: [
-      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center p-4 border-b border-slate-100", children: [
-        /* @__PURE__ */ jsx("h3", { className: "font-bold text-slate-800 text-lg", children: "Bagikan ke WhatsApp" }),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            onClick: () => setGeneratedImage(null),
-            className: "p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500",
-            children: /* @__PURE__ */ jsx(X, { className: "w-6 h-6" })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "p-4 overflow-y-auto bg-slate-50 flex-1 flex flex-col items-center", children: [
-        /* @__PURE__ */ jsxs("div", { className: "bg-amber-50 text-amber-800 text-sm px-4 py-2 rounded-lg border border-amber-200 mb-4 text-center w-full shadow-sm", children: [
-          /* @__PURE__ */ jsx("span", { className: "font-bold block mb-1", children: "💡 Pengguna HP:" }),
-          "Tekan dan tahan gambar di bawah ini, lalu pilih ",
-          /* @__PURE__ */ jsx("b", { children: '"Bagikan Gambar"' }),
-          " atau ",
-          /* @__PURE__ */ jsx("b", { children: '"Kirim ke WhatsApp"' }),
-          ".",
-          /* @__PURE__ */ jsx("span", { className: "block mt-1 text-xs text-slate-600", children: "✨ Teks ringkasan jadwal juga telah otomatis disalin ke clipboard Anda!" })
-        ] }),
-        /* @__PURE__ */ jsx(
-          "img",
-          {
-            src: generatedImage,
-            alt: "Warning Umrah",
-            className: "w-full h-auto rounded-lg shadow-md border border-slate-200"
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "p-4 border-t border-slate-100 bg-white flex flex-col sm:flex-row gap-3", children: [
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            onClick: handleDownloadImage,
-            className: "flex-1 flex items-center justify-center bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold py-3 px-4 rounded-xl transition-colors",
-            children: [
-              /* @__PURE__ */ jsx(Download, { className: "w-5 h-5 mr-2" }),
-              "Download (PC/Laptop)"
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            onClick: handleDirectShareImage,
-            className: "flex-1 flex items-center justify-center bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-md",
-            children: [
-              /* @__PURE__ */ jsx(Share2, { className: "w-5 h-5 mr-2" }),
-              "Share ke WA"
-            ]
-          }
-        )
-      ] })
-    ] }) }),
-    showAllFlightsModal && /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in", children: /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200", children: [
-      /* @__PURE__ */ jsxs("div", { className: "bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white p-5 sm:p-6 flex items-center justify-between gap-4", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
-          /* @__PURE__ */ jsx("div", { className: "p-2.5 bg-blue-500/20 border border-blue-400/30 rounded-xl text-blue-300", children: /* @__PURE__ */ jsx(List, { className: "w-6 h-6" }) }),
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsx("h3", { className: "font-extrabold text-lg sm:text-xl text-white", children: "Seluruh Daftar Penerbangan Umrah" }),
-            /* @__PURE__ */ jsxs("p", { className: "text-xs sm:text-sm text-slate-300", children: [
-              "Total ",
-              departures.length + arrivals.length,
-              " jadwal penerbangan (",
-              departures.length,
-              " Keberangkatan & ",
-              arrivals.length,
-              " Kedatangan)"
-            ] })
-          ] })
-        ] }),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            onClick: () => setShowAllFlightsModal(false),
-            className: "p-2 hover:bg-white/10 rounded-full transition-colors text-slate-300 hover:text-white",
-            children: /* @__PURE__ */ jsx(X, { className: "w-6 h-6" })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex bg-slate-200/80 p-1 rounded-xl w-full sm:w-auto", children: [
-          /* @__PURE__ */ jsxs(
-            "button",
-            {
-              type: "button",
-              onClick: () => setAllFlightsTab("ALL"),
-              className: `flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all ${allFlightsTab === "ALL" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`,
-              children: [
-                "Semua (",
-                allFlightsList.length,
-                ")"
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxs(
-            "button",
-            {
-              type: "button",
-              onClick: () => setAllFlightsTab("DEPARTURE"),
-              className: `flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${allFlightsTab === "DEPARTURE" ? "bg-amber-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"}`,
-              children: [
-                /* @__PURE__ */ jsx(PlaneTakeoff, { className: "w-4 h-4" }),
-                " Keberangkatan (",
-                departures.length,
-                ")"
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxs(
-            "button",
-            {
-              type: "button",
-              onClick: () => setAllFlightsTab("ARRIVAL"),
-              className: `flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${allFlightsTab === "ARRIVAL" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"}`,
-              children: [
-                /* @__PURE__ */ jsx(PlaneLanding, { className: "w-4 h-4" }),
-                " Kedatangan (",
-                arrivals.length,
-                ")"
-              ]
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "relative w-full sm:w-72", children: [
-          /* @__PURE__ */ jsx(Search, { className: "w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" }),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              type: "text",
-              placeholder: "Cari flight, rute, atau jam...",
-              value: allFlightsSearch,
-              onChange: (e) => setAllFlightsSearch(e.target.value),
-              className: "w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 outline-none"
-            }
-          ),
-          allFlightsSearch && /* @__PURE__ */ jsx(
-            "button",
-            {
-              onClick: () => setAllFlightsSearch(""),
-              className: "absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600",
-              children: /* @__PURE__ */ jsx(X, { className: "w-4 h-4" })
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "bg-gradient-to-r from-blue-50/90 via-indigo-50/90 to-emerald-50/90 p-4 sm:p-5 border-b border-slate-200 shadow-inner", children: /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4", children: [
-        /* @__PURE__ */ jsxs("div", { className: "bg-white/95 p-3.5 rounded-2xl border border-blue-200/60 shadow-2xs flex flex-col justify-center", children: [
-          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block", children: "Tipe / Filter" }),
-          /* @__PURE__ */ jsx("strong", { className: "text-slate-800 text-sm sm:text-base font-black truncate mt-0.5", children: allFlightsTab === "ALL" ? "Semua Penerbangan" : allFlightsTab === "DEPARTURE" ? "🛫 Keberangkatan" : "🛬 Kedatangan" }),
-          /* @__PURE__ */ jsxs("span", { className: "text-[11px] font-bold text-blue-600 mt-0.5", children: [
-            filteredAllFlights.length,
-            " Flight Terpilih"
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "bg-white/95 p-3.5 rounded-2xl border border-blue-200/60 shadow-2xs flex flex-col justify-center", children: [
-          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block", children: "Total Semua Pax" }),
-          /* @__PURE__ */ jsxs("strong", { className: "text-slate-900 text-lg sm:text-xl font-black mt-0.5", children: [
-            sumTotalPax.toLocaleString("id-ID"),
-            " ",
-            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-slate-500", children: "Pax" })
-          ] }),
-          /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-500 font-medium mt-0.5", children: "Kapasitas total flight" })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "bg-white/95 p-3.5 rounded-2xl border border-emerald-200/60 shadow-2xs flex flex-col justify-center", children: [
-          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 block", children: "Total Pax Umrah" }),
-          /* @__PURE__ */ jsxs("strong", { className: "text-emerald-700 text-lg sm:text-xl font-black mt-0.5", children: [
-            sumUmrahPax.toLocaleString("id-ID"),
-            " ",
-            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-emerald-600", children: "Pax" })
-          ] }),
-          /* @__PURE__ */ jsx("span", { className: "text-[11px] text-emerald-600 font-semibold mt-0.5", children: "Khusus Jamaah Umrah" })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-3.5 rounded-2xl shadow-sm flex flex-col justify-center relative overflow-hidden", children: [
-          /* @__PURE__ */ jsx("div", { className: "absolute right-0 top-0 translate-x-3 -translate-y-3 opacity-15 pointer-events-none", children: /* @__PURE__ */ jsx(CheckCircle, { className: "w-20 h-20" }) }),
-          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-extrabold uppercase tracking-wider text-emerald-200 block relative z-10", children: "Persentase Umrah" }),
-          /* @__PURE__ */ jsxs("strong", { className: "text-white text-lg sm:text-2xl font-black mt-0.5 relative z-10", children: [
-            percentageUmrah,
-            "% ",
-            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-emerald-100", children: "dari Total" })
-          ] }),
-          /* @__PURE__ */ jsx("span", { className: "text-[11px] text-emerald-100/95 font-medium relative z-10 mt-0.5 truncate", children: "Rasio Pax Umrah vs Total" })
-        ] })
-      ] }) }),
-      /* @__PURE__ */ jsx("div", { className: "flex-1 overflow-y-auto p-4 sm:p-6 bg-white", children: filteredAllFlights.length === 0 ? /* @__PURE__ */ jsxs("div", { className: "py-16 text-center text-slate-400 space-y-2", children: [
-        /* @__PURE__ */ jsx(List, { className: "w-12 h-12 mx-auto opacity-40" }),
-        /* @__PURE__ */ jsx("p", { className: "font-bold text-base text-slate-600", children: "Tidak ada jadwal penerbangan yang sesuai kriteria" }),
-        /* @__PURE__ */ jsx("p", { className: "text-xs", children: "Coba ubah kata kunci pencarian atau tab filter di atas." })
-      ] }) : /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
-        /* @__PURE__ */ jsx("div", { className: "hidden sm:block overflow-x-auto border border-slate-200 rounded-2xl", children: /* @__PURE__ */ jsxs("table", { className: "w-full text-left border-collapse", children: [
-          /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { className: "bg-slate-100/80 text-slate-600 font-extrabold text-xs uppercase tracking-wider border-b border-slate-200", children: [
-            /* @__PURE__ */ jsx("th", { className: "py-3.5 px-4 w-12 text-center", children: "No" }),
-            /* @__PURE__ */ jsx("th", { className: "py-3.5 px-4", children: "Tipe & Kode Flight" }),
-            /* @__PURE__ */ jsx("th", { className: "py-3.5 px-4", children: "Jam Jadwal" }),
-            /* @__PURE__ */ jsx("th", { className: "py-3.5 px-4", children: "Rute" }),
-            /* @__PURE__ */ jsx("th", { className: "py-3.5 px-4", children: "Total Flight Pax" }),
-            /* @__PURE__ */ jsx("th", { className: "py-3.5 px-4", children: "Pax Umrah" }),
-            /* @__PURE__ */ jsx("th", { className: "py-3.5 px-4", children: "Status & Kepadatan" })
-          ] }) }),
-          /* @__PURE__ */ jsx("tbody", { className: "divide-y divide-slate-100 text-sm font-medium", children: filteredAllFlights.map((f, idx) => {
-            const info = getDensityInfo(f);
-            const isDep = f.type === "DEPARTURE";
-            const isWarning = info.pax >= paxThreshold;
-            return /* @__PURE__ */ jsxs("tr", { className: `hover:bg-slate-50 transition-colors ${isWarning ? "bg-rose-50/40" : ""}`, children: [
-              /* @__PURE__ */ jsx("td", { className: "py-3.5 px-4 text-center text-slate-400 font-bold", children: idx + 1 }),
-              /* @__PURE__ */ jsx("td", { className: "py-3.5 px-4 font-extrabold text-slate-800", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                isDep ? /* @__PURE__ */ jsxs("span", { className: "p-1.5 bg-amber-100 text-amber-700 rounded-lg flex items-center gap-1 text-xs font-bold", children: [
-                  /* @__PURE__ */ jsx(PlaneTakeoff, { className: "w-3.5 h-3.5" }),
-                  " DEP"
-                ] }) : /* @__PURE__ */ jsxs("span", { className: "p-1.5 bg-blue-100 text-blue-700 rounded-lg flex items-center gap-1 text-xs font-bold", children: [
-                  /* @__PURE__ */ jsx(PlaneLanding, { className: "w-3.5 h-3.5" }),
-                  " ARR"
-                ] }),
-                /* @__PURE__ */ jsx("span", { className: "text-base font-black", children: f.flightCode })
-              ] }) }),
-              /* @__PURE__ */ jsxs("td", { className: "py-3.5 px-4 font-mono font-bold text-slate-800", children: [
-                formatFlightTime(f.time),
-                " WIB"
-              ] }),
-              /* @__PURE__ */ jsx("td", { className: "py-3.5 px-4 font-bold text-slate-700", children: f.route }),
-              /* @__PURE__ */ jsx("td", { className: "py-3.5 px-4 text-slate-600", children: f.estTotalFlight ? `${f.estTotalFlight} Pax` : "-" }),
-              /* @__PURE__ */ jsx("td", { className: "py-3.5 px-4 font-extrabold text-slate-900", children: /* @__PURE__ */ jsx("span", { className: isWarning ? "text-rose-600 font-black" : "text-slate-800", children: f.estPaxUmroh ? `${f.estPaxUmroh} Pax` : "0 Pax" }) }),
-              /* @__PURE__ */ jsx("td", { className: "py-3.5 px-4", children: isWarning ? /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-0.5", children: [
-                /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1 text-xs font-black text-rose-700 bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200", children: [
-                  /* @__PURE__ */ jsx(AlertTriangle, { className: "w-3.5 h-3.5 flex-shrink-0" }),
-                  " Warning (>",
-                  paxThreshold,
-                  " Pax)"
-                ] }),
-                /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-500 font-semibold", children: info.windowText })
-              ] }) : /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200", children: [
-                /* @__PURE__ */ jsx(CheckCircle, { className: "w-3.5 h-3.5" }),
-                " Normal (≤",
-                paxThreshold,
-                " Pax)"
-              ] }) })
-            ] }, f.id);
-          }) }),
-          /* @__PURE__ */ jsx("tfoot", { className: "bg-slate-100 font-black text-slate-800 border-t-2 border-slate-300", children: /* @__PURE__ */ jsxs("tr", { children: [
-            /* @__PURE__ */ jsxs("td", { colSpan: 4, className: "py-4 px-4 text-right uppercase tracking-wider text-xs text-slate-600", children: [
-              "Total (",
-              filteredAllFlights.length,
-              " Flight Terpilih):"
-            ] }),
-            /* @__PURE__ */ jsxs("td", { className: "py-4 px-4 text-base text-slate-900 font-black", children: [
-              sumTotalPax.toLocaleString("id-ID"),
-              " Pax"
-            ] }),
-            /* @__PURE__ */ jsxs("td", { className: "py-4 px-4 text-base text-emerald-700 font-black", children: [
-              sumUmrahPax.toLocaleString("id-ID"),
-              " Pax ",
-              /* @__PURE__ */ jsxs("span", { className: "text-xs font-extrabold text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-md ml-1", children: [
-                "(",
-                percentageUmrah,
-                "%)"
-              ] })
-            ] }),
-            /* @__PURE__ */ jsx("td", { className: "py-4 px-4" })
-          ] }) })
-        ] }) }),
-        /* @__PURE__ */ jsx("div", { className: "sm:hidden space-y-3", children: filteredAllFlights.map((f, idx) => {
-          const info = getDensityInfo(f);
-          const isDep = f.type === "DEPARTURE";
-          const isWarning = info.pax >= paxThreshold;
-          return /* @__PURE__ */ jsxs("div", { className: `p-4 rounded-2xl border ${isWarning ? "bg-rose-50/50 border-rose-200 shadow-sm" : "bg-slate-50/80 border-slate-200"} space-y-3`, children: [
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                isDep ? /* @__PURE__ */ jsxs("span", { className: "px-2 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs flex items-center gap-1", children: [
-                  /* @__PURE__ */ jsx(PlaneTakeoff, { className: "w-3.5 h-3.5" }),
-                  " DEP"
-                ] }) : /* @__PURE__ */ jsxs("span", { className: "px-2 py-1 bg-blue-100 text-blue-800 font-bold rounded-lg text-xs flex items-center gap-1", children: [
-                  /* @__PURE__ */ jsx(PlaneLanding, { className: "w-3.5 h-3.5" }),
-                  " ARR"
-                ] }),
-                /* @__PURE__ */ jsx("span", { className: "font-black text-slate-900 text-base", children: f.flightCode })
-              ] }),
-              /* @__PURE__ */ jsxs("span", { className: "font-mono font-black text-slate-800 text-sm bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs", children: [
-                formatFlightTime(f.time),
-                " WIB"
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-2 text-xs bg-white p-3 rounded-xl border border-slate-100", children: [
-              /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("span", { className: "text-slate-400 block font-semibold", children: "Rute Tujuan/Asal:" }),
-                /* @__PURE__ */ jsx("strong", { className: "text-slate-800 text-sm", children: f.route })
-              ] }),
-              /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("span", { className: "text-slate-400 block font-semibold", children: "Total Semua Pax:" }),
-                /* @__PURE__ */ jsx("strong", { className: "text-slate-800 text-sm", children: f.estTotalFlight ? `${f.estTotalFlight} Pax` : "-" })
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between pt-1 border-t border-slate-200/60", children: [
-              /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-400 font-bold uppercase tracking-wider block", children: "Pax Umrah:" }),
-                /* @__PURE__ */ jsx("span", { className: `text-base font-black ${isWarning ? "text-rose-600" : "text-slate-800"}`, children: f.estPaxUmroh ? `${f.estPaxUmroh} Pax` : "0 Pax" })
-              ] }),
-              /* @__PURE__ */ jsx("div", { children: isWarning ? /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1 text-[11px] font-extrabold text-rose-700 bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200", children: [
-                /* @__PURE__ */ jsx(AlertTriangle, { className: "w-3 h-3" }),
-                " Warning Kepadatan"
-              ] }) : /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200", children: [
-                /* @__PURE__ */ jsx(CheckCircle, { className: "w-3 h-3" }),
-                " Normal"
-              ] }) })
-            ] })
-          ] }, f.id);
-        }) })
-      ] }) }),
-      /* @__PURE__ */ jsxs("div", { className: "p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 font-medium", children: [
-        /* @__PURE__ */ jsxs("span", { children: [
-          "Menampilkan ",
-          filteredAllFlights.length,
-          " dari ",
-          allFlightsList.length,
-          " penerbangan"
-        ] }),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            onClick: () => setShowAllFlightsModal(false),
-            className: "px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow transition-colors text-xs sm:text-sm",
-            children: "Tutup Daftar"
-          }
-        )
-      ] })
-    ] }) }),
-    /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden", children: [
-      /* @__PURE__ */ jsxs(
-        "div",
-        {
-          onClick: () => setIsEditingRaw(!isEditingRaw),
-          className: "flex items-center justify-between p-4 sm:p-5 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-200",
-          children: [
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
-              /* @__PURE__ */ jsx("div", { className: "p-2 bg-emerald-100 text-emerald-600 rounded-lg", children: /* @__PURE__ */ jsx(Edit, { className: "w-5 h-5" }) }),
-              /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("h3", { className: "font-bold text-slate-800 text-sm sm:text-base", children: "Paste Jadwal Rencana Penerbangan Umrah" }),
-                /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: departures.length === 0 && arrivals.length === 0 ? "Saat ini kosong. Klik di sini untuk mempaste jadwal dari WhatsApp atau Excel" : `Tersimpan: ${departures.length} Departure (${warningDepartures.length} Warning) & ${arrivals.length} Arrival (${warningArrivals.length} Warning)` })
-              ] })
-            ] }),
-            /* @__PURE__ */ jsx("div", { className: "text-slate-400", children: isEditingRaw ? /* @__PURE__ */ jsx(ChevronUp, { className: "w-6 h-6" }) : /* @__PURE__ */ jsx(ChevronDown, { className: "w-6 h-6" }) })
-          ]
-        }
-      ),
-      isEditingRaw && /* @__PURE__ */ jsxs("div", { className: "p-4 sm:p-6 space-y-4 animate-fadeIn", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50 border border-blue-200 p-3.5 rounded-xl text-xs text-blue-800", children: [
-          /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-2", children: [
-            /* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" }),
-            /* @__PURE__ */ jsxs("span", { children: [
-              /* @__PURE__ */ jsx("strong", { children: "Aturan Warning:" }),
-              " Sistem menyaring penerbangan dengan ",
-              /* @__PURE__ */ jsxs("strong", { children: [
-                ">",
-                paxThreshold,
-                " Pax Umrah"
-              ] }),
-              " dan menghitung rentang ",
-              /* @__PURE__ */ jsx("strong", { children: "waktu kepadatan" }),
-              " (Kedatangan: ±",
-              arrWarningMinutes,
-              " menit pendaratan | Keberangkatan: ",
-              depWarningMinutes % 60 === 0 ? `${depWarningMinutes / 60} jam` : `${depWarningMinutes} menit`,
-              " sebelumnya)."
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2 self-start sm:self-center", children: [
-            /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                onClick: handleLoadSample,
-                className: "bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm flex items-center gap-1.5",
-                children: [
-                  /* @__PURE__ */ jsx(FileText, { className: "w-3.5 h-3.5" }),
-                  " Muat Contoh (11 Juli)"
-                ]
-              }
-            ),
-            /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                onClick: () => {
-                  setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
-                  parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
-                  setIsEditingRaw(false);
-                },
-                className: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-3.5 py-1.5 rounded-lg text-xs transition-all shadow-sm flex items-center gap-1.5",
-                children: [
-                  /* @__PURE__ */ jsx(Image$1, { className: "w-4 h-4" }),
-                  " Muat Jadwal Pre-Ops Gambar (13 Juli - 36 Flight)"
-                ]
-              }
-            )
-          ] })
-        ] }),
-        /* @__PURE__ */ jsx("div", { className: "border-2 border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50/70 hover:bg-slate-50 transition-colors", children: !uploadedScheduleImage ? /* @__PURE__ */ jsxs("div", { className: "text-center py-4 space-y-2", children: [
-          /* @__PURE__ */ jsx("div", { className: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto", children: /* @__PURE__ */ jsx(Upload, { className: "w-6 h-6" }) }),
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsx("p", { className: "text-sm font-bold text-slate-700", children: "Unggah Gambar / Screenshot Jadwal Penerbangan Umroh" }),
-            /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: "Format PNG, JPG, atau JPEG. AI Sistem akan memetakan dan mengekstrak jadwal ke dalam timeline." })
-          ] }),
-          /* @__PURE__ */ jsxs("label", { className: "inline-block mt-2 px-4 py-2 bg-white border border-slate-300 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-bold text-xs rounded-xl cursor-pointer shadow-sm transition-all", children: [
-            "Pilih Gambar Jadwal",
-            /* @__PURE__ */ jsx(
-              "input",
-              {
-                type: "file",
-                accept: "image/*",
-                onChange: (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      if (event.target?.result) {
-                        setUploadedScheduleImage(event.target.result);
-                        setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
-                      }
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                },
-                className: "hidden"
-              }
-            )
-          ] })
-        ] }) : /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-slate-200 pb-2", children: [
-            /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-slate-700 flex items-center gap-1.5", children: [
-              /* @__PURE__ */ jsx(Image$1, { className: "w-4 h-4 text-emerald-600" }),
-              " Gambar Jadwal Terunggah:"
-            ] }),
-            /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                onClick: () => setUploadedScheduleImage(null),
-                className: "text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1",
-                children: [
-                  /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" }),
-                  " Hapus Gambar"
-                ]
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsx("div", { className: "max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2", children: /* @__PURE__ */ jsx("img", { src: uploadedScheduleImage, alt: "Schedule Preview", className: "w-full h-auto object-contain mx-auto" }) }),
-          /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-2 bg-emerald-50 p-3 rounded-xl border border-emerald-200", children: [
-            /* @__PURE__ */ jsx("p", { className: "text-xs text-emerald-800 font-medium", children: "✓ Data 36 penerbangan (18 Departure & 18 Arrival) dari gambar terdeteksi dan dimuat ke dalam Rencana Penerbangan di bawah ini." }),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                onClick: () => {
-                  parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
-                  setIsEditingRaw(false);
-                },
-                className: "px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm whitespace-nowrap",
-                children: "Terapkan & Lihat Timeline →"
-              }
-            )
-          ] })
-        ] }) }),
-        /* @__PURE__ */ jsx(
-          "textarea",
-          {
-            rows: 10,
-            value: rawScheduleText,
-            onChange: (e) => setRawScheduleText(e.target.value),
-            placeholder: "Paste teks Rencana Penerbangan Umrah di sini atau unggah gambar di atas...",
-            className: "w-full p-4 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs sm:text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-y"
-          }
-        ),
-        /* @__PURE__ */ jsxs("div", { className: "flex justify-end gap-3", children: [
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => {
-                setRawScheduleText("");
-                setDepartures([]);
-                setArrivals([]);
-                setDateText("");
-              },
-              className: "px-4 py-2 text-xs sm:text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors",
-              children: "Kosongkan Jadwal"
-            }
-          ),
-          /* @__PURE__ */ jsxs(
-            "button",
-            {
-              type: "button",
-              onClick: handleApplyRawPaste,
-              className: "px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow transition-all flex items-center gap-2",
-              children: [
-                /* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4" }),
-                " Proses & Generate Timeline"
-              ]
-            }
-          )
-        ] })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5", children: [
-      /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-slate-100", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5", children: [
-          /* @__PURE__ */ jsx("div", { className: "p-2 bg-blue-100 text-blue-600 rounded-lg", children: /* @__PURE__ */ jsx(Sliders, { className: "w-5 h-5" }) }),
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsx("h3", { className: "font-bold text-slate-800 text-sm sm:text-base", children: "Pengaturan Batas Kepadatan & Jarak Warning" }),
-            /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: "Sesuaikan batas minimal penumpang Umrah dan rentang waktu peringatan operasional" })
-          ] })
-        ] }),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            onClick: () => {
-              setPaxThreshold(100);
-              setDepWarningMinutes(180);
-              setArrWarningMinutes(30);
-            },
-            className: "self-start sm:self-center px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200",
-            children: "Reset ke Default (100 Pax, -3 Jam, ±30 Menit)"
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3.5", children: [
-        /* @__PURE__ */ jsxs("div", { className: "bg-slate-50 p-3 rounded-xl border border-slate-200/80", children: [
-          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-extrabold text-slate-700 mb-1.5 flex items-center justify-between", children: [
-            /* @__PURE__ */ jsx("span", { children: "Batas Padat Pax Umrah" }),
-            /* @__PURE__ */ jsxs("span", { className: "text-[11px] font-semibold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded", children: [
-              "> ",
-              paxThreshold,
-              " Pax"
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsx(
-              "input",
-              {
-                type: "number",
-                min: 0,
-                value: paxThreshold,
-                onChange: (e) => setPaxThreshold(Math.max(0, parseInt(e.target.value, 10) || 0)),
-                className: "w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              }
-            ),
-            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-slate-500", children: "Pax" })
-          ] }),
-          /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-400 mt-1", children: "Penerbangan di atas angka ini akan masuk ke daftar Warning." })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "bg-slate-50 p-3 rounded-xl border border-slate-200/80", children: [
-          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-extrabold text-slate-700 mb-1.5 flex items-center justify-between", children: [
-            /* @__PURE__ */ jsx("span", { children: "Warning Keberangkatan" }),
-            /* @__PURE__ */ jsxs("span", { className: "text-[11px] font-semibold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded", children: [
-              "-",
-              depWarningMinutes % 60 === 0 ? `${depWarningMinutes / 60} Jam` : `${+(depWarningMinutes / 60).toFixed(1)} Jam`
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsx(
-              "input",
-              {
-                type: "number",
-                min: 0,
-                step: 15,
-                value: depWarningMinutes,
-                onChange: (e) => setDepWarningMinutes(Math.max(0, parseInt(e.target.value, 10) || 0)),
-                className: "w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              }
-            ),
-            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-slate-500 whitespace-nowrap", children: "Menit Sblm" })
-          ] }),
-          /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-400 mt-1", children: "Durasi waktu sebelum keberangkatan untuk hitungan kepadatan." })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "bg-slate-50 p-3 rounded-xl border border-slate-200/80", children: [
-          /* @__PURE__ */ jsxs("label", { className: "block text-xs font-extrabold text-slate-700 mb-1.5 flex items-center justify-between", children: [
-            /* @__PURE__ */ jsx("span", { children: "Warning Kedatangan" }),
-            /* @__PURE__ */ jsxs("span", { className: "text-[11px] font-semibold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded", children: [
-              "± ",
-              arrWarningMinutes,
-              " Menit"
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ jsx(
-              "input",
-              {
-                type: "number",
-                min: 0,
-                step: 5,
-                value: arrWarningMinutes,
-                onChange: (e) => setArrWarningMinutes(Math.max(0, parseInt(e.target.value, 10) || 0)),
-                className: "w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              }
-            ),
-            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-slate-500 whitespace-nowrap", children: "Menit Landing" })
-          ] }),
-          /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-400 mt-1", children: "Rentang waktu sebelum & sesudah jam pendaratan aktual." })
-        ] })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxs(
-      "div",
-      {
-        ref: captureRef,
-        className: "bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-8 space-y-8",
-        children: [
-          /* @__PURE__ */ jsxs("div", { className: "bg-gradient-to-r from-slate-900 via-blue-900 to-emerald-900 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-md", children: [
-            /* @__PURE__ */ jsx("div", { className: "absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none", children: /* @__PURE__ */ jsx(KaabaIcon, { className: "w-64 h-64" }) }),
-            /* @__PURE__ */ jsxs("div", { className: "relative z-10 space-y-3", children: [
-              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between flex-wrap gap-2", children: [
-                /* @__PURE__ */ jsxs("span", { className: "bg-amber-600/30 text-amber-300 border border-amber-400/30 px-3.5 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase flex items-center gap-1.5", children: [
-                  /* @__PURE__ */ jsx(AlertTriangle, { className: "w-3.5 h-3.5" }),
-                  " Peringatan Kepadatan Terminal 2"
-                ] }),
-                dateText && /* @__PURE__ */ jsxs("span", { className: "bg-white/15 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold text-white flex items-center gap-1.5", children: [
-                  /* @__PURE__ */ jsx(Calendar, { className: "w-4 h-4 text-emerald-400" }),
-                  " ",
-                  dateText
-                ] })
-              ] }),
-              /* @__PURE__ */ jsx("h2", { className: "text-xl sm:text-3xl font-extrabold tracking-tight text-white", children: headerTitle || "Timeline Warning Umrah" }),
-              /* @__PURE__ */ jsx("p", { className: "text-slate-300 text-xs sm:text-sm font-medium", children: airportText || "Bandara Internasional Soekarno-Hatta (CGK)" }),
-              /* @__PURE__ */ jsxs("div", { className: "pt-3 flex flex-wrap items-center justify-between gap-3 sm:gap-6 border-t border-white/10 text-xs sm:text-sm", children: [
-                /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-3 sm:gap-6", children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsx("span", { className: "w-3 h-3 rounded-full bg-amber-400" }),
-                    /* @__PURE__ */ jsxs("span", { children: [
-                      "Warning Keberangkatan (>",
-                      paxThreshold,
-                      " Pax): ",
-                      /* @__PURE__ */ jsxs("strong", { className: "text-amber-300 font-bold", children: [
-                        warningDepartures.length,
-                        " Flight"
-                      ] })
-                    ] })
-                  ] }),
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsx("span", { className: "w-3 h-3 rounded-full bg-emerald-400" }),
-                    /* @__PURE__ */ jsxs("span", { children: [
-                      "Warning Kedatangan (>",
-                      paxThreshold,
-                      " Pax): ",
-                      /* @__PURE__ */ jsxs("strong", { className: "text-emerald-300 font-bold", children: [
-                        warningArrivals.length,
-                        " Flight"
-                      ] })
-                    ] })
-                  ] })
-                ] }),
-                (departures.length > 0 || arrivals.length > 0) && /* @__PURE__ */ jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: () => setShowAllFlightsModal(true),
-                    className: "bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl px-3.5 py-1.5 font-bold text-white text-xs sm:text-sm flex items-center gap-2 transition-all shadow-sm",
-                    children: [
-                      /* @__PURE__ */ jsx(List, { className: "w-4 h-4 text-emerald-300" }),
-                      " Lihat Seluruh Daftar (",
-                      departures.length + arrivals.length,
-                      " Flight) →"
-                    ]
-                  }
-                )
-              ] })
-            ] })
-          ] }),
-          departures.length === 0 && arrivals.length === 0 ? /* @__PURE__ */ jsxs("div", { className: "py-16 text-center space-y-4", children: [
-            /* @__PURE__ */ jsx("div", { className: "w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto", children: /* @__PURE__ */ jsx(Calendar, { className: "w-8 h-8" }) }),
-            /* @__PURE__ */ jsxs("div", { className: "max-w-md mx-auto", children: [
-              /* @__PURE__ */ jsx("h4", { className: "text-base font-bold text-slate-700", children: "Belum Ada Jadwal Penerbangan yang Diproses" }),
-              /* @__PURE__ */ jsxs("p", { className: "text-xs text-slate-500 mt-1", children: [
-                "Silakan buka panel di atas untuk paste teks jadwal atau ",
-                /* @__PURE__ */ jsx("strong", { children: "unggah gambar jadwal" }),
-                ", atau klik tombol di bawah untuk langsung memuat contoh:"
-              ] }),
-              /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-center gap-2 pt-3", children: [
-                /* @__PURE__ */ jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: handleLoadSample,
-                    className: "px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center gap-1.5",
-                    children: [
-                      /* @__PURE__ */ jsx(FileText, { className: "w-3.5 h-3.5" }),
-                      " Muat Contoh (11 Juli)"
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: () => {
-                      setRawScheduleText(PREOPS_UMRAH_SCHEDULE_13_JULI);
-                      parseTextToSchedule(PREOPS_UMRAH_SCHEDULE_13_JULI);
-                      setIsEditingRaw(false);
-                    },
-                    className: "px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-xl shadow transition-all flex items-center gap-1.5",
-                    children: [
-                      /* @__PURE__ */ jsx(Image$1, { className: "w-4 h-4" }),
-                      " Muat Jadwal Pre-Ops Gambar (13 Juli - 36 Flight)"
-                    ]
-                  }
-                )
-              ] })
-            ] })
-          ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
-            /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-slate-100 pb-2", children: [
-                /* @__PURE__ */ jsxs("h3", { className: "font-extrabold text-slate-800 text-base sm:text-lg flex items-center gap-2", children: [
-                  /* @__PURE__ */ jsx(Clock, { className: "w-5 h-5 text-blue-600" }),
-                  " Garis Timeline Kepadatan Operasional 24 Jam"
-                ] }),
-                /* @__PURE__ */ jsx("span", { className: "text-[11px] font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md", children: "00:00 - 24:00 WIB" })
-              ] }),
-              /* @__PURE__ */ jsxs("div", { className: "relative pt-6 pb-8 px-2 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden shadow-inner", children: [
-                /* @__PURE__ */ jsxs("div", { className: "absolute top-2 left-0 right-0 flex justify-between px-3 text-[10px] font-bold text-slate-400 select-none", children: [
-                  /* @__PURE__ */ jsx("span", { children: "00:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "03:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "06:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "09:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "12:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "15:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "18:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "21:00" }),
-                  /* @__PURE__ */ jsx("span", { children: "24:00" })
-                ] }),
-                /* @__PURE__ */ jsxs("div", { className: "relative h-12 w-full bg-slate-200/80 rounded-xl mt-4 overflow-hidden border border-slate-300", children: [
-                  [12.5, 25, 37.5, 50, 62.5, 75, 87.5].map((pct, idx) => /* @__PURE__ */ jsx("div", { className: "absolute top-0 bottom-0 border-l border-slate-300/60", style: { left: `${pct}%` } }, idx)),
-                  warningDepartures.map((item) => {
-                    const info = getDensityInfo(item);
-                    const leftPct = Math.max(info.startMins / 1440 * 100, 0);
-                    const widthPct = Math.max((info.endMins - info.startMins) / 1440 * 100, 1.5);
-                    return /* @__PURE__ */ jsx(
-                      "div",
-                      {
-                        title: `Keberangkatan: ${item.flightCode} (${formatFlightTime(item.time)}) | Kepadatan: ${info.windowText}`,
-                        className: "absolute top-1.5 bottom-1.5 bg-gradient-to-r from-amber-500 to-red-500 rounded-lg shadow border border-amber-300 flex items-center justify-center overflow-hidden transition-all hover:brightness-110",
-                        style: { left: `${leftPct}%`, width: `${widthPct}%` },
-                        children: /* @__PURE__ */ jsx("span", { className: "text-[9px] font-extrabold text-white px-1 truncate drop-shadow", children: item.flightCode })
-                      },
-                      item.id
-                    );
-                  }),
-                  warningArrivals.map((item) => {
-                    const info = getDensityInfo(item);
-                    const leftPct = Math.max(info.startMins / 1440 * 100, 0);
-                    const widthPct = Math.max((info.endMins - info.startMins) / 1440 * 100, 1.5);
-                    return /* @__PURE__ */ jsx(
-                      "div",
-                      {
-                        title: `Kedatangan: ${item.flightCode} (${formatFlightTime(item.time)}) | Kepadatan: ${info.windowText}`,
-                        className: "absolute top-1.5 bottom-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg shadow border border-emerald-300 flex items-center justify-center overflow-hidden transition-all hover:brightness-110",
-                        style: { left: `${leftPct}%`, width: `${widthPct}%`, opacity: 0.9 },
-                        children: /* @__PURE__ */ jsx("span", { className: "text-[9px] font-extrabold text-white px-1 truncate drop-shadow", children: item.flightCode })
-                      },
-                      item.id
-                    );
-                  })
-                ] }),
-                /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-center gap-6 mt-4 text-xs font-bold text-slate-600", children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsx("span", { className: "w-4 h-3 bg-gradient-to-r from-amber-500 to-red-500 rounded border border-amber-400" }),
-                    /* @__PURE__ */ jsxs("span", { children: [
-                      "Warning Keberangkatan (Kepadatan: ",
-                      depWarningMinutes % 60 === 0 ? `${depWarningMinutes / 60} Jam` : `${+(depWarningMinutes / 60).toFixed(1)} Jam`,
-                      " Sebelum Departure)"
-                    ] })
-                  ] }),
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsx("span", { className: "w-4 h-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded border border-emerald-400" }),
-                    /* @__PURE__ */ jsxs("span", { children: [
-                      "Warning Kedatangan (Kepadatan: ±",
-                      arrWarningMinutes,
-                      " Menit Landing)"
-                    ] })
-                  ] })
-                ] })
-              ] })
-            ] }),
-            /* @__PURE__ */ jsx("div", { className: "pt-4 pb-2", children: sortedWarnings.length === 0 ? /* @__PURE__ */ jsxs("div", { className: "p-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500 text-sm font-medium", children: [
-              "Tidak ada penerbangan dengan >",
-              paxThreshold,
-              " Pax Umrah."
-            ] }) : /* @__PURE__ */ jsxs("div", { className: "relative", children: [
-              /* @__PURE__ */ jsx("div", { className: "absolute top-0 bottom-0 w-[2px] bg-slate-300", style: { left: "89px" } }),
-              /* @__PURE__ */ jsx("div", { className: "space-y-0", children: sortedWarnings.map((flight, index) => {
-                const info = getDensityInfo(flight);
-                const isDeparture = flight.type === "DEPARTURE";
-                const typeLabel = isDeparture ? "KEBERANGKATAN" : "KEDATANGAN";
-                const dotColor = isDeparture ? "bg-[#b91c1c]" : "bg-[#0284c7]";
-                const titleColor = isDeparture ? "text-[#b91c1c]" : "text-[#0284c7]";
-                const startFormatted = formatMinutesToTime(info.startMins);
-                const endFormatted = formatMinutesToTime(info.endMins);
-                const isLast = index === sortedWarnings.length - 1;
-                return /* @__PURE__ */ jsxs("div", { className: `relative flex items-start ${!isLast ? "pb-6" : "pb-1"}`, children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex-shrink-0 text-right pt-0.5", style: { width: "80px" }, children: [
-                    /* @__PURE__ */ jsx("div", { className: "text-[15px] sm:text-lg font-extrabold text-slate-800 leading-tight font-mono tracking-tight", children: startFormatted }),
-                    /* @__PURE__ */ jsxs("div", { className: "text-[10px] sm:text-xs font-semibold text-slate-400 font-mono leading-tight", children: [
-                      "s/d ",
-                      endFormatted
-                    ] })
-                  ] }),
-                  /* @__PURE__ */ jsx("div", { className: "relative flex-shrink-0 flex items-start justify-center pt-[5px]", style: { width: "20px" }, children: /* @__PURE__ */ jsx("div", { className: `w-[10px] h-[10px] sm:w-3 sm:h-3 rounded-full ${dotColor} border-[2px] border-white shadow-sm z-10` }) }),
-                  /* @__PURE__ */ jsxs("div", { className: "flex-1 pl-3 min-w-0", children: [
-                    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 flex-wrap", children: [
-                      isDeparture ? /* @__PURE__ */ jsx(PlaneTakeoff, { className: `w-4 h-4 flex-shrink-0 ${titleColor}` }) : /* @__PURE__ */ jsx(PlaneLanding, { className: `w-4 h-4 flex-shrink-0 ${titleColor}` }),
-                      /* @__PURE__ */ jsxs("span", { className: `font-black text-sm sm:text-base uppercase tracking-wide ${titleColor}`, children: [
-                        typeLabel,
-                        " - ",
-                        flight.flightCode
-                      ] })
-                    ] }),
-                    /* @__PURE__ */ jsxs("div", { className: "text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed", children: [
-                      "Jadwal: ",
-                      /* @__PURE__ */ jsxs("strong", { className: "text-slate-700 font-mono", children: [
-                        formatFlightTime(flight.time),
-                        " WIB"
-                      ] }),
-                      /* @__PURE__ */ jsx("span", { className: "mx-1.5 text-slate-300", children: "|" }),
-                      "Rute: ",
-                      /* @__PURE__ */ jsx("strong", { className: "text-slate-700", children: flight.route })
-                    ] }),
-                    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 mt-0.5", children: [
-                      /* @__PURE__ */ jsx("span", { className: "text-sm leading-none", children: "🔥" }),
-                      /* @__PURE__ */ jsxs("span", { className: "text-xs sm:text-sm font-black text-[#b91c1c]", children: [
-                        flight.estPaxUmroh,
-                        " Pax Umrah"
-                      ] })
-                    ] })
-                  ] })
-                ] }, flight.id);
-              }) })
-            ] }) }),
-            /* @__PURE__ */ jsx("div", { className: "pt-5 mt-4 border-t border-slate-200 text-center", children: /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-400 italic", children: "Generated by Airport Operation Control Center" }) })
-          ] })
-        ]
-      }
-    ),
-    (departures.length > 0 || arrivals.length > 0) && /* @__PURE__ */ jsxs("div", { className: "pt-3 space-y-2.5", children: [
-      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5", children: [
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            type: "button",
-            onClick: () => setShowAllFlightsModal(true),
-            className: "w-full font-extrabold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 shadow-md transition-all duration-300 text-base bg-gradient-to-r from-slate-800 to-blue-900 hover:from-slate-900 hover:to-blue-950 text-white border border-slate-700 hover:shadow-xl",
-            children: [
-              /* @__PURE__ */ jsx(List, { className: "w-6 h-6 text-blue-300" }),
-              " Lihat Seluruh Daftar Jadwal (",
-              departures.length + arrivals.length,
-              " Flight)"
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            onClick: generatePreviewImage,
-            disabled: isGeneratingImage,
-            className: `w-full font-extrabold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 shadow-lg transition-all duration-300 text-base ${isGeneratingImage ? "bg-slate-400 cursor-not-allowed text-white" : isCopied ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl text-white"}`,
-            children: isGeneratingImage ? /* @__PURE__ */ jsxs(Fragment, { children: [
-              /* @__PURE__ */ jsx(RefreshCw, { className: "w-6 h-6 animate-spin" }),
-              " Sedang Membuat Gambar Timeline..."
-            ] }) : isCopied ? /* @__PURE__ */ jsxs(Fragment, { children: [
-              /* @__PURE__ */ jsx(CheckCircle, { className: "w-6 h-6 animate-bounce" }),
-              " Berhasil! Gambar Tersimpan / Dibagikan"
-            ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
-              /* @__PURE__ */ jsx(Share2, { className: "w-6 h-6" }),
-              " Share T Umrah ke WA"
-            ] })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsx("p", { className: "text-center text-xs text-slate-500", children: "Klik tombol biru untuk melihat seluruh daftar jadwal, atau tombol hijau di kanan untuk membagikan gambar timeline ke WhatsApp." })
-    ] })
-  ] });
-};
 function App() {
   const { activeTab, setActiveTab } = useAppStore();
   const { initializeSupabaseData } = useMasterDataStore();
@@ -11229,7 +9981,7 @@ function App() {
     /* @__PURE__ */ jsxs("div", { className: "max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200", children: [
       /* @__PURE__ */ jsx("div", { className: "bg-blue-800 px-6 py-5 flex flex-col gap-4", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
-          activeTab === "initial" ? /* @__PURE__ */ jsx(FileWarning, { className: "text-white w-7 h-7" }) : activeTab === "perbaikan" ? /* @__PURE__ */ jsx(Wrench, { className: "text-white w-7 h-7" }) : activeTab === "kehadiran" ? /* @__PURE__ */ jsx(Users, { className: "text-white w-7 h-7" }) : activeTab === "briefing" ? /* @__PURE__ */ jsx(Megaphone, { className: "text-white w-7 h-7" }) : activeTab === "storing" ? /* @__PURE__ */ jsx(MonitorSearchIcon, { className: "text-white w-7 h-7" }) : activeTab === "checklist" ? /* @__PURE__ */ jsx(CheckSquare, { className: "text-white w-7 h-7" }) : activeTab === "report" ? /* @__PURE__ */ jsx(FileText, { className: "text-white w-7 h-7" }) : activeTab === "tip" ? /* @__PURE__ */ jsx(AlertTriangle, { className: "text-white w-7 h-7" }) : activeTab === "data" ? /* @__PURE__ */ jsx(Database, { className: "text-white w-7 h-7" }) : activeTab === "kegiatan" ? /* @__PURE__ */ jsx(Briefcase, { className: "text-white w-7 h-7" }) : activeTab === "umrah" ? /* @__PURE__ */ jsx(KaabaIcon, { className: "text-white w-7 h-7" }) : /* @__PURE__ */ jsx(Settings, { className: "text-white w-7 h-7" }),
+          activeTab === "initial" ? /* @__PURE__ */ jsx(FileWarning, { className: "text-white w-7 h-7" }) : activeTab === "perbaikan" ? /* @__PURE__ */ jsx(Wrench, { className: "text-white w-7 h-7" }) : activeTab === "kehadiran" ? /* @__PURE__ */ jsx(Users, { className: "text-white w-7 h-7" }) : activeTab === "briefing" ? /* @__PURE__ */ jsx(Megaphone, { className: "text-white w-7 h-7" }) : activeTab === "storing" ? /* @__PURE__ */ jsx(MonitorSearchIcon, { className: "text-white w-7 h-7" }) : activeTab === "checklist" ? /* @__PURE__ */ jsx(CheckSquare, { className: "text-white w-7 h-7" }) : activeTab === "report" ? /* @__PURE__ */ jsx(FileText, { className: "text-white w-7 h-7" }) : activeTab === "tip" ? /* @__PURE__ */ jsx(AlertTriangle, { className: "text-white w-7 h-7" }) : activeTab === "data" ? /* @__PURE__ */ jsx(Database, { className: "text-white w-7 h-7" }) : activeTab === "kegiatan" ? /* @__PURE__ */ jsx(Briefcase, { className: "text-white w-7 h-7" }) : /* @__PURE__ */ jsx(Settings, { className: "text-white w-7 h-7" }),
           /* @__PURE__ */ jsxs("div", { children: [
             /* @__PURE__ */ jsx("h1", { className: "text-xl font-bold text-white", children: "Laporan SSES T2" }),
             /* @__PURE__ */ jsx("p", { className: "text-blue-200 text-sm", children: "Otomatisasi Kirim ke WhatsApp" })
@@ -11289,7 +10041,7 @@ function App() {
           /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "Kalibrasi" })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "relative flex", children: [
-          /* @__PURE__ */ jsxs("button", { onClick: () => setShowMoreMenu(!showMoreMenu), className: `w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${activeTab === "kegiatan" || activeTab === "tip" || activeTab === "data" || activeTab === "report" || activeTab === "umrah" || showMoreMenu ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
+          /* @__PURE__ */ jsxs("button", { onClick: () => setShowMoreMenu(!showMoreMenu), className: `w-full py-3 px-1 text-[10px] sm:text-sm font-bold flex flex-col items-center justify-center gap-1.5 transition-all ${activeTab === "kegiatan" || activeTab === "tip" || activeTab === "data" || activeTab === "report" || showMoreMenu ? "shadow-[inset_0_-3px_0_0_#2563eb] text-blue-700 bg-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`, children: [
             /* @__PURE__ */ jsx(MoreHorizontal, { className: "w-5 h-5 sm:w-6 sm:h-6" }),
             " ",
             /* @__PURE__ */ jsx("span", { className: "truncate w-full text-center", children: "More" })
@@ -11309,13 +10061,9 @@ function App() {
                 /* @__PURE__ */ jsx(AlertTriangle, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
                 " TIP"
               ] }),
-              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("data"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 ${activeTab === "data" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
+              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("data"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === "data" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
                 /* @__PURE__ */ jsx(Database, { className: "w-4 h-4 sm:w-5 sm:h-5" }),
                 " Data"
-              ] }),
-              /* @__PURE__ */ jsxs("button", { onClick: () => switchTab("umrah"), className: `w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${activeTab === "umrah" ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700 font-medium"}`, children: [
-                /* @__PURE__ */ jsx(KaabaIcon, { className: "w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" }),
-                " T Umrah"
               ] })
             ] })
           ] })
@@ -11331,8 +10079,7 @@ function App() {
       activeTab === "report" && /* @__PURE__ */ jsx(TabShiftReport, {}),
       activeTab === "tip" && /* @__PURE__ */ jsx(TabTip, {}),
       activeTab === "data" && /* @__PURE__ */ jsx(TabData, {}),
-      activeTab === "kegiatan" && /* @__PURE__ */ jsx(TabKegiatan, {}),
-      activeTab === "umrah" && /* @__PURE__ */ jsx(TabTUmrah, {})
+      activeTab === "kegiatan" && /* @__PURE__ */ jsx(TabKegiatan, {})
     ] })
   ] });
 }

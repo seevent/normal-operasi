@@ -7,6 +7,9 @@ export const compressImageFile = async (
   maxHeight = 1600,
   quality = 0.8
 ): Promise<{ file: File; preview: string }> => {
+  if (file.type.startsWith('video/')) {
+    return { file, preview: URL.createObjectURL(file) };
+  }
   return new Promise((resolve) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
@@ -182,13 +185,14 @@ export const processPhotosToCollage = async (
   }
 ): Promise<{ url: string, file: File } | null> => {
   return new Promise(async (resolve) => {
-    if (photosArray.length <= 1) {
+    const imagePhotos = photosArray.filter((p: any) => !p.file?.type?.startsWith('video/'));
+    if (imagePhotos.length <= 1) {
       resolve(null);
       return;
     }
 
   try {
-    const loadedImages = await Promise.all(photosArray.map(p => {
+    const loadedImages = await Promise.all(imagePhotos.map(p => {
       return new Promise<{img: HTMLImageElement, zoom: number, annotation?: any}>((resolve) => {
         const img = new Image();
         let settled = false;
