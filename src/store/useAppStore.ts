@@ -8,7 +8,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  activeTab: 'perbaikan',
+  activeTab: 'initial',
   setActiveTab: (tab) => set({ activeTab: tab }),
   isCopied: false,
   setIsCopied: (val) => set({ isCopied: val }),

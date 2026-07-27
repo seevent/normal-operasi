@@ -442,25 +442,21 @@ export const generateWA_InitialReport = (formData: any) => {
     return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
   }).join(', ') || '-';
 
-  const pukulStr = formData.waktuMulai ? `${formData.waktuMulai} WIB` : '- WIB';
-  const lamaStr = formData.lamaPengerjaan || '-';
+  const pukulStr = formData.waktuMulai ? `${formData.waktuMulai} WIB` : ' WIB';
   const teknisiStr = formData.teknisi || '-';
   const permasalahanStr = formData.permasalahan || '';
   const statusStr = formData.status || '-';
   const uraianStr = (formData.uraian && formData.uraian !== '• ') ? formData.uraian : '(Uraian kronologis kerusakan s.d saat dilaporkan)';
-  const dampakStr = formData.dampak || '1. ';
-  const mitigasiStr = formData.tindakanMitigasi || '1. ';
-  const tindakanStr = formData.tindakan || '1. ';
-  const hasilStr = formData.hasilTindakan || '1. ';
+  const dampakStr = (formData.dampak && formData.dampak !== '1. ') ? formData.dampak : (formData.dampak || '1. ...');
+  const mitigasiStr = (formData.tindakanMitigasi && formData.tindakanMitigasi !== '1. ') ? formData.tindakanMitigasi : (formData.tindakanMitigasi || '1. ...');
 
-  return `*INITIAL REPORT*
+  return `INITIAL REPORT
 
 Nama Peralatan : ${formData.peralatan}
 Lokasi : ${lokasiFinal}
 
 🗓️ Tanggal : ${formattedDate}
 🕝 Pukul : ${pukulStr}
-⏰ Lama waktu Pengerjaan : ${lamaStr}
 👨🏻‍🔧 Teknisi : ${teknisiStr}
 
 🪛 Permasalahan : 
@@ -468,20 +464,15 @@ ${permasalahanStr}
 
 Status : ${statusStr}
 
-*URAIAN*
+URAIAN
 ${uraianStr}
 
-*DAMPAK*
+DAMPAK
 ${dampakStr}
 
-*TINDAKAN MITIGASI*
+MITIGASI
 ${mitigasiStr}
 
-*TINDAKAN*
-${tindakanStr}
-
-*HASIL TINDAKAN*
-${hasilStr}
 
 Demikian laporan kronologis dan tindak lanjut kami sampaikan
 Terimakasih atas perhatiannya.`;

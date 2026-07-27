@@ -651,7 +651,7 @@ export const TabInitialReport: React.FC = () => {
       lokasi: lokasiFinal,
       peralatan: formData.peralatan || '-',
       uraian: `[Permasalahan: ${formData.permasalahan}] ${formData.uraian}`,
-      tindakLanjut: `[Mitigasi: ${formData.tindakanMitigasi}] [Tindakan: ${formData.tindakan}] [Hasil: ${formData.hasilTindakan}]`,
+      tindakLanjut: `[Mitigasi: ${formData.tindakanMitigasi}]`,
       status: formData.status || '-',
       teknisi: formData.teknisi,
       imageFile: customFilesArray.length > 0 ? customFilesArray[0] : null
@@ -823,7 +823,7 @@ export const TabInitialReport: React.FC = () => {
           <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
             <Clock className="w-5 h-5 text-blue-600" /> Waktu & Pelaksana
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
               <div className="relative">
@@ -835,35 +835,8 @@ export const TabInitialReport: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul</label>
               <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleFieldChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Lama Waktu Pengerjaan</label>
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={formData.jamPengerjaan}
-                    onChange={handleJamChange}
-                    className="w-full pr-12 pl-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm text-right"
-                  />
-                  <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-500 pointer-events-none">Jam</span>
-                </div>
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={formData.menitPengerjaan}
-                    onChange={handleMenitChange}
-                    className="w-full pr-14 pl-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm text-right"
-                  />
-                  <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-500 pointer-events-none">Menit</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
                 Teknisi Bertugas (Otomatis dari Shift)
                 {availableTeknisi.length === 0 && <span className="text-xs text-rose-500 font-normal">*(Tidak ada teknisi hadir/jadwal kosong)</span>}
@@ -969,16 +942,8 @@ export const TabInitialReport: React.FC = () => {
             <textarea ref={dampakRef} name="dampak" rows={3} value={formData.dampak} onChange={(e) => handleNumberedChange(e, 'dampak')} onKeyDown={(e) => handleNumberedKeyDown(e, 'dampak')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">TINDAKAN MITIGASI</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">MITIGASI</label>
             <textarea ref={mitigasiRef} name="tindakanMitigasi" rows={3} value={formData.tindakanMitigasi} onChange={(e) => handleNumberedChange(e, 'tindakanMitigasi')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakanMitigasi')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">TINDAKAN</label>
-            <textarea ref={tindakanRef} name="tindakan" rows={4} value={formData.tindakan} onChange={(e) => handleNumberedChange(e, 'tindakan')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">HASIL TINDAKAN</label>
-            <textarea ref={hasilRef} name="hasilTindakan" rows={4} value={formData.hasilTindakan} onChange={(e) => handleNumberedChange(e, 'hasilTindakan')} onKeyDown={(e) => handleNumberedKeyDown(e, 'hasilTindakan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
           </div>
         </div>
 
