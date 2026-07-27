@@ -73,10 +73,19 @@ Rencana Kegiatan :
 ${attendanceData.rencanaKegiatan}`;
 };
 
-export const generateWA_Briefing = (briefingData: any) => {
+export const generateWA_Briefing = (briefingData: any, selectedSpareparts: any[] = []) => {
   const formattedDate = formatTanggalIndo(briefingData.tanggal);
   const judul = briefingData.jenis === 'Unit' ? '*Giat briefing unit SSES T2*' : '*Briefing MOT T2*';
-  return `${judul}\nHari/Tanggal : ${formattedDate}\nShift : ${briefingData.shift}\nLokasi : ${briefingData.lokasi}`;
+  let text = `${judul}\nHari/Tanggal : ${formattedDate}\nShift : ${briefingData.shift}\nLokasi : ${briefingData.lokasi}`;
+
+  if (briefingData.jenis === 'Unit' && selectedSpareparts && selectedSpareparts.length > 0) {
+    const sparepartsText = selectedSpareparts
+      .map(sp => `- ${sp.name} : ${sp.current_stock ?? 0} ${sp.unit || 'PCS'}`)
+      .join('\n');
+    text += `\n\n${sparepartsText}`;
+  }
+
+  return text;
 };
 
 export const formatACLokasiList = (locs: string[]): string => {

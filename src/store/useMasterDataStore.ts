@@ -65,6 +65,11 @@ interface MasterDataState {
   setJenisPeralatanData: (data: any[]) => void;
   toggleKalibrasiEquipmentDb: (id: string, tampil: boolean) => Promise<void>;
   
+  sparepartsData: any[];
+  briefingSparepartIds: string[];
+  fetchSparepartsData: () => Promise<void>;
+  toggleBriefingSparepart: (id: string, checked: boolean) => Promise<void>;
+
   initializeSupabaseData: () => Promise<void>;
 }
 
@@ -246,15 +251,70 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
     set({ masterModalData: [...masterModalData, newItem] });
   },
 
-  removeModalDataRow: (index) => {
-    const { masterModalData } = get();
-    const newData = [...masterModalData];
-    newData.splice(index, 1);
-    set({ masterModalData: newData });
+  sparepartsData: [],
+  briefingSparepartIds: [],
+
+  fetchSparepartsData: async () => {
+    try {
+      const { data: spData, error } = await supabase
+        .from('spareparts')
+        .select(`
+          *,
+          tipe_peralatan ( id, nama ),
+          stock_mutations ( qty, mutation_type )
+        `)
+        .order('name', { ascending: true });
+
+      if (!error && spData) {
+        const formatted = spData.map((item: any) => {
+          const mutations = item.stock_mutations || [];
+          const stock = mutations.reduce((acc: number, m: any) => {
+            const mType = (m.mutation_type || '').toLowerCase();
+            if (mType === 'masuk' || mType === 'in') return acc + (m.qty || 0);
+            if (mType === 'keluar' || mType === 'out') return acc - (m.qty || 0);
+            return acc;
+          }, 0);
+
+          return {
+            ...item,
+            tipe_nama: item.tipe_peralatan?.nama || '-',
+            current_stock: stock
+          };
+        });
+        set({ sparepartsData: formatted });
+      }
+
+      const { data: cfgData } = await supabase
+        .from('master_configs')
+        .select('value')
+        .eq('key', 'briefing_spareparts')
+        .maybeSingle();
+
+      if (cfgData && cfgData.value && Array.isArray(cfgData.value)) {
+        set({ briefingSparepartIds: cfgData.value });
+      }
+    } catch (err) {
+      console.error('Error fetching spareparts:', err);
+    }
+  },
+
+  toggleBriefingSparepart: async (id: string, checked: boolean) => {
+    const current = get().briefingSparepartIds || [];
+    let next: string[];
+    if (checked) {
+      next = current.includes(id) ? current : [...current, id];
+    } else {
+      next = current.filter(i => i !== id);
+    }
+    set({ briefingSparepartIds: next });
+    await saveConfigToSupabase('briefing_spareparts', next);
   },
 
   initializeSupabaseData: async () => {
     try {
+      if (get().fetchSparepartsData) {
+        await get().fetchSparepartsData();
+      }
       // 1. Fetch Relasional Data dari Supabase (Penempatan Peralatan)
       const { data, error } = await supabase
         .from('penempatan_peralatan')
@@ -354,6 +414,7 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
             case 'master_storing_loc_default': set({ storingLocDefault: config.value }); break;
             case 'master_tip_left': set({ tipLeftCol: config.value }); break;
             case 'master_tip_right': set({ tipRightCol: config.value }); break;
+            case 'briefing_spareparts': set({ briefingSparepartIds: config.value }); break;
           }
         });
       }

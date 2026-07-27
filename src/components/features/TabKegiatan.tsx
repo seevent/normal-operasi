@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Briefcase, Calendar, MapPin, Clock, Share2, CheckCircle, FileText, ClipboardList } from 'lucide-react';
+import { Briefcase, Calendar, MapPin, Clock, Share2, CheckCircle, FileText, ClipboardList, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
@@ -10,6 +10,7 @@ import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 export const TabKegiatan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
+  const [showErrors, setShowErrors] = useState(false);
 
   const [kegiatanData, setKegiatanData] = useState(() => {
     const now = new Date();
@@ -115,6 +116,12 @@ export const TabKegiatan: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!kegiatanData.tanggal || !kegiatanData.waktuMulai || !kegiatanData.lokasi || !kegiatanData.kegiatan) {
+      setShowErrors(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
     let generatedCollageFile: File | null = null;
     let finalFilesToShare: File[] = [];
 
@@ -157,10 +164,6 @@ export const TabKegiatan: React.FC = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     });
-
-    if (generatedCollageUrl) {
-      // Optional: Store to global context if needed
-    }
   };
 
   return (
@@ -175,8 +178,15 @@ export const TabKegiatan: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="date" name="tanggal" required value={kegiatanData.tanggal} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="date" name="tanggal" required value={kegiatanData.tanggal} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                showErrors && !kegiatanData.tanggal ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+              }`} />
             </div>
+            {showErrors && !kegiatanData.tanggal && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Tanggal wajib diisi!
+              </p>
+            )}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -184,8 +194,15 @@ export const TabKegiatan: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
               <div className="relative">
                 <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <input type="time" name="waktuMulai" required value={kegiatanData.waktuMulai} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="time" name="waktuMulai" required value={kegiatanData.waktuMulai} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                  showErrors && !kegiatanData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                }`} />
               </div>
+              {showErrors && !kegiatanData.waktuMulai && (
+                <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> Wajib diisi!
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai <span className="text-slate-400 text-xs font-normal">(Opsional)</span></label>
@@ -200,16 +217,30 @@ export const TabKegiatan: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Lokasi</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="text" name="lokasi" required placeholder="Contoh: Terminal D" value={kegiatanData.lokasi} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="text" name="lokasi" required placeholder="Contoh: Terminal D" value={kegiatanData.lokasi} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                showErrors && !kegiatanData.lokasi ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+              }`} />
             </div>
+            {showErrors && !kegiatanData.lokasi && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Lokasi wajib diisi!
+              </p>
+            )}
           </div>
 
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Kegiatan</label>
             <div className="relative">
               <ClipboardList className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-              <textarea name="kegiatan" required placeholder="Contoh: Mendampingi Audit dari Otban" rows={3} value={kegiatanData.kegiatan} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+              <textarea name="kegiatan" required placeholder="Contoh: Mendampingi Audit dari Otban" rows={3} value={kegiatanData.kegiatan} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none ${
+                showErrors && !kegiatanData.kegiatan ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+              }`}></textarea>
             </div>
+            {showErrors && !kegiatanData.kegiatan && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Uraian kegiatan wajib diisi!
+              </p>
+            )}
           </div>
         </div>
       </div>

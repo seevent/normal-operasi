@@ -1,0 +1,452 @@
+{
+  "communities": {
+    "0": [
+      "package_dependencies_react",
+      "react",
+      "src_components_features_tabbriefing",
+      "src_components_features_tabbriefing_tabbriefing",
+      "src_components_features_tabinitialreport",
+      "src_components_features_tabinitialreport_formatnamapersonel",
+      "src_components_features_tabinitialreport_tabinitialreport",
+      "src_components_features_tabkalibrasi",
+      "src_components_features_tabkalibrasi_tabkalibrasi",
+      "src_components_features_tabkegiatan",
+      "src_components_features_tabkegiatan_tabkegiatan",
+      "src_components_features_tabperbaikan",
+      "src_components_features_tabperbaikan_formatnamapersonel",
+      "src_components_features_tabperbaikan_tabperbaikan",
+      "src_components_features_tabstoring",
+      "src_components_features_tabstoring_tabstoring",
+      "src_components_shared_livecollagepreview",
+      "src_components_shared_livecollagepreview_livecollagepreview",
+      "src_components_shared_livecollagepreview_livecollagepreviewprops",
+      "src_components_shared_phototexteditormodal",
+      "src_components_shared_phototexteditormodal_drawtextoncanvas",
+      "src_components_shared_phototexteditormodal_drawtextoverlay",
+      "src_components_shared_phototexteditormodal_phototexteditormodal",
+      "src_components_shared_phototexteditormodal_phototexteditormodalprops",
+      "src_components_shared_photouploader",
+      "src_components_shared_photouploader_photo",
+      "src_components_shared_photouploader_photoannotation",
+      "src_components_shared_photouploader_photouploader",
+      "src_components_shared_photouploader_photouploaderprops",
+      "src_lib_utils_canvasutils",
+      "src_lib_utils_canvasutils_compressimagefile",
+      "src_lib_utils_canvasutils_drawcelltextoverlay",
+      "src_lib_utils_canvasutils_processphotostocollage",
+      "src_lib_utils_locationrules",
+      "src_lib_utils_locationrules_getacnomoroptions",
+      "src_lib_utils_locationrules_getgenerallokasioptions",
+      "src_lib_utils_locationrules_getintersectedlocations",
+      "src_lib_utils_locationrules_getlokasi2options",
+      "src_lib_utils_locationrules_getstoringnomoroptions",
+      "src_lib_utils_locationrules_getstoringvalidlocations",
+      "src_lib_utils_locationrules_getstoringvalidnumbers",
+      "src_lib_utils_locationrules_getvalidmodels",
+      "src_lib_utils_locationrules_getvalidxraymodels",
+      "src_lib_utils_wagenerator_generatewa_initialreport",
+      "src_lib_utils_wagenerator_generatewa_perbaikan",
+      "src_store_useappstore",
+      "src_store_useappstore_appstate",
+      "src_store_useappstore_useappstore"
+    ],
+    "1": [
+      "src_components_app",
+      "src_components_app_app",
+      "src_components_features_assetmanager",
+      "src_components_features_assetmanager_assetmanager",
+      "src_components_features_assetmanager_tabtype",
+      "src_components_features_assetmasterlokasi",
+      "src_components_features_assetmasterlokasi_assetmasterlokasi",
+      "src_components_features_assetmasterperalatan",
+      "src_components_features_assetmasterperalatan_assetmasterperalatan",
+      "src_components_features_scheduleuploader",
+      "src_components_features_scheduleuploader_scheduleuploader",
+      "src_components_features_tabchecklist",
+      "src_components_features_tabchecklist_tabchecklist",
+      "src_components_features_tabdata",
+      "src_components_features_tabdata_admindashboard",
+      "src_components_features_tabdata_adminlogin",
+      "src_components_features_tabdata_genericcrudtable",
+      "src_components_features_tabdata_localdataeditor",
+      "src_components_features_tabdata_tabdata",
+      "src_components_features_tabdata_tipdatamanager",
+      "src_components_features_tabtip",
+      "src_components_features_tabtip_getdefaulttipperiod",
+      "src_components_features_tabtip_tabtip",
+      "src_components_features_tabtip_tip_months",
+      "src_components_features_unitperalatanmanager",
+      "src_components_features_unitperalatanmanager_unitperalatanmanager",
+      "src_components_shared_monitorsearchicon",
+      "src_components_shared_monitorsearchicon_monitorsearchicon",
+      "src_lib_supabaseclient",
+      "src_lib_supabaseclient_supabase",
+      "src_store_useauthstore",
+      "src_store_useauthstore_authstate",
+      "src_store_useauthstore_useauthstore",
+      "src_store_usemasterdatastore_usemasterdatastore"
+    ],
+    "2": [
+      "ref_dom",
+      "ref_dom_iterable",
+      "ref_es2022",
+      "ref_ts",
+      "ref_tsx",
+      "ref_vite_client",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowimportingtsextensions",
+      "tsconfig_compileroptions_baseurl",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_nofallthroughcasesinswitch",
+      "tsconfig_compileroptions_nouncheckedsideeffectimports",
+      "tsconfig_compileroptions_nounusedlocals",
+      "tsconfig_compileroptions_nounusedparameters",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_compileroptions_types",
+      "tsconfig_compileroptions_verbatimmodulesyntax",
+      "tsconfig_include"
+    ],
+    "3": [
+      "src_components_features_checklistdataeditor",
+      "src_components_features_checklistdataeditor_blockeditor",
+      "src_components_features_checklistdataeditor_categorylist",
+      "src_components_features_checklistdataeditor_checklistdataeditor",
+      "src_components_features_tabkehadiran",
+      "src_components_features_tabkehadiran_tabkehadiran",
+      "src_lib_data_masterdata",
+      "src_lib_data_masterdata_default_checklist_data",
+      "src_lib_data_masterdata_default_data_api_t2",
+      "src_lib_data_masterdata_default_data_om_ias_t2",
+      "src_lib_data_masterdata_default_storing_equipments",
+      "src_lib_data_masterdata_default_storing_loc_ac",
+      "src_lib_data_masterdata_default_storing_loc_default",
+      "src_lib_data_masterdata_default_tip_left_col",
+      "src_lib_data_masterdata_default_tip_right_col",
+      "src_lib_data_masterdata_getjabatanrank",
+      "src_lib_data_masterdata_sortpersonelbyjabatan",
+      "src_lib_data_masterdata_totitlecase",
+      "src_store_usemasterdatastore",
+      "src_store_usemasterdatastore_loadmasterdata",
+      "src_store_usemasterdatastore_masterdatastate",
+      "src_store_usemasterdatastore_saveconfigtosupabase",
+      "src_store_usemasterdatastore_savemasterdatatolocal"
+    ],
+    "4": [
+      "netlify_vite_plugin_tanstack_start",
+      "package_dependencies_tailwindcss_vite",
+      "package_devdependencies",
+      "package_devdependencies_netlify_vite_plugin_tanstack_start",
+      "package_devdependencies_rimraf",
+      "package_devdependencies_tailwindcss_vite",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react",
+      "rimraf",
+      "tailwindcss_vite",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "typescript",
+      "vite",
+      "vitejs_plugin_react"
+    ],
+    "5": [
+      "src_router",
+      "src_router_getrouter",
+      "src_routes_index",
+      "src_routes_index_home",
+      "src_routes_index_route",
+      "src_routes_root",
+      "src_routes_root_rootdocument",
+      "src_routes_root_route",
+      "src_routetree_gen",
+      "src_routetree_gen_fileroutesbyfullpath",
+      "src_routetree_gen_fileroutesbyid",
+      "src_routetree_gen_fileroutesbypath",
+      "src_routetree_gen_fileroutesbyto",
+      "src_routetree_gen_fileroutetypes",
+      "src_routetree_gen_indexroute",
+      "src_routetree_gen_register",
+      "src_routetree_gen_rootroutechildren",
+      "src_routetree_gen_routetree",
+      "src_routetree_gen_tanstack_react_router",
+      "src_routetree_gen_tanstack_react_start"
+    ],
+    "6": [
+      "html2pdf_js",
+      "package_dependencies",
+      "package_dependencies_html2pdf_js",
+      "package_dependencies_react_dom",
+      "package_dependencies_react_konva",
+      "package_dependencies_tanstack_react_router",
+      "package_dependencies_tanstack_react_start",
+      "package_dependencies_tanstack_react_store",
+      "package_dependencies_tanstack_router_plugin",
+      "package_dependencies_tanstack_store",
+      "package_dependencies_use_image",
+      "react_dom",
+      "react_konva",
+      "tanstack_react_router",
+      "tanstack_react_start",
+      "tanstack_router_plugin",
+      "tanstack_store",
+      "use_image"
+    ],
+    "7": [
+      "src_components_features_tabshiftreport",
+      "src_components_features_tabshiftreport_months",
+      "src_components_features_tabshiftreport_tabshiftreport",
+      "src_lib_data_constants",
+      "src_lib_data_constants_tip_months",
+      "src_lib_services_shareservice",
+      "src_lib_services_shareservice_fallbackshare",
+      "src_lib_services_shareservice_sharetowhatsapp",
+      "src_lib_services_sheetssyncservice",
+      "src_lib_services_sheetssyncservice_deletesheetreport",
+      "src_lib_services_sheetssyncservice_determineshift",
+      "src_lib_services_sheetssyncservice_filetobase64",
+      "src_lib_services_sheetssyncservice_syncreportpayload",
+      "src_lib_services_sheetssyncservice_synctogooglesheets",
+      "src_lib_services_sheetssyncservice_updatereportpayload",
+      "src_lib_services_sheetssyncservice_updatesheetreport"
+    ],
+    "8": [
+      "src_lib_utils_locationrules_checkneedsstoringsupervisoravsec",
+      "src_lib_utils_locationrules_formattanggalindo",
+      "src_lib_utils_wagenerator",
+      "src_lib_utils_wagenerator_formataclokasilist",
+      "src_lib_utils_wagenerator_formatpersonnellist",
+      "src_lib_utils_wagenerator_generatewa_briefing",
+      "src_lib_utils_wagenerator_generatewa_checklist",
+      "src_lib_utils_wagenerator_generatewa_kalibrasi",
+      "src_lib_utils_wagenerator_generatewa_kegiatan",
+      "src_lib_utils_wagenerator_generatewa_kehadiran",
+      "src_lib_utils_wagenerator_generatewa_storing"
+    ],
+    "9": [
+      "package",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_type"
+    ],
+    "10": [
+      "package_dependencies_tailwindcss",
+      "package_devdependencies_tailwindcss",
+      "tailwindcss"
+    ],
+    "11": [
+      "lucide_react",
+      "package_dependencies_lucide_react",
+      "package_devdependencies_lucide_react"
+    ],
+    "12": [
+      "html2canvas",
+      "package_dependencies_html2canvas"
+    ],
+    "13": [
+      "konva",
+      "package_dependencies_konva"
+    ],
+    "14": [
+      "package_dependencies_supabase_supabase_js",
+      "supabase_supabase_js"
+    ],
+    "15": [
+      "package_dependencies_vite_tsconfig_paths",
+      "vite_tsconfig_paths"
+    ],
+    "16": [
+      "package_dependencies_xlsx",
+      "xlsx"
+    ],
+    "17": [
+      "package_dependencies_zustand",
+      "zustand"
+    ],
+    "18": [
+      "vite_config",
+      "vite_config_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.149822695035461,
+    "1": 0.13903743315508021,
+    "2": 0.07692307692307693,
+    "3": 0.15810276679841898,
+    "4": 0.1,
+    "5": 0.14210526315789473,
+    "6": 0.11764705882352941,
+    "7": 0.25,
+    "8": 0.34545454545454546,
+    "9": 0.2857142857142857,
+    "10": 0.6666666666666666,
+    "11": 0.6666666666666666,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_store_usemasterdatastore_usemasterdatastore",
+      "label": "useMasterDataStore",
+      "degree": 24
+    },
+    {
+      "id": "src_lib_services_shareservice_sharetowhatsapp",
+      "label": "shareToWhatsApp()",
+      "degree": 20
+    },
+    {
+      "id": "src_store_useappstore_useappstore",
+      "label": "useAppStore",
+      "degree": 19
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 18
+    },
+    {
+      "id": "src_lib_utils_canvasutils_processphotostocollage",
+      "label": "processPhotosToCollage()",
+      "degree": 17
+    },
+    {
+      "id": "src_lib_supabaseclient_supabase",
+      "label": "supabase",
+      "degree": 15
+    },
+    {
+      "id": "src_components_features_tabkalibrasi_tabkalibrasi",
+      "label": "TabKalibrasi()",
+      "degree": 14
+    },
+    {
+      "id": "src_components_features_tabstoring_tabstoring",
+      "label": "TabStoring()",
+      "degree": 14
+    },
+    {
+      "id": "src_components_features_tabinitialreport_tabinitialreport",
+      "label": "TabInitialReport()",
+      "degree": 13
+    },
+    {
+      "id": "src_components_features_tabperbaikan_tabperbaikan",
+      "label": "TabPerbaikan()",
+      "degree": 13
+    }
+  ],
+  "surprises": [
+    {
+      "source": "TabKehadiran()",
+      "target": "react",
+      "source_files": [
+        "src/components/features/TabKehadiran.tsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "TabTip()",
+      "target": "react",
+      "source_files": [
+        "src/components/features/TabTip.tsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "ScheduleUploader()",
+      "target": "xlsx",
+      "source_files": [
+        "src/components/features/ScheduleUploader.tsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "TabBriefing()",
+      "target": "react",
+      "source_files": [
+        "src/components/features/TabBriefing.tsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "TabInitialReport()",
+      "target": "react",
+      "source_files": [
+        "src/components/features/TabInitialReport.tsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `dependencies` connect `dependencies` to `TabStoring.tsx`, `devDependencies`, `package.json`, `tailwindcss`, `lucide-react`, `html2canvas`, `konva`, `@supabase/supabase-js`, `vite-tsconfig-paths`, `xlsx`, `zustand`?",
+      "why": "High betweenness centrality (0.363) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `react` connect `TabStoring.tsx` to `App.tsx`, `useMasterDataStore.ts`, `dependencies`?",
+      "why": "High betweenness centrality (0.293) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `devDependencies` connect `devDependencies` to `package.json`, `tailwindcss`, `lucide-react`?",
+      "why": "High betweenness centrality (0.123) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `name`, `private`, `type` to the rest of the system?",
+      "why": "64 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `TabStoring.tsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.149822695035461 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `App.tsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.13903743315508021 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `compilerOptions` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

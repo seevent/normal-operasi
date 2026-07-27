@@ -28,6 +28,7 @@ function formatNamaPersonel(fullName: string): string {
 
 export const TabInitialReport: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
+  const [showErrors, setShowErrors] = useState(false);
 
   const [formData, setFormData] = useState(() => {
     const now = new Date();
@@ -609,6 +610,24 @@ export const TabInitialReport: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation check
+    const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
+    const hasEmptyPeralatan = !formData.peralatan;
+    const hasEmptyLokasi = activeLocs.length === 0;
+    const hasEmptyTanggal = !formData.tanggal;
+    const hasEmptyWaktu = !formData.waktuMulai;
+    const hasEmptyTeknisi = !formData.teknisi || formData.teknisi === '-';
+    const hasEmptyPermasalahan = !formData.permasalahan || formData.permasalahan.trim() === '•' || formData.permasalahan.trim() === '';
+    const hasEmptyUraian = !formData.uraian || formData.uraian.trim() === '•' || formData.uraian.trim() === '';
+    const hasEmptyDampak = !formData.dampak || formData.dampak.trim() === '1.' || formData.dampak.trim() === '';
+    const hasEmptyMitigasi = !formData.tindakanMitigasi || formData.tindakanMitigasi.trim() === '1.' || formData.tindakanMitigasi.trim() === '';
+
+    if (hasEmptyPeralatan || hasEmptyLokasi || hasEmptyTanggal || hasEmptyWaktu || hasEmptyTeknisi || hasEmptyPermasalahan || hasEmptyUraian || hasEmptyDampak || hasEmptyMitigasi) {
+      setShowErrors(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     let customFilesArray: File[] = [];
 
     // Process photos for each group
@@ -636,11 +655,7 @@ export const TabInitialReport: React.FC = () => {
 
     const message = generateWA_InitialReport(formData);
 
-    const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0
-      ? formData.lokasiList.filter((l: any) => l.lokasi1)
-      : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
-      
-    const lokasiFinal = locList.map((loc: any) => {
+    const lokasiFinal = activeLocs.map((loc: any) => {
       return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
     }).join(', ') || '-';
 
@@ -664,7 +679,7 @@ export const TabInitialReport: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-b-2xl">
+    <form onSubmit={handleSubmit} className="bg-white rounded-b-2xl">
       <div className="p-6 sm:p-8 bg-blue-50/50 border-b border-blue-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-full">
@@ -679,7 +694,9 @@ export const TabInitialReport: React.FC = () => {
                   placeholder="Ketik nama peralatan secara manual..."
                   value={formData.peralatan}
                   onChange={(e) => setFormData(prev => ({ ...prev, peralatan: e.target.value }))}
-                  className="w-full px-4 py-3 bg-white border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm"
+                  className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm ${
+                    showErrors && !formData.peralatan ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-blue-300'
+                  }`}
                 />
                 <button
                   type="button"
@@ -693,7 +710,14 @@ export const TabInitialReport: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <select required value={formData.peralatan} onChange={handlePeralatanChange} className="w-full px-4 py-3 bg-white border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm cursor-pointer appearance-none">
+              <select 
+                required 
+                value={formData.peralatan} 
+                onChange={handlePeralatanChange} 
+                className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm cursor-pointer appearance-none ${
+                  showErrors && !formData.peralatan ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-blue-300'
+                }`}
+              >
                 <option value="">-- Pilih Peralatan --</option>
                 {tipePeralatanOptions.map(opt => (
                   <option key={opt} value={opt}>{opt}</option>
@@ -701,11 +725,16 @@ export const TabInitialReport: React.FC = () => {
                 <option value="MANUAL_ENTRY">+ Ketik Manual (Peralatan Lainnya)</option>
               </select>
             )}
+            {showErrors && !formData.peralatan && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Pilihan Peralatan wajib diisi!
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
+      <div className="p-6 sm:p-8 space-y-8">
         <div className="space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
             <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -739,68 +768,79 @@ export const TabInitialReport: React.FC = () => {
 
                 const isRowManual = loc.isManual || isManualPeralatan;
                 return (
-                  <div key={index} className="flex gap-2 items-center">
-                    {isRowManual ? (
-                      <div className="flex gap-2 flex-1 items-center">
-                        <div className="relative flex-1">
-                          <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                          <input
-                            type="text"
-                            required={index === 0}
-                            placeholder="Ketik nama lokasi / nomor titik secara manual..."
-                            value={loc.lokasi1}
-                            onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800 font-medium shadow-sm"
-                          />
+                  <div key={index} className="flex flex-col gap-1">
+                    <div className="flex gap-2 items-center">
+                      {isRowManual ? (
+                        <div className="flex gap-2 flex-1 items-center">
+                          <div className="relative flex-1">
+                            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <input
+                              type="text"
+                              required={index === 0}
+                              placeholder="Ketik nama lokasi / nomor titik secara manual..."
+                              value={loc.lokasi1}
+                              onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)}
+                              className={`w-full pl-10 pr-4 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800 font-medium shadow-sm ${
+                                showErrors && index === 0 && !loc.lokasi1 ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-blue-300'
+                              }`}
+                            />
+                          </div>
+                          {!isManualPeralatan && (
+                            <button
+                              type="button"
+                              onClick={() => handleLokasiEntryChange(index, 'isManualToggle', 'false')}
+                              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs shrink-0 transition-colors"
+                            >
+                              Pilih dari Daftar
+                            </button>
+                          )}
                         </div>
-                        {!isManualPeralatan && (
-                          <button
-                            type="button"
-                            onClick={() => handleLokasiEntryChange(index, 'isManualToggle', 'false')}
-                            className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs shrink-0 transition-colors"
-                          >
-                            Pilih dari Daftar
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <>
-                        <div className="relative flex-1">
-                          <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                          <select 
-                            required={index === 0}
-                            disabled={!formData.peralatan}
-                            value={loc.lokasi1} 
-                            onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)} 
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm"
-                          >
-                            <option value="">{index === 0 ? '- Pilih Lokasi -' : '- Pilih Lokasi Tambahan (Opsional) -'}</option>
-                            {availableOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                            <option value="MANUAL_ENTRY">+ Ketik Manual (Lokasi Lainnya)</option>
-                          </select>
-                        </div>
-                        <div className="w-1/3">
-                          <select 
-                            value={loc.lokasi2} 
-                            onChange={(e) => handleLokasiEntryChange(index, 'lokasi2', e.target.value)} 
-                            disabled={isDisabled2} 
-                            className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}
-                          >
-                            <option value="">- No -</option>
-                            {options2.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                          </select>
-                        </div>
-                      </>
-                    )}
-                    {index > 0 && (
-                      <button 
-                        type="button" 
-                        onClick={() => removeLokasiEntry(index)}
-                        className="p-2 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-lg transition-colors flex items-center justify-center shrink-0"
-                        title="Hapus lokasi tambahan ini"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+                      ) : (
+                        <>
+                          <div className="relative flex-1">
+                            <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <select 
+                              required={index === 0}
+                              disabled={!formData.peralatan}
+                              value={loc.lokasi1} 
+                              onChange={(e) => handleLokasiEntryChange(index, 'lokasi1', e.target.value)} 
+                              className={`w-full pl-10 pr-4 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed text-sm ${
+                                showErrors && index === 0 && !loc.lokasi1 ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                              }`}
+                            >
+                              <option value="">{index === 0 ? '- Pilih Lokasi -' : '- Pilih Lokasi Tambahan (Opsional) -'}</option>
+                              {availableOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                              <option value="MANUAL_ENTRY">+ Ketik Manual (Lokasi Lainnya)</option>
+                            </select>
+                          </div>
+                          <div className="w-1/3">
+                            <select 
+                              value={loc.lokasi2} 
+                              onChange={(e) => handleLokasiEntryChange(index, 'lokasi2', e.target.value)} 
+                              disabled={isDisabled2} 
+                              className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none text-sm ${isDisabled2 ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}
+                            >
+                              <option value="">- No -</option>
+                              {options2.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                          </div>
+                        </>
+                      )}
+                      {index > 0 && (
+                        <button 
+                          type="button" 
+                          onClick={() => removeLokasiEntry(index)}
+                          className="p-2 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-lg transition-colors flex items-center justify-center shrink-0"
+                          title="Hapus lokasi tambahan ini"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                    {showErrors && index === 0 && !loc.lokasi1 && (
+                      <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-0.5">
+                        <AlertCircle className="w-3.5 h-3.5" /> Lokasi wajib dipilih!
+                      </p>
                     )}
                   </div>
                 );
@@ -828,12 +868,26 @@ export const TabInitialReport: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <input type="date" name="tanggal" required value={formData.tanggal} onChange={handleFieldChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="date" name="tanggal" required value={formData.tanggal} onChange={handleFieldChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                  showErrors && !formData.tanggal ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                }`} />
               </div>
+              {showErrors && !formData.tanggal && (
+                <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> Tanggal wajib diisi!
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul</label>
-              <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleFieldChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleFieldChange} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                showErrors && !formData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+              }`} />
+              {showErrors && !formData.waktuMulai && (
+                <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> Wajib diisi!
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -842,7 +896,9 @@ export const TabInitialReport: React.FC = () => {
                 {availableTeknisi.length === 0 && <span className="text-xs text-rose-500 font-normal">*(Tidak ada teknisi hadir/jadwal kosong)</span>}
               </label>
               
-              <div className="flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <div className={`flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border ${
+                showErrors && (!formData.teknisi || formData.teknisi === '-') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-200'
+              }`}>
                 {(() => {
                   const apiTeknisi = availableTeknisi.filter(t => t.unit === 'API T2');
                   const iasTeknisi = availableTeknisi.filter(t => t.unit === 'OM/IAS T2');
@@ -916,6 +972,11 @@ export const TabInitialReport: React.FC = () => {
                   className="w-full mt-1 px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
                 />
               </div>
+              {showErrors && (!formData.teknisi || formData.teknisi === '-') && (
+                <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> Teknisi bertugas wajib dipilih/diisi!
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -926,24 +987,59 @@ export const TabInitialReport: React.FC = () => {
           </h2>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Permasalahan</label>
-            <textarea ref={permasalahanRef} name="permasalahan" required rows={3} value={formData.permasalahan} onChange={(e) => handleBulletChange(e, 'permasalahan')} onKeyDown={(e) => handleBulletKeyDown(e, 'permasalahan')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+            <textarea ref={permasalahanRef} name="permasalahan" required rows={3} value={formData.permasalahan} onChange={(e) => handleBulletChange(e, 'permasalahan')} onKeyDown={(e) => handleBulletKeyDown(e, 'permasalahan')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${
+              showErrors && (!formData.permasalahan || formData.permasalahan.trim() === '•') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+            }`}></textarea>
+            {showErrors && (!formData.permasalahan || formData.permasalahan.trim() === '•') && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Detail Permasalahan wajib diisi!
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-            <input type="text" name="status" required placeholder="Cth: On Progress / Menunggu Sparepart" value={formData.status} onChange={handleFieldChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm" />
+            <input type="text" name="status" required placeholder="Cth: On Progress / Menunggu Sparepart" value={formData.status} onChange={handleFieldChange} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm ${
+              showErrors && !formData.status ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+            }`} />
+            {showErrors && !formData.status && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Status wajib diisi!
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">URAIAN</label>
             <p className="text-xs text-slate-500 mb-1">(Uraian kronologis kerusakan s.d saat dilaporkan)</p>
-            <textarea ref={uraianRef} name="uraian" rows={4} value={formData.uraian} onChange={(e) => handleBulletChange(e, 'uraian')} onKeyDown={(e) => handleBulletKeyDown(e, 'uraian')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+            <textarea ref={uraianRef} name="uraian" required rows={4} value={formData.uraian} onChange={(e) => handleBulletChange(e, 'uraian')} onKeyDown={(e) => handleBulletKeyDown(e, 'uraian')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${
+              showErrors && (!formData.uraian || formData.uraian.trim() === '•' || formData.uraian.trim() === '') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+            }`}></textarea>
+            {showErrors && (!formData.uraian || formData.uraian.trim() === '•' || formData.uraian.trim() === '') && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Uraian kronologis wajib diisi!
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">DAMPAK</label>
-            <textarea ref={dampakRef} name="dampak" rows={3} value={formData.dampak} onChange={(e) => handleNumberedChange(e, 'dampak')} onKeyDown={(e) => handleNumberedKeyDown(e, 'dampak')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+            <textarea ref={dampakRef} name="dampak" required rows={3} value={formData.dampak} onChange={(e) => handleNumberedChange(e, 'dampak')} onKeyDown={(e) => handleNumberedKeyDown(e, 'dampak')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${
+              showErrors && (!formData.dampak || formData.dampak.trim() === '1.' || formData.dampak.trim() === '') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+            }`}></textarea>
+            {showErrors && (!formData.dampak || formData.dampak.trim() === '1.' || formData.dampak.trim() === '') && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Dampak wajib diisi!
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">MITIGASI</label>
-            <textarea ref={mitigasiRef} name="tindakanMitigasi" rows={3} value={formData.tindakanMitigasi} onChange={(e) => handleNumberedChange(e, 'tindakanMitigasi')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakanMitigasi')} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all"></textarea>
+            <textarea ref={mitigasiRef} name="tindakanMitigasi" required rows={3} value={formData.tindakanMitigasi} onChange={(e) => handleNumberedChange(e, 'tindakanMitigasi')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakanMitigasi')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${
+              showErrors && (!formData.tindakanMitigasi || formData.tindakanMitigasi.trim() === '1.' || formData.tindakanMitigasi.trim() === '') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+            }`}></textarea>
+            {showErrors && (!formData.tindakanMitigasi || formData.tindakanMitigasi.trim() === '1.' || formData.tindakanMitigasi.trim() === '') && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Mitigasi wajib diisi!
+              </p>
+            )}
           </div>
         </div>
 
@@ -982,7 +1078,7 @@ export const TabInitialReport: React.FC = () => {
             </div>
           </div>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 };

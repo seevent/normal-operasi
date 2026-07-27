@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X, ImagePlus, Type } from 'lucide-react';
+import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X, ImagePlus, Type, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
@@ -13,6 +13,7 @@ import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
 export const TabKalibrasi: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData } = useMasterDataStore();
+  const [showErrors, setShowErrors] = useState(false);
   
   const kalibrasiEquipments = jenisPeralatanData
     .filter((j: any) => j.tampil_di_kalibrasi)
@@ -427,13 +428,37 @@ export const TabKalibrasi: React.FC = () => {
       return;
     }
 
-    if (kalibrasiEntries.some(entry => entry.peralatan.length === 0)) {
-      alert("Pastikan Anda memilih minimal 1 peralatan untuk setiap lokasi kalibrasi yang ditambahkan!");
-      return;
-    }
+    // Global time validation check
+    const hasEmptyGlobalTime = !kalibrasiGlobal.tanggal || !kalibrasiGlobal.waktuMulai || !kalibrasiGlobal.waktuSelesai;
 
-    if (kalibrasiEntries.some(entry => entry.peralatan.includes('Access Control') && (entry.acLokasi || []).length === 0)) {
-      alert("Pastikan Anda mencentang minimal 1 lokasi untuk peralatan Access Control!");
+    // Per entry parameters validation check
+    const hasEmptyEntryParams = kalibrasiEntries.some(entry => {
+      if (entry.peralatan.length === 0) return true;
+      if (entry.peralatan.includes('Access Control')) {
+        if (!entry.acLokasi || entry.acLokasi.length === 0) return true;
+        if (!entry.acEmlock || !entry.acIntercom || !entry.acFingerprint || !entry.acCctv || !entry.acPengontrolan || !entry.acRecordCctv.trim()) return true;
+      } else {
+        if (!entry.lokasi1) return true;
+      }
+      
+      if (entry.peralatan.includes('X-Ray')) {
+        if (!entry.xrayKvV.trim() || !entry.xrayKvH.trim() || !entry.xrayMaV.trim() || !entry.xrayMaH.trim() || !entry.xrayOnV.trim() || !entry.xrayOnH.trim() || !entry.xrayArchive.trim()) return true;
+      }
+      if (entry.peralatan.includes('WTMD')) {
+        if (!entry.wtmdZ1.trim() || !entry.wtmdZ2.trim() || !entry.wtmdZ3.trim() || !entry.wtmdZ4.trim() || !entry.wtmdLc.trim() || !entry.wtmdLs.trim() || !entry.wtmdUc.trim() || !entry.wtmdSe.trim() || !entry.wtmdDs.trim()) return true;
+      }
+      if (entry.peralatan.includes('Body Scanner')) {
+        if (!entry.bsSuspect || !entry.bsMonitor || !entry.bsScanning || !entry.bsCalibration) return true;
+      }
+      if (entry.peralatan.includes('ETD')) {
+        if (!entry.etdTnt || !entry.etdPetn || !entry.etdRdx) return true;
+      }
+      return false;
+    });
+
+    if (hasEmptyGlobalTime || hasEmptyEntryParams) {
+      setShowErrors(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     
@@ -483,22 +508,43 @@ export const TabKalibrasi: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="date" name="tanggal" required value={kalibrasiGlobal.tanggal} onChange={handleKalibrasiGlobalChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="date" name="tanggal" required value={kalibrasiGlobal.tanggal} onChange={handleKalibrasiGlobalChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                showErrors && !kalibrasiGlobal.tanggal ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+              }`} />
             </div>
+            {showErrors && !kalibrasiGlobal.tanggal && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Tanggal wajib diisi!
+              </p>
+            )}
           </div>
           <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuMulai" required value={kalibrasiGlobal.waktuMulai} onChange={handleKalibrasiGlobalChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="time" name="waktuMulai" required value={kalibrasiGlobal.waktuMulai} onChange={handleKalibrasiGlobalChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                showErrors && !kalibrasiGlobal.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+              }`} />
             </div>
+            {showErrors && !kalibrasiGlobal.waktuMulai && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Wajib diisi!
+              </p>
+            )}
           </div>
           <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuSelesai" required max={kalibrasiGlobal.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={kalibrasiGlobal.waktuSelesai} onChange={handleKalibrasiGlobalChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="time" name="waktuSelesai" required max={kalibrasiGlobal.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={kalibrasiGlobal.waktuSelesai} onChange={handleKalibrasiGlobalChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                showErrors && !kalibrasiGlobal.waktuSelesai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+              }`} />
             </div>
+            {showErrors && !kalibrasiGlobal.waktuSelesai && (
+              <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" /> Wajib diisi!
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -553,6 +599,7 @@ export const TabKalibrasi: React.FC = () => {
                           className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                             isChecked ? 'bg-blue-50 border-blue-500 shadow-sm font-semibold' : 
                             isDisabled ? 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed' : 
+                            showErrors && entry.peralatan.length === 0 ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' :
                             'bg-slate-50 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
@@ -574,71 +621,94 @@ export const TabKalibrasi: React.FC = () => {
                       <p>Silakan menuju <b>Tab Data</b> {'>'} <b>Config Peralatan Kalibrasi</b> untuk memilih jenis peralatan yang akan ditampilkan di sini.</p>
                     </div>
                   )}
+                  {showErrors && entry.peralatan.length === 0 && (
+                    <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> Pilih minimal 1 peralatan!
+                    </p>
+                  )}
                 </div>
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Lokasi{entry.peralatan.includes('Access Control') && <span className="text-xs text-slate-400 font-normal"> (Pilih 1 atau lebih)</span>}</label>
                   {entry.peralatan.includes('Access Control') ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {(() => {
-                        const acOpts = getGeneralLokasiOptions('Access Control');
-                        if (acOpts.length === 0) {
-                          return (
-                            <div className="col-span-full p-3 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg text-sm">
-                              <p className="font-semibold">Lokasi Access Control belum tersedia.</p>
-                              <p>Pastikan data penempatan peralatan Access Control sudah diisi di database.</p>
-                            </div>
-                          );
-                        }
-                        return acOpts.map((loc: string) => {
-                          const isChecked = (entry.acLokasi || []).includes(loc);
-                          return (
-                            <label
-                              key={loc}
-                              className={`flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${
-                                isChecked ? 'bg-blue-50 border-blue-500 shadow-sm font-semibold' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => handleKalibrasiAcLokasiToggle(index, loc)}
-                                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                              />
-                              <span className="ml-2 text-sm text-slate-700">{loc}</span>
-                            </label>
-                          );
-                        });
-                      })()}
-                    </div>
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {(() => {
+                          const acOpts = getGeneralLokasiOptions('Access Control');
+                          if (acOpts.length === 0) {
+                            return (
+                              <div className="col-span-full p-3 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg text-sm">
+                                <p className="font-semibold">Lokasi Access Control belum tersedia.</p>
+                                <p>Pastikan data penempatan peralatan Access Control sudah diisi di database.</p>
+                              </div>
+                            );
+                          }
+                          return acOpts.map((loc: string) => {
+                            const isChecked = (entry.acLokasi || []).includes(loc);
+                            return (
+                              <label
+                                key={loc}
+                                className={`flex items-center p-2.5 border rounded-lg cursor-pointer transition-colors ${
+                                  isChecked ? 'bg-blue-50 border-blue-500 shadow-sm font-semibold' : 
+                                  showErrors && (entry.acLokasi || []).length === 0 ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' :
+                                  'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => handleKalibrasiAcLokasiToggle(index, loc)}
+                                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="ml-2 text-sm text-slate-700">{loc}</span>
+                              </label>
+                            );
+                          });
+                        })()}
+                      </div>
+                      {showErrors && (entry.acLokasi || []).length === 0 && (
+                        <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                          <AlertCircle className="w-3.5 h-3.5" /> Pilih minimal 1 lokasi Access Control!
+                        </p>
+                      )}
+                    </>
                   ) : (
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                      <select
-                        name="lokasi1"
-                        required
-                        value={entry.lokasi1}
-                        onChange={(e) => handleKalibrasiEntryChange(index, e)}
-                        disabled={kalibrasiLok1Opts.length === 0}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed"
-                      >
-                        <option value="">- Pilih Lokasi -</option>
-                        {kalibrasiLok1Opts.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                        <select
+                          name="lokasi1"
+                          required
+                          value={entry.lokasi1}
+                          onChange={(e) => handleKalibrasiEntryChange(index, e)}
+                          disabled={kalibrasiLok1Opts.length === 0}
+                          className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none disabled:bg-slate-200 disabled:opacity-70 disabled:cursor-not-allowed ${
+                            showErrors && !entry.lokasi1 ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                          }`}
+                        >
+                          <option value="">- Pilih Lokasi -</option>
+                          {kalibrasiLok1Opts.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </div>
+                      <div className="w-1/3">
+                        {(() => {
+                          const options = getLokasi2Options(entry.lokasi1, entry.peralatan);
+                          const isDisabled = options.length === 0 || (options.length === 1 && options[0] === '-');
+                          return (
+                            <select name="lokasi2" value={entry.lokasi2} onChange={(e) => handleKalibrasiEntryChange(index, e)} disabled={isDisabled} className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${isDisabled ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}>
+                              <option value="">- No -</option>
+                              {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                          );
+                        })()}
+                      </div>
                     </div>
-                    <div className="w-1/3">
-                      {(() => {
-                        const options = getLokasi2Options(entry.lokasi1, entry.peralatan);
-                        const isDisabled = options.length === 0 || (options.length === 1 && options[0] === '-');
-                        return (
-                          <select name="lokasi2" value={entry.lokasi2} onChange={(e) => handleKalibrasiEntryChange(index, e)} disabled={isDisabled} className={`w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none ${isDisabled ? 'opacity-50 cursor-not-allowed bg-slate-200' : ''}`}>
-                            <option value="">- No -</option>
-                            {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                          </select>
-                        );
-                      })()}
-                    </div>
+                    {showErrors && !entry.lokasi1 && (
+                      <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                        <AlertCircle className="w-3.5 h-3.5" /> Lokasi wajib dipilih!
+                      </p>
+                    )}
                   </div>
                   )}
                 </div>
@@ -646,10 +716,12 @@ export const TabKalibrasi: React.FC = () => {
 
               {/* Dynamic Configurations based on selected equipments */}
               {entry.peralatan.includes('X-Ray') && (
-                <div className="bg-blue-50/40 p-4 sm:p-5 rounded-xl border border-blue-200 space-y-4">
+                <div className={`bg-blue-50/40 p-4 sm:p-5 rounded-xl border space-y-4 ${
+                  showErrors && (!entry.xrayKvV.trim() || !entry.xrayKvH.trim() || !entry.xrayMaV.trim() || !entry.xrayMaH.trim() || !entry.xrayOnV.trim() || !entry.xrayOnH.trim() || !entry.xrayArchive.trim()) ? 'border-red-400 ring-2 ring-red-200' : 'border-blue-200'
+                }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-blue-200 pb-3">
                     <h3 className="font-bold text-blue-900 flex items-center gap-2">
-                      ⚡ Parameter X-Ray
+                      ⚡ Parameter X-Ray <span className="text-xs text-rose-500 font-normal">*(Wajib Diisi)*</span>
                     </h3>
                     <select name="xrayModel" value={entry.xrayModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
                       {getValidXRayModels(entry.lokasi1, entry.lokasi2).map((model: string) => (
@@ -660,22 +732,64 @@ export const TabKalibrasi: React.FC = () => {
                     </select>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">kV Vertikal</label><input type="text" inputMode="decimal" name="xrayKvV" value={entry.xrayKvV} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">kV Horizontal</label><input type="text" inputMode="decimal" name="xrayKvH" value={entry.xrayKvH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">mA Vertikal</label><input type="text" inputMode="decimal" name="xrayMaV" value={entry.xrayMaV} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">mA Horizontal</label><input type="text" inputMode="decimal" name="xrayMaH" value={entry.xrayMaH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">Ontime Vertikal</label><input type="text" inputMode="decimal" name="xrayOnV" value={entry.xrayOnV} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">Ontime Horizontal</label><input type="text" inputMode="decimal" name="xrayOnH" value={entry.xrayOnH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                    <div className="col-span-2"><label className="block text-xs font-semibold text-slate-600 mb-1">Archive</label><input type="text" name="xrayArchive" value={entry.xrayArchive} placeholder="+- 1 bulan" onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" /></div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">kV Vertikal</label>
+                      <input type="text" inputMode="decimal" required name="xrayKvV" value={entry.xrayKvV} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-blue-500 ${
+                        showErrors && !entry.xrayKvV.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">kV Horizontal</label>
+                      <input type="text" inputMode="decimal" required name="xrayKvH" value={entry.xrayKvH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-blue-500 ${
+                        showErrors && !entry.xrayKvH.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">mA Vertikal</label>
+                      <input type="text" inputMode="decimal" required name="xrayMaV" value={entry.xrayMaV} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-blue-500 ${
+                        showErrors && !entry.xrayMaV.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">mA Horizontal</label>
+                      <input type="text" inputMode="decimal" required name="xrayMaH" value={entry.xrayMaH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-blue-500 ${
+                        showErrors && !entry.xrayMaH.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Ontime Vertikal</label>
+                      <input type="text" inputMode="decimal" required name="xrayOnV" value={entry.xrayOnV} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-blue-500 ${
+                        showErrors && !entry.xrayOnV.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Ontime Horizontal</label>
+                      <input type="text" inputMode="decimal" required name="xrayOnH" value={entry.xrayOnH} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-blue-500 ${
+                        showErrors && !entry.xrayOnH.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Archive</label>
+                      <input type="text" required name="xrayArchive" value={entry.xrayArchive} placeholder="+- 1 bulan" onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-blue-500 ${
+                        showErrors && !entry.xrayArchive.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
                   </div>
+                  {showErrors && (!entry.xrayKvV.trim() || !entry.xrayKvH.trim() || !entry.xrayMaV.trim() || !entry.xrayMaH.trim() || !entry.xrayOnV.trim() || !entry.xrayOnH.trim() || !entry.xrayArchive.trim()) && (
+                    <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> Seluruh parameter X-Ray wajib diisi!
+                    </p>
+                  )}
                 </div>
               )}
 
               {entry.peralatan.includes('WTMD') && (
-                <div className="bg-indigo-50/40 p-4 sm:p-5 rounded-xl border border-indigo-200 space-y-4">
+                <div className={`bg-indigo-50/40 p-4 sm:p-5 rounded-xl border space-y-4 ${
+                  showErrors && (!entry.wtmdZ1.trim() || !entry.wtmdZ2.trim() || !entry.wtmdZ3.trim() || !entry.wtmdZ4.trim() || !entry.wtmdLc.trim() || !entry.wtmdLs.trim() || !entry.wtmdUc.trim() || !entry.wtmdSe.trim() || !entry.wtmdDs.trim()) ? 'border-red-400 ring-2 ring-red-200' : 'border-indigo-200'
+                }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-200 pb-3">
                     <h3 className="font-bold text-indigo-900 flex items-center gap-2">
-                      🎛️ Parameter WTMD
+                      🎛️ Parameter WTMD <span className="text-xs text-rose-500 font-normal">*(Wajib Diisi)*</span>
                     </h3>
                     <select name="wtmdModel" value={entry.wtmdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
                       {getValidModels(entry.lokasi1, 'WTMD', entry.lokasi2).map((model: string) => (
@@ -686,16 +800,66 @@ export const TabKalibrasi: React.FC = () => {
                     </select>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">Z1</label><input type="text" inputMode="numeric" name="wtmdZ1" value={entry.wtmdZ1} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">Z2</label><input type="text" inputMode="numeric" name="wtmdZ2" value={entry.wtmdZ2} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">Z3</label><input type="text" inputMode="numeric" name="wtmdZ3" value={entry.wtmdZ3} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">Z4</label><input type="text" inputMode="numeric" name="wtmdZ4" value={entry.wtmdZ4} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">LC</label><input type="text" inputMode="numeric" name="wtmdLc" value={entry.wtmdLc} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">LS</label><input type="text" inputMode="numeric" name="wtmdLs" value={entry.wtmdLs} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">UC</label><input type="text" inputMode="numeric" name="wtmdUc" value={entry.wtmdUc} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">SE</label><input type="text" inputMode="numeric" name="wtmdSe" value={entry.wtmdSe} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
-                    <div><label className="block text-xs font-semibold text-slate-600 mb-1">DS</label><input type="text" inputMode="numeric" name="wtmdDs" value={entry.wtmdDs} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none" /></div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Z1</label>
+                      <input type="text" inputMode="numeric" required name="wtmdZ1" value={entry.wtmdZ1} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdZ1.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Z2</label>
+                      <input type="text" inputMode="numeric" required name="wtmdZ2" value={entry.wtmdZ2} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdZ2.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Z3</label>
+                      <input type="text" inputMode="numeric" required name="wtmdZ3" value={entry.wtmdZ3} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdZ3.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Z4</label>
+                      <input type="text" inputMode="numeric" required name="wtmdZ4" value={entry.wtmdZ4} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdZ4.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">LC</label>
+                      <input type="text" inputMode="numeric" required name="wtmdLc" value={entry.wtmdLc} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdLc.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">LS</label>
+                      <input type="text" inputMode="numeric" required name="wtmdLs" value={entry.wtmdLs} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdLs.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">UC</label>
+                      <input type="text" inputMode="numeric" required name="wtmdUc" value={entry.wtmdUc} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdUc.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">SE</label>
+                      <input type="text" inputMode="numeric" required name="wtmdSe" value={entry.wtmdSe} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdSe.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">DS</label>
+                      <input type="text" inputMode="numeric" required name="wtmdDs" value={entry.wtmdDs} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-2 py-1 bg-white border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none ${
+                        showErrors && !entry.wtmdDs.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                      }`} />
+                    </div>
                   </div>
+                  {showErrors && (!entry.wtmdZ1.trim() || !entry.wtmdZ2.trim() || !entry.wtmdZ3.trim() || !entry.wtmdZ4.trim() || !entry.wtmdLc.trim() || !entry.wtmdLs.trim() || !entry.wtmdUc.trim() || !entry.wtmdSe.trim() || !entry.wtmdDs.trim()) && (
+                    <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> Seluruh parameter WTMD wajib diisi!
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -838,7 +1002,14 @@ export const TabKalibrasi: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1">Record CCTV</label>
-                    <input type="text" name="acRecordCctv" value={entry.acRecordCctv} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-1 focus:ring-rose-500" />
+                    <input type="text" required name="acRecordCctv" value={entry.acRecordCctv} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-rose-500 ${
+                      showErrors && !entry.acRecordCctv.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                    }`} />
+                    {showErrors && !entry.acRecordCctv.trim() && (
+                      <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                        <AlertCircle className="w-3.5 h-3.5" /> Record CCTV wajib diisi!
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

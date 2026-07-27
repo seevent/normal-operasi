@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Megaphone, Calendar, MapPin, ClipboardList, Share2, CheckCircle, FileText } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_Briefing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
@@ -9,6 +10,9 @@ import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 export const TabBriefing: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
+  const { sparepartsData = [], briefingSparepartIds = [] } = useMasterDataStore();
+
+  const selectedSpareparts = (sparepartsData || []).filter(sp => (briefingSparepartIds || []).includes(sp.id));
 
   const [briefingData, setBriefingData] = useState(() => {
     const now = new Date();
@@ -144,7 +148,7 @@ export const TabBriefing: React.FC = () => {
       if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
 
-    const message = generateWA_Briefing(briefingData);
+    const message = generateWA_Briefing(briefingData, selectedSpareparts);
     
     await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
@@ -255,7 +259,7 @@ export const TabBriefing: React.FC = () => {
         </h3>
         <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
           <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
-            {generateWA_Briefing(briefingData)}
+            {generateWA_Briefing(briefingData, selectedSpareparts)}
           </div>
         </div>
       </div>

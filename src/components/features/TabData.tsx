@@ -5,6 +5,7 @@ import { Lock, Mail, KeyRound, AlertCircle, Loader2, LogOut, Database, Plus, Tra
 import { ScheduleUploader } from './ScheduleUploader';
 import { ChecklistDataEditor } from './ChecklistDataEditor';
 import { AssetManager } from './AssetManager';
+import { SparepartManager } from './SparepartManager';
 
 export const TabData: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -300,6 +301,7 @@ const LocalDataEditor: React.FC = () => {
       <div className="bg-slate-800 text-white p-2 flex gap-1 overflow-x-auto hide-scrollbar">
         {[
           { id: 'upload_jadwal', label: 'Upload Jadwal Excel' },
+          { id: 'sparepart_list', label: 'Sparepart List' },
           { id: 'manajemen_aset', label: 'Manajemen Aset (Lokasi & Mesin)' },
           { id: 'api_t2', label: 'Personel API T2' },
           { id: 'om_ias_t2', label: 'Personel OM/IAS' },
@@ -316,6 +318,10 @@ const LocalDataEditor: React.FC = () => {
       {activeSubTab === 'upload_jadwal' ? (
         <div className="p-6">
           <ScheduleUploader />
+        </div>
+      ) : activeSubTab === 'sparepart_list' ? (
+        <div className="bg-slate-50 min-h-[500px]">
+          <SparepartManager />
         </div>
       ) : activeSubTab === 'manajemen_aset' ? (
         <div className="p-6 bg-slate-50 min-h-[500px]">
