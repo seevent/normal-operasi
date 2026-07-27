@@ -450,7 +450,7 @@ export const generateWA_InitialReport = (formData: any) => {
   const dampakStr = (formData.dampak && formData.dampak !== '1. ') ? formData.dampak : (formData.dampak || '1. ...');
   const mitigasiStr = (formData.tindakanMitigasi && formData.tindakanMitigasi !== '1. ') ? formData.tindakanMitigasi : (formData.tindakanMitigasi || '1. ...');
 
-  return `INITIAL REPORT
+  return `*INITIAL REPORT*
 
 Nama Peralatan : ${formData.peralatan}
 Lokasi : ${lokasiFinal}
@@ -464,13 +464,13 @@ ${permasalahanStr}
 
 Status : ${statusStr}
 
-URAIAN
+*URAIAN*
 ${uraianStr}
 
-DAMPAK
+*DAMPAK*
 ${dampakStr}
 
-MITIGASI
+*MITIGASI*
 ${mitigasiStr}
 
 
