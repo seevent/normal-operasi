@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Wrench, Users, Megaphone, CheckSquare, Settings, AlertTriangle, 
   RefreshCw, Check, Database, CheckCircle, FileText, Briefcase, FileWarning,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Package, ExternalLink
 } from 'lucide-react';
 import { MonitorSearchIcon } from './shared/MonitorSearchIcon';
 
@@ -154,6 +154,22 @@ export default function App() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 justify-end">
+              <a
+                href="https://masih-berapa.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Buka Inventaris & Manajemen Sparepart SSES T2"
+                className="group relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-extrabold bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-300/80 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-400/40 active:scale-95"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-600 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-700"></span>
+                </span>
+                <Package className="w-4 h-4 text-slate-900 group-hover:rotate-12 transition-transform duration-300" />
+                <span>Sparepart</span>
+                <ExternalLink className="w-3.5 h-3.5 text-slate-900/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+              </a>
+
               <button
                 type="button"
                 onClick={handleReset}
