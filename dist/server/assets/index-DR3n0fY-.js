@@ -1,6 +1,6 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, AlertCircle, FileWarning, MapPin, Plus, Calendar, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, Cloud, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, Layers, Tag, Building2, ShieldCheck, Zap, Search, Box, CheckCircle2, LayoutGrid, Database, Hash, PackageCheck, Mail, KeyRound, LogOut, Briefcase, Edit, Download, ChevronLeft } from "lucide-react";
+import { Type, X, Sparkles, Clock, ArrowDown, ArrowUp, Minus, AlignLeft, AlignCenter, AlignRight, Palette, Check, RotateCcw, Cpu, AlertCircle, FileWarning, MapPin, Plus, Calendar, CheckCircle, Share2, FileText, Camera, Move, Trash2, ImagePlus, ZoomIn, ZoomOut, Users, Loader2, User, ClipboardList, Wrench, CheckSquare, Save, RefreshCw, Square, Lock, Cloud, ChevronUp, ChevronDown, Megaphone, FileSpreadsheet, AlertTriangle, Settings, ChevronRight, Edit2, Layers, Tag, Building2, ShieldCheck, Zap, Search, Box, CheckCircle2, LayoutGrid, Database, Hash, PackageCheck, Mail, KeyRound, LogOut, Briefcase, Edit, Download, Package, ExternalLink, ChevronLeft } from "lucide-react";
 import { create } from "zustand";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
@@ -1112,7 +1112,7 @@ const getLokasi2Options = (lokasi, peralatanArray = []) => {
     return a.localeCompare(b);
   });
 };
-const getStoringValidLocations = (equipArray, storingLocAc, storingLocDefault) => {
+const getStoringValidLocations = (equipArray, _storingLocAc, _storingLocDefault) => {
   if (equipArray.length === 0) return [];
   if (equipArray.includes("Access Control")) return getGeneralLokasiOptions("Access Control");
   if (equipArray.some((e) => e.trim().toLowerCase() === "mirroring x-ray")) return getGeneralLokasiOptions("Mirroring X-Ray");
@@ -1186,6 +1186,42 @@ const checkNeedsStoringSupervisorAvsec = (peralatan, acLokasi, acNomor) => {
     if (norm.includes("SSCP") && (norm.includes(" E") || norm.includes(" F"))) return true;
     return false;
   });
+};
+const getCurrentShiftKey = (now = /* @__PURE__ */ new Date()) => {
+  const currentHour = now.getHours();
+  const logicalDateObj = new Date(now.getTime());
+  if (currentHour < 8) {
+    logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+  }
+  const tzOffset = logicalDateObj.getTimezoneOffset() * 6e4;
+  const dateStr = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split("T")[0];
+  const shiftName = currentHour >= 8 && currentHour < 20 ? "PAGI" : "MALAM";
+  return `${dateStr}_${shiftName}`;
+};
+const mapStoringToChecklistSupervisorKeys = (acLokasi, acNomor = {}) => {
+  if (!acLokasi || acLokasi.length === 0) return [];
+  const keys = /* @__PURE__ */ new Set();
+  acLokasi.forEach((l) => {
+    const norm = l.trim().toUpperCase();
+    if (norm === "HBSCP" || norm.includes("HBSCP") && !norm.includes("UMRAH") && !norm.includes("UMROH")) {
+      const selectedNomor = (acNomor || {})[l] || (getAcNomorOptions(l)[0] || "");
+      const numTrim = selectedNomor.trim();
+      if (numTrim.includes("1.1") || numTrim.includes("1.6")) {
+        keys.add("HBSCP 1.1 - 1.6");
+      } else if (numTrim.includes("2.1") || numTrim.includes("2.6")) {
+        keys.add("HBSCP 2.1 - 2.6");
+      } else if (!numTrim.includes("2.7")) {
+        keys.add("HBSCP 1.1 - 1.6");
+        keys.add("HBSCP 2.1 - 2.6");
+      }
+    } else if (l.trim().toLowerCase() === "ruang monitoring e1" || norm.includes("ACCESS CONTROL")) {
+      keys.add("Monitoring Access E1");
+      keys.add("ACCESS CONTROL");
+    } else {
+      keys.add(l.trim());
+    }
+  });
+  return Array.from(keys);
 };
 const generateWA_Perbaikan = (formData, isVerifikasiETD) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
@@ -4641,6 +4677,96 @@ const PhotoUploader = ({
     )
   ] });
 };
+const DEFAULT_SHIFT_DATA = (shiftKey) => ({
+  shiftKey,
+  supervisorMap: {},
+  earliestWaktuMulai: "",
+  latestWaktuSelesai: "",
+  updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+});
+const fetchChecklistShiftData = async () => {
+  const currentShiftKey = getCurrentShiftKey();
+  try {
+    const { data, error } = await supabase.from("master_configs").select("value").eq("key", "checklist_shift_data").maybeSingle();
+    if (!error && data && data.value) {
+      const val = data.value;
+      if (val.shiftKey === currentShiftKey) {
+        return val;
+      }
+    }
+  } catch (err) {
+    console.error("Gagal membaca data shift checklist dari Supabase:", err);
+  }
+  return DEFAULT_SHIFT_DATA(currentShiftKey);
+};
+const saveStoringToChecklistSync = async (storingData, channelRef, senderId) => {
+  const currentShiftKey = getCurrentShiftKey();
+  const currentData = await fetchChecklistShiftData();
+  const newSupervisorMap = { ...currentData.supervisorMap || {} };
+  if (storingData.supervisorAvsec && storingData.supervisorAvsec.trim() !== "") {
+    const keys = mapStoringToChecklistSupervisorKeys(storingData.acLokasi || [], storingData.acNomor || {});
+    keys.forEach((k) => {
+      newSupervisorMap[k] = storingData.supervisorAvsec.trim();
+    });
+  }
+  let earliestWaktuMulai = currentData.earliestWaktuMulai || "";
+  if (storingData.waktuMulai) {
+    if (!earliestWaktuMulai || storingData.waktuMulai < earliestWaktuMulai) {
+      earliestWaktuMulai = storingData.waktuMulai;
+    }
+  }
+  let latestWaktuSelesai = currentData.latestWaktuSelesai || "";
+  const endCandidate = storingData.waktuSelesai || storingData.waktuMulai || "";
+  if (endCandidate) {
+    if (!latestWaktuSelesai || endCandidate > latestWaktuSelesai) {
+      latestWaktuSelesai = endCandidate;
+    }
+  }
+  const payload = {
+    shiftKey: currentShiftKey,
+    supervisorMap: newSupervisorMap,
+    earliestWaktuMulai,
+    latestWaktuSelesai,
+    senderId,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  try {
+    await supabase.from("master_configs").upsert(
+      { key: "checklist_shift_data", value: payload, updated_at: payload.updatedAt },
+      { onConflict: "key" }
+    );
+  } catch (err) {
+    console.error("Error saving checklist shift data to Supabase:", err);
+  }
+  return payload;
+};
+const saveChecklistSupervisorDirect = async (supervisorMap, channelRef, senderId) => {
+  const currentShiftKey = getCurrentShiftKey();
+  const currentData = await fetchChecklistShiftData();
+  const payload = {
+    ...currentData,
+    shiftKey: currentShiftKey,
+    supervisorMap,
+    senderId,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  if (channelRef) {
+    channelRef.send({
+      type: "broadcast",
+      event: "shift_data_update",
+      payload
+    }).catch((err) => console.error("Broadcast shift_data_update error:", err));
+  }
+  try {
+    await supabase.from("master_configs").upsert(
+      { key: "checklist_shift_data", value: payload, updated_at: payload.updatedAt },
+      { onConflict: "key" }
+    );
+  } catch (err) {
+    console.error("Error saving direct supervisor checklist data to Supabase:", err);
+  }
+  return payload;
+};
 const TabStoring = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData, storingLocAc, storingLocDefault } = useMasterDataStore();
@@ -4709,8 +4835,6 @@ const TabStoring = () => {
           newPeralatan.push(equip);
         }
       }
-      newPeralatan.includes("Access Control");
-      newPeralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
       const newShowSupervisor = checkNeedsStoringSupervisorAvsec(newPeralatan, [], {});
       return {
         ...prev,
@@ -4823,6 +4947,13 @@ Supervisor Avsec : ${storingData.supervisorAvsec}` : ""}`,
       tindakLanjut: "-",
       status: storingData.hasil || "Normal Operasi",
       imageFile: generatedCollageFile || (finalFilesToShare.length > 0 ? finalFilesToShare[0] : null)
+    });
+    saveStoringToChecklistSync({
+      supervisorAvsec: storingData.supervisorAvsec,
+      acLokasi: storingData.acLokasi,
+      acNomor: storingData.acNomor,
+      waktuMulai: storingData.waktuMulai,
+      waktuSelesai: storingData.waktuSelesai
     });
     await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
@@ -4966,11 +5097,6 @@ Supervisor Avsec : ${storingData.supervisorAvsec}` : ""}`,
           ] })
         ] }),
         (() => {
-          storingData.peralatan.includes("Access Control");
-          storingData.peralatan.some((e) => e.toLowerCase() === "mirroring x-ray");
-          (storingData.acLokasi || []).some(
-            (loc) => loc.trim().toLowerCase() === "ruang monitoring e1"
-          );
           const showSupervisorAvsec = checkNeedsStoringSupervisorAvsec(storingData.peralatan, storingData.acLokasi, storingData.acNomor);
           if (!showSupervisorAvsec) return null;
           return /* @__PURE__ */ jsxs("div", { className: "col-span-2", children: [
@@ -6359,20 +6485,34 @@ const TabChecklist = () => {
     waktuSelesai: "",
     supervisorAvsec: {}
   });
+  const shiftChannelRef = useRef(null);
   const handleSupervisorChange = (locTitle, value) => {
-    setChecklistData((prev) => ({
-      ...prev,
-      supervisorAvsec: {
+    setChecklistData((prev) => {
+      const updatedMap = {
         ...prev.supervisorAvsec || {},
         [locTitle]: value
-      }
-    }));
+      };
+      saveChecklistSupervisorDirect(updatedMap, shiftChannelRef.current, clientIdRef.current);
+      return {
+        ...prev,
+        supervisorAvsec: updatedMap
+      };
+    });
   };
   const [toggles, setToggles] = useState({});
   const [expandedAreas, setExpandedAreas] = useState({});
   const [syncStatus, setSyncStatus] = useState("loading");
   const clientIdRef = useRef(`client_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`);
   const channelRef = useRef(null);
+  const loadShiftData = useCallback(async () => {
+    const data = await fetchChecklistShiftData();
+    setChecklistData((prev) => ({
+      ...prev,
+      supervisorAvsec: data.supervisorMap || {},
+      waktuMulai: data.earliestWaktuMulai || prev.waktuMulai,
+      waktuSelesai: data.latestWaktuSelesai || prev.waktuSelesai
+    }));
+  }, []);
   const fetchActiveToggles = useCallback(async () => {
     setSyncStatus("loading");
     try {
@@ -6388,6 +6528,7 @@ const TabChecklist = () => {
   }, []);
   useEffect(() => {
     fetchActiveToggles();
+    loadShiftData();
     const channel = supabase.channel("checklist_toggles_sync").on("broadcast", { event: "toggles_update" }, (payload) => {
       if (payload?.payload?.senderId !== clientIdRef.current && payload?.payload?.toggles) {
         setToggles(payload.payload.toggles);
@@ -6406,12 +6547,42 @@ const TabChecklist = () => {
       }
     }).subscribe();
     channelRef.current = channel;
+    const shiftChannel = supabase.channel("checklist_shift_data_sync").on("broadcast", { event: "shift_data_update" }, (payload) => {
+      const shiftVal = payload?.payload;
+      if (shiftVal && shiftVal.senderId !== clientIdRef.current) {
+        setChecklistData((prev) => ({
+          ...prev,
+          supervisorAvsec: shiftVal.supervisorMap || {},
+          waktuMulai: shiftVal.earliestWaktuMulai || prev.waktuMulai,
+          waktuSelesai: shiftVal.latestWaktuSelesai || prev.waktuSelesai
+        }));
+      }
+    }).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "master_configs",
+      filter: "key=eq.checklist_shift_data"
+    }, (payload) => {
+      const newValue = payload?.new?.value;
+      if (newValue && newValue.senderId !== clientIdRef.current) {
+        setChecklistData((prev) => ({
+          ...prev,
+          supervisorAvsec: newValue.supervisorMap || {},
+          waktuMulai: newValue.earliestWaktuMulai || prev.waktuMulai,
+          waktuSelesai: newValue.latestWaktuSelesai || prev.waktuSelesai
+        }));
+      }
+    }).subscribe();
+    shiftChannelRef.current = shiftChannel;
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
+      if (shiftChannelRef.current) {
+        supabase.removeChannel(shiftChannelRef.current);
+      }
     };
-  }, [fetchActiveToggles]);
+  }, [fetchActiveToggles, loadShiftData]);
   const saveAndBroadcastToggles = async (newToggles) => {
     setSyncStatus("saving");
     const payload = {
@@ -10364,22 +10535,43 @@ function App() {
             /* @__PURE__ */ jsx("p", { className: "text-blue-200 text-sm", children: "Otomatisasi Kirim ke WhatsApp" })
           ] })
         ] }),
-        /* @__PURE__ */ jsx("div", { className: "flex flex-wrap items-center gap-2 justify-end", children: /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            onClick: handleReset,
-            disabled: isResetting,
-            className: `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${isResetting ? "bg-emerald-500 text-white shadow-md" : "bg-blue-700 text-blue-100 hover:bg-blue-600 hover:text-white"}`,
-            children: isResetting ? /* @__PURE__ */ jsxs(Fragment, { children: [
-              /* @__PURE__ */ jsx(Check, { className: "w-4 h-4 animate-pulse" }),
-              " Di-reset!"
-            ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
-              /* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4" }),
-              " Reset"
-            ] })
-          }
-        ) })
+        /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2 justify-end", children: [
+          /* @__PURE__ */ jsxs(
+            "a",
+            {
+              href: "https://masih-berapa.vercel.app",
+              target: "_blank",
+              rel: "noopener noreferrer",
+              title: "Buka Inventaris & Manajemen Sparepart SSES T2",
+              className: "group relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-extrabold bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-300/80 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-400/40 active:scale-95",
+              children: [
+                /* @__PURE__ */ jsxs("span", { className: "relative flex h-2 w-2", children: [
+                  /* @__PURE__ */ jsx("span", { className: "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-600 opacity-75" }),
+                  /* @__PURE__ */ jsx("span", { className: "relative inline-flex rounded-full h-2 w-2 bg-amber-700" })
+                ] }),
+                /* @__PURE__ */ jsx(Package, { className: "w-4 h-4 text-slate-900 group-hover:rotate-12 transition-transform duration-300" }),
+                /* @__PURE__ */ jsx("span", { children: "Sparepart" }),
+                /* @__PURE__ */ jsx(ExternalLink, { className: "w-3.5 h-3.5 text-slate-900/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: handleReset,
+              disabled: isResetting,
+              className: `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${isResetting ? "bg-emerald-500 text-white shadow-md" : "bg-blue-700 text-blue-100 hover:bg-blue-600 hover:text-white"}`,
+              children: isResetting ? /* @__PURE__ */ jsxs(Fragment, { children: [
+                /* @__PURE__ */ jsx(Check, { className: "w-4 h-4 animate-pulse" }),
+                " Di-reset!"
+              ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+                /* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4" }),
+                " Reset"
+              ] })
+            }
+          )
+        ] })
       ] }) }),
       /* @__PURE__ */ jsxs("div", { className: "relative bg-slate-50 border-b border-slate-200 overflow-hidden select-none", children: [
         currentPage > 0 && /* @__PURE__ */ jsx(

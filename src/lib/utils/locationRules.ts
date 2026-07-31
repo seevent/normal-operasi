@@ -149,7 +149,7 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
   });
 };
 
-export const getStoringValidLocations = (equipArray: string[], storingLocAc: string[], storingLocDefault: string[]) => {
+export const getStoringValidLocations = (equipArray: string[], _storingLocAc?: string[], _storingLocDefault?: string[]) => {
   if (equipArray.length === 0) return [];
   if (equipArray.includes('Access Control')) return getGeneralLokasiOptions('Access Control');
   if (equipArray.some(e => e.trim().toLowerCase() === 'mirroring x-ray')) return getGeneralLokasiOptions('Mirroring X-Ray');
@@ -246,3 +246,44 @@ export const checkNeedsStoringSupervisorAvsec = (peralatan: string[], acLokasi: 
     return false;
   });
 };
+
+export const getCurrentShiftKey = (now = new Date()): string => {
+  const currentHour = now.getHours();
+  const logicalDateObj = new Date(now.getTime());
+  if (currentHour < 8) {
+    logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+  }
+  const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;
+  const dateStr = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split('T')[0];
+  const shiftName = (currentHour >= 8 && currentHour < 20) ? 'PAGI' : 'MALAM';
+  return `${dateStr}_${shiftName}`;
+};
+
+export const mapStoringToChecklistSupervisorKeys = (acLokasi: string[], acNomor: Record<string, string> = {}): string[] => {
+  if (!acLokasi || acLokasi.length === 0) return [];
+  const keys: Set<string> = new Set();
+
+  acLokasi.forEach(l => {
+    const norm = l.trim().toUpperCase();
+    if (norm === 'HBSCP' || (norm.includes('HBSCP') && !norm.includes('UMRAH') && !norm.includes('UMROH'))) {
+      const selectedNomor = (acNomor || {})[l] || (getAcNomorOptions(l)[0] || '');
+      const numTrim = selectedNomor.trim();
+      if (numTrim.includes('1.1') || numTrim.includes('1.6')) {
+        keys.add('HBSCP 1.1 - 1.6');
+      } else if (numTrim.includes('2.1') || numTrim.includes('2.6')) {
+        keys.add('HBSCP 2.1 - 2.6');
+      } else if (!numTrim.includes('2.7')) {
+        keys.add('HBSCP 1.1 - 1.6');
+        keys.add('HBSCP 2.1 - 2.6');
+      }
+    } else if (l.trim().toLowerCase() === 'ruang monitoring e1' || norm.includes('ACCESS CONTROL')) {
+      keys.add('Monitoring Access E1');
+      keys.add('ACCESS CONTROL');
+    } else {
+      keys.add(l.trim());
+    }
+  });
+
+  return Array.from(keys);
+};
+

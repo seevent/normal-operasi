@@ -8,6 +8,7 @@ import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, c
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
+import { saveStoringToChecklistSync } from '../../lib/services/checklistSyncService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
@@ -84,9 +85,6 @@ export const TabStoring: React.FC = () => {
           newPeralatan.push(equip);
         }
       }
-      
-      const isACChecked = newPeralatan.includes('Access Control');
-      const isMirroringChecked = newPeralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
       const newShowSupervisor = checkNeedsStoringSupervisorAvsec(newPeralatan, [], {});
 
       // Reset lokasi & nomor jika kombinasi peralatan berubah drastis
@@ -217,6 +215,14 @@ export const TabStoring: React.FC = () => {
       tindakLanjut: '-',
       status: storingData.hasil || 'Normal Operasi',
       imageFile: generatedCollageFile || (finalFilesToShare.length > 0 ? finalFilesToShare[0] : null)
+    });
+
+    saveStoringToChecklistSync({
+      supervisorAvsec: storingData.supervisorAvsec,
+      acLokasi: storingData.acLokasi,
+      acNomor: storingData.acNomor,
+      waktuMulai: storingData.waktuMulai,
+      waktuSelesai: storingData.waktuSelesai
     });
 
     await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
@@ -385,11 +391,6 @@ export const TabStoring: React.FC = () => {
           </div>
 
           {(() => {
-            const isACChecked = storingData.peralatan.includes('Access Control');
-            const isMirroringChecked = storingData.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
-            const hasRuangMonitoringE1 = (storingData.acLokasi || []).some(
-              loc => loc.trim().toLowerCase() === 'ruang monitoring e1'
-            );
             const showSupervisorAvsec = checkNeedsStoringSupervisorAvsec(storingData.peralatan, storingData.acLokasi, storingData.acNomor);
 
             if (!showSupervisorAvsec) return null;

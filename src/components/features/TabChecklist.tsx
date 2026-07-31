@@ -5,6 +5,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { generateWA_Checklist } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
+import { fetchChecklistShiftData, saveChecklistSupervisorDirect } from '../../lib/services/checklistSyncService';
 
 export const TabChecklist: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -17,14 +18,20 @@ export const TabChecklist: React.FC = () => {
     supervisorAvsec: {} as Record<string, string>,
   });
 
+  const shiftChannelRef = useRef<any>(null);
+
   const handleSupervisorChange = (locTitle: string, value: string) => {
-    setChecklistData(prev => ({
-      ...prev,
-      supervisorAvsec: {
+    setChecklistData(prev => {
+      const updatedMap = {
         ...(prev.supervisorAvsec || {}),
         [locTitle]: value
-      }
-    }));
+      };
+      saveChecklistSupervisorDirect(updatedMap, shiftChannelRef.current, clientIdRef.current);
+      return {
+        ...prev,
+        supervisorAvsec: updatedMap
+      };
+    });
   };
 
   const [toggles, setToggles] = useState<Record<string, boolean>>({});
@@ -32,6 +39,16 @@ export const TabChecklist: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'loading' | 'synced' | 'saving' | 'error'>('loading');
   const clientIdRef = useRef<string>(`client_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`);
   const channelRef = useRef<any>(null);
+
+  const loadShiftData = useCallback(async () => {
+    const data = await fetchChecklistShiftData();
+    setChecklistData(prev => ({
+      ...prev,
+      supervisorAvsec: data.supervisorMap || {},
+      waktuMulai: data.earliestWaktuMulai || prev.waktuMulai,
+      waktuSelesai: data.latestWaktuSelesai || prev.waktuSelesai
+    }));
+  }, []);
 
   const fetchActiveToggles = useCallback(async () => {
     setSyncStatus('loading');
@@ -54,6 +71,7 @@ export const TabChecklist: React.FC = () => {
 
   useEffect(() => {
     fetchActiveToggles();
+    loadShiftData();
 
     const channel = supabase.channel('checklist_toggles_sync')
       .on('broadcast', { event: 'toggles_update' }, (payload) => {
@@ -78,12 +96,47 @@ export const TabChecklist: React.FC = () => {
 
     channelRef.current = channel;
 
+    const shiftChannel = supabase.channel('checklist_shift_data_sync')
+      .on('broadcast', { event: 'shift_data_update' }, (payload) => {
+        const shiftVal = payload?.payload;
+        if (shiftVal && shiftVal.senderId !== clientIdRef.current) {
+          setChecklistData(prev => ({
+            ...prev,
+            supervisorAvsec: shiftVal.supervisorMap || {},
+            waktuMulai: shiftVal.earliestWaktuMulai || prev.waktuMulai,
+            waktuSelesai: shiftVal.latestWaktuSelesai || prev.waktuSelesai
+          }));
+        }
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'master_configs',
+        filter: 'key=eq.checklist_shift_data'
+      }, (payload: any) => {
+        const newValue = payload?.new?.value;
+        if (newValue && newValue.senderId !== clientIdRef.current) {
+          setChecklistData(prev => ({
+            ...prev,
+            supervisorAvsec: newValue.supervisorMap || {},
+            waktuMulai: newValue.earliestWaktuMulai || prev.waktuMulai,
+            waktuSelesai: newValue.latestWaktuSelesai || prev.waktuSelesai
+          }));
+        }
+      })
+      .subscribe();
+
+    shiftChannelRef.current = shiftChannel;
+
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
+      if (shiftChannelRef.current) {
+        supabase.removeChannel(shiftChannelRef.current);
+      }
     };
-  }, [fetchActiveToggles]);
+  }, [fetchActiveToggles, loadShiftData]);
 
   const saveAndBroadcastToggles = async (newToggles: Record<string, boolean>) => {
     setSyncStatus('saving');
