@@ -3,15 +3,11 @@
     "0": [
       "package_dependencies_react",
       "react",
-      "src_components_features_tabbriefing",
-      "src_components_features_tabbriefing_tabbriefing",
       "src_components_features_tabinitialreport",
       "src_components_features_tabinitialreport_formatnamapersonel",
       "src_components_features_tabinitialreport_tabinitialreport",
       "src_components_features_tabkegiatan",
       "src_components_features_tabkegiatan_tabkegiatan",
-      "src_components_features_tabkehadiran",
-      "src_components_features_tabkehadiran_tabkehadiran",
       "src_components_features_tabperbaikan",
       "src_components_features_tabperbaikan_formatnamapersonel",
       "src_components_features_tabperbaikan_tabperbaikan",
@@ -33,6 +29,14 @@
       "src_components_shared_photouploader_photouploaderprops",
       "src_lib_data_constants",
       "src_lib_data_constants_tip_months",
+      "src_lib_data_masterdata",
+      "src_lib_data_masterdata_default_data_api_t2",
+      "src_lib_data_masterdata_default_data_om_ias_t2",
+      "src_lib_data_masterdata_default_storing_equipments",
+      "src_lib_data_masterdata_default_storing_loc_ac",
+      "src_lib_data_masterdata_default_storing_loc_default",
+      "src_lib_data_masterdata_default_tip_left_col",
+      "src_lib_data_masterdata_default_tip_right_col",
       "src_lib_data_masterdata_getjabatanrank",
       "src_lib_data_masterdata_sortpersonelbyjabatan",
       "src_lib_data_masterdata_totitlecase",
@@ -287,56 +291,6 @@
       "agents_skills_design_system_templates_design_tokens_starter_spacing_section"
     ],
     "5": [
-      "src_components_features_assetmanager",
-      "src_components_features_assetmanager_assetmanager",
-      "src_components_features_assetmanager_tabtype",
-      "src_components_features_assetmasterlokasi",
-      "src_components_features_assetmasterlokasi_assetmasterlokasi",
-      "src_components_features_assetmasterperalatan",
-      "src_components_features_assetmasterperalatan_assetmasterperalatan",
-      "src_components_features_checklistdataeditor",
-      "src_components_features_checklistdataeditor_blockeditor",
-      "src_components_features_checklistdataeditor_categorylist",
-      "src_components_features_checklistdataeditor_checklistdataeditor",
-      "src_components_features_scheduleuploader",
-      "src_components_features_scheduleuploader_scheduleuploader",
-      "src_components_features_sparepartmanager",
-      "src_components_features_sparepartmanager_sparepartmanager",
-      "src_components_features_tabdata",
-      "src_components_features_tabdata_admindashboard",
-      "src_components_features_tabdata_adminlogin",
-      "src_components_features_tabdata_genericcrudtable",
-      "src_components_features_tabdata_localdataeditor",
-      "src_components_features_tabdata_tabdata",
-      "src_components_features_tabdata_tipdatamanager",
-      "src_components_features_tabtip",
-      "src_components_features_tabtip_getdefaulttipperiod",
-      "src_components_features_tabtip_tabtip",
-      "src_components_features_tabtip_tip_months",
-      "src_components_features_unitperalatanmanager",
-      "src_components_features_unitperalatanmanager_unitperalatanmanager",
-      "src_lib_data_masterdata",
-      "src_lib_data_masterdata_default_checklist_data",
-      "src_lib_data_masterdata_default_data_api_t2",
-      "src_lib_data_masterdata_default_data_om_ias_t2",
-      "src_lib_data_masterdata_default_storing_equipments",
-      "src_lib_data_masterdata_default_storing_loc_ac",
-      "src_lib_data_masterdata_default_storing_loc_default",
-      "src_lib_data_masterdata_default_tip_left_col",
-      "src_lib_data_masterdata_default_tip_right_col",
-      "src_lib_supabaseclient",
-      "src_lib_supabaseclient_supabase",
-      "src_store_useauthstore",
-      "src_store_useauthstore_authstate",
-      "src_store_useauthstore_useauthstore",
-      "src_store_usemasterdatastore",
-      "src_store_usemasterdatastore_loadmasterdata",
-      "src_store_usemasterdatastore_masterdatastate",
-      "src_store_usemasterdatastore_saveconfigtosupabase",
-      "src_store_usemasterdatastore_savemasterdatatolocal",
-      "src_store_usemasterdatastore_usemasterdatastore"
-    ],
-    "6": [
       "agents_skills_design_system_templates_design_tokens_starter_bg_type",
       "agents_skills_design_system_templates_design_tokens_starter_bg_value",
       "agents_skills_design_system_templates_design_tokens_starter_border_type",
@@ -382,6 +336,52 @@
       "agents_skills_design_system_templates_design_tokens_starter_radius_value",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_type",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_value"
+    ],
+    "6": [
+      "src_components_features_assetmanager",
+      "src_components_features_assetmanager_assetmanager",
+      "src_components_features_assetmanager_tabtype",
+      "src_components_features_assetmasterlokasi",
+      "src_components_features_assetmasterlokasi_assetmasterlokasi",
+      "src_components_features_assetmasterperalatan",
+      "src_components_features_assetmasterperalatan_assetmasterperalatan",
+      "src_components_features_checklistdataeditor",
+      "src_components_features_checklistdataeditor_blockeditor",
+      "src_components_features_checklistdataeditor_categorylist",
+      "src_components_features_checklistdataeditor_checklistdataeditor",
+      "src_components_features_scheduleuploader",
+      "src_components_features_scheduleuploader_scheduleuploader",
+      "src_components_features_sparepartmanager",
+      "src_components_features_sparepartmanager_sparepartmanager",
+      "src_components_features_tabbriefing",
+      "src_components_features_tabbriefing_tabbriefing",
+      "src_components_features_tabdata",
+      "src_components_features_tabdata_admindashboard",
+      "src_components_features_tabdata_adminlogin",
+      "src_components_features_tabdata_genericcrudtable",
+      "src_components_features_tabdata_localdataeditor",
+      "src_components_features_tabdata_tabdata",
+      "src_components_features_tabdata_tipdatamanager",
+      "src_components_features_tabkehadiran",
+      "src_components_features_tabkehadiran_tabkehadiran",
+      "src_components_features_tabtip",
+      "src_components_features_tabtip_getdefaulttipperiod",
+      "src_components_features_tabtip_tabtip",
+      "src_components_features_tabtip_tip_months",
+      "src_components_features_unitperalatanmanager",
+      "src_components_features_unitperalatanmanager_unitperalatanmanager",
+      "src_lib_data_masterdata_default_checklist_data",
+      "src_lib_supabaseclient",
+      "src_lib_supabaseclient_supabase",
+      "src_store_useauthstore",
+      "src_store_useauthstore_authstate",
+      "src_store_useauthstore_useauthstore",
+      "src_store_usemasterdatastore",
+      "src_store_usemasterdatastore_loadmasterdata",
+      "src_store_usemasterdatastore_masterdatastate",
+      "src_store_usemasterdatastore_saveconfigtosupabase",
+      "src_store_usemasterdatastore_savemasterdatatolocal",
+      "src_store_usemasterdatastore_usemasterdatastore"
     ],
     "7": [
       "agents_skills_design_system_scripts_search_slides",
@@ -614,7 +614,6 @@
       "agents_skills_ui_ux_pro_max_scripts_design_system_ansi_ljust",
       "agents_skills_ui_ux_pro_max_scripts_design_system_detect_page_type",
       "agents_skills_ui_ux_pro_max_scripts_design_system_format_ascii_box",
-      "agents_skills_ui_ux_pro_max_scripts_design_system_format_markdown",
       "agents_skills_ui_ux_pro_max_scripts_design_system_format_master_md",
       "agents_skills_ui_ux_pro_max_scripts_design_system_format_page_override_md",
       "agents_skills_ui_ux_pro_max_scripts_design_system_generate_intelligent_overrides",
@@ -627,7 +626,6 @@
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_351",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_359",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_366",
-      "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_529",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_711",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_723",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_793",
@@ -750,27 +748,6 @@
       "src_routetree_gen_tanstack_react_start"
     ],
     "20": [
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_main",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_123",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_136",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_149",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_162",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_174",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_192",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_268",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_285",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_84",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_breakpoints",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_colors",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_fonts",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_plugins",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_spacing",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_config_string",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_recommend_plugins",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_validate_config",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_write_config"
-    ],
-    "21": [
       "agents_skills_design_system_scripts_fetch_background",
       "agents_skills_design_system_scripts_fetch_background_generate_css_for_background",
       "agents_skills_design_system_scripts_fetch_background_get_background_image",
@@ -790,7 +767,7 @@
       "agents_skills_design_system_scripts_fetch_background_rationale_40",
       "agents_skills_design_system_scripts_fetch_background_resolve_token_reference"
     ],
-    "22": [
+    "21": [
       "html2pdf_js",
       "package_dependencies",
       "package_dependencies_html2pdf_js",
@@ -810,7 +787,7 @@
       "tanstack_store",
       "use_image"
     ],
-    "23": [
+    "22": [
       "agents_skills_ui_ux_pro_max_scripts_core_bm25",
       "agents_skills_ui_ux_pro_max_scripts_core_bm25_fit",
       "agents_skills_ui_ux_pro_max_scripts_core_bm25_init",
@@ -829,7 +806,7 @@
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testtokenizer_test_stopwords_removed",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testtokenizer_test_synonym_normalization"
     ],
-    "24": [
+    "23": [
       "agents_skills_design_scripts_icon_generate",
       "agents_skills_design_scripts_icon_generate_apply_color",
       "agents_skills_design_scripts_icon_generate_apply_viewbox_size",
@@ -847,7 +824,7 @@
       "agents_skills_design_scripts_icon_generate_rationale_288",
       "agents_skills_design_scripts_icon_generate_rationale_372"
     ],
-    "25": [
+    "24": [
       "agents_skills_design_system_templates_design_tokens_starter_2xl_type",
       "agents_skills_design_system_templates_design_tokens_starter_2xl_value",
       "agents_skills_design_system_templates_design_tokens_starter_3xl_type",
@@ -865,23 +842,44 @@
       "agents_skills_design_system_templates_design_tokens_starter_xs_type",
       "agents_skills_design_system_templates_design_tokens_starter_xs_value"
     ],
-    "26": [
+    "25": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_147",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_158",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_18",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_205",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_22",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_45",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_temp_project",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_success",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_default_project_root",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
+    ],
+    "26": [
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_main",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_123",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_136",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_149",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_162",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_174",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_192",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_268",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_285",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_84",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_breakpoints",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_colors",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_fonts",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_plugins",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_spacing",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_config_string",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_recommend_plugins",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_validate_config",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_write_config"
     ],
     "27": [
       "agents_skills_brand_scripts_extract_colors",
@@ -975,6 +973,16 @@
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_custom_project_root"
     ],
     "33": [
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_203",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_224",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_239",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_260",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_format_plugins",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_javascript",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_typescript",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_indent_json"
+    ],
+    "34": [
       "agents_skills_brand_scripts_inject_brand_context",
       "agents_skills_brand_scripts_inject_brand_context_extractcolorsfromtable",
       "agents_skills_brand_scripts_inject_brand_context_extractcoreattributes",
@@ -987,7 +995,7 @@
       "agents_skills_brand_scripts_inject_brand_context_main",
       "agents_skills_brand_scripts_inject_brand_context_path"
     ],
-    "34": [
+    "35": [
       "agents_skills_design_system_scripts_embed_tokens",
       "agents_skills_design_system_scripts_embed_tokens_args",
       "agents_skills_design_system_scripts_embed_tokens_extracttokens",
@@ -1000,7 +1008,7 @@
       "agents_skills_design_system_scripts_embed_tokens_tokenspath",
       "agents_skills_design_system_scripts_embed_tokens_wrapstyle"
     ],
-    "35": [
+    "36": [
       "agents_skills_design_system_templates_design_tokens_starter_duration_fast",
       "agents_skills_design_system_templates_design_tokens_starter_duration_normal",
       "agents_skills_design_system_templates_design_tokens_starter_duration_slow",
@@ -1013,7 +1021,7 @@
       "agents_skills_design_system_templates_design_tokens_starter_slow_type",
       "agents_skills_design_system_templates_design_tokens_starter_slow_value"
     ],
-    "36": [
+    "37": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_1",
@@ -1026,7 +1034,7 @@
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testgeneratedconfigisvalidjs_test_node_check_parses_generated_config",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testgeneratedconfigisvalidjs_test_property_before_plugins_is_comma_terminated"
     ],
-    "37": [
+    "38": [
       "agents_skills_design_scripts_logo_generate",
       "agents_skills_design_scripts_logo_generate_enhance_prompt",
       "agents_skills_design_scripts_logo_generate_generate_batch",
@@ -1038,7 +1046,7 @@
       "agents_skills_design_scripts_logo_generate_rationale_231",
       "agents_skills_design_scripts_logo_generate_rationale_30"
     ],
-    "38": [
+    "39": [
       "agents_skills_design_system_scripts_generate_tokens",
       "agents_skills_design_system_scripts_generate_tokens_flattentokens",
       "agents_skills_design_system_scripts_generate_tokens_fs",
@@ -1050,7 +1058,7 @@
       "agents_skills_design_system_scripts_generate_tokens_resolvereference",
       "agents_skills_design_system_scripts_generate_tokens_tocssvarname"
     ],
-    "39": [
+    "40": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen_py_path",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_31",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_45",
@@ -1062,7 +1070,7 @@
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_init",
       "any"
     ],
-    "40": [
+    "41": [
       "agents_skills_brainstorming_scripts_helper",
       "agents_skills_brainstorming_scripts_helper_connect",
       "agents_skills_brainstorming_scripts_helper_nextreconnectdelay",
@@ -1073,7 +1081,7 @@
       "agents_skills_brainstorming_scripts_helper_showtombstone",
       "agents_skills_brainstorming_scripts_helper_websocketurl"
     ],
-    "41": [
+    "42": [
       "agents_skills_brand_scripts_sync_brand_to_tokens",
       "agents_skills_brand_scripts_sync_brand_to_tokens_adjustbrightness",
       "agents_skills_brand_scripts_sync_brand_to_tokens_execfilesync",
@@ -1084,7 +1092,7 @@
       "agents_skills_brand_scripts_sync_brand_to_tokens_path",
       "agents_skills_brand_scripts_sync_brand_to_tokens_updatedesigntokens"
     ],
-    "42": [
+    "43": [
       "agents_skills_design_system_scripts_tests_test_validate_tokens",
       "agents_skills_design_system_scripts_tests_test_validate_tokens_py_path",
       "agents_skills_design_system_scripts_tests_test_validate_tokens_rationale_1",
@@ -1095,7 +1103,7 @@
       "agents_skills_design_system_scripts_tests_test_validate_tokens_test_token_only_line_reports_no_violation",
       "completedprocess"
     ],
-    "43": [
+    "44": [
       "agents_skills_writing_skills_render_graphs",
       "agents_skills_writing_skills_render_graphs_combinegraphs",
       "agents_skills_writing_skills_render_graphs_execsync",
@@ -1106,25 +1114,15 @@
       "agents_skills_writing_skills_render_graphs_path",
       "agents_skills_writing_skills_render_graphs_rendertosvg"
     ],
-    "44": [
+    "45": [
+      "agents_skills_design_system_templates_design_tokens_starter_fontsize_xl",
       "agents_skills_design_system_templates_design_tokens_starter_full_type",
       "agents_skills_design_system_templates_design_tokens_starter_full_value",
-      "agents_skills_design_system_templates_design_tokens_starter_md_type",
-      "agents_skills_design_system_templates_design_tokens_starter_md_value",
       "agents_skills_design_system_templates_design_tokens_starter_primitive_radius",
       "agents_skills_design_system_templates_design_tokens_starter_radius_full",
-      "agents_skills_design_system_templates_design_tokens_starter_radius_md",
-      "agents_skills_design_system_templates_design_tokens_starter_shadow_md"
-    ],
-    "45": [
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_203",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_224",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_239",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_260",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_format_plugins",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_javascript",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_typescript",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_indent_json"
+      "agents_skills_design_system_templates_design_tokens_starter_radius_xl",
+      "agents_skills_design_system_templates_design_tokens_starter_xl_type",
+      "agents_skills_design_system_templates_design_tokens_starter_xl_value"
     ],
     "46": [
       "agents_skills_ui_ux_pro_max_scripts_core_rationale_412",
@@ -1137,7 +1135,9 @@
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testsearchdomains_test_zero_result_query_reports_suggestions_not_error"
     ],
     "47": [
+      "agents_skills_ui_ux_pro_max_scripts_design_system_format_markdown",
       "agents_skills_ui_ux_pro_max_scripts_design_system_generate_design_system",
+      "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_529",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_672",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testpersistence",
@@ -1187,22 +1187,22 @@
       "agents_skills_design_system_templates_design_tokens_starter_shadow_lg"
     ],
     "53": [
-      "agents_skills_design_system_templates_design_tokens_starter_fontsize_xl",
-      "agents_skills_design_system_templates_design_tokens_starter_radius_xl",
-      "agents_skills_design_system_templates_design_tokens_starter_xl_type",
-      "agents_skills_design_system_templates_design_tokens_starter_xl_value"
-    ],
-    "54": [
       "agents_skills_design_system_templates_design_tokens_starter_default_type",
       "agents_skills_design_system_templates_design_tokens_starter_default_value",
       "agents_skills_design_system_templates_design_tokens_starter_radius_default",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_default"
     ],
-    "55": [
+    "54": [
       "agents_skills_design_system_templates_design_tokens_starter_none_type",
       "agents_skills_design_system_templates_design_tokens_starter_none_value",
       "agents_skills_design_system_templates_design_tokens_starter_radius_none",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_none"
+    ],
+    "55": [
+      "agents_skills_design_system_templates_design_tokens_starter_md_type",
+      "agents_skills_design_system_templates_design_tokens_starter_md_value",
+      "agents_skills_design_system_templates_design_tokens_starter_radius_md",
+      "agents_skills_design_system_templates_design_tokens_starter_shadow_md"
     ],
     "56": [
       "agents_skills_systematic_debugging_condition_based_waiting_example",
@@ -1242,14 +1242,14 @@
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_init"
     ],
     "63": [
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
-    ],
-    "64": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_71",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_empty",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_with_files"
+    ],
+    "64": [
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
     ],
     "65": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_291",
@@ -1283,16 +1283,16 @@
       "agents_skills_systematic_debugging_find_polluter_sh__entry"
     ],
     "72": [
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_112",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_already_installed"
-    ],
-    "73": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_182",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_subprocess_error"
     ],
-    "74": [
+    "73": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_195",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_npx_not_found"
+    ],
+    "74": [
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_112",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_already_installed"
     ],
     "75": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_56",
@@ -1372,13 +1372,13 @@
     ]
   },
   "cohesion": {
-    "0": 0.0951048951048951,
+    "0": 0.07494824016563147,
     "1": 0.05868118572292801,
     "2": 0.05370101596516691,
     "3": 0.061224489795918366,
     "4": 0.041666666666666664,
-    "5": 0.09219858156028368,
-    "6": 0.0595959595959596,
+    "5": 0.0595959595959596,
+    "6": 0.0824524312896406,
     "7": 0.07897793263646923,
     "8": 0.058823529411764705,
     "9": 0.16995073891625614,
@@ -1386,40 +1386,40 @@
     "11": 0.07407407407407407,
     "12": 0.07692307692307693,
     "13": 0.11,
-    "14": 0.10153846153846154,
+    "14": 0.11231884057971014,
     "15": 0.12554112554112554,
     "16": 0.14736842105263157,
     "17": 0.1,
     "18": 0.1,
     "19": 0.14210526315789473,
-    "20": 0.1111111111111111,
-    "21": 0.16993464052287582,
-    "22": 0.11764705882352941,
-    "23": 0.14705882352941177,
-    "24": 0.2,
-    "25": 0.125,
-    "26": 0.14166666666666666,
+    "20": 0.16993464052287582,
+    "21": 0.11764705882352941,
+    "22": 0.14705882352941177,
+    "23": 0.2,
+    "24": 0.125,
+    "25": 0.14166666666666666,
+    "26": 0.1111111111111111,
     "27": 0.21978021978021978,
     "28": 0.25274725274725274,
     "29": 0.2087912087912088,
     "30": 0.21794871794871795,
     "31": 0.24242424242424243,
     "32": 0.16666666666666666,
-    "33": 0.3090909090909091,
-    "34": 0.2,
-    "35": 0.18181818181818182,
-    "36": 0.2,
-    "37": 0.28888888888888886,
-    "38": 0.35555555555555557,
-    "39": 0.2222222222222222,
-    "40": 0.4166666666666667,
-    "41": 0.3333333333333333,
-    "42": 0.2777777777777778,
-    "43": 0.3333333333333333,
-    "44": 0.2857142857142857,
+    "33": 0.2857142857142857,
+    "34": 0.3090909090909091,
+    "35": 0.2,
+    "36": 0.18181818181818182,
+    "37": 0.2,
+    "38": 0.28888888888888886,
+    "39": 0.35555555555555557,
+    "40": 0.2222222222222222,
+    "41": 0.4166666666666667,
+    "42": 0.3333333333333333,
+    "43": 0.2777777777777778,
+    "44": 0.3333333333333333,
     "45": 0.2857142857142857,
     "46": 0.35714285714285715,
-    "47": 0.4,
+    "47": 0.2857142857142857,
     "48": 0.42857142857142855,
     "49": 0.42857142857142855,
     "50": 0.2857142857142857,
@@ -1514,9 +1514,9 @@
       "degree": 14
     },
     {
-      "id": "src_lib_services_shareservice_sharetowhatsapp",
-      "label": "shareToWhatsApp()",
-      "degree": 14
+      "id": "agents_skills_design_system_templates_design_tokens_starter_color_gray",
+      "label": "gray",
+      "degree": 12
     }
   ],
   "surprises": [
@@ -1605,12 +1605,12 @@
     {
       "type": "isolated_nodes",
       "question": "What connects `crypto`, `http`, `fs` to the rest of the system?",
-      "why": "211 weakly-connected nodes found - possible documentation gaps or missing edges."
+      "why": "219 weakly-connected nodes found - possible documentation gaps or missing edges."
     },
     {
       "type": "low_cohesion",
       "question": "Should `TabInitialReport.tsx` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.0951048951048951 - nodes in this community are weakly interconnected."
+      "why": "Cohesion score 0.07494824016563147 - nodes in this community are weakly interconnected."
     }
   ]
 }

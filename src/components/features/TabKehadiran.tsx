@@ -49,7 +49,8 @@ export const TabKehadiran: React.FC = () => {
     try {
       const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
 
-      let { data, error } = await supabase
+      let rawJadwalData: any[] = [];
+      const resMain = await supabase
         .from('jadwal_shift')
         .select(`
           id, shift, status_kehadiran,
@@ -59,7 +60,9 @@ export const TabKehadiran: React.FC = () => {
         .neq('shift', 'D')
         .order('id', { ascending: true });
 
-      if (error) {
+      if (!resMain.error && resMain.data) {
+        rawJadwalData = resMain.data;
+      } else {
         const fallbackRes = await supabase
           .from('jadwal_shift')
           .select(`
@@ -69,10 +72,10 @@ export const TabKehadiran: React.FC = () => {
           .eq('tanggal', attendanceData.tanggal)
           .neq('shift', 'D')
           .order('id', { ascending: true });
-        data = fallbackRes.data;
-        error = fallbackRes.error;
 
-        if (error) {
+        if (!fallbackRes.error && fallbackRes.data) {
+          rawJadwalData = fallbackRes.data;
+        } else {
           const fallbackRes2 = await supabase
             .from('jadwal_shift')
             .select(`
@@ -82,14 +85,11 @@ export const TabKehadiran: React.FC = () => {
             .eq('tanggal', attendanceData.tanggal)
             .neq('shift', 'D')
             .order('id', { ascending: true });
-          data = fallbackRes2.data;
-          error = fallbackRes2.error;
+          if (fallbackRes2.data) rawJadwalData = fallbackRes2.data;
         }
       }
 
-      if (error) throw error;
-
-      const filteredData = ((data as any[]) || []).filter((d: any) => {
+      const filteredData = (rawJadwalData || []).filter((d: any) => {
         const s = (d.shift || '').toUpperCase();
         if (targetShiftCode === 'PS') {
           return s === 'PS';

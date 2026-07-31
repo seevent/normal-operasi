@@ -369,7 +369,7 @@ const LocalDataEditor: React.FC = () => {
                 {(activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') ? (
                   <>
                     <select
-                      className="sm:w-1/3 w-full p-2 border rounded-lg text-sm bg-white"
+                      className="sm:w-1/4 w-full p-2 border rounded-lg text-sm bg-white shrink-0"
                       value={item.jabatan || ''}
                       onChange={e => handleTextChange(index, 'jabatan', e.target.value)}
                     >
@@ -394,8 +394,9 @@ const LocalDataEditor: React.FC = () => {
                         </>
                       )}
                     </select>
-                    <input className="flex-1 w-full p-2 border rounded-lg text-sm bg-white" placeholder="Nama Personel" value={item.name || ''} onChange={e => handleTextChange(index, 'name', e.target.value)} />
-                    <input className="sm:w-1/4 w-full p-2 border rounded-lg text-sm bg-white" placeholder="No. WA" value={item.phone || ''} onChange={e => handleTextChange(index, 'phone', e.target.value)} />
+                    <input className="sm:w-36 w-full p-2 border rounded-lg text-sm bg-white shrink-0" placeholder="NIK" value={item.nik || ''} onChange={e => handleTextChange(index, 'nik', e.target.value)} />
+                    <input className="flex-1 min-w-[140px] w-full p-2 border rounded-lg text-sm bg-white" placeholder="Nama Personel" value={item.name || ''} onChange={e => handleTextChange(index, 'name', e.target.value)} />
+                    <input className="sm:w-36 w-full p-2 border rounded-lg text-sm bg-white shrink-0" placeholder="No. WA" value={item.phone || ''} onChange={e => handleTextChange(index, 'phone', e.target.value)} />
                   </>
                 ) : (
                   <input className="flex-1 w-full p-2 border rounded-lg" value={item} onChange={e => handleTextChange(index, undefined, e.target.value)} />
@@ -447,7 +448,7 @@ const LocalDataEditor: React.FC = () => {
         
         <button onClick={() => {
           const d = [...localData];
-          if (activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') d.push({ name: '', phone: '', jabatan: '' });
+          if (activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') d.push({ name: '', phone: '', jabatan: '', nik: '' });
           else d.push('');
           setLocalData(d);
         }} className="w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 font-bold rounded-lg hover:bg-blue-50">

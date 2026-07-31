@@ -155,7 +155,7 @@ export const TabBriefing: React.FC = () => {
       setTimeout(() => setIsCopied(false), 3000);
     });
 
-    if (generatedCollageUrl) {
+    if (generatedCollageFile) {
       // Optional: Store to global context if needed
     }
   };

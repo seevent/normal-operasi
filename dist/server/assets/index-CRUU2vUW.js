@@ -707,19 +707,23 @@ const useMasterDataStore = create((set, get) => ({
         const urutanVal = idx + 1;
         if (p.id) {
           const payload = { nama: p.name, no_hp: p.phone, urutan: urutanVal };
+          if (p.nik !== void 0) payload.nik = p.nik || null;
           if (p.jabatan !== void 0) payload.jabatan = p.jabatan || null;
           const { error } = await supabase.from("personel").update(payload).eq("id", p.id);
-          if (error && (error.message?.includes("urutan") || error.message?.includes("jabatan"))) {
+          if (error && (error.message?.includes("urutan") || error.message?.includes("jabatan") || error.message?.includes("nik"))) {
             const fallback = { nama: p.name, no_hp: p.phone };
+            if (p.nik !== void 0 && !error.message?.includes("nik")) fallback.nik = p.nik || null;
             if (p.jabatan !== void 0 && !error.message?.includes("jabatan")) fallback.jabatan = p.jabatan || null;
             await supabase.from("personel").update(fallback).eq("id", p.id);
           }
         } else if (unitId) {
           const payload = { nama: p.name, no_hp: p.phone, unit_kerja_id: unitId, urutan: urutanVal };
+          if (p.nik !== void 0) payload.nik = p.nik || null;
           if (p.jabatan !== void 0) payload.jabatan = p.jabatan || null;
           const { error } = await supabase.from("personel").insert(payload);
-          if (error && (error.message?.includes("urutan") || error.message?.includes("jabatan"))) {
+          if (error && (error.message?.includes("urutan") || error.message?.includes("jabatan") || error.message?.includes("nik"))) {
             const fallback = { nama: p.name, no_hp: p.phone, unit_kerja_id: unitId };
+            if (p.nik !== void 0 && !error.message?.includes("nik")) fallback.nik = p.nik || null;
             if (p.jabatan !== void 0 && !error.message?.includes("jabatan")) fallback.jabatan = p.jabatan || null;
             await supabase.from("personel").insert(fallback);
           }
@@ -867,10 +871,16 @@ const useMasterDataStore = create((set, get) => ({
   addModalDataRow: () => {
     const { masterModalOpen, masterModalData } = get();
     let newItem;
-    if (masterModalOpen === "api_t2" || masterModalOpen === "om_ias_t2") newItem = { name: "", phone: "", jabatan: "" };
+    if (masterModalOpen === "api_t2" || masterModalOpen === "om_ias_t2") newItem = { name: "", phone: "", jabatan: "", nik: "" };
     else if (masterModalOpen === "storing_equip" || masterModalOpen === "storing_loc_ac" || masterModalOpen === "storing_loc_default" || masterModalOpen === "kalibrasi_equip") newItem = "";
     else if (masterModalOpen === "tip_left" || masterModalOpen === "tip_right") newItem = { id: `new_${Date.now()}`, name: "", items: [] };
     set({ masterModalData: [...masterModalData, newItem] });
+  },
+  removeModalDataRow: (index) => {
+    const { masterModalData } = get();
+    const newData = [...masterModalData];
+    newData.splice(index, 1);
+    set({ masterModalData: newData });
   },
   sparepartsData: [],
   briefingSparepartIds: [],
@@ -947,22 +957,24 @@ const useMasterDataStore = create((set, get) => ({
       if (!jenisError && jenisData) {
         set({ jenisPeralatanData: jenisData });
       }
-      let { data: personelData, error: personelError } = await supabase.from("personel").select(`id, nik, nama, no_hp, jabatan, urutan, unit_kerja(nama)`).order("urutan", { ascending: true }).order("id", { ascending: true });
-      if (personelError) {
-        console.warn("Kolom urutan/jabatan mungkin belum ada di tabel personel Supabase, mencoba fallback query...", personelError.message);
+      let finalPersonelData = [];
+      const resMain = await supabase.from("personel").select(`id, nik, nama, no_hp, jabatan, urutan, unit_kerja(nama)`).order("urutan", { ascending: true }).order("id", { ascending: true });
+      if (!resMain.error && resMain.data) {
+        finalPersonelData = resMain.data;
+      } else {
+        console.warn("Kolom urutan/jabatan mungkin belum ada di tabel personel Supabase, mencoba fallback query...", resMain.error?.message);
         const resFallback = await supabase.from("personel").select(`id, nik, nama, no_hp, jabatan, unit_kerja(nama)`).order("id", { ascending: true });
-        personelData = resFallback.data;
-        personelError = resFallback.error;
-        if (personelError) {
+        if (!resFallback.error && resFallback.data) {
+          finalPersonelData = resFallback.data;
+        } else {
           const resFallback2 = await supabase.from("personel").select(`id, nik, nama, no_hp, unit_kerja(nama)`).order("id", { ascending: true });
-          personelData = resFallback2.data;
-          personelError = resFallback2.error;
+          if (resFallback2.data) finalPersonelData = resFallback2.data;
         }
       }
-      if (!personelError && personelData) {
-        console.log("✅ Berhasil mengambil data personel dari Supabase:", personelData.length);
-        const apiT2Raw = personelData.filter((p) => p.unit_kerja?.nama === "API T2").map((p, idx) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || "", jabatan: p.jabatan || "", dbOrder: p.urutan !== void 0 && p.urutan !== null ? Number(p.urutan) : idx }));
-        const omIasT2Raw = personelData.filter((p) => p.unit_kerja?.nama === "OM/IAS T2").map((p, idx) => ({ id: p.id, nik: p.nik, name: toTitleCase(p.nama), phone: p.no_hp || "", jabatan: p.jabatan || "", dbOrder: p.urutan !== void 0 && p.urutan !== null ? Number(p.urutan) : idx }));
+      if (finalPersonelData.length > 0) {
+        console.log("✅ Berhasil mengambil data personel dari Supabase:", finalPersonelData.length);
+        const apiT2Raw = finalPersonelData.filter((p) => p.unit_kerja?.nama === "API T2").map((p, idx) => ({ id: p.id, nik: p.nik || "", name: toTitleCase(p.nama), phone: p.no_hp || "", jabatan: p.jabatan || "", dbOrder: p.urutan !== void 0 && p.urutan !== null ? Number(p.urutan) : idx }));
+        const omIasT2Raw = finalPersonelData.filter((p) => p.unit_kerja?.nama === "OM/IAS T2").map((p, idx) => ({ id: p.id, nik: p.nik || "", name: toTitleCase(p.nama), phone: p.no_hp || "", jabatan: p.jabatan || "", dbOrder: p.urutan !== void 0 && p.urutan !== null ? Number(p.urutan) : idx }));
         if (apiT2Raw.length > 0) get().setDataApiT2(sortPersonelByJabatan(apiT2Raw));
         if (omIasT2Raw.length > 0) get().setDataOmIasT2(sortPersonelByJabatan(omIasT2Raw));
       }
@@ -3190,28 +3202,29 @@ const TabKehadiran = () => {
     setIsLoading(true);
     try {
       const targetShiftCode = attendanceData.shift.includes("Pagi") ? "PS" : "M";
-      let { data, error } = await supabase.from("jadwal_shift").select(`
+      let rawJadwalData = [];
+      const resMain = await supabase.from("jadwal_shift").select(`
           id, shift, status_kehadiran,
           personel:personel_id (id, nama, no_hp, jabatan, urutan, unit_kerja(nama))
         `).eq("tanggal", attendanceData.tanggal).neq("shift", "D").order("id", { ascending: true });
-      if (error) {
+      if (!resMain.error && resMain.data) {
+        rawJadwalData = resMain.data;
+      } else {
         const fallbackRes = await supabase.from("jadwal_shift").select(`
             id, shift, status_kehadiran,
             personel:personel_id (id, nama, no_hp, jabatan, unit_kerja(nama))
           `).eq("tanggal", attendanceData.tanggal).neq("shift", "D").order("id", { ascending: true });
-        data = fallbackRes.data;
-        error = fallbackRes.error;
-        if (error) {
+        if (!fallbackRes.error && fallbackRes.data) {
+          rawJadwalData = fallbackRes.data;
+        } else {
           const fallbackRes2 = await supabase.from("jadwal_shift").select(`
               id, shift, status_kehadiran,
               personel:personel_id (id, nama, no_hp, unit_kerja(nama))
             `).eq("tanggal", attendanceData.tanggal).neq("shift", "D").order("id", { ascending: true });
-          data = fallbackRes2.data;
-          error = fallbackRes2.error;
+          if (fallbackRes2.data) rawJadwalData = fallbackRes2.data;
         }
       }
-      if (error) throw error;
-      const filteredData = (data || []).filter((d) => {
+      const filteredData = (rawJadwalData || []).filter((d) => {
         const s = (d.shift || "").toUpperCase();
         if (targetShiftCode === "PS") {
           return s === "PS";
@@ -7207,7 +7220,6 @@ const TabBriefing = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3e3);
     });
-    if (generatedCollageUrl) ;
   };
   return /* @__PURE__ */ jsxs("form", { onSubmit: handleBriefingSubmit, className: "p-6 sm:p-8 space-y-8", children: [
     /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
@@ -9399,7 +9411,7 @@ const LocalDataEditor = () => {
           /* @__PURE__ */ jsxs(
             "select",
             {
-              className: "sm:w-1/3 w-full p-2 border rounded-lg text-sm bg-white",
+              className: "sm:w-1/4 w-full p-2 border rounded-lg text-sm bg-white shrink-0",
               value: item.jabatan || "",
               onChange: (e) => handleTextChange(index, "jabatan", e.target.value),
               children: [
@@ -9418,8 +9430,9 @@ const LocalDataEditor = () => {
               ]
             }
           ),
-          /* @__PURE__ */ jsx("input", { className: "flex-1 w-full p-2 border rounded-lg text-sm bg-white", placeholder: "Nama Personel", value: item.name || "", onChange: (e) => handleTextChange(index, "name", e.target.value) }),
-          /* @__PURE__ */ jsx("input", { className: "sm:w-1/4 w-full p-2 border rounded-lg text-sm bg-white", placeholder: "No. WA", value: item.phone || "", onChange: (e) => handleTextChange(index, "phone", e.target.value) })
+          /* @__PURE__ */ jsx("input", { className: "sm:w-36 w-full p-2 border rounded-lg text-sm bg-white shrink-0", placeholder: "NIK", value: item.nik || "", onChange: (e) => handleTextChange(index, "nik", e.target.value) }),
+          /* @__PURE__ */ jsx("input", { className: "flex-1 min-w-[140px] w-full p-2 border rounded-lg text-sm bg-white", placeholder: "Nama Personel", value: item.name || "", onChange: (e) => handleTextChange(index, "name", e.target.value) }),
+          /* @__PURE__ */ jsx("input", { className: "sm:w-36 w-full p-2 border rounded-lg text-sm bg-white shrink-0", placeholder: "No. WA", value: item.phone || "", onChange: (e) => handleTextChange(index, "phone", e.target.value) })
         ] }) : /* @__PURE__ */ jsx("input", { className: "flex-1 w-full p-2 border rounded-lg", value: item, onChange: (e) => handleTextChange(index, void 0, e.target.value) }) }),
         /* @__PURE__ */ jsxs("div", { className: "flex gap-1 items-center mt-1 sm:mt-0 shrink-0", children: [
           (activeSubTab === "api_t2" || activeSubTab === "om_ias_t2") && /* @__PURE__ */ jsxs(Fragment, { children: [
@@ -9469,7 +9482,7 @@ const LocalDataEditor = () => {
       ] }, index)),
       /* @__PURE__ */ jsx("button", { onClick: () => {
         const d = [...localData];
-        if (activeSubTab === "api_t2" || activeSubTab === "om_ias_t2") d.push({ name: "", phone: "", jabatan: "" });
+        if (activeSubTab === "api_t2" || activeSubTab === "om_ias_t2") d.push({ name: "", phone: "", jabatan: "", nik: "" });
         else d.push("");
         setLocalData(d);
       }, className: "w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 font-bold rounded-lg hover:bg-blue-50", children: "+ Tambah Baris" }),
