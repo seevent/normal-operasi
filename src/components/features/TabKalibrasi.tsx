@@ -30,7 +30,7 @@ export const TabKalibrasi: React.FC = () => {
     etdModel: 'Semua ETD',
     lokasi1: '', lokasi2: '',
     acLokasi: [] as string[],
-    acEmlock: 'Berfungsi', acIntercom: 'Berfungsi', acFingerprint: 'Berfungsi', acCctv: 'Berfungsi', acPengontrolan: 'Berfungsi', acRecordCctv: '',
+    acEmlock: 'Berfungsi', acIntercom: 'Berfungsi', acFingerprint: 'Berfungsi', acCctv: 'Berfungsi', acPengontrolan: 'Berfungsi', acRecordCctv: '+- 1 bulan',
     xrayKvV: '', xrayKvH: '', xrayMaV: '', xrayMaH: '', xrayOnV: '', xrayOnH: '', xrayArchive: '+- 1 bulan',
     wtmdZ1: '', wtmdZ2: '', wtmdZ3: '', wtmdZ4: '', wtmdLc: '', wtmdLs: '', wtmdUc: '', wtmdSe: '', wtmdDs: '',
     bsSuspect: 'Normal', bsMonitor: 'Normal', bsScanning: 'Normal', bsCalibration: 'Normal',
@@ -723,7 +723,7 @@ export const TabKalibrasi: React.FC = () => {
                     <h3 className="font-bold text-blue-900 flex items-center gap-2">
                       ⚡ Parameter X-Ray <span className="text-xs text-rose-500 font-normal">*(Wajib Diisi)*</span>
                     </h3>
-                    <select name="xrayModel" value={entry.xrayModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                    <select name="xrayModel" value={entry.xrayModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} disabled={!entry.lokasi1} className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200">
                       {getValidXRayModels(entry.lokasi1, entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua X-Ray' ? '-- Semua Model X-Ray --' : model.replace('X-Ray ', '')}
@@ -791,7 +791,7 @@ export const TabKalibrasi: React.FC = () => {
                     <h3 className="font-bold text-indigo-900 flex items-center gap-2">
                       🎛️ Parameter WTMD <span className="text-xs text-rose-500 font-normal">*(Wajib Diisi)*</span>
                     </h3>
-                    <select name="wtmdModel" value={entry.wtmdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
+                    <select name="wtmdModel" value={entry.wtmdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} disabled={!entry.lokasi1} className="px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200">
                       {getValidModels(entry.lokasi1, 'WTMD', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua WTMD' ? '-- Semua Model WTMD --' : model.replace('WTMD ', '')}
@@ -869,7 +869,7 @@ export const TabKalibrasi: React.FC = () => {
                     <h3 className="font-bold text-purple-900 flex items-center gap-2">
                       📱 Parameter HHMD
                     </h3>
-                    <select name="hhmdModel" value={entry.hhmdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer">
+                    <select name="hhmdModel" value={entry.hhmdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} disabled={!entry.lokasi1} className="px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200">
                       {getValidModels(entry.lokasi1, 'HHMD', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua HHMD' ? '-- Semua Model HHMD --' : model.replace('HHMD ', '')}
@@ -886,7 +886,7 @@ export const TabKalibrasi: React.FC = () => {
                     <h3 className="font-bold text-emerald-900 flex items-center gap-2">
                       🔍 Parameter Body Scanner
                     </h3>
-                    <select name="bsModel" value={entry.bsModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer">
+                    <select name="bsModel" value={entry.bsModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} disabled={!entry.lokasi1} className="px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200">
                       {getValidModels(entry.lokasi1, 'Body Scanner', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua Body Scanner' ? '-- Semua Model Body Scanner --' : model.replace('Body Scanner ', '')}
@@ -929,7 +929,7 @@ export const TabKalibrasi: React.FC = () => {
                     <h3 className="font-bold text-amber-900 flex items-center gap-2">
                       🧪 Parameter ETD
                     </h3>
-                    <select name="etdModel" value={entry.etdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer">
+                    <select name="etdModel" value={entry.etdModel} onChange={(e) => handleKalibrasiEntryChange(index, e)} disabled={!entry.lokasi1} className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200">
                       {getValidModels(entry.lokasi1, 'ETD', entry.lokasi2).map((model: string) => (
                         <option key={model} value={model}>
                           {model === 'Semua ETD' ? '-- Semua Model ETD --' : model.replace('ETD ', '')}
@@ -1002,7 +1002,7 @@ export const TabKalibrasi: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1">Record CCTV</label>
-                    <input type="text" required name="acRecordCctv" value={entry.acRecordCctv} onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-rose-500 ${
+                    <input type="text" required name="acRecordCctv" value={entry.acRecordCctv} placeholder="+- 1 bulan" onChange={(e) => handleKalibrasiEntryChange(index, e)} className={`w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-rose-500 ${
                       showErrors && !entry.acRecordCctv.trim() ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
                     }`} />
                     {showErrors && !entry.acRecordCctv.trim() && (

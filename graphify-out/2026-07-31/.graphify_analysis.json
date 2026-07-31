@@ -614,7 +614,6 @@
       "agents_skills_ui_ux_pro_max_scripts_design_system_ansi_ljust",
       "agents_skills_ui_ux_pro_max_scripts_design_system_detect_page_type",
       "agents_skills_ui_ux_pro_max_scripts_design_system_format_ascii_box",
-      "agents_skills_ui_ux_pro_max_scripts_design_system_format_markdown",
       "agents_skills_ui_ux_pro_max_scripts_design_system_format_master_md",
       "agents_skills_ui_ux_pro_max_scripts_design_system_format_page_override_md",
       "agents_skills_ui_ux_pro_max_scripts_design_system_generate_intelligent_overrides",
@@ -627,7 +626,6 @@
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_351",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_359",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_366",
-      "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_529",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_711",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_723",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_793",
@@ -871,17 +869,17 @@
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_18",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_205",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_22",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_45",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_temp_project",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_success",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_default_project_root",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
     ],
     "27": [
       "agents_skills_brand_scripts_extract_colors",
@@ -1107,14 +1105,14 @@
       "agents_skills_writing_skills_render_graphs_rendertosvg"
     ],
     "44": [
+      "agents_skills_design_system_templates_design_tokens_starter_default_type",
+      "agents_skills_design_system_templates_design_tokens_starter_default_value",
       "agents_skills_design_system_templates_design_tokens_starter_full_type",
       "agents_skills_design_system_templates_design_tokens_starter_full_value",
-      "agents_skills_design_system_templates_design_tokens_starter_md_type",
-      "agents_skills_design_system_templates_design_tokens_starter_md_value",
       "agents_skills_design_system_templates_design_tokens_starter_primitive_radius",
+      "agents_skills_design_system_templates_design_tokens_starter_radius_default",
       "agents_skills_design_system_templates_design_tokens_starter_radius_full",
-      "agents_skills_design_system_templates_design_tokens_starter_radius_md",
-      "agents_skills_design_system_templates_design_tokens_starter_shadow_md"
+      "agents_skills_design_system_templates_design_tokens_starter_shadow_default"
     ],
     "45": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_203",
@@ -1137,7 +1135,9 @@
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testsearchdomains_test_zero_result_query_reports_suggestions_not_error"
     ],
     "47": [
+      "agents_skills_ui_ux_pro_max_scripts_design_system_format_markdown",
       "agents_skills_ui_ux_pro_max_scripts_design_system_generate_design_system",
+      "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_529",
       "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_672",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testpersistence",
@@ -1193,10 +1193,10 @@
       "agents_skills_design_system_templates_design_tokens_starter_xl_value"
     ],
     "54": [
-      "agents_skills_design_system_templates_design_tokens_starter_default_type",
-      "agents_skills_design_system_templates_design_tokens_starter_default_value",
-      "agents_skills_design_system_templates_design_tokens_starter_radius_default",
-      "agents_skills_design_system_templates_design_tokens_starter_shadow_default"
+      "agents_skills_design_system_templates_design_tokens_starter_md_type",
+      "agents_skills_design_system_templates_design_tokens_starter_md_value",
+      "agents_skills_design_system_templates_design_tokens_starter_radius_md",
+      "agents_skills_design_system_templates_design_tokens_starter_shadow_md"
     ],
     "55": [
       "agents_skills_design_system_templates_design_tokens_starter_none_type",
@@ -1242,9 +1242,9 @@
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_init"
     ],
     "63": [
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
     ],
     "64": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_71",
@@ -1386,7 +1386,7 @@
     "11": 0.07407407407407407,
     "12": 0.07692307692307693,
     "13": 0.11,
-    "14": 0.10153846153846154,
+    "14": 0.11231884057971014,
     "15": 0.12554112554112554,
     "16": 0.14736842105263157,
     "17": 0.1,
@@ -1419,7 +1419,7 @@
     "44": 0.2857142857142857,
     "45": 0.2857142857142857,
     "46": 0.35714285714285715,
-    "47": 0.4,
+    "47": 0.2857142857142857,
     "48": 0.42857142857142855,
     "49": 0.42857142857142855,
     "50": 0.2857142857142857,
@@ -1576,41 +1576,8 @@
       "why": "inferred connection - not explicitly stated in source; bridges separate communities"
     }
   ],
-  "questions": [
-    {
-      "type": "bridge_node",
-      "question": "Why does `primitive` connect `primitive` to `gray`, `color`, `spacing`, `radius`, `shadow`, `fontSize`?",
-      "why": "High betweenness centrality (0.034) - this node is a cross-community bridge."
-    },
-    {
-      "type": "bridge_node",
-      "question": "Why does `color` connect `color` to `button`?",
-      "why": "High betweenness centrality (0.021) - this node is a cross-community bridge."
-    },
-    {
-      "type": "bridge_node",
-      "question": "Why does `color` connect `gray` to `primitive`?",
-      "why": "High betweenness centrality (0.021) - this node is a cross-community bridge."
-    },
-    {
-      "type": "verify_inferred",
-      "question": "Are the 36 inferred relationships involving `TailwindConfigGenerator` (e.g. with `TestGeneratedConfigIsValidJs` and `.test_node_check_parses_generated_config()`) actually correct?",
-      "why": "`TailwindConfigGenerator` has 36 INFERRED edges - model-reasoned connections that need verification."
-    },
-    {
-      "type": "verify_inferred",
-      "question": "Are the 23 inferred relationships involving `ShadcnInstaller` (e.g. with `TestShadcnInstaller` and `.test_add_all_components_dry_run()`) actually correct?",
-      "why": "`ShadcnInstaller` has 23 INFERRED edges - model-reasoned connections that need verification."
-    },
-    {
-      "type": "isolated_nodes",
-      "question": "What connects `crypto`, `http`, `fs` to the rest of the system?",
-      "why": "211 weakly-connected nodes found - possible documentation gaps or missing edges."
-    },
-    {
-      "type": "low_cohesion",
-      "question": "Should `TabInitialReport.tsx` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.0951048951048951 - nodes in this community are weakly interconnected."
-    }
-  ]
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
 }

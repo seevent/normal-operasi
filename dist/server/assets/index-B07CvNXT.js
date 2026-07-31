@@ -666,8 +666,11 @@ const DEFAULT_TIP_RIGHT_COL = [
   { id: "pscp_umroh", name: "PSCP UMROH", items: ["1", "2", "3", "4", "5", "6", "7"] },
   { id: "sscp", name: "SSCP", items: ["MP E", "MP F"] }
 ];
-const supabaseUrl = "https://mpwemvdedpihlwghdmpa.supabase.co";
-const supabaseAnonKey = "sb_publishable_hzu642LG862DRg0HkvdpZQ_3nLdQ2rw";
+const supabaseUrl = "";
+const supabaseAnonKey = "";
+{
+  console.warn("⚠️ Perhatian: Kredensial Supabase (VITE_SUPABASE_URL atau VITE_SUPABASE_ANON_KEY) belum diisi di file .env");
+}
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const loadMasterData = (key, defaultData) => {
   return defaultData;
@@ -5168,7 +5171,7 @@ const TabKalibrasi = () => {
     acFingerprint: "Berfungsi",
     acCctv: "Berfungsi",
     acPengontrolan: "Berfungsi",
-    acRecordCctv: "",
+    acRecordCctv: "+- 1 bulan",
     xrayKvV: "",
     xrayKvH: "",
     xrayMaV: "",
@@ -5815,7 +5818,7 @@ const TabKalibrasi = () => {
               "⚡ Parameter X-Ray ",
               /* @__PURE__ */ jsx("span", { className: "text-xs text-rose-500 font-normal", children: "*(Wajib Diisi)*" })
             ] }),
-            /* @__PURE__ */ jsx("select", { name: "xrayModel", value: entry.xrayModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer", children: getValidXRayModels(entry.lokasi1, entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua X-Ray" ? "-- Semua Model X-Ray --" : model.replace("X-Ray ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "xrayModel", value: entry.xrayModel, onChange: (e) => handleKalibrasiEntryChange(index, e), disabled: !entry.lokasi1, className: "px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200", children: getValidXRayModels(entry.lokasi1, entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua X-Ray" ? "-- Semua Model X-Ray --" : model.replace("X-Ray ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -5858,7 +5861,7 @@ const TabKalibrasi = () => {
               "🎛️ Parameter WTMD ",
               /* @__PURE__ */ jsx("span", { className: "text-xs text-rose-500 font-normal", children: "*(Wajib Diisi)*" })
             ] }),
-            /* @__PURE__ */ jsx("select", { name: "wtmdModel", value: entry.wtmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "WTMD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua WTMD" ? "-- Semua Model WTMD --" : model.replace("WTMD ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "wtmdModel", value: entry.wtmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), disabled: !entry.lokasi1, className: "px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200", children: getValidModels(entry.lokasi1, "WTMD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua WTMD" ? "-- Semua Model WTMD --" : model.replace("WTMD ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -5905,12 +5908,12 @@ const TabKalibrasi = () => {
         ] }),
         entry.peralatan.includes("HHMD") && /* @__PURE__ */ jsx("div", { className: "bg-purple-50/40 p-4 sm:p-5 rounded-xl border border-purple-200 space-y-4", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-200 pb-3", children: [
           /* @__PURE__ */ jsx("h3", { className: "font-bold text-purple-900 flex items-center gap-2", children: "📱 Parameter HHMD" }),
-          /* @__PURE__ */ jsx("select", { name: "hhmdModel", value: entry.hhmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "HHMD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua HHMD" ? "-- Semua Model HHMD --" : model.replace("HHMD ", "") }, model)) })
+          /* @__PURE__ */ jsx("select", { name: "hhmdModel", value: entry.hhmdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), disabled: !entry.lokasi1, className: "px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-800 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200", children: getValidModels(entry.lokasi1, "HHMD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua HHMD" ? "-- Semua Model HHMD --" : model.replace("HHMD ", "") }, model)) })
         ] }) }),
         entry.peralatan.includes("Body Scanner") && /* @__PURE__ */ jsxs("div", { className: "bg-emerald-50/40 p-4 sm:p-5 rounded-xl border border-emerald-200 space-y-4", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-200 pb-3", children: [
             /* @__PURE__ */ jsx("h3", { className: "font-bold text-emerald-900 flex items-center gap-2", children: "🔍 Parameter Body Scanner" }),
-            /* @__PURE__ */ jsx("select", { name: "bsModel", value: entry.bsModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "Body Scanner", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua Body Scanner" ? "-- Semua Model Body Scanner --" : model.replace("Body Scanner ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "bsModel", value: entry.bsModel, onChange: (e) => handleKalibrasiEntryChange(index, e), disabled: !entry.lokasi1, className: "px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200", children: getValidModels(entry.lokasi1, "Body Scanner", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua Body Scanner" ? "-- Semua Model Body Scanner --" : model.replace("Body Scanner ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -5950,7 +5953,7 @@ const TabKalibrasi = () => {
         entry.peralatan.includes("ETD") && /* @__PURE__ */ jsxs("div", { className: "bg-amber-50/40 p-4 sm:p-5 rounded-xl border border-amber-200 space-y-4", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-200 pb-3", children: [
             /* @__PURE__ */ jsx("h3", { className: "font-bold text-amber-900 flex items-center gap-2", children: "🧪 Parameter ETD" }),
-            /* @__PURE__ */ jsx("select", { name: "etdModel", value: entry.etdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), className: "px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer", children: getValidModels(entry.lokasi1, "ETD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua ETD" ? "-- Semua Model ETD --" : model.replace("ETD ", "") }, model)) })
+            /* @__PURE__ */ jsx("select", { name: "etdModel", value: entry.etdModel, onChange: (e) => handleKalibrasiEntryChange(index, e), disabled: !entry.lokasi1, className: "px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-200", children: getValidModels(entry.lokasi1, "ETD", entry.lokasi2).map((model) => /* @__PURE__ */ jsx("option", { value: model, children: model === "Semua ETD" ? "-- Semua Model ETD --" : model.replace("ETD ", "") }, model)) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4", children: [
             /* @__PURE__ */ jsxs("div", { children: [
@@ -6018,7 +6021,7 @@ const TabKalibrasi = () => {
           ] }),
           /* @__PURE__ */ jsxs("div", { children: [
             /* @__PURE__ */ jsx("label", { className: "block text-xs font-semibold text-slate-600 mb-1", children: "Record CCTV" }),
-            /* @__PURE__ */ jsx("input", { type: "text", required: true, name: "acRecordCctv", value: entry.acRecordCctv, onChange: (e) => handleKalibrasiEntryChange(index, e), className: `w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-rose-500 ${showErrors && !entry.acRecordCctv.trim() ? "border-red-500 ring-2 ring-red-300 bg-red-50/50" : "border-slate-300"}` }),
+            /* @__PURE__ */ jsx("input", { type: "text", required: true, name: "acRecordCctv", value: entry.acRecordCctv, placeholder: "+- 1 bulan", onChange: (e) => handleKalibrasiEntryChange(index, e), className: `w-full px-3 py-1.5 bg-white border rounded text-sm outline-none focus:ring-1 focus:ring-rose-500 ${showErrors && !entry.acRecordCctv.trim() ? "border-red-500 ring-2 ring-red-300 bg-red-50/50" : "border-slate-300"}` }),
             showErrors && !entry.acRecordCctv.trim() && /* @__PURE__ */ jsxs("p", { className: "text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1", children: [
               /* @__PURE__ */ jsx(AlertCircle, { className: "w-3.5 h-3.5" }),
               " Record CCTV wajib diisi!"
