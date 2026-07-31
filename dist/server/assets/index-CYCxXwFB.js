@@ -3662,6 +3662,24 @@ const TabPerbaikan = () => {
       tindakLanjutRef.current.style.height = `${Math.max(140, tindakLanjutRef.current.scrollHeight)}px`;
     }
   }, [formData.tindakLanjut]);
+  React.useEffect(() => {
+    const isCustomLocationString = (locStr) => {
+      if (!locStr) return false;
+      const normalized = locStr.trim().toLowerCase();
+      const isRedlineArrival = normalized.includes("redline arrival");
+      const isConvayer = normalized.includes("convayer") || normalized.includes("conveyor");
+      const isMonitoringCustom = normalized.includes("monitoring custom") || normalized.includes("monitoring") && normalized.includes("custom");
+      const isArrivalHallF = normalized.includes("arrival hall f");
+      return isRedlineArrival || isConvayer || isMonitoringCustom || isArrivalHallF;
+    };
+    const list = formData.lokasiList || [{ lokasi1: formData.lokasi1 }];
+    const hasCustomLoc = list.some((item) => isCustomLocationString(item.lokasi1));
+    const targetSumber = hasCustomLoc ? "Custom" : "Avsec";
+    setFormData((prev) => {
+      if (prev.sumberLaporan === targetSumber) return prev;
+      return { ...prev, sumberLaporan: targetSumber };
+    });
+  }, [JSON.stringify(formData.lokasiList), formData.lokasi1]);
   const handleRepairChange = (e) => {
     const { name, value } = e.target;
     if (name === "waktuSelesai" && value) {

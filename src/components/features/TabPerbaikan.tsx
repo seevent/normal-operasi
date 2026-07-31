@@ -165,6 +165,28 @@ export const TabPerbaikan: React.FC = () => {
     }
   }, [formData.tindakLanjut]);
 
+  // Otomatisasi sumberLaporan (Custom vs Avsec) berdasarkan lokasi yang dipilih
+  React.useEffect(() => {
+    const isCustomLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      const normalized = locStr.trim().toLowerCase();
+      const isRedlineArrival = normalized.includes('redline arrival');
+      const isConvayer = normalized.includes('convayer') || normalized.includes('conveyor');
+      const isMonitoringCustom = normalized.includes('monitoring custom') || (normalized.includes('monitoring') && normalized.includes('custom'));
+      const isArrivalHallF = normalized.includes('arrival hall f');
+      return isRedlineArrival || isConvayer || isMonitoringCustom || isArrivalHallF;
+    };
+
+    const list = formData.lokasiList || [{ lokasi1: formData.lokasi1 }];
+    const hasCustomLoc = list.some(item => isCustomLocationString(item.lokasi1));
+    const targetSumber = hasCustomLoc ? 'Custom' : 'Avsec';
+
+    setFormData(prev => {
+      if (prev.sumberLaporan === targetSumber) return prev;
+      return { ...prev, sumberLaporan: targetSumber };
+    });
+  }, [JSON.stringify(formData.lokasiList), formData.lokasi1]);
+
   // === Handlers ===
   const handleRepairChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

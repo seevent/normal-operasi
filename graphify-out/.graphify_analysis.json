@@ -8,9 +8,6 @@
       "src_components_features_tabinitialreport_tabinitialreport",
       "src_components_features_tabkegiatan",
       "src_components_features_tabkegiatan_tabkegiatan",
-      "src_components_features_tabperbaikan",
-      "src_components_features_tabperbaikan_formatnamapersonel",
-      "src_components_features_tabperbaikan_tabperbaikan",
       "src_components_features_tabshiftreport",
       "src_components_features_tabshiftreport_months",
       "src_components_features_tabshiftreport_tabshiftreport",
@@ -56,7 +53,6 @@
       "src_lib_utils_canvasutils_drawcelltextoverlay",
       "src_lib_utils_canvasutils_processphotostocollage",
       "src_lib_utils_locationrules_formattanggalindo",
-      "src_lib_utils_locationrules_getlokasi2options",
       "src_lib_utils_wagenerator",
       "src_lib_utils_wagenerator_formataclokasilist",
       "src_lib_utils_wagenerator_formatpersonnellist",
@@ -487,6 +483,7 @@
       "src_lib_utils_locationrules_getcurrentshiftkey",
       "src_lib_utils_locationrules_getgenerallokasioptions",
       "src_lib_utils_locationrules_getintersectedlocations",
+      "src_lib_utils_locationrules_getlokasi2options",
       "src_lib_utils_locationrules_getstoringnomoroptions",
       "src_lib_utils_locationrules_getstoringvalidlocations",
       "src_lib_utils_locationrules_getstoringvalidnumbers",
@@ -704,13 +701,12 @@
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_validate_config_valid"
     ],
     "18": [
-      "lucide_react",
       "netlify_vite_plugin_tanstack_start",
-      "package_dependencies_lucide_react",
+      "package_dependencies_tailwindcss_vite",
       "package_devdependencies",
-      "package_devdependencies_lucide_react",
       "package_devdependencies_netlify_vite_plugin_tanstack_start",
       "package_devdependencies_rimraf",
+      "package_devdependencies_tailwindcss_vite",
       "package_devdependencies_types_node",
       "package_devdependencies_types_react",
       "package_devdependencies_types_react_dom",
@@ -718,6 +714,7 @@
       "package_devdependencies_vite",
       "package_devdependencies_vitejs_plugin_react",
       "rimraf",
+      "tailwindcss_vite",
       "types_node",
       "types_react",
       "types_react_dom",
@@ -772,7 +769,7 @@
       "package_dependencies",
       "package_dependencies_html2pdf_js",
       "package_dependencies_react_dom",
-      "package_dependencies_supabase_supabase_js",
+      "package_dependencies_react_konva",
       "package_dependencies_tanstack_react_router",
       "package_dependencies_tanstack_react_start",
       "package_dependencies_tanstack_react_store",
@@ -780,7 +777,7 @@
       "package_dependencies_tanstack_store",
       "package_dependencies_use_image",
       "react_dom",
-      "supabase_supabase_js",
+      "react_konva",
       "tanstack_react_router",
       "tanstack_react_start",
       "tanstack_router_plugin",
@@ -843,32 +840,45 @@
       "agents_skills_design_system_templates_design_tokens_starter_xs_value"
     ],
     "25": [
+      "agents_skills_ui_styling_scripts_shadcn_add_main",
+      "agents_skills_ui_styling_scripts_shadcn_add_rationale_147",
+      "agents_skills_ui_styling_scripts_shadcn_add_rationale_193",
+      "agents_skills_ui_styling_scripts_shadcn_add_rationale_33",
+      "agents_skills_ui_styling_scripts_shadcn_add_rationale_42",
+      "agents_skills_ui_styling_scripts_shadcn_add_rationale_68",
+      "agents_skills_ui_styling_scripts_shadcn_add_rationale_84",
+      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_add_all_components",
+      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_add_components",
+      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_check_shadcn_config",
+      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_get_installed_components",
+      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_get_shadcn_version",
+      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_list_installed"
+    ],
+    "26": [
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_104",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_112",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_124",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_147",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_158",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_18",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_205",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_22",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_45",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_temp_project",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_dry_run",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_no_config",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_already_installed",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_dry_run",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_success",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_no_config",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_with_overwrite",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_default_project_root",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
     ],
-    "26": [
+    "27": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen_main",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_123",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_136",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_149",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_162",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_174",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_192",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_268",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_285",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_84",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_breakpoints",
@@ -876,12 +886,10 @@
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_fonts",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_plugins",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_spacing",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_config_string",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_recommend_plugins",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_validate_config",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_write_config"
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_validate_config"
     ],
-    "27": [
+    "28": [
       "agents_skills_brand_scripts_extract_colors",
       "agents_skills_brand_scripts_extract_colors_calculatecompliance",
       "agents_skills_brand_scripts_extract_colors_colordistance",
@@ -897,7 +905,7 @@
       "agents_skills_brand_scripts_extract_colors_path",
       "agents_skills_brand_scripts_extract_colors_rgbtohex"
     ],
-    "28": [
+    "29": [
       "agents_skills_brand_scripts_validate_asset",
       "agents_skills_brand_scripts_validate_asset_checkmanifest",
       "agents_skills_brand_scripts_validate_asset_formatbytes",
@@ -913,7 +921,7 @@
       "agents_skills_brand_scripts_validate_asset_validatefilesize",
       "agents_skills_brand_scripts_validate_asset_validateformat"
     ],
-    "29": [
+    "30": [
       "agents_skills_ui_ux_pro_max_scripts_core",
       "agents_skills_ui_ux_pro_max_scripts_core_domain_keywords",
       "agents_skills_ui_ux_pro_max_scripts_core_get_bm25",
@@ -928,21 +936,6 @@
       "agents_skills_ui_ux_pro_max_scripts_core_search_stack",
       "agents_skills_ui_ux_pro_max_scripts_core_suggest_terms",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testsearchdomains_test_every_stack_file_exists_and_is_searchable"
-    ],
-    "30": [
-      "agents_skills_ui_styling_scripts_shadcn_add_main",
-      "agents_skills_ui_styling_scripts_shadcn_add_rationale_147",
-      "agents_skills_ui_styling_scripts_shadcn_add_rationale_193",
-      "agents_skills_ui_styling_scripts_shadcn_add_rationale_33",
-      "agents_skills_ui_styling_scripts_shadcn_add_rationale_42",
-      "agents_skills_ui_styling_scripts_shadcn_add_rationale_68",
-      "agents_skills_ui_styling_scripts_shadcn_add_rationale_84",
-      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_add_all_components",
-      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_add_components",
-      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_check_shadcn_config",
-      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_get_installed_components",
-      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_get_shadcn_version",
-      "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_list_installed"
     ],
     "31": [
       "agents_skills_design_system_scripts_validate_tokens",
@@ -961,26 +954,30 @@
     "32": [
       "agents_skills_ui_styling_scripts_shadcn_add_rationale_18",
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_104",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_124",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_205",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_223",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_45",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_51",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_66",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_success",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_no_config",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_with_overwrite",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_check_shadcn_config_not_exists",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_custom_project_root"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_custom_project_root",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_default_project_root"
     ],
     "33": [
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_192",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_203",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_224",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_239",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_260",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_268",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_format_plugins",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_config_string",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_javascript",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_generate_typescript",
-      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_indent_json"
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_indent_json",
+      "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_write_config"
     ],
     "34": [
       "agents_skills_brand_scripts_inject_brand_context",
@@ -1193,16 +1190,16 @@
       "agents_skills_design_system_templates_design_tokens_starter_shadow_default"
     ],
     "54": [
-      "agents_skills_design_system_templates_design_tokens_starter_none_type",
-      "agents_skills_design_system_templates_design_tokens_starter_none_value",
-      "agents_skills_design_system_templates_design_tokens_starter_radius_none",
-      "agents_skills_design_system_templates_design_tokens_starter_shadow_none"
-    ],
-    "55": [
       "agents_skills_design_system_templates_design_tokens_starter_md_type",
       "agents_skills_design_system_templates_design_tokens_starter_md_value",
       "agents_skills_design_system_templates_design_tokens_starter_radius_md",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_md"
+    ],
+    "55": [
+      "agents_skills_design_system_templates_design_tokens_starter_none_type",
+      "agents_skills_design_system_templates_design_tokens_starter_none_value",
+      "agents_skills_design_system_templates_design_tokens_starter_radius_none",
+      "agents_skills_design_system_templates_design_tokens_starter_shadow_none"
     ],
     "56": [
       "agents_skills_systematic_debugging_condition_based_waiting_example",
@@ -1232,14 +1229,14 @@
       "agents_skills_design_system_scripts_slide_token_validator_rationale_21"
     ],
     "61": [
-      "agents_skills_ui_styling_scripts_shadcn_add",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_1"
-    ],
-    "62": [
       "agents_skills_ui_styling_scripts_shadcn_add_py_path",
       "agents_skills_ui_styling_scripts_shadcn_add_rationale_21",
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_init"
+    ],
+    "62": [
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
     ],
     "63": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_71",
@@ -1247,24 +1244,24 @@
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_with_files"
     ],
     "64": [
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
-    ],
-    "65": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_291",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_full_configuration_javascript",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_full_configuration_typescript"
     ],
-    "66": [
+    "65": [
       "package_dependencies_tailwindcss",
       "package_devdependencies_tailwindcss",
       "tailwindcss"
     ],
+    "66": [
+      "agents_skills_ui_styling_scripts_shadcn_add",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_1"
+    ],
     "67": [
-      "package_dependencies_tailwindcss_vite",
-      "package_devdependencies_tailwindcss_vite",
-      "tailwindcss_vite"
+      "src_components_features_tabperbaikan",
+      "src_components_features_tabperbaikan_formatnamapersonel",
+      "src_components_features_tabperbaikan_tabperbaikan"
     ],
     "68": [
       "agents_skills_subagent_driven_development_scripts_review_package",
@@ -1283,16 +1280,17 @@
       "agents_skills_systematic_debugging_find_polluter_sh__entry"
     ],
     "72": [
+      "lucide_react",
+      "package_dependencies_lucide_react",
+      "package_devdependencies_lucide_react"
+    ],
+    "73": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_182",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_subprocess_error"
     ],
-    "73": [
+    "74": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_195",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_npx_not_found"
-    ],
-    "74": [
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_112",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_already_installed"
     ],
     "75": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_56",
@@ -1347,8 +1345,8 @@
       "package_dependencies_konva"
     ],
     "88": [
-      "package_dependencies_react_konva",
-      "react_konva"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_158",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_success"
     ],
     "89": [
       "package_dependencies_vite_tsconfig_paths",
@@ -1369,10 +1367,14 @@
     "93": [
       "vite_config",
       "vite_config_config"
+    ],
+    "94": [
+      "package_dependencies_supabase_supabase_js",
+      "supabase_supabase_js"
     ]
   },
   "cohesion": {
-    "0": 0.07494824016563147,
+    "0": 0.06946386946386947,
     "1": 0.05868118572292801,
     "2": 0.05370101596516691,
     "3": 0.061224489795918366,
@@ -1381,7 +1383,7 @@
     "6": 0.0824524312896406,
     "7": 0.07897793263646923,
     "8": 0.058823529411764705,
-    "9": 0.16995073891625614,
+    "9": 0.16551724137931034,
     "10": 0.13756613756613756,
     "11": 0.07407407407407407,
     "12": 0.07692307692307693,
@@ -1397,15 +1399,15 @@
     "22": 0.14705882352941177,
     "23": 0.2,
     "24": 0.125,
-    "25": 0.14166666666666666,
-    "26": 0.1111111111111111,
-    "27": 0.21978021978021978,
-    "28": 0.25274725274725274,
-    "29": 0.2087912087912088,
-    "30": 0.21794871794871795,
+    "25": 0.21794871794871795,
+    "26": 0.14166666666666666,
+    "27": 0.13333333333333333,
+    "28": 0.21978021978021978,
+    "29": 0.25274725274725274,
+    "30": 0.2087912087912088,
     "31": 0.24242424242424243,
     "32": 0.16666666666666666,
-    "33": 0.2857142857142857,
+    "33": 0.19696969696969696,
     "34": 0.3090909090909091,
     "35": 0.2,
     "36": 0.18181818181818182,
@@ -1439,12 +1441,12 @@
     "64": 0.6666666666666666,
     "65": 0.6666666666666666,
     "66": 0.6666666666666666,
-    "67": 0.6666666666666666,
+    "67": 1.0,
     "68": 1.0,
     "69": 1.0,
     "70": 1.0,
     "71": 1.0,
-    "72": 1.0,
+    "72": 0.6666666666666666,
     "73": 1.0,
     "74": 1.0,
     "75": 1.0,
@@ -1465,7 +1467,8 @@
     "90": 1.0,
     "91": 1.0,
     "92": 1.0,
-    "93": 1.0
+    "93": 1.0,
+    "94": 1.0
   },
   "gods": [
     {
@@ -1610,7 +1613,7 @@
     {
       "type": "low_cohesion",
       "question": "Should `TabInitialReport.tsx` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.07494824016563147 - nodes in this community are weakly interconnected."
+      "why": "Cohesion score 0.06946386946386947 - nodes in this community are weakly interconnected."
     }
   ]
 }

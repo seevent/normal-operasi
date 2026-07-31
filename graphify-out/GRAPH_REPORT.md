@@ -4,12 +4,12 @@
 - cluster-only mode — file stats not available
 
 ## Summary
-- 1182 nodes · 1804 edges · 94 communities (61 shown, 33 thin omitted)
+- 1182 nodes · 1772 edges · 95 communities (61 shown, 34 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 120 edges (avg confidence: 0.71)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ffd54d6f`
+- Built from commit: `3f6e0d1a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -39,15 +39,15 @@
 - BM25
 - icon/generate.py
 - fontSize
+- .add_components
 - TestShadcnInstaller
 - main
 - extract-colors.cjs
 - validate-asset.cjs
 - scripts/core.py
-- .add_components
 - validate-tokens.cjs
 - ShadcnInstaller
-- ._generate_javascript
+- .generate_config_string
 - inject-brand-context.cjs
 - embed-tokens.cjs
 - primitive
@@ -68,26 +68,26 @@
 - shadow
 - lg
 - default
-- none
 - md
+- none
 - validate_data.py
 - start-server.sh
 - test_sync_brand_to_tokens.py
 - main
-- shadcn_add.py
 - .__init__
-- .test_get_installed_components_empty
 - .test_list_installed_empty
+- .test_get_installed_components_empty
 - .test_full_configuration_javascript
 - tailwindcss
-- @tailwindcss/vite
+- shadcn_add.py
+- TabPerbaikan.tsx
 - review-package
 - sdd-workspace
 - task-brief
 - find-polluter.sh
+- lucide-react
 - .test_add_components_subprocess_error
 - .test_add_components_npx_not_found
-- .test_add_components_already_installed
 - .test_init_dry_run
 - .test_check_shadcn_config_exists
 - .test_add_components_no_components
@@ -101,11 +101,12 @@
 - .test_add_colors
 - html2canvas
 - konva
-- react-konva
+- .test_add_components_success
 - vite-tsconfig-paths
 - xlsx
 - zustand
 - vite.config.ts
+- @supabase/supabase-js
 
 ## God Nodes (most connected - your core abstractions)
 1. `TailwindConfigGenerator` - 57 edges
@@ -134,11 +135,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (94 total, 33 thin omitted)
+## Communities (95 total, 34 thin omitted)
 
 ### Community 0 - "TabInitialReport.tsx"
 Cohesion: 0.07
-Nodes (56): react, react, formatNamaPersonel(), TabInitialReport(), TabKegiatan(), formatNamaPersonel(), TabPerbaikan(), MONTHS (+48 more)
+Nodes (52): react, react, formatNamaPersonel(), TabInitialReport(), TabKegiatan(), MONTHS, TabShiftReport(), LiveCollagePreview() (+44 more)
 
 ### Community 1 - "server.cjs"
 Cohesion: 0.06
@@ -174,7 +175,7 @@ Nodes (34): $type, $value, $type, $value, $type, $value, $type, $value (+26 more
 
 ### Community 9 - "locationRules.ts"
 Cohesion: 0.17
-Nodes (21): ALL_TABS, App(), TabItem, TOTAL_PAGES, TabChecklist(), TabKalibrasi(), TabStoring(), ChecklistShiftDataValue (+13 more)
+Nodes (22): ALL_TABS, App(), TabItem, TOTAL_PAGES, TabChecklist(), TabKalibrasi(), TabStoring(), ChecklistShiftDataValue (+14 more)
 
 ### Community 10 - "html-token-validator.py"
 Cohesion: 0.14
@@ -210,7 +211,7 @@ Nodes (11): Generate Tailwind CSS configuration files., Add full color palette (
 
 ### Community 18 - "devDependencies"
 Cohesion: 0.10
-Nodes (20): lucide-react, @netlify/vite-plugin-tanstack-start, lucide-react, devDependencies, lucide-react, @netlify/vite-plugin-tanstack-start, rimraf, @types/node (+12 more)
+Nodes (20): @netlify/vite-plugin-tanstack-start, @tailwindcss/vite, devDependencies, @netlify/vite-plugin-tanstack-start, rimraf, @tailwindcss/vite, @types/node, @types/react (+12 more)
 
 ### Community 19 - "routeTree.gen.ts"
 Cohesion: 0.14
@@ -222,7 +223,7 @@ Nodes (17): generate_css_for_background(), get_background_image(), get_curated_i
 
 ### Community 21 - "dependencies"
 Cohesion: 0.12
-Nodes (18): html2pdf.js, dependencies, html2pdf.js, react-dom, @supabase/supabase-js, @tanstack/react-router, @tanstack/react-start, @tanstack/react-store (+10 more)
+Nodes (18): html2pdf.js, dependencies, html2pdf.js, react-dom, react-konva, @tanstack/react-router, @tanstack/react-start, @tanstack/react-store (+10 more)
 
 ### Community 22 - "BM25"
 Cohesion: 0.15
@@ -236,29 +237,29 @@ Nodes (15): apply_color(), apply_viewbox_size(), extract_svgs(), generate_batch(
 Cohesion: 0.12
 Nodes (16): $type, $value, $type, $value, $type, $value, $type, $value (+8 more)
 
-### Community 25 - "TestShadcnInstaller"
+### Community 25 - ".add_components"
+Cohesion: 0.22
+Nodes (7): main(), Add all available shadcn/ui components.          Args:             overwrite:, List installed components.          Returns:             Tuple of (success, m, Check if shadcn is initialized in project.          Returns:             True, Get list of already installed components.          Returns:             List, Read shadcn version from project package.json; fall back to a pinned default., Add shadcn/ui components.          Args:             components: List of comp
+
+### Community 26 - "TestShadcnInstaller"
 Cohesion: 0.14
-Nodes (8): Test adding components in dry run mode., Test successful component addition., Test ShadcnInstaller class., Test adding all components without config., Create temporary project structure., Test initialization with default project root., Test getting installed components without config., TestShadcnInstaller
+Nodes (8): Test adding components without shadcn config., Test adding components that are already installed., Test adding components with overwrite flag., Test adding components in dry run mode., Test ShadcnInstaller class., Create temporary project structure., Test getting installed components without config., TestShadcnInstaller
 
-### Community 26 - "main"
-Cohesion: 0.11
-Nodes (10): main(), Add custom font families.          Args:             fonts: Dict of font_type, Add custom spacing values.          Args:             spacing: Dict of name:, Add custom breakpoints.          Args:             breakpoints: Dict of name:, Add plugin requirements.          Args:             plugins: List of plugin n, Get plugin recommendations based on configuration.          Returns:, Generate configuration file content.          Returns:             Configurat, Write configuration to file.          Returns:             Tuple of (success, (+2 more)
+### Community 27 - "main"
+Cohesion: 0.13
+Nodes (8): main(), Add custom font families.          Args:             fonts: Dict of font_type, Add custom spacing values.          Args:             spacing: Dict of name:, Add custom breakpoints.          Args:             breakpoints: Dict of name:, Add plugin requirements.          Args:             plugins: List of plugin n, Get plugin recommendations based on configuration.          Returns:, Validate configuration.          Returns:             Tuple of (valid, messag, Add custom colors to theme.          Args:             colors: Dict of color_
 
-### Community 27 - "extract-colors.cjs"
+### Community 28 - "extract-colors.cjs"
 Cohesion: 0.22
 Nodes (11): calculateCompliance(), colorDistance(), displayPalette(), extractHexColors(), findNearestBrandColor(), fs, generateImageMagickCommand(), hexToRgb() (+3 more)
 
-### Community 28 - "validate-asset.cjs"
+### Community 29 - "validate-asset.cjs"
 Cohesion: 0.25
 Nodes (13): checkManifest(), formatBytes(), formatOutput(), fs, main(), parseFilename(), path, RULES (+5 more)
 
-### Community 29 - "scripts/core.py"
+### Community 30 - "scripts/core.py"
 Cohesion: 0.21
 Nodes (12): _domain_keywords(), _get_bm25(), _load_csv(), _load_product_keywords(), Load CSV and return list of dicts, with mtime-based caching., Fitted BM25 index for this file+columns, with mtime-based caching., Core search function using BM25. Returns (results, bm25_or_none)., Nearest known vocabulary terms for a query that returned 0 hits,     so the cal (+4 more)
-
-### Community 30 - ".add_components"
-Cohesion: 0.22
-Nodes (7): main(), Add all available shadcn/ui components.          Args:             overwrite:, List installed components.          Returns:             Tuple of (success, m, Check if shadcn is initialized in project.          Returns:             True, Get list of already installed components.          Returns:             List, Read shadcn version from project package.json; fall back to a pinned default., Add shadcn/ui components.          Args:             components: List of comp
 
 ### Community 31 - "validate-tokens.cjs"
 Cohesion: 0.24
@@ -266,11 +267,11 @@ Nodes (11): extensions, formatReport(), fs, getFiles(), main(), parseArgs(), pat
 
 ### Community 32 - "ShadcnInstaller"
 Cohesion: 0.17
-Nodes (7): Handle shadcn/ui component installation., ShadcnInstaller, Test adding components without shadcn config., Test adding components with overwrite flag., Test successful addition of all components., Test initialization with custom project root., Test checking for non-existent shadcn config.
+Nodes (7): Handle shadcn/ui component installation., ShadcnInstaller, Test adding all components without config., Test successful addition of all components., Test initialization with default project root., Test initialization with custom project root., Test checking for non-existent shadcn config.
 
-### Community 33 - "._generate_javascript"
-Cohesion: 0.29
-Nodes (4): Generate TypeScript configuration., Generate JavaScript configuration., Format plugins array for config.          Validates each plugin name against a, Add indentation to JSON string.
+### Community 33 - ".generate_config_string"
+Cohesion: 0.20
+Nodes (6): Generate configuration file content.          Returns:             Configurat, Generate TypeScript configuration., Generate JavaScript configuration., Format plugins array for config.          Validates each plugin name against a, Add indentation to JSON string., Write configuration to file.          Returns:             Tuple of (success,
 
 ### Community 34 - "inject-brand-context.cjs"
 Cohesion: 0.31
@@ -352,30 +353,30 @@ Nodes (5): lg, $type, $value, lg, lg
 Cohesion: 0.67
 Nodes (4): $type, $value, default, default
 
-### Community 54 - "none"
-Cohesion: 0.67
-Nodes (4): $type, $value, none, none
-
-### Community 55 - "md"
+### Community 54 - "md"
 Cohesion: 0.67
 Nodes (4): $type, $value, md, md
+
+### Community 55 - "none"
+Cohesion: 0.67
+Nodes (4): $type, $value, none, none
 
 ### Community 57 - "validate_data.py"
 Cohesion: 0.83
 Nodes (3): _check_file(), main(), _read_rows()
 
-### Community 66 - "tailwindcss"
+### Community 65 - "tailwindcss"
 Cohesion: 0.67
 Nodes (3): tailwindcss, tailwindcss, tailwindcss
 
-### Community 67 - "@tailwindcss/vite"
+### Community 72 - "lucide-react"
 Cohesion: 0.67
-Nodes (3): @tailwindcss/vite, @tailwindcss/vite, @tailwindcss/vite
+Nodes (3): lucide-react, lucide-react, lucide-react
 
 ## Knowledge Gaps
 - **219 isolated node(s):** `crypto`, `http`, `fs`, `path`, `OPCODES` (+214 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **33 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **34 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -393,4 +394,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **What connects `crypto`, `http`, `fs` to the rest of the system?**
   _219 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `TabInitialReport.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.07494824016563147 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06946386946386947 - nodes in this community are weakly interconnected._

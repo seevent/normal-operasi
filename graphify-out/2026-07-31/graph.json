@@ -896,7 +896,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L1",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "extract-colors.cjs",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors"
@@ -907,7 +907,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L21",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "fs",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_fs"
@@ -918,7 +918,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L22",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "path",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_path"
@@ -929,7 +929,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L30",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "extracthexcolors()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_extracthexcolors"
@@ -940,7 +940,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L38",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "parsebrandcolors()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_parsebrandcolors"
@@ -951,7 +951,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L83",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "hextorgb()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_hextorgb"
@@ -962,7 +962,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L97",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "rgbtohex()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_rgbtohex"
@@ -973,7 +973,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L113",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "colordistance()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_colordistance"
@@ -984,7 +984,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L129",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "findnearestbrandcolor()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_findnearestbrandcolor"
@@ -995,7 +995,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L148",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "calculatecompliance()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_calculatecompliance"
@@ -1006,7 +1006,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L167",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "generateimagemagickcommand()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_generateimagemagickcommand"
@@ -1017,7 +1017,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L174",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "parseimagemagickoutput()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_parseimagemagickoutput"
@@ -1028,7 +1028,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L200",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "displaypalette()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_displaypalette"
@@ -1039,7 +1039,7 @@
       "source_file": ".agents/skills/brand/scripts/extract-colors.cjs",
       "source_location": "L233",
       "_origin": "ast",
-      "community": 27,
+      "community": 28,
       "norm_label": "main()",
       "community_name": "extract-colors.cjs",
       "id": "agents_skills_brand_scripts_extract_colors_main"
@@ -1303,7 +1303,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L1",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "validate-asset.cjs",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset"
@@ -1314,7 +1314,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L16",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "fs",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_fs"
@@ -1325,7 +1325,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L17",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "path",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_path"
@@ -1336,7 +1336,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L20",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "rules",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_rules"
@@ -1347,7 +1347,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L53",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "parsefilename()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_parsefilename"
@@ -1358,7 +1358,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L73",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "validatefilename()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_validatefilename"
@@ -1369,7 +1369,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L122",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "validatefilesize()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_validatefilesize"
@@ -1380,7 +1380,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L158",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "validateformat()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_validateformat"
@@ -1391,7 +1391,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L187",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "checkmanifest()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_checkmanifest"
@@ -1402,7 +1402,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L214",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "suggestfilename()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_suggestfilename"
@@ -1413,7 +1413,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L229",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "formatbytes()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_formatbytes"
@@ -1424,7 +1424,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L240",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "validateasset()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_validateasset"
@@ -1435,7 +1435,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L311",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "formatoutput()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_formatoutput"
@@ -1446,7 +1446,7 @@
       "source_file": ".agents/skills/brand/scripts/validate-asset.cjs",
       "source_location": "L351",
       "_origin": "ast",
-      "community": 28,
+      "community": 29,
       "norm_label": "main()",
       "community_name": "validate-asset.cjs",
       "id": "agents_skills_brand_scripts_validate_asset_main"
@@ -4275,7 +4275,7 @@
       "_origin": "ast",
       "community": 54,
       "norm_label": "xl",
-      "community_name": "xl",
+      "community_name": "radius",
       "id": "agents_skills_design_system_templates_design_tokens_starter_fontsize_xl"
     },
     {
@@ -4286,7 +4286,7 @@
       "_origin": "ast",
       "community": 54,
       "norm_label": "$value",
-      "community_name": "xl",
+      "community_name": "radius",
       "id": "agents_skills_design_system_templates_design_tokens_starter_xl_value"
     },
     {
@@ -4297,7 +4297,7 @@
       "_origin": "ast",
       "community": 54,
       "norm_label": "$type",
-      "community_name": "xl",
+      "community_name": "radius",
       "id": "agents_skills_design_system_templates_design_tokens_starter_xl_type"
     },
     {
@@ -4416,7 +4416,7 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L63",
       "_origin": "ast",
-      "community": 45,
+      "community": 55,
       "norm_label": "none",
       "community_name": "none",
       "id": "agents_skills_design_system_templates_design_tokens_starter_radius_none"
@@ -4427,7 +4427,7 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L63",
       "_origin": "ast",
-      "community": 45,
+      "community": 55,
       "norm_label": "$value",
       "community_name": "none",
       "id": "agents_skills_design_system_templates_design_tokens_starter_none_value"
@@ -4438,7 +4438,7 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L63",
       "_origin": "ast",
-      "community": 45,
+      "community": 55,
       "norm_label": "$type",
       "community_name": "none",
       "id": "agents_skills_design_system_templates_design_tokens_starter_none_type"
@@ -4493,9 +4493,9 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L66",
       "_origin": "ast",
-      "community": 55,
+      "community": 45,
       "norm_label": "md",
-      "community_name": "radius",
+      "community_name": "md",
       "id": "agents_skills_design_system_templates_design_tokens_starter_radius_md"
     },
     {
@@ -4504,9 +4504,9 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L66",
       "_origin": "ast",
-      "community": 55,
+      "community": 45,
       "norm_label": "$value",
-      "community_name": "radius",
+      "community_name": "md",
       "id": "agents_skills_design_system_templates_design_tokens_starter_md_value"
     },
     {
@@ -4515,9 +4515,9 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L66",
       "_origin": "ast",
-      "community": 55,
+      "community": 45,
       "norm_label": "$type",
-      "community_name": "radius",
+      "community_name": "md",
       "id": "agents_skills_design_system_templates_design_tokens_starter_md_type"
     },
     {
@@ -4539,7 +4539,7 @@
       "_origin": "ast",
       "community": 54,
       "norm_label": "xl",
-      "community_name": "xl",
+      "community_name": "radius",
       "id": "agents_skills_design_system_templates_design_tokens_starter_radius_xl"
     },
     {
@@ -4592,7 +4592,7 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L72",
       "_origin": "ast",
-      "community": 45,
+      "community": 55,
       "norm_label": "none",
       "community_name": "none",
       "id": "agents_skills_design_system_templates_design_tokens_starter_shadow_none"
@@ -4625,9 +4625,9 @@
       "source_file": ".agents/skills/design-system/templates/design-tokens-starter.json",
       "source_location": "L75",
       "_origin": "ast",
-      "community": 55,
+      "community": 45,
       "norm_label": "md",
-      "community_name": "radius",
+      "community_name": "md",
       "id": "agents_skills_design_system_templates_design_tokens_starter_shadow_md"
     },
     {
@@ -7044,7 +7044,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L1",
       "_origin": "ast",
-      "community": 61,
+      "community": 25,
       "norm_label": "shadcn_add.py",
       "community_name": "shadcn_add.py",
       "id": "agents_skills_ui_styling_scripts_shadcn_add"
@@ -7066,7 +7066,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L20",
       "_origin": "ast",
-      "community": 62,
+      "community": 61,
       "norm_label": ".__init__()",
       "community_name": ".__init__",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_init"
@@ -7077,7 +7077,7 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "community": 62,
+      "community": 61,
       "norm_label": "path",
       "community_name": ".__init__",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_py_path"
@@ -7088,7 +7088,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L32",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": ".check_shadcn_config()",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_check_shadcn_config"
@@ -7099,7 +7099,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L41",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": ".get_installed_components()",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_get_installed_components"
@@ -7110,7 +7110,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L67",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "._get_shadcn_version()",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_get_shadcn_version"
@@ -7121,7 +7121,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L81",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": ".add_components()",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_add_components"
@@ -7132,7 +7132,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L146",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": ".add_all_components()",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_add_all_components"
@@ -7143,7 +7143,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L192",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": ".list_installed()",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_list_installed"
@@ -7154,7 +7154,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L210",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "main()",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_main"
@@ -7176,7 +7176,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L21",
       "_origin": "ast",
-      "community": 62,
+      "community": 61,
       "norm_label": "initialize installer.          args:             project_root: project root d",
       "community_name": ".__init__",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_rationale_21"
@@ -7187,7 +7187,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L33",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "check if shadcn is initialized in project.          returns:             true",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_rationale_33"
@@ -7198,7 +7198,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L42",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "get list of already installed components.          returns:             list",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_rationale_42"
@@ -7209,7 +7209,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L68",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "read shadcn version from project package.json; fall back to a pinned default.",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_rationale_68"
@@ -7220,7 +7220,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L84",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "add shadcn/ui components.          args:             components: list of comp",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_rationale_84"
@@ -7231,7 +7231,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L147",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "add all available shadcn/ui components.          args:             overwrite:",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_rationale_147"
@@ -7242,7 +7242,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/shadcn_add.py",
       "source_location": "L193",
       "_origin": "ast",
-      "community": 30,
+      "community": 25,
       "norm_label": "list installed components.          returns:             tuple of (success, m",
       "community_name": ".add_components",
       "id": "agents_skills_ui_styling_scripts_shadcn_add_rationale_193"
@@ -7341,7 +7341,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L83",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": ".add_colors()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_colors"
@@ -7363,7 +7363,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L122",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": ".add_fonts()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_fonts"
@@ -7374,7 +7374,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L135",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": ".add_spacing()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_spacing"
@@ -7385,7 +7385,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L148",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": ".add_breakpoints()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_breakpoints"
@@ -7396,7 +7396,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L161",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": ".add_plugins()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_add_plugins"
@@ -7407,7 +7407,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L173",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": ".recommend_plugins()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_recommend_plugins"
@@ -7484,7 +7484,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L284",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": ".validate_config()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_validate_config"
@@ -7495,7 +7495,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L302",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "main()",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_main"
@@ -7561,7 +7561,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L84",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "add custom colors to theme.          args:             colors: dict of color_",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_84"
@@ -7583,7 +7583,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L123",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "add custom font families.          args:             fonts: dict of font_type",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_123"
@@ -7594,7 +7594,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L136",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "add custom spacing values.          args:             spacing: dict of name:",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_136"
@@ -7605,7 +7605,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L149",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "add custom breakpoints.          args:             breakpoints: dict of name:",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_149"
@@ -7616,7 +7616,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L162",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "add plugin requirements.          args:             plugins: list of plugin n",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_162"
@@ -7627,7 +7627,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L174",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "get plugin recommendations based on configuration.          returns:",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_174"
@@ -7704,7 +7704,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tailwind_config_gen.py",
       "source_location": "L285",
       "_origin": "ast",
-      "community": 26,
+      "community": 27,
       "norm_label": "validate configuration.          returns:             tuple of (valid, messag",
       "community_name": "main",
       "id": "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_285"
@@ -7715,7 +7715,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L1",
       "_origin": "ast",
-      "community": 61,
+      "community": 25,
       "norm_label": "test_shadcn_add.py",
       "community_name": "shadcn_add.py",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add"
@@ -7726,7 +7726,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L17",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": "testshadcninstaller",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller"
@@ -7737,7 +7737,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L21",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": ".temp_project()",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_temp_project"
@@ -7748,7 +7748,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L44",
       "_origin": "ast",
-      "community": 32,
+      "community": 26,
       "norm_label": ".test_init_default_project_root()",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_default_project_root"
@@ -7825,9 +7825,9 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L89",
       "_origin": "ast",
-      "community": 64,
+      "community": 26,
       "norm_label": ".test_get_installed_components_no_config()",
-      "community_name": ".test_get_installed_components_no_config",
+      "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config"
     },
     {
@@ -7847,7 +7847,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L103",
       "_origin": "ast",
-      "community": 25,
+      "community": 32,
       "norm_label": ".test_add_components_no_config()",
       "community_name": "ShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_no_config"
@@ -7858,7 +7858,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L111",
       "_origin": "ast",
-      "community": 25,
+      "community": 72,
       "norm_label": ".test_add_components_already_installed()",
       "community_name": ".test_add_components_already_installed",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_already_installed"
@@ -7880,7 +7880,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L146",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": ".test_add_components_dry_run()",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_dry_run"
@@ -7891,7 +7891,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L157",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": ".test_add_components_success()",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_success"
@@ -7902,7 +7902,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L181",
       "_origin": "ast",
-      "community": 72,
+      "community": 73,
       "norm_label": ".test_add_components_subprocess_error()",
       "community_name": ".test_add_components_subprocess_error",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_subprocess_error"
@@ -7913,7 +7913,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L194",
       "_origin": "ast",
-      "community": 73,
+      "community": 74,
       "norm_label": ".test_add_components_npx_not_found()",
       "community_name": ".test_add_components_npx_not_found",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_npx_not_found"
@@ -7924,7 +7924,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L204",
       "_origin": "ast",
-      "community": 32,
+      "community": 26,
       "norm_label": ".test_add_all_components_no_config()",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_no_config"
@@ -7935,7 +7935,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L212",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": ".test_add_all_components_dry_run()",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_dry_run"
@@ -7946,7 +7946,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L222",
       "_origin": "ast",
-      "community": 74,
+      "community": 32,
       "norm_label": ".test_add_all_components_success()",
       "community_name": "ShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_success"
@@ -7957,9 +7957,9 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L239",
       "_origin": "ast",
-      "community": 64,
+      "community": 26,
       "norm_label": ".test_list_installed_no_config()",
-      "community_name": ".test_get_installed_components_no_config",
+      "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
     },
     {
@@ -7968,9 +7968,9 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L247",
       "_origin": "ast",
-      "community": 25,
+      "community": 62,
       "norm_label": ".test_list_installed_empty()",
-      "community_name": "TestShadcnInstaller",
+      "community_name": ".test_list_installed_empty",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty"
     },
     {
@@ -7979,9 +7979,9 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L255",
       "_origin": "ast",
-      "community": 25,
+      "community": 62,
       "norm_label": ".test_list_installed_with_components()",
-      "community_name": "TestShadcnInstaller",
+      "community_name": ".test_list_installed_empty",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
     },
     {
@@ -7990,7 +7990,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L1",
       "_origin": "ast",
-      "community": 61,
+      "community": 25,
       "norm_label": "tests for shadcn_add.py",
       "community_name": "shadcn_add.py",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_1"
@@ -8001,7 +8001,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L18",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": "test shadcninstaller class.",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_18"
@@ -8012,7 +8012,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L22",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": "create temporary project structure.",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_22"
@@ -8023,7 +8023,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L45",
       "_origin": "ast",
-      "community": 32,
+      "community": 26,
       "norm_label": "test initialization with default project root.",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_45"
@@ -8089,9 +8089,9 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L90",
       "_origin": "ast",
-      "community": 64,
+      "community": 26,
       "norm_label": "test getting installed components without config.",
-      "community_name": ".test_get_installed_components_no_config",
+      "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90"
     },
     {
@@ -8111,7 +8111,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L104",
       "_origin": "ast",
-      "community": 25,
+      "community": 32,
       "norm_label": "test adding components without shadcn config.",
       "community_name": "ShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_104"
@@ -8122,7 +8122,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L112",
       "_origin": "ast",
-      "community": 25,
+      "community": 72,
       "norm_label": "test adding components that are already installed.",
       "community_name": ".test_add_components_already_installed",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_112"
@@ -8144,7 +8144,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L147",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": "test adding components in dry run mode.",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_147"
@@ -8155,7 +8155,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L158",
       "_origin": "ast",
-      "community": 25,
+      "community": 26,
       "norm_label": "test successful component addition.",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_158"
@@ -8166,7 +8166,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L182",
       "_origin": "ast",
-      "community": 72,
+      "community": 73,
       "norm_label": "test component addition with subprocess error.",
       "community_name": ".test_add_components_subprocess_error",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_182"
@@ -8177,7 +8177,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L195",
       "_origin": "ast",
-      "community": 73,
+      "community": 74,
       "norm_label": "test component addition when npx is not found.",
       "community_name": ".test_add_components_npx_not_found",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_195"
@@ -8188,7 +8188,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L205",
       "_origin": "ast",
-      "community": 32,
+      "community": 26,
       "norm_label": "test adding all components without config.",
       "community_name": "TestShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_205"
@@ -8199,7 +8199,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L223",
       "_origin": "ast",
-      "community": 74,
+      "community": 32,
       "norm_label": "test successful addition of all components.",
       "community_name": "ShadcnInstaller",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_223"
@@ -8210,9 +8210,9 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_shadcn_add.py",
       "source_location": "L248",
       "_origin": "ast",
-      "community": 25,
+      "community": 62,
       "norm_label": "test listing installed components when none exist.",
-      "community_name": "TestShadcnInstaller",
+      "community_name": ".test_list_installed_empty",
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248"
     },
     {
@@ -8573,7 +8573,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_tailwind_config_gen.py",
       "source_location": "L290",
       "_origin": "ast",
-      "community": 65,
+      "community": 64,
       "norm_label": ".test_full_configuration_typescript()",
       "community_name": ".test_full_configuration_javascript",
       "id": "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_full_configuration_typescript"
@@ -8584,7 +8584,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_tailwind_config_gen.py",
       "source_location": "L319",
       "_origin": "ast",
-      "community": 65,
+      "community": 64,
       "norm_label": ".test_full_configuration_javascript()",
       "community_name": ".test_full_configuration_javascript",
       "id": "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_full_configuration_javascript"
@@ -8969,7 +8969,7 @@
       "source_file": ".agents/skills/ui-styling/scripts/tests/test_tailwind_config_gen.py",
       "source_location": "L291",
       "_origin": "ast",
-      "community": 65,
+      "community": 64,
       "norm_label": "test generating complete typescript configuration.",
       "community_name": ".test_full_configuration_javascript",
       "id": "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_291"
@@ -9024,7 +9024,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L1",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "scripts/core.py",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core"
@@ -9112,7 +9112,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L237",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "_load_csv()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_load_csv"
@@ -9123,7 +9123,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L251",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "_get_bm25()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_get_bm25"
@@ -9134,7 +9134,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L267",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "_search_csv()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_search_csv"
@@ -9145,7 +9145,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L292",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "_suggest_terms()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_suggest_terms"
@@ -9156,7 +9156,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L323",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "_load_product_keywords()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_load_product_keywords"
@@ -9167,7 +9167,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L347",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "_domain_keywords()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_domain_keywords"
@@ -9200,7 +9200,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L442",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "search_stack()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_search_stack"
@@ -9277,7 +9277,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L238",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "load csv and return list of dicts, with mtime-based caching.",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_rationale_238"
@@ -9288,7 +9288,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L252",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "fitted bm25 index for this file+columns, with mtime-based caching.",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_rationale_252"
@@ -9299,7 +9299,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L268",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "core search function using bm25. returns (results, bm25_or_none).",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_rationale_268"
@@ -9310,7 +9310,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L293",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "nearest known vocabulary terms for a query that returned 0 hits,     so the cal",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_rationale_293"
@@ -9343,7 +9343,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/core.py",
       "source_location": "L443",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": "search stack-specific guidelines",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_core_rationale_443"
@@ -9521,7 +9521,7 @@
       "_origin": "ast",
       "community": 47,
       "norm_label": "format_markdown()",
-      "community_name": "design_system.py",
+      "community_name": "generate_design_system",
       "id": "agents_skills_ui_ux_pro_max_scripts_design_system_format_markdown"
     },
     {
@@ -9752,7 +9752,7 @@
       "_origin": "ast",
       "community": 47,
       "norm_label": "format design system as markdown.",
-      "community_name": "design_system.py",
+      "community_name": "generate_design_system",
       "id": "agents_skills_ui_ux_pro_max_scripts_design_system_rationale_529"
     },
     {
@@ -9981,7 +9981,7 @@
       "source_file": ".agents/skills/ui-ux-pro-max/scripts/tests/test_core.py",
       "source_location": "L71",
       "_origin": "ast",
-      "community": 29,
+      "community": 30,
       "norm_label": ".test_every_stack_file_exists_and_is_searchable()",
       "community_name": "scripts/core.py",
       "id": "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testsearchdomains_test_every_stack_file_exists_and_is_searchable"
@@ -10278,7 +10278,7 @@
       "source_file": "package.json",
       "source_location": "L11",
       "_origin": "ast",
-      "community": 67,
+      "community": 66,
       "norm_label": "@tailwindcss/vite",
       "community_name": "@tailwindcss/vite",
       "id": "package_dependencies_tailwindcss_vite"
@@ -10289,7 +10289,7 @@
       "source_file": "package.json",
       "source_location": "L11",
       "_origin": "ast",
-      "community": 67,
+      "community": 66,
       "norm_label": "@tailwindcss/vite",
       "community_name": "@tailwindcss/vite",
       "id": "tailwindcss_vite"
@@ -10553,7 +10553,7 @@
       "source_file": "package.json",
       "source_location": "L24",
       "_origin": "ast",
-      "community": 66,
+      "community": 65,
       "norm_label": "tailwindcss",
       "community_name": "tailwindcss",
       "id": "package_dependencies_tailwindcss"
@@ -10564,7 +10564,7 @@
       "source_file": "package.json",
       "source_location": "L24",
       "_origin": "ast",
-      "community": 66,
+      "community": 65,
       "norm_label": "tailwindcss",
       "community_name": "tailwindcss",
       "id": "tailwindcss"
@@ -10696,7 +10696,7 @@
       "source_file": "package.json",
       "source_location": "L32",
       "_origin": "ast",
-      "community": 67,
+      "community": 66,
       "norm_label": "@tailwindcss/vite",
       "community_name": "@tailwindcss/vite",
       "id": "package_devdependencies_tailwindcss_vite"
@@ -10828,7 +10828,7 @@
       "source_file": "package.json",
       "source_location": "L39",
       "_origin": "ast",
-      "community": 66,
+      "community": 65,
       "norm_label": "tailwindcss",
       "community_name": "tailwindcss",
       "id": "package_devdependencies_tailwindcss"
@@ -10885,7 +10885,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "assetmanager.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_assetmanager"
     },
     {
@@ -10896,7 +10896,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "tabtype",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_assetmanager_tabtype"
     },
     {
@@ -10907,7 +10907,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "assetmanager()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_assetmanager_assetmanager"
     },
     {
@@ -10918,7 +10918,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "assetmasterlokasi.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_assetmasterlokasi"
     },
     {
@@ -10929,7 +10929,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "assetmasterlokasi()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_assetmasterlokasi_assetmasterlokasi"
     },
     {
@@ -10940,7 +10940,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "assetmasterperalatan.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_assetmasterperalatan"
     },
     {
@@ -10951,7 +10951,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "assetmasterperalatan()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_assetmasterperalatan_assetmasterperalatan"
     },
     {
@@ -10962,7 +10962,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "checklistdataeditor.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_checklistdataeditor"
     },
     {
@@ -10973,7 +10973,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "checklistdataeditor()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_checklistdataeditor_checklistdataeditor"
     },
     {
@@ -10984,7 +10984,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "blockeditor()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_checklistdataeditor_blockeditor"
     },
     {
@@ -10995,7 +10995,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "categorylist()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_checklistdataeditor_categorylist"
     },
     {
@@ -11006,7 +11006,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "scheduleuploader.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_scheduleuploader"
     },
     {
@@ -11017,7 +11017,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "scheduleuploader()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_scheduleuploader_scheduleuploader"
     },
     {
@@ -11028,7 +11028,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "sparepartmanager.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_sparepartmanager"
     },
     {
@@ -11039,7 +11039,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "sparepartmanager()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_sparepartmanager_sparepartmanager"
     },
     {
@@ -11098,39 +11098,6 @@
       "id": "src_components_features_tabkegiatan_tabkegiatan"
     },
     {
-      "label": "TabPerbaikan.tsx",
-      "file_type": "code",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 0,
-      "norm_label": "tabperbaikan.tsx",
-      "community_name": "TabInitialReport.tsx",
-      "id": "src_components_features_tabperbaikan"
-    },
-    {
-      "label": "formatNamaPersonel()",
-      "file_type": "code",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L14",
-      "_origin": "ast",
-      "community": 0,
-      "norm_label": "formatnamapersonel()",
-      "community_name": "TabInitialReport.tsx",
-      "id": "src_components_features_tabperbaikan_formatnamapersonel"
-    },
-    {
-      "label": "TabPerbaikan()",
-      "file_type": "code",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L29",
-      "_origin": "ast",
-      "community": 0,
-      "norm_label": "tabperbaikan()",
-      "community_name": "TabInitialReport.tsx",
-      "id": "src_components_features_tabperbaikan_tabperbaikan"
-    },
-    {
       "label": "TabShiftReport.tsx",
       "file_type": "code",
       "source_file": "src/components/features/TabShiftReport.tsx",
@@ -11171,7 +11138,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "tabtip.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_tabtip"
     },
     {
@@ -11182,7 +11149,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "tip_months",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_tabtip_tip_months"
     },
     {
@@ -11193,7 +11160,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "getdefaulttipperiod()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_tabtip_getdefaulttipperiod"
     },
     {
@@ -11204,7 +11171,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "tabtip()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_tabtip_tabtip"
     },
     {
@@ -11215,7 +11182,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "unitperalatanmanager.tsx",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_unitperalatanmanager"
     },
     {
@@ -11226,7 +11193,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "unitperalatanmanager()",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_components_features_unitperalatanmanager_unitperalatanmanager"
     },
     {
@@ -11424,7 +11391,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "masterdata.ts",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata"
     },
     {
@@ -11468,7 +11435,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "default_data_api_t2",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata_default_data_api_t2"
     },
     {
@@ -11479,7 +11446,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "default_data_om_ias_t2",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata_default_data_om_ias_t2"
     },
     {
@@ -11490,7 +11457,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "default_storing_equipments",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata_default_storing_equipments"
     },
     {
@@ -11501,7 +11468,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "default_storing_loc_ac",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata_default_storing_loc_ac"
     },
     {
@@ -11512,7 +11479,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "default_storing_loc_default",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata_default_storing_loc_default"
     },
     {
@@ -11523,7 +11490,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "default_checklist_data",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_lib_data_masterdata_default_checklist_data"
     },
     {
@@ -11534,7 +11501,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "default_tip_left_col",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata_default_tip_left_col"
     },
     {
@@ -11545,7 +11512,7 @@
       "_origin": "ast",
       "community": 0,
       "norm_label": "default_tip_right_col",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "TabInitialReport.tsx",
       "id": "src_lib_data_masterdata_default_tip_right_col"
     },
     {
@@ -11677,7 +11644,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "supabaseclient.ts",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_lib_supabaseclient"
     },
     {
@@ -11688,7 +11655,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "supabase",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_lib_supabaseclient_supabase"
     },
     {
@@ -12117,7 +12084,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "useauthstore.ts",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_store_useauthstore"
     },
     {
@@ -12128,7 +12095,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "authstate",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_store_useauthstore_authstate"
     },
     {
@@ -12139,7 +12106,7 @@
       "_origin": "ast",
       "community": 6,
       "norm_label": "useauthstore",
-      "community_name": "useMasterDataStore.ts",
+      "community_name": "useMasterDataStore",
       "id": "src_store_useauthstore_useauthstore"
     },
     {
@@ -12797,7 +12764,7 @@
       "source_file": "src/lib/utils/locationRules.ts",
       "source_location": "L108",
       "_origin": "ast",
-      "community": 0,
+      "community": 9,
       "norm_label": "getlokasi2options()",
       "community_name": "TabInitialReport.tsx",
       "id": "src_lib_utils_locationrules_getlokasi2options"
@@ -12896,9 +12863,10 @@
       "source_file": "src/components/features/TabBriefing.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "src_components_features_tabbriefing",
       "community": 6,
-      "norm_label": "tabbriefing.tsx"
+      "norm_label": "tabbriefing.tsx",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabbriefing"
     },
     {
       "label": "TabBriefing()",
@@ -12906,9 +12874,10 @@
       "source_file": "src/components/features/TabBriefing.tsx",
       "source_location": "L11",
       "_origin": "ast",
-      "id": "src_components_features_tabbriefing_tabbriefing",
       "community": 6,
-      "norm_label": "tabbriefing()"
+      "norm_label": "tabbriefing()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabbriefing_tabbriefing"
     },
     {
       "label": "TabData.tsx",
@@ -12916,9 +12885,10 @@
       "source_file": "src/components/features/TabData.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "src_components_features_tabdata",
       "community": 6,
-      "norm_label": "tabdata.tsx"
+      "norm_label": "tabdata.tsx",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabdata"
     },
     {
       "label": "TabData()",
@@ -12926,9 +12896,10 @@
       "source_file": "src/components/features/TabData.tsx",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "src_components_features_tabdata_tabdata",
       "community": 6,
-      "norm_label": "tabdata()"
+      "norm_label": "tabdata()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabdata_tabdata"
     },
     {
       "label": "AdminLogin()",
@@ -12936,9 +12907,10 @@
       "source_file": "src/components/features/TabData.tsx",
       "source_location": "L23",
       "_origin": "ast",
-      "id": "src_components_features_tabdata_adminlogin",
       "community": 6,
-      "norm_label": "adminlogin()"
+      "norm_label": "adminlogin()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabdata_adminlogin"
     },
     {
       "label": "AdminDashboard()",
@@ -12946,9 +12918,10 @@
       "source_file": "src/components/features/TabData.tsx",
       "source_location": "L107",
       "_origin": "ast",
-      "id": "src_components_features_tabdata_admindashboard",
       "community": 6,
-      "norm_label": "admindashboard()"
+      "norm_label": "admindashboard()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabdata_admindashboard"
     },
     {
       "label": "GenericCrudTable()",
@@ -12956,9 +12929,10 @@
       "source_file": "src/components/features/TabData.tsx",
       "source_location": "L133",
       "_origin": "ast",
-      "id": "src_components_features_tabdata_genericcrudtable",
       "community": 6,
-      "norm_label": "genericcrudtable()"
+      "norm_label": "genericcrudtable()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabdata_genericcrudtable"
     },
     {
       "label": "LocalDataEditor()",
@@ -12966,9 +12940,10 @@
       "source_file": "src/components/features/TabData.tsx",
       "source_location": "L242",
       "_origin": "ast",
-      "id": "src_components_features_tabdata_localdataeditor",
       "community": 6,
-      "norm_label": "localdataeditor()"
+      "norm_label": "localdataeditor()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabdata_localdataeditor"
     },
     {
       "label": "TipDataManager()",
@@ -12976,9 +12951,10 @@
       "source_file": "src/components/features/TabData.tsx",
       "source_location": "L472",
       "_origin": "ast",
-      "id": "src_components_features_tabdata_tipdatamanager",
       "community": 6,
-      "norm_label": "tipdatamanager()"
+      "norm_label": "tipdatamanager()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabdata_tipdatamanager"
     },
     {
       "label": "TabKehadiran.tsx",
@@ -12986,9 +12962,10 @@
       "source_file": "src/components/features/TabKehadiran.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "src_components_features_tabkehadiran",
       "community": 6,
-      "norm_label": "tabkehadiran.tsx"
+      "norm_label": "tabkehadiran.tsx",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabkehadiran"
     },
     {
       "label": "TabKehadiran()",
@@ -12996,9 +12973,10 @@
       "source_file": "src/components/features/TabKehadiran.tsx",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "src_components_features_tabkehadiran_tabkehadiran",
       "community": 6,
-      "norm_label": "tabkehadiran()"
+      "norm_label": "tabkehadiran()",
+      "community_name": "useMasterDataStore",
+      "id": "src_components_features_tabkehadiran_tabkehadiran"
     },
     {
       "label": "useMasterDataStore.ts",
@@ -13006,9 +12984,10 @@
       "source_file": "src/store/useMasterDataStore.ts",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "src_store_usemasterdatastore",
       "community": 6,
-      "norm_label": "usemasterdatastore.ts"
+      "norm_label": "usemasterdatastore.ts",
+      "community_name": "useMasterDataStore",
+      "id": "src_store_usemasterdatastore"
     },
     {
       "label": "loadMasterData()",
@@ -13016,9 +12995,10 @@
       "source_file": "src/store/useMasterDataStore.ts",
       "source_location": "L9",
       "_origin": "ast",
-      "id": "src_store_usemasterdatastore_loadmasterdata",
       "community": 6,
-      "norm_label": "loadmasterdata()"
+      "norm_label": "loadmasterdata()",
+      "community_name": "useMasterDataStore",
+      "id": "src_store_usemasterdatastore_loadmasterdata"
     },
     {
       "label": "saveMasterDataToLocal()",
@@ -13026,9 +13006,10 @@
       "source_file": "src/store/useMasterDataStore.ts",
       "source_location": "L13",
       "_origin": "ast",
-      "id": "src_store_usemasterdatastore_savemasterdatatolocal",
       "community": 6,
-      "norm_label": "savemasterdatatolocal()"
+      "norm_label": "savemasterdatatolocal()",
+      "community_name": "useMasterDataStore",
+      "id": "src_store_usemasterdatastore_savemasterdatatolocal"
     },
     {
       "label": "saveConfigToSupabase()",
@@ -13036,9 +13017,10 @@
       "source_file": "src/store/useMasterDataStore.ts",
       "source_location": "L17",
       "_origin": "ast",
-      "id": "src_store_usemasterdatastore_saveconfigtosupabase",
       "community": 6,
-      "norm_label": "saveconfigtosupabase()"
+      "norm_label": "saveconfigtosupabase()",
+      "community_name": "useMasterDataStore",
+      "id": "src_store_usemasterdatastore_saveconfigtosupabase"
     },
     {
       "label": "MasterDataState",
@@ -13046,9 +13028,10 @@
       "source_file": "src/store/useMasterDataStore.ts",
       "source_location": "L28",
       "_origin": "ast",
-      "id": "src_store_usemasterdatastore_masterdatastate",
       "community": 6,
-      "norm_label": "masterdatastate"
+      "norm_label": "masterdatastate",
+      "community_name": "useMasterDataStore",
+      "id": "src_store_usemasterdatastore_masterdatastate"
     },
     {
       "label": "useMasterDataStore",
@@ -13056,9 +13039,40 @@
       "source_file": "src/store/useMasterDataStore.ts",
       "source_location": "L76",
       "_origin": "ast",
-      "id": "src_store_usemasterdatastore_usemasterdatastore",
       "community": 6,
-      "norm_label": "usemasterdatastore"
+      "norm_label": "usemasterdatastore",
+      "community_name": "useMasterDataStore",
+      "id": "src_store_usemasterdatastore_usemasterdatastore"
+    },
+    {
+      "label": "TabPerbaikan.tsx",
+      "file_type": "code",
+      "source_file": "src/components/features/TabPerbaikan.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_components_features_tabperbaikan",
+      "community": 67,
+      "norm_label": "tabperbaikan.tsx"
+    },
+    {
+      "label": "formatNamaPersonel()",
+      "file_type": "code",
+      "source_file": "src/components/features/TabPerbaikan.tsx",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_components_features_tabperbaikan_formatnamapersonel",
+      "community": 67,
+      "norm_label": "formatnamapersonel()"
+    },
+    {
+      "label": "TabPerbaikan()",
+      "file_type": "code",
+      "source_file": "src/components/features/TabPerbaikan.tsx",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "src_components_features_tabperbaikan_tabperbaikan",
+      "community": 67,
+      "norm_label": "tabperbaikan()"
     }
   ],
   "links": [
@@ -28459,18 +28473,6 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L53",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "package_dependencies_react"
-    },
-    {
-      "relation": "references",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
       "source_file": "src/components/features/TabTip.tsx",
       "source_location": "L28",
       "weight": 1.0,
@@ -29917,412 +29919,6 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_features_tabkegiatan_tabkegiatan",
-      "target": "src_store_useappstore_useappstore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L14",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_components_features_tabperbaikan_formatnamapersonel"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L29",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_components_features_tabperbaikan_tabperbaikan"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L12",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_components_shared_livecollagepreview"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L12",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_components_shared_livecollagepreview_livecollagepreview"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_components_shared_phototexteditormodal"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_components_shared_phototexteditormodal_phototexteditormodal"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L10",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_data_masterdata"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L10",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_data_masterdata_totitlecase"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_services_shareservice"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_services_shareservice_sharetowhatsapp"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L11",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_services_sheetssyncservice"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L11",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_services_sheetssyncservice_synctogooglesheets"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L9",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_supabaseclient"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L9",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_supabaseclient_supabase"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_canvasutils"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_canvasutils_compressimagefile"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_canvasutils_processphotostocollage"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_locationrules"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_locationrules_getgenerallokasioptions"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_locationrules_getlokasi2options"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_wagenerator"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_lib_utils_wagenerator_generatewa_perbaikan"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_store_useappstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan",
-      "target": "src_store_useappstore_useappstore"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L84",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_components_features_tabperbaikan_formatnamapersonel"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L84",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_data_masterdata_totitlecase"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L677",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_services_shareservice_sharetowhatsapp"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L664",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_services_sheetssyncservice_synctogooglesheets"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L351",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_utils_canvasutils_compressimagefile"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L642",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_utils_canvasutils_processphotostocollage"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L760",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_utils_locationrules_getgenerallokasioptions"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L254",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_utils_locationrules_getlokasi2options"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L655",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
-      "target": "src_lib_utils_wagenerator_generatewa_perbaikan"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/features/TabPerbaikan.tsx",
-      "source_location": "L30",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_features_tabperbaikan_tabperbaikan",
       "target": "src_store_useappstore_useappstore"
     },
     {
@@ -33354,9 +32950,9 @@
       "source_location": "L11",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabbriefing",
-      "target": "src_components_features_tabbriefing_tabbriefing",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabbriefing_tabbriefing"
     },
     {
       "relation": "imports_from",
@@ -33366,9 +32962,9 @@
       "source_location": "L4",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabbriefing",
-      "target": "src_store_usemasterdatastore",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore"
     },
     {
       "relation": "imports",
@@ -33378,9 +32974,9 @@
       "source_location": "L4",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabbriefing",
-      "target": "src_store_usemasterdatastore_usemasterdatastore",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore_usemasterdatastore"
     },
     {
       "relation": "calls",
@@ -33401,9 +32997,9 @@
       "source_location": "L107",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_components_features_tabdata_admindashboard",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabdata_admindashboard"
     },
     {
       "relation": "contains",
@@ -33412,9 +33008,9 @@
       "source_location": "L23",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_components_features_tabdata_adminlogin",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabdata_adminlogin"
     },
     {
       "relation": "contains",
@@ -33423,9 +33019,9 @@
       "source_location": "L133",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_components_features_tabdata_genericcrudtable",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabdata_genericcrudtable"
     },
     {
       "relation": "contains",
@@ -33434,9 +33030,9 @@
       "source_location": "L242",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_components_features_tabdata_localdataeditor",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabdata_localdataeditor"
     },
     {
       "relation": "contains",
@@ -33445,9 +33041,9 @@
       "source_location": "L10",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_components_features_tabdata_tabdata",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabdata_tabdata"
     },
     {
       "relation": "contains",
@@ -33456,9 +33052,9 @@
       "source_location": "L472",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_components_features_tabdata_tipdatamanager",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabdata_tipdatamanager"
     },
     {
       "relation": "imports_from",
@@ -33468,9 +33064,9 @@
       "source_location": "L239",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_store_usemasterdatastore",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore"
     },
     {
       "relation": "imports",
@@ -33480,9 +33076,9 @@
       "source_location": "L239",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabdata",
-      "target": "src_store_usemasterdatastore_usemasterdatastore",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore_usemasterdatastore"
     },
     {
       "relation": "calls",
@@ -33503,9 +33099,9 @@
       "source_location": "L10",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabkehadiran",
-      "target": "src_components_features_tabkehadiran_tabkehadiran",
-      "confidence_score": 1.0
+      "target": "src_components_features_tabkehadiran_tabkehadiran"
     },
     {
       "relation": "imports_from",
@@ -33515,9 +33111,9 @@
       "source_location": "L4",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabkehadiran",
-      "target": "src_store_usemasterdatastore",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore"
     },
     {
       "relation": "imports",
@@ -33527,9 +33123,9 @@
       "source_location": "L4",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_features_tabkehadiran",
-      "target": "src_store_usemasterdatastore_usemasterdatastore",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore_usemasterdatastore"
     },
     {
       "relation": "calls",
@@ -33550,9 +33146,9 @@
       "source_location": "L9",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_store_usemasterdatastore",
-      "target": "src_store_usemasterdatastore_loadmasterdata",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore_loadmasterdata"
     },
     {
       "relation": "contains",
@@ -33561,9 +33157,9 @@
       "source_location": "L28",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_store_usemasterdatastore",
-      "target": "src_store_usemasterdatastore_masterdatastate",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore_masterdatastate"
     },
     {
       "relation": "contains",
@@ -33572,9 +33168,9 @@
       "source_location": "L17",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_store_usemasterdatastore",
-      "target": "src_store_usemasterdatastore_saveconfigtosupabase",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore_saveconfigtosupabase"
     },
     {
       "relation": "contains",
@@ -33583,9 +33179,9 @@
       "source_location": "L13",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_store_usemasterdatastore",
-      "target": "src_store_usemasterdatastore_savemasterdatatolocal",
-      "confidence_score": 1.0
+      "target": "src_store_usemasterdatastore_savemasterdatatolocal"
     },
     {
       "relation": "contains",
@@ -33594,11 +33190,45 @@
       "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_store_usemasterdatastore",
-      "target": "src_store_usemasterdatastore_usemasterdatastore",
+      "target": "src_store_usemasterdatastore_usemasterdatastore"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/features/TabPerbaikan.tsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_features_tabperbaikan",
+      "target": "src_components_features_tabperbaikan_formatnamapersonel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/features/TabPerbaikan.tsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_features_tabperbaikan",
+      "target": "src_components_features_tabperbaikan_tabperbaikan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/features/TabPerbaikan.tsx",
+      "source_location": "L84",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_components_features_tabperbaikan_tabperbaikan",
+      "target": "src_components_features_tabperbaikan_formatnamapersonel",
       "confidence_score": 1.0
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "ffd54d6ff251a4c4049c77e35b33b18329caee8f"
+  "built_at_commit": "3f6e0d1aa9af31dd902fe4698a5884f744ed0e24"
 }
