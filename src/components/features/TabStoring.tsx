@@ -4,7 +4,7 @@ import { MonitorSearchIcon } from '../shared/MonitorSearchIcon';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
-import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec } from '../../lib/utils/locationRules';
+import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec, getStoringSupervisorLocations } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
@@ -28,7 +28,8 @@ export const TabStoring: React.FC = () => {
     acNomor: {} as Record<string, string>,
     nomor: '',
     hasil: 'Normal Operasi',
-    supervisorAvsec: ''
+    supervisorAvsec: '',
+    supervisorAvsecMap: {} as Record<string, string>
   });
 
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -219,6 +220,7 @@ export const TabStoring: React.FC = () => {
 
     saveStoringToChecklistSync({
       supervisorAvsec: storingData.supervisorAvsec,
+      supervisorAvsecMap: storingData.supervisorAvsecMap,
       acLokasi: storingData.acLokasi,
       acNomor: storingData.acNomor,
       waktuMulai: storingData.waktuMulai,
@@ -391,17 +393,43 @@ export const TabStoring: React.FC = () => {
           </div>
 
           {(() => {
-            const showSupervisorAvsec = checkNeedsStoringSupervisorAvsec(storingData.peralatan, storingData.acLokasi, storingData.acNomor);
+            const supervisorLocs = getStoringSupervisorLocations(storingData.peralatan, storingData.acLokasi, storingData.acNomor);
 
-            if (!showSupervisorAvsec) return null;
+            if (supervisorLocs.length === 0) return null;
 
             return (
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Supervisor Avsec</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                  <input type="text" name="supervisorAvsec" value={storingData.supervisorAvsec} onChange={handleStoringChange} placeholder="Nama Supervisor Avsec" className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" />
-                </div>
+              <div className="col-span-2 space-y-3">
+                {supervisorLocs.map((locKey) => {
+                  const labelText = `Supervisor Avsec ${locKey}`;
+                  const currentValue = (storingData.supervisorAvsecMap || {})[locKey] || (supervisorLocs.length === 1 ? storingData.supervisorAvsec : '');
+
+                  return (
+                    <div key={locKey}>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{labelText}</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                        <input
+                          type="text"
+                          value={currentValue}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setStoringData(prev => {
+                              const newMap = { ...(prev.supervisorAvsecMap || {}), [locKey]: val };
+                              const firstVal = Object.values(newMap)[0] || '';
+                              return {
+                                ...prev,
+                                supervisorAvsecMap: newMap,
+                                supervisorAvsec: firstVal
+                              };
+                            });
+                          }}
+                          placeholder={`Nama ${labelText}`}
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })()}

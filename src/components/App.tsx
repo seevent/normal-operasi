@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Wrench, Users, Megaphone, CheckSquare, Settings, AlertTriangle, 
   RefreshCw, Check, Database, CheckCircle, FileText, Briefcase, FileWarning,
-  ChevronLeft, ChevronRight, Package, ExternalLink
+  ChevronLeft, ChevronRight, Package, ExternalLink, FileCheck
 } from 'lucide-react';
 import { MonitorSearchIcon } from './shared/MonitorSearchIcon';
 
@@ -17,6 +17,7 @@ import { TabBriefing } from './features/TabBriefing';
 import { TabData } from './features/TabData';
 import { TabKegiatan } from './features/TabKegiatan';
 import { TabShiftReport } from './features/TabShiftReport';
+import { TabBASerahTerima } from './features/TabBASerahTerima';
 import { useAppStore } from '../store/useAppStore';
 import { useMasterDataStore } from '../store/useMasterDataStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -36,6 +37,7 @@ const ALL_TABS: TabItem[] = [
   { id: 'perbaikan', label: 'Perbaikan', icon: <Wrench className="w-5 h-5 sm:w-6 sm:h-6" /> },
   { id: 'kalibrasi', label: 'Kalibrasi', icon: <Settings className="w-5 h-5 sm:w-6 sm:h-6" /> },
   { id: 'kegiatan', label: 'Kegiatan', icon: <Briefcase className="w-5 h-5 sm:w-6 sm:h-6" /> },
+  { id: 'ba_serah_terima', label: 'BA Serah Terima', icon: <FileCheck className="w-5 h-5 sm:w-6 sm:h-6" /> },
   { id: 'report', label: 'Report', icon: <FileText className="w-5 h-5 sm:w-6 sm:h-6" /> },
   { id: 'tip', label: 'TIP', icon: <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" /> },
   { id: 'data', label: 'Data', icon: <Database className="w-5 h-5 sm:w-6 sm:h-6" /> },
@@ -354,6 +356,7 @@ export default function App() {
         {activeTab === 'tip' && <TabTip key={`tip-${tabResetKeys['tip'] || 0}`} />}
         {activeTab === 'data' && <TabData key={`data-${tabResetKeys['data'] || 0}`} />}
         {activeTab === 'kegiatan' && <TabKegiatan key={`kegiatan-${tabResetKeys['kegiatan'] || 0}`} />}
+        {activeTab === 'ba_serah_terima' && <TabBASerahTerima key={`ba_serah_terima-${tabResetKeys['ba_serah_terima'] || 0}`} />}
 
       </div>
     </div>

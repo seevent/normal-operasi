@@ -130,7 +130,7 @@ const AdminDashboard: React.FC<{ logout: () => void }> = ({ logout }) => {
 // ==========================================
 // 3. KOMPONEN GENERIC CRUD TABLE
 // ==========================================
-const GenericCrudTable: React.FC<{ tableName: string }> = ({ tableName }) => {
+export const GenericCrudTable: React.FC<{ tableName: string }> = ({ tableName }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newItemName, setNewItemName] = useState('');
@@ -252,7 +252,7 @@ const LocalDataEditor: React.FC = () => {
       case 'storing_equip': setLocalData([...store.storingEquipments]); break;
       case 'tip_left': setLocalData([...store.tipLeftCol]); break;
     }
-  }, [activeSubTab, store]);
+  }, [activeSubTab]);
 
   const [isSavingDb, setIsSavingDb] = useState(false);
 
@@ -263,10 +263,12 @@ const LocalDataEditor: React.FC = () => {
         case 'api_t2':
           store.setDataApiT2(localData);
           await store.savePersonelToSupabase(localData, 'API T2');
+          setLocalData([...useMasterDataStore.getState().dataApiT2]);
           break;
         case 'om_ias_t2':
           store.setDataOmIasT2(localData);
           await store.savePersonelToSupabase(localData, 'OM/IAS T2');
+          setLocalData([...useMasterDataStore.getState().dataOmIasT2]);
           break;
         case 'storing_equip': store.setStoringEquipments(localData); break;
         case 'tip_left': store.setTipLeftCol(localData); break;

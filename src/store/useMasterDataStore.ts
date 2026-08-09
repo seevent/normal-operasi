@@ -6,11 +6,11 @@ import {
 } from '../lib/data/masterData';
 import { supabase } from '../lib/supabaseClient';
 
-const loadMasterData = (key: string, defaultData: any) => {
+const loadMasterData = (_key: string, defaultData: any) => {
   return defaultData;
 };
 
-const saveMasterDataToLocal = (key: string, data: any) => {
+const saveMasterDataToLocal = (_key: string, _data: any) => {
   // Disabled by user request
 };
 
@@ -89,12 +89,48 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
   savePersonelToSupabase: async (data, unitName) => {
     try {
       let unitId: number | null = null;
-      const { data: uData } = await supabase.from('unit_kerja').select('id').ilike('nama', `%${unitName === 'API T2' ? 'API' : 'OM'}%`).limit(1);
-      if (uData && uData.length > 0) unitId = uData[0].id;
+      const searchPattern = unitName === 'API T2' ? '%API%' : '%OM%';
+      const { data: uData } = await supabase
+        .from('unit_kerja')
+        .select('id')
+        .ilike('nama', searchPattern)
+        .limit(1);
+
+      if (uData && uData.length > 0) {
+        unitId = uData[0].id;
+      } else {
+        const { data: newUnit } = await supabase
+          .from('unit_kerja')
+          .insert({ nama: unitName })
+          .select('id')
+          .maybeSingle();
+        if (newUnit) unitId = newUnit.id;
+      }
+
+      if (unitId) {
+        const { data: existingInDb } = await supabase
+          .from('personel')
+          .select('id')
+          .eq('unit_kerja_id', unitId);
+
+        const dbIds = existingInDb ? existingInDb.map((p: any) => p.id) : [];
+        const localIds = data.map((p: any) => p.id).filter(Boolean);
+        const idsToDelete = dbIds.filter((id: any) => !localIds.includes(id));
+
+        if (idsToDelete.length > 0) {
+          const { error: deleteErr } = await supabase
+            .from('personel')
+            .delete()
+            .in('id', idsToDelete);
+          if (deleteErr) {
+            console.error('Error deleting personnel from Supabase:', deleteErr);
+          }
+        }
+      }
 
       for (let idx = 0; idx < data.length; idx++) {
         const p = data[idx];
-        if (!p.name) continue;
+        if (!p.name || !p.name.trim()) continue;
         const urutanVal = idx + 1;
         if (p.id) {
           const payload: any = { nama: p.name, no_hp: p.phone, urutan: urutanVal };

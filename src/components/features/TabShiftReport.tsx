@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, FileText, Download, Share2, Loader2, CheckCircle, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Calendar, FileText, Download, Loader2, CheckCircle, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
 import { GOOGLE_SHEETS_WEBAPP_URL } from '../../lib/data/constants';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { syncToGoogleSheets, updateSheetReport, deleteSheetReport } from '../../lib/services/sheetsSyncService';
@@ -159,11 +159,11 @@ export const TabShiftReport: React.FC = () => {
         if (!error && data) {
           const hadir = data.filter(d => d.status_kehadiran !== 'Off' && d.status_kehadiran !== 'Cuti' && d.status_kehadiran !== 'Sakit' && d.status_kehadiran !== 'Izin');
           
-          const apiList = hadir.filter(d => {
+          const apiList = hadir.filter((d: any) => {
              const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
              return u === 'API T2' || u.includes('API') || u.includes('ANGKASA PURA');
           });
-          const iasList = hadir.filter(d => {
+          const iasList = hadir.filter((d: any) => {
              const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
              return u === 'OM/IAS T2' || u.includes('IAS') || u.includes('INJOURNEY');
           });
@@ -243,16 +243,16 @@ export const TabShiftReport: React.FC = () => {
     }
   };
 
-  const generateAndSharePdf = async (reportData: any[]) => {
+  const generateAndSharePdf = async (_reportData: any[]) => {
     try {
       if (!pdfRef.current) return;
       const element = pdfRef.current;
       const opt = {
         margin:       5, // smaller margin for landscape
         filename:     `Laporan_Shift_${shift}_${date}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
+        image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
       };
 
       const html2pdf = (await import('html2pdf.js')).default;

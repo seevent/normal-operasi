@@ -1,6 +1,6 @@
 // src/lib/utils/waGenerator.ts
 
-import { formatTanggalIndo, checkNeedsStoringSupervisorAvsec } from './locationRules';
+import { formatTanggalIndo, getStoringSupervisorLocations } from './locationRules';
 import { sortPersonelByJabatan } from '../data/masterData';
 
 export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
@@ -206,11 +206,18 @@ export const generateWA_Storing = (storingData: any) => {
     }
   }
   
-  const showSupervisorAvsec = checkNeedsStoringSupervisorAvsec(storingData.peralatan || [], storingData.acLokasi || [], storingData.acNomor || {});
+  const supervisorLocs = getStoringSupervisorLocations(storingData.peralatan || [], storingData.acLokasi || [], storingData.acNomor || {});
+  const supMap = storingData.supervisorAvsecMap || {};
+  let supervisorAvsecLine = '';
 
-  const supervisorAvsecLine = showSupervisorAvsec
-    ? `\nSupervisor Avsec : ${storingData.supervisorAvsec || '-'}`
-    : '';
+  if (supervisorLocs.length > 0) {
+    const lines = supervisorLocs
+      .map(locKey => {
+        const val = supMap[locKey] || (supervisorLocs.length === 1 ? storingData.supervisorAvsec : '');
+        return `Supervisor Avsec ${locKey} : ${val || '-'}`;
+      });
+    supervisorAvsecLine = '\n' + lines.join('\n');
+  }
   
   return `*KEGIATAN STORING PERALATAN SSES T2*
 Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}
@@ -484,6 +491,43 @@ ${mitigasiStr}
 
 
 Demikian laporan kronologis dan tindak lanjut kami sampaikan
+Terimakasih atas perhatiannya.`;
+};
+
+export const generateWA_BASerahTerima = (baData: any) => {
+  const formattedDate = formatTanggalIndo(baData.tanggal);
+  const waktuText = baData.waktu ? `${baData.waktu} WIB` : '...';
+  const jenisText = baData.jenisTransaksi === 'masuk' ? 'PEMASUKAN BARANG' : 'PENYERAHAN BARANG';
+
+  const barangListText = Array.isArray(baData.items) && baData.items.length > 0
+    ? baData.items.map((it: any, idx: number) => {
+        const snJoined = Array.isArray(it.snList)
+          ? it.snList.filter((s: string) => s && s.trim() !== '').join(', ')
+          : (it.sn || '');
+        return `${idx + 1}. *${it.nama || '-'}* - ${it.qty || '1'} ${it.satuan || 'Pcs'} (${it.kondisi || 'Baik'}) ${snJoined ? `[SN: ${snJoined}]` : ''}`;
+      }).join('\n')
+    : '- (Belum ada barang)';
+
+  return `*BERITA ACARA SERAH TERIMA BARANG*
+*Tipe:* ${jenisText}
+
+🗓️ Hari/Tanggal : ${formattedDate}
+🕝 Waktu : ${waktuText}
+
+👤 *PIHAK KESATU (YANG MENYERAHKAN)*
+- Nama : ${baData.penyerahNama || '-'}
+- Jabatan : ${baData.penyerahJabatan || '-'}
+- Unit : ${baData.penyerahInstansi || '-'}
+
+👤 *PIHAK KEDUA (YANG MENERIMA)*
+- Nama : ${baData.penerimaNama || '-'}
+- Jabatan : ${baData.penerimaJabatan || '-'}
+- Unit : ${baData.penerimaInstansi || '-'}
+
+📦 *DAFTAR BARANG:*
+${barangListText}
+
+Demikian Berita Acara ini dibuat dengan sebenar-benarnya untuk dapat digunakan sebagaimana mestinya.
 Terimakasih atas perhatiannya.`;
 };
 

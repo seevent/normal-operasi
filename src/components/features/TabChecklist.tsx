@@ -455,7 +455,7 @@ export const TabChecklist: React.FC = () => {
                             <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
                             <input
                               type="text"
-                              value={(checklistData.supervisorAvsec || {})[block.title] || ''}
+                              value={(checklistData.supervisorAvsec || {})[block.title] || (checklistData.supervisorAvsec || {})['PSCP UMROH'] || (checklistData.supervisorAvsec || {})['PSCP UMRAH'] || (checklistData.supervisorAvsec || {})['PSCP Umroh'] || ''}
                               onChange={(e) => handleSupervisorChange(block.title, e.target.value)}
                               placeholder={`Nama Supervisor Avsec ${block.title}`}
                               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
@@ -574,7 +574,7 @@ export const TabChecklist: React.FC = () => {
                                 <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
                                 <input
                                   type="text"
-                                  value={(checklistData.supervisorAvsec || {})[loc.title] || ''}
+                                  value={(checklistData.supervisorAvsec || {})[loc.title] || (checklistData.supervisorAvsec || {})['PSCP UMROH'] || (checklistData.supervisorAvsec || {})['PSCP UMRAH'] || (checklistData.supervisorAvsec || {})['PSCP Umroh'] || ''}
                                   onChange={(e) => handleSupervisorChange(loc.title, e.target.value)}
                                   placeholder={`Nama Supervisor Avsec ${loc.title}`}
                                   className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"

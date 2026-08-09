@@ -43,6 +43,7 @@ export const fetchChecklistShiftData = async (): Promise<ChecklistShiftDataValue
 export const saveStoringToChecklistSync = async (
   storingData: {
     supervisorAvsec?: string;
+    supervisorAvsecMap?: Record<string, string>;
     acLokasi?: string[];
     acNomor?: Record<string, string>;
     waktuMulai?: string;
@@ -57,7 +58,21 @@ export const saveStoringToChecklistSync = async (
   const newSupervisorMap = { ...(currentData.supervisorMap || {}) };
 
   // Map supervisor Avsec if provided
-  if (storingData.supervisorAvsec && storingData.supervisorAvsec.trim() !== '') {
+  if (storingData.supervisorAvsecMap && Object.keys(storingData.supervisorAvsecMap).length > 0) {
+    Object.entries(storingData.supervisorAvsecMap).forEach(([k, val]) => {
+      if (val && val.trim() !== '') {
+        const cleanVal = val.trim();
+        newSupervisorMap[k] = cleanVal;
+        const normK = k.trim().toUpperCase();
+        if (normK.includes('PSCP') && (normK.includes('UMRAH') || normK.includes('UMROH'))) {
+          newSupervisorMap['PSCP UMROH'] = cleanVal;
+          newSupervisorMap['PSCP UMRAH'] = cleanVal;
+          newSupervisorMap['PSCP Umroh'] = cleanVal;
+          newSupervisorMap['PSCP Umrah'] = cleanVal;
+        }
+      }
+    });
+  } else if (storingData.supervisorAvsec && storingData.supervisorAvsec.trim() !== '') {
     const keys = mapStoringToChecklistSupervisorKeys(storingData.acLokasi || [], storingData.acNomor || {});
     keys.forEach(k => {
       newSupervisorMap[k] = storingData.supervisorAvsec!.trim();
