@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Cpu, FileText, MapPin, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, FileWarning, Camera, Move, ZoomIn, ZoomOut, ImagePlus, Type, Trash2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
 import { generateWA_InitialReport } from '../../lib/utils/waGenerator';
@@ -64,6 +65,7 @@ export const TabInitialReport: React.FC = () => {
   const [selectedTeknisi, setSelectedTeknisi] = useState<string[]>([]);
   const [manualTeknisi, setManualTeknisi] = useState<string>('');
   const [tipePeralatanOptions, setTipePeralatanOptions] = useState<string[]>([]);
+  const [tipeToJenisMap, setTipeToJenisMap] = useState<Record<string, string>>({});
   const [isManualPeralatan, setIsManualPeralatan] = useState<boolean>(false);
 
   React.useEffect(() => {
@@ -103,11 +105,18 @@ export const TabInitialReport: React.FC = () => {
 
       const { data: dataTipe } = await supabase
         .from('tipe_peralatan')
-        .select('nama')
+        .select('nama, jenis_peralatan ( nama )')
         .order('nama', { ascending: true });
         
       if (dataTipe) {
-        setTipePeralatanOptions(dataTipe.map(d => d.nama));
+        setTipePeralatanOptions(dataTipe.map((d: any) => d.nama));
+        const mapping: Record<string, string> = {};
+        dataTipe.forEach((d: any) => {
+          if (d.nama && d.jenis_peralatan?.nama) {
+            mapping[d.nama] = d.jenis_peralatan.nama;
+          }
+        });
+        setTipeToJenisMap(mapping);
       }
     };
     fetchData();
@@ -344,6 +353,265 @@ export const TabInitialReport: React.FC = () => {
         textarea.selectionStart = textarea.selectionEnd = cursorPosition + 3 + String(nextNum).length;
       }, 0);
     }
+  };
+
+  const getSelectedJenisPeralatan = (): string => {
+    if (!formData.peralatan) return '';
+    if (tipeToJenisMap[formData.peralatan]) {
+      return tipeToJenisMap[formData.peralatan];
+    }
+    const penempatan = useMasterDataStore.getState().penempatanData || [];
+    for (const p of penempatan) {
+      if (p.tipe_peralatan?.nama === formData.peralatan && p.tipe_peralatan?.jenis_peralatan?.nama) {
+        return p.tipe_peralatan.jenis_peralatan.nama;
+      }
+    }
+    const lower = formData.peralatan.toLowerCase();
+    if (lower.includes('mirroring')) return 'Mirroring X-Ray';
+    if (lower.includes('extension conveyor')) return 'Extension Conveyor';
+    if (lower.includes('atrs')) return 'ATRS';
+    if (lower.includes('x-ray') || lower.includes('xray')) return 'X-Ray';
+    if (lower.includes('wtmd')) return 'WTMD';
+    if (lower.includes('hhmd')) return 'HHMD';
+    if (lower.includes('body scanner')) return 'Body Scanner';
+    if (lower.includes('etd')) return 'ETD';
+    if (lower.includes('access control')) return 'Access Control';
+    if (lower.includes('autogate')) return 'Autogate';
+    if (lower.includes('cctv')) return 'CCTV';
+    return formData.peralatan;
+  };
+
+  const getApplicableMitigasiList = React.useCallback((): string[] => {
+    const jenis = getSelectedJenisPeralatan();
+    const jenisNorm = jenis.trim().toLowerCase();
+    const isXRay = jenisNorm === 'x-ray';
+    const isAccessControl = jenisNorm.includes('access control');
+    const isMirroringXRay = jenisNorm.includes('mirroring');
+    const isExtensionConveyor = jenisNorm.includes('extension conveyor') || jenisNorm.includes('conveyor') || jenisNorm.includes('convayer');
+    const isAtrs = jenisNorm.includes('atrs');
+    const isBodyScanner = jenisNorm.includes('body scanner');
+    const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
+    const isEtd = jenisNorm === 'etd' || jenisNorm.includes('etd');
+    const isPetd = isEtd && formData.peralatan.toUpperCase().includes('PETD');
+
+    const pengecekanText = jenis 
+      ? `Melakukan pengecekan peralatan ${jenis}.` 
+      : 'Melakukan pengecekan peralatan.';
+
+    const isConveyorLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      const s = locStr.trim().toLowerCase();
+      return s.includes('conveyor') || s.includes('convayer') || s.includes('belt');
+    };
+
+    const isCustomLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      const s = locStr.trim().toLowerCase();
+      return s.includes('redline') || s.includes('arrival hall f') || s.includes('arrival f') || s.includes('monitoring custom') || (s.includes('ruang monitoring') && s.includes('custom')) || s.includes('custom');
+    };
+
+    const isHbscpLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      return locStr.trim().toLowerCase().includes('hbscp');
+    };
+
+    const isPscpLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      return locStr.trim().toLowerCase().includes('pscp');
+    };
+
+    const isDataNetworkLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      const s = locStr.trim().toLowerCase();
+      const isUmrah = s.includes('umrah') || s.includes('umroh');
+      const isArrivalF = s.includes('arrival f') || s.includes('arrival hall f');
+      const isAviobridgeF = s.includes('aviobridge f') || s.includes('avio f');
+      const isRampoutF = s.includes('rampout f');
+      const isBLF = s.includes('bl f') || s.includes('bl-f') || s.includes('bl/f') || s.includes('avio & bl f');
+      return isUmrah || isArrivalF || isAviobridgeF || isRampoutF || isBLF;
+    };
+
+    const isLiftLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      return locStr.trim().toLowerCase().includes('lift');
+    };
+
+    const isServerLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      return locStr.trim().toLowerCase().includes('server');
+    };
+
+    const isMonitoringLocationString = (locStr: string): boolean => {
+      if (!locStr) return false;
+      return locStr.trim().toLowerCase().includes('monitoring');
+    };
+
+    const list = formData.lokasiList && formData.lokasiList.length > 0 
+      ? formData.lokasiList 
+      : [{ lokasi1: formData.lokasi1 }];
+      
+    const hasConveyorLoc = list.some(item => isConveyorLocationString(item.lokasi1));
+    const hasCustomLoc = list.some(item => isCustomLocationString(item.lokasi1));
+    const hasHbscpLoc = list.some(item => isHbscpLocationString(item.lokasi1));
+    const hasPscpLoc = list.some(item => isPscpLocationString(item.lokasi1));
+    const hasDataNetworkLoc = list.some(item => isDataNetworkLocationString(item.lokasi1));
+    const hasLiftLoc = list.some(item => isLiftLocationString(item.lokasi1));
+    const hasServerLoc = list.some(item => isServerLocationString(item.lokasi1));
+    const hasMonitoringLoc = list.some(item => isMonitoringLocationString(item.lokasi1));
+
+    let koordinasiPihak = 'Koordinasi dengan pihak Avsec.';
+    if (isMirroringXRay) {
+      koordinasiPihak = 'Koordinasi dengan pihak Custom.';
+    } else if (hasConveyorLoc && isExtensionConveyor) {
+      koordinasiPihak = 'Koordinasi dengan Ground Handling.';
+    } else if (hasConveyorLoc || hasCustomLoc) {
+      koordinasiPihak = 'Koordinasi dengan pihak Custom.';
+    }
+
+    const items: string[] = [
+      'Koordinasi dengan TOCC.',
+      pengecekanText,
+      koordinasiPihak
+    ];
+
+    const addItem = (item: string) => {
+      if (!items.includes(item)) {
+        items.push(item);
+      }
+    };
+
+    if (hasHbscpLoc && isXRay) {
+      addItem('Koordinasi dengan Teknik Mekanik untuk pemindahan jalur pemeriksaan bagasi jika diperlukan.');
+    }
+
+    if (hasPscpLoc && isXRay) {
+      const hasPscpUmrah = list.some(item => { const s = (item.lokasi1 || '').toLowerCase(); return s.includes('pscp') && (s.includes('umrah') || s.includes('umroh')); });
+      addItem(hasPscpUmrah ? 'Pindahkan jalur pemeriksaan pada line yang kosong.' : 'Pindahkan jalur pemeriksaan pada X-Ray no 3.');
+    }
+
+    if (isAccessControl) {
+      if (hasDataNetworkLoc) {
+        addItem('Koordinasi dengan Unit Data Network.');
+      }
+      if (!hasLiftLoc) {
+        addItem('Pecahkan Emergency Breakglass jika diperlukan.');
+      }
+      if (hasLiftLoc) {
+        addItem('Koordinasi dengan Teknik Mekanik.');
+      } else if (!hasServerLoc && !hasMonitoringLoc) {
+        addItem('Melakukan pengecekan pintu.');
+        addItem('Koordinasi dengan Teknik Sipil.');
+      }
+    }
+
+    if (isAccessControl || isMirroringXRay) {
+      addItem('Melakukan pengecekan jaringan.');
+    }
+
+    if (isXRay || isAccessControl || isExtensionConveyor || isAtrs || isBodyScanner || isWtmd || (isEtd && !isPetd)) {
+      addItem('Melakukan pengecekan power listrik.');
+      addItem('Koordinasi dengan Teknik Listrik.');
+    }
+
+    return items;
+  }, [formData.peralatan, formData.lokasiList, formData.lokasi1, tipeToJenisMap]);
+
+  const mitigasiShortcuts = getApplicableMitigasiList();
+
+  const handleAddMitigasiItem = (itemText: string) => {
+    setFormData(prev => {
+      const raw = prev.tindakanMitigasi ? prev.tindakanMitigasi.trim() : '';
+      if (!raw || raw === '1.' || raw === '1. ') {
+        return { ...prev, tindakanMitigasi: `1. ${itemText}` };
+      }
+      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+      const alreadyExists = lines.some(l => l.replace(/^\d+\.\s*/, '').toLowerCase() === itemText.toLowerCase());
+      if (alreadyExists) {
+        return prev;
+      }
+      const nextNum = lines.length + 1;
+      return { ...prev, tindakanMitigasi: `${raw}\n${nextNum}. ${itemText}` };
+    });
+  };
+
+  const handleApplyAllMitigasi = () => {
+    const items = getApplicableMitigasiList();
+    const formatted = items.map((item, idx) => `${idx + 1}. ${item}`).join('\n');
+    setFormData(prev => ({ ...prev, tindakanMitigasi: formatted }));
+  };
+
+  const getApplicableDampakList = React.useCallback((): string[] => {
+    const jenis = getSelectedJenisPeralatan();
+    const jenisNorm = jenis.trim().toLowerCase();
+    const isXRay = jenisNorm === 'x-ray';
+    const isEtd = jenisNorm === 'etd' || jenisNorm.includes('etd');
+    const isAccessControl = jenisNorm.includes('access control');
+    const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
+    const isHhmd = jenisNorm === 'hhmd' || jenisNorm.includes('hhmd');
+
+    const list = formData.lokasiList && formData.lokasiList.length > 0 
+      ? formData.lokasiList 
+      : [{ lokasi1: formData.lokasi1 }];
+      
+    const hasPscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('pscp'));
+    const hasHbscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('hbscp'));
+
+    const items: string[] = [];
+
+    const addItem = (item: string) => {
+      if (!items.includes(item)) {
+        items.push(item);
+      }
+    };
+
+    if (isXRay && hasPscpLoc) {
+      addItem('Terjadi resiko penumpukan jumlah antrian pax.');
+    }
+
+    if (isXRay && hasHbscpLoc) {
+      addItem('Terjadi resiko penumpukan jumlah bagasi.');
+    }
+
+    if (isEtd) {
+      addItem('Barang yang mengandung senyawa Explosive tidak dapat terdeteksi.');
+    }
+
+    if (isAccessControl) {
+      addItem('Resiko pintu Access dilewati oleh orang yang tidak berhak.');
+      addItem('Akses keluar masuk pintu Access menjadi terganggu.');
+      addItem('Perijinan keluar masuk pintu Access menjadi terganggu.');
+    }
+
+    if (isWtmd || isHhmd) {
+      addItem('Barang yang mengandung bahan metal tidak dapat terdeteksi.');
+    }
+
+    return items;
+  }, [formData.peralatan, formData.lokasiList, formData.lokasi1, tipeToJenisMap]);
+
+  const dampakShortcuts = getApplicableDampakList();
+
+  const handleAddDampakItem = (itemText: string) => {
+    setFormData(prev => {
+      const raw = prev.dampak ? prev.dampak.trim() : '';
+      if (!raw || raw === '1.' || raw === '1. ') {
+        return { ...prev, dampak: `1. ${itemText}` };
+      }
+      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+      const alreadyExists = lines.some(l => l.replace(/^\d+\.\s*/, '').toLowerCase() === itemText.toLowerCase());
+      if (alreadyExists) {
+        return prev;
+      }
+      const nextNum = lines.length + 1;
+      return { ...prev, dampak: `${raw}\n${nextNum}. ${itemText}` };
+    });
+  };
+
+  const handleApplyAllDampak = () => {
+    const items = getApplicableDampakList();
+    if (items.length === 0) return;
+    const formatted = items.map((item, idx) => `${idx + 1}. ${item}`).join('\n');
+    setFormData(prev => ({ ...prev, dampak: formatted }));
   };
 
   const handlePhotoUpload = async (groupId: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1020,7 +1288,37 @@ export const TabInitialReport: React.FC = () => {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">DAMPAK</label>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700">DAMPAK</label>
+              {dampakShortcuts.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleApplyAllDampak}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Terapkan semua poin dampak rekomendasi otomatis"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Isi Rekomendasi Dampak
+                </button>
+              )}
+            </div>
+
+            {dampakShortcuts.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">Shortcut:</span>
+                {dampakShortcuts.map((text, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleAddDampakItem(text)}
+                    className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 rounded-lg text-slate-700 font-medium transition-all text-left cursor-pointer"
+                    title="Klik untuk menyisipkan ke isian dampak"
+                  >
+                    + {text}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <textarea ref={dampakRef} name="dampak" required rows={3} value={formData.dampak} onChange={(e) => handleNumberedChange(e, 'dampak')} onKeyDown={(e) => handleNumberedKeyDown(e, 'dampak')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${
               showErrors && (!formData.dampak || formData.dampak.trim() === '1.' || formData.dampak.trim() === '') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
             }`}></textarea>
@@ -1031,7 +1329,33 @@ export const TabInitialReport: React.FC = () => {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">MITIGASI</label>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700">MITIGASI</label>
+              <button
+                type="button"
+                onClick={handleApplyAllMitigasi}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                title="Terapkan semua poin mitigasi rekomendasi otomatis"
+              >
+                <Plus className="w-3.5 h-3.5" /> Isi Rekomendasi Mitigasi
+              </button>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">Shortcut:</span>
+              {mitigasiShortcuts.map((text, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleAddMitigasiItem(text)}
+                  className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 rounded-lg text-slate-700 font-medium transition-all text-left cursor-pointer"
+                  title="Klik untuk menyisipkan ke isian mitigasi"
+                >
+                  + {text}
+                </button>
+              ))}
+            </div>
+
             <textarea ref={mitigasiRef} name="tindakanMitigasi" required rows={3} value={formData.tindakanMitigasi} onChange={(e) => handleNumberedChange(e, 'tindakanMitigasi')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakanMitigasi')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${
               showErrors && (!formData.tindakanMitigasi || formData.tindakanMitigasi.trim() === '1.' || formData.tindakanMitigasi.trim() === '') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
             }`}></textarea>
