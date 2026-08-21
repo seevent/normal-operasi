@@ -66,6 +66,7 @@ export const TabInitialReport: React.FC = () => {
   const [manualTeknisi, setManualTeknisi] = useState<string>('');
   const [tipePeralatanOptions, setTipePeralatanOptions] = useState<string[]>([]);
   const [tipeToJenisMap, setTipeToJenisMap] = useState<Record<string, string>>({});
+  const [tipeToVarianMap, setTipeToVarianMap] = useState<Record<string, string>>({});
   const [isManualPeralatan, setIsManualPeralatan] = useState<boolean>(false);
 
   React.useEffect(() => {
@@ -105,18 +106,25 @@ export const TabInitialReport: React.FC = () => {
 
       const { data: dataTipe } = await supabase
         .from('tipe_peralatan')
-        .select('nama, jenis_peralatan ( nama )')
+        .select('nama, varian, jenis_peralatan ( nama )')
         .order('nama', { ascending: true });
         
       if (dataTipe) {
         setTipePeralatanOptions(dataTipe.map((d: any) => d.nama));
-        const mapping: Record<string, string> = {};
+        const jenisMapping: Record<string, string> = {};
+        const varianMapping: Record<string, string> = {};
         dataTipe.forEach((d: any) => {
-          if (d.nama && d.jenis_peralatan?.nama) {
-            mapping[d.nama] = d.jenis_peralatan.nama;
+          if (d.nama) {
+            if (d.jenis_peralatan?.nama) {
+              jenisMapping[d.nama] = d.jenis_peralatan.nama;
+            }
+            if (d.varian) {
+              varianMapping[d.nama] = d.varian;
+            }
           }
         });
-        setTipeToJenisMap(mapping);
+        setTipeToJenisMap(jenisMapping);
+        setTipeToVarianMap(varianMapping);
       }
     };
     fetchData();
@@ -381,6 +389,20 @@ export const TabInitialReport: React.FC = () => {
     return formData.peralatan;
   };
 
+  const getSelectedVarianPeralatan = (): string => {
+    if (!formData.peralatan) return '';
+    if (tipeToVarianMap[formData.peralatan]) {
+      return tipeToVarianMap[formData.peralatan];
+    }
+    const penempatan = useMasterDataStore.getState().penempatanData || [];
+    for (const p of penempatan) {
+      if (p.tipe_peralatan?.nama === formData.peralatan && p.tipe_peralatan?.varian) {
+        return p.tipe_peralatan.varian;
+      }
+    }
+    return '';
+  };
+
   const getApplicableMitigasiList = React.useCallback((): string[] => {
     const jenis = getSelectedJenisPeralatan();
     const jenisNorm = jenis.trim().toLowerCase();
@@ -549,12 +571,16 @@ export const TabInitialReport: React.FC = () => {
     const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
     const isHhmd = jenisNorm === 'hhmd' || jenisNorm.includes('hhmd');
 
+    const varian = (getSelectedVarianPeralatan() || '').toLowerCase();
+    const isCabin = varian.includes('cabin') || formData.peralatan.toLowerCase().includes('cabin');
+
     const list = formData.lokasiList && formData.lokasiList.length > 0 
       ? formData.lokasiList 
       : [{ lokasi1: formData.lokasi1 }];
       
     const hasPscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('pscp'));
     const hasHbscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('hbscp'));
+    const hasSscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('sscp'));
 
     const items: string[] = [];
 
@@ -572,8 +598,17 @@ export const TabInitialReport: React.FC = () => {
       addItem('Terjadi resiko penumpukan jumlah bagasi.');
     }
 
+    if (isXRay && isCabin) {
+      if (hasSscpLoc) {
+        addItem('Proses pemeriksaan barang terganggu.');
+      } else {
+        addItem('Proses pemeriksaan barang pax terganggu.');
+      }
+    }
+
     if (isEtd) {
       addItem('Barang yang mengandung senyawa Explosive tidak dapat terdeteksi.');
+      addItem('Pelaksanaan random check terganggu.');
     }
 
     if (isAccessControl) {
@@ -587,7 +622,7 @@ export const TabInitialReport: React.FC = () => {
     }
 
     return items;
-  }, [formData.peralatan, formData.lokasiList, formData.lokasi1, tipeToJenisMap]);
+  }, [formData.peralatan, formData.lokasiList, formData.lokasi1, tipeToJenisMap, tipeToVarianMap]);
 
   const dampakShortcuts = getApplicableDampakList();
 
