@@ -556,23 +556,21 @@ export const TabInitialReport: React.FC = () => {
     });
   };
 
-  const handleApplyAllMitigasi = () => {
-    const items = getApplicableMitigasiList();
-    const formatted = items.map((item, idx) => `${idx + 1}. ${item}`).join('\n');
-    setFormData(prev => ({ ...prev, tindakanMitigasi: formatted }));
-  };
-
   const getApplicableDampakList = React.useCallback((): string[] => {
     const jenis = getSelectedJenisPeralatan();
     const jenisNorm = jenis.trim().toLowerCase();
     const isXRay = jenisNorm === 'x-ray';
+    const isMirroringXRay = jenisNorm.includes('mirroring');
     const isEtd = jenisNorm === 'etd' || jenisNorm.includes('etd');
     const isAccessControl = jenisNorm.includes('access control');
     const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
     const isHhmd = jenisNorm === 'hhmd' || jenisNorm.includes('hhmd');
+    const isAtrs = jenisNorm.includes('atrs');
+    const isBodyScanner = jenisNorm.includes('body scanner');
 
     const varian = (getSelectedVarianPeralatan() || '').toLowerCase();
     const isCabin = varian.includes('cabin') || formData.peralatan.toLowerCase().includes('cabin');
+    const isBagasi = varian.includes('bagasi') || formData.peralatan.toLowerCase().includes('bagasi');
 
     const list = formData.lokasiList && formData.lokasiList.length > 0 
       ? formData.lokasiList 
@@ -581,6 +579,10 @@ export const TabInitialReport: React.FC = () => {
     const hasPscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('pscp'));
     const hasHbscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('hbscp'));
     const hasSscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('sscp'));
+    const hasRedlineOrConveyorLoc = list.some(item => {
+      const s = (item.lokasi1 || '').toLowerCase();
+      return s.includes('redline') || s.includes('conveyor belt') || (s.includes('conveyor') && s.includes('belt'));
+    });
 
     const items: string[] = [];
 
@@ -590,6 +592,29 @@ export const TabInitialReport: React.FC = () => {
       }
     };
 
+    if (isMirroringXRay) {
+      addItem('Custom tidak dapat memonitoring pemeriksaan barang di area HBS Internasional.');
+    }
+
+    if (isHhmd) {
+      addItem('Proses pemeriksaan orang terganggu.');
+    }
+
+    if (isWtmd) {
+      addItem('Proses pemeriksaan orang terganggu.');
+      addItem('Terjadi penumpukan antrian pemeriksaan orang.');
+    }
+
+    if (isBodyScanner) {
+      addItem('Proses pemeriksaan orang terganggu.');
+      addItem('Terjadi penumpukan antrian pemeriksaan orang.');
+    }
+
+    if (isAtrs) {
+      addItem('Proses pemeriksaan barang pax terganggu.');
+      addItem('Terjadi penumpukan antrian pemeriksaan barang.');
+    }
+
     if (isXRay && hasPscpLoc) {
       addItem('Terjadi resiko penumpukan jumlah antrian pax.');
     }
@@ -598,12 +623,20 @@ export const TabInitialReport: React.FC = () => {
       addItem('Terjadi resiko penumpukan jumlah bagasi.');
     }
 
+    if (isXRay && isBagasi && hasHbscpLoc) {
+      addItem('Proses pemeriksaan bagasi pax terganggu.');
+    }
+
     if (isXRay && isCabin) {
       if (hasSscpLoc) {
         addItem('Proses pemeriksaan barang terganggu.');
       } else {
         addItem('Proses pemeriksaan barang pax terganggu.');
       }
+    }
+
+    if (isXRay && isBagasi && hasRedlineOrConveyorLoc) {
+      addItem('Proses pemeriksaan barang oleh Custom di area Kedatangan Internasional terganggu.');
     }
 
     if (isEtd) {
@@ -642,11 +675,148 @@ export const TabInitialReport: React.FC = () => {
     });
   };
 
-  const handleApplyAllDampak = () => {
-    const items = getApplicableDampakList();
-    if (items.length === 0) return;
-    const formatted = items.map((item, idx) => `${idx + 1}. ${item}`).join('\n');
-    setFormData(prev => ({ ...prev, dampak: formatted }));
+  const getApplicablePermasalahanList = React.useCallback((): string[] => {
+    const jenis = getSelectedJenisPeralatan();
+    const jenisNorm = jenis.trim().toLowerCase();
+    const isXRay = jenisNorm === 'x-ray' || jenisNorm.includes('x-ray') || jenisNorm.includes('xray');
+    const isRapiscan = (formData.peralatan || '').toLowerCase().includes('rapiscan');
+    const isNuctech = (formData.peralatan || '').toLowerCase().includes('nuctech');
+    const isAccessControl = jenisNorm.includes('access control');
+    const isBodyScanner = jenisNorm.includes('body scanner');
+    const isMirroringXRay = jenisNorm.includes('mirroring');
+    const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
+    const isEtd = jenisNorm === 'etd' || jenisNorm.includes('etd');
+    const isHhmd = jenisNorm === 'hhmd' || jenisNorm.includes('hhmd');
+    const isAtrs = jenisNorm === 'atrs' || jenisNorm.includes('atrs');
+    const isExtensionConveyor = jenisNorm.includes('extension conveyor') || jenisNorm.includes('conveyor') || jenisNorm.includes('convayer');
+
+    const items: string[] = [];
+
+    if (isXRay && isRapiscan) {
+      items.push(
+        'Muncul notif Inverter Fault.',
+        'Muncul notif X-Ray Subsystem Fault.',
+        'User akun terblokir.',
+        'Control Panel tidak dapat dioperasikan.',
+        'X-Ray off.',
+        'Tampilan gambar hasil scan blur/tidak jelas.',
+        'Tampilan gambar hasil scan blok hitam.',
+        'Terdapat tetesan oli di bawah mesin X-Ray.',
+        'X-Ray hang.',
+        'Tampilan monitor berwarna kuning.'
+      );
+    }
+
+    if (isXRay && isNuctech) {
+      items.push(
+        'Muncul notif Missing Data Aquisition.',
+        'Muncul notif X-Ray Generator Fault.',
+        'X-Ray off.',
+        'Tampilan gambar hasil scan blur/tidak jelas.',
+        'Tampilan gambar hasil scan blok hitam.',
+        'Terdapat tetesan oli di bawah mesin X-Ray.',
+        'X-Ray hang.',
+        'Tampilan monitor berwarna kuning.'
+      );
+    }
+
+    if (isWtmd) {
+      items.push(
+        'WTMD off.',
+        'WTMD mengalami interferensi.',
+        'WTMD berbunyi terus menerus tanpa adanya orang yang melewati.',
+        'WTMD tidak dapat mendeteksi test piece kalibrasi.'
+      );
+    }
+
+    if (isMirroringXRay) {
+      items.push(
+        'Tampilan mirroring monitor X-Ray tidak muncul.',
+        'Monitor mirroring off.'
+      );
+    }
+
+    if (isBodyScanner) {
+      items.push(
+        'Body Scanner off.',
+        'Touchscreen pada monitor operator tidak berfungsi.'
+      );
+    }
+
+    if (isAccessControl) {
+      items.push(
+        'Pintu Access tidak bisa terkunci.',
+        'Pintu Access tidak bisa dikontrol oleh Avsec.',
+        'CCTV Access freeze.',
+        'Mikrofon tidak mengeluarkan suara/suara kecil.',
+        'Breakglass pecah.',
+        'Access Control off.'
+      );
+    }
+
+    if (isEtd) {
+      items.push(
+        'Muncul Notif Verification Required.',
+        'Muncul Notif Calibration Required.',
+        'Muncul Notif Calibration Failed.',
+        'Muncul Notif Verification Failed.',
+        'Muncul Notif High Humidity.',
+        'Muncul Notif Cleaning in progress.',
+        'Muncul Notif Regeneration in progress.',
+        'ETD off.'
+      );
+    }
+
+    if (isHhmd) {
+      items.push(
+        'HHMD off.',
+        'Tombol HHMD mengalami kerusakan.',
+        'Baterai HHMD tidak bisa diisi ulang.',
+        'Charger baterai HHMD mengalami kerusakan.'
+      );
+    }
+
+    if (isAtrs) {
+      items.push(
+        'ATRS off.',
+        'ATRS tidak dapat dijalankan.',
+        'Baki ATRS tersangkut.',
+        'Dispenser baki berhenti/tersangkut.',
+        'Tampilan mirroring mengalami error.',
+        'Tampilan deteksi barang pada baki mengalami error.'
+      );
+    }
+
+    if (isExtensionConveyor) {
+      items.push(
+        'Extension Conveyor off.',
+        'Extension Conveyor mengeluarkan suara berisik ketika dijalankan.',
+        'Conveyor belt terlalu mepet ke samping.',
+        'Conveyor belt sobek/rusak.',
+        'Extension Conveyor tidak dapat dijalankan.',
+        'Conveyor belt kendor.'
+      );
+    }
+
+    return items;
+  }, [formData.peralatan, tipeToJenisMap]);
+
+  const permasalahanShortcuts = getApplicablePermasalahanList();
+
+  const handleAddPermasalahanItem = (itemText: string) => {
+    setFormData(prev => {
+      const raw = (prev.permasalahan || '').trim();
+      if (!raw || raw === '•') {
+        return { ...prev, permasalahan: `• ${itemText}` };
+      }
+      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+      const cleanLines = lines.filter(l => l !== '•');
+      const alreadyExists = cleanLines.some(l => l.replace(/^•\s*/, '').toLowerCase() === itemText.toLowerCase());
+      if (alreadyExists) {
+        return prev;
+      }
+      return { ...prev, permasalahan: `${cleanLines.join('\n')}\n• ${itemText}` };
+    });
   };
 
   const handlePhotoUpload = async (groupId: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1290,6 +1460,22 @@ export const TabInitialReport: React.FC = () => {
           </h2>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Permasalahan</label>
+            {permasalahanShortcuts.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">Shortcut:</span>
+                {permasalahanShortcuts.map((text, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleAddPermasalahanItem(text)}
+                    className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 rounded-lg text-slate-700 font-medium transition-all text-left cursor-pointer"
+                    title="Klik untuk menyisipkan ke isian permasalahan"
+                  >
+                    + {text}
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea ref={permasalahanRef} name="permasalahan" required rows={3} value={formData.permasalahan} onChange={(e) => handleBulletChange(e, 'permasalahan')} onKeyDown={(e) => handleBulletKeyDown(e, 'permasalahan')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${
               showErrors && (!formData.permasalahan || formData.permasalahan.trim() === '•') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
             }`}></textarea>
@@ -1323,19 +1509,7 @@ export const TabInitialReport: React.FC = () => {
             )}
           </div>
           <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-              <label className="block text-sm font-medium text-slate-700">DAMPAK</label>
-              {dampakShortcuts.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleApplyAllDampak}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Terapkan semua poin dampak rekomendasi otomatis"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Isi Rekomendasi Dampak
-                </button>
-              )}
-            </div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">DAMPAK</label>
 
             {dampakShortcuts.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 mb-2">
@@ -1364,17 +1538,7 @@ export const TabInitialReport: React.FC = () => {
             )}
           </div>
           <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-              <label className="block text-sm font-medium text-slate-700">MITIGASI</label>
-              <button
-                type="button"
-                onClick={handleApplyAllMitigasi}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
-                title="Terapkan semua poin mitigasi rekomendasi otomatis"
-              >
-                <Plus className="w-3.5 h-3.5" /> Isi Rekomendasi Mitigasi
-              </button>
-            </div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">MITIGASI</label>
             
             <div className="flex flex-wrap items-center gap-1.5 mb-2">
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">Shortcut:</span>

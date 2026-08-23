@@ -1,1 +1,862 @@
-{"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
+{
+  "nodes": [
+    {
+      "id": "doc:.agents/rules/ponytail.md",
+      "label": "ponytail.md",
+      "type": "document",
+      "source_file": ".agents/rules/ponytail.md",
+      "description": "Documentation file: ponytail.md"
+    },
+    {
+      "id": "doc:.agents/skills/banner-design/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/banner-design/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/banner-design/references/banner-sizes-and-styles.md",
+      "label": "banner-sizes-and-styles.md",
+      "type": "document",
+      "source_file": ".agents/skills/banner-design/references/banner-sizes-and-styles.md",
+      "description": "Documentation file: banner-sizes-and-styles.md"
+    },
+    {
+      "id": "doc:.agents/skills/brainstorming/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/brainstorming/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/brainstorming/spec-document-reviewer-prompt.md",
+      "label": "spec-document-reviewer-prompt.md",
+      "type": "document",
+      "source_file": ".agents/skills/brainstorming/spec-document-reviewer-prompt.md",
+      "description": "Documentation file: spec-document-reviewer-prompt.md"
+    },
+    {
+      "id": "doc:.agents/skills/brainstorming/visual-companion.md",
+      "label": "visual-companion.md",
+      "type": "document",
+      "source_file": ".agents/skills/brainstorming/visual-companion.md",
+      "description": "Documentation file: visual-companion.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/approval-checklist.md",
+      "label": "approval-checklist.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/approval-checklist.md",
+      "description": "Documentation file: approval-checklist.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/asset-organization.md",
+      "label": "asset-organization.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/asset-organization.md",
+      "description": "Documentation file: asset-organization.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/brand-guideline-template.md",
+      "label": "brand-guideline-template.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/brand-guideline-template.md",
+      "description": "Documentation file: brand-guideline-template.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/color-palette-management.md",
+      "label": "color-palette-management.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/color-palette-management.md",
+      "description": "Documentation file: color-palette-management.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/consistency-checklist.md",
+      "label": "consistency-checklist.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/consistency-checklist.md",
+      "description": "Documentation file: consistency-checklist.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/logo-usage-rules.md",
+      "label": "logo-usage-rules.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/logo-usage-rules.md",
+      "description": "Documentation file: logo-usage-rules.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/messaging-framework.md",
+      "label": "messaging-framework.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/messaging-framework.md",
+      "description": "Documentation file: messaging-framework.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/typography-specifications.md",
+      "label": "typography-specifications.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/typography-specifications.md",
+      "description": "Documentation file: typography-specifications.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/update.md",
+      "label": "update.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/update.md",
+      "description": "Documentation file: update.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/visual-identity.md",
+      "label": "visual-identity.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/visual-identity.md",
+      "description": "Documentation file: visual-identity.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/references/voice-framework.md",
+      "label": "voice-framework.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/references/voice-framework.md",
+      "description": "Documentation file: voice-framework.md"
+    },
+    {
+      "id": "doc:.agents/skills/brand/templates/brand-guidelines-starter.md",
+      "label": "brand-guidelines-starter.md",
+      "type": "document",
+      "source_file": ".agents/skills/brand/templates/brand-guidelines-starter.md",
+      "description": "Documentation file: brand-guidelines-starter.md"
+    },
+    {
+      "id": "doc:.agents/skills/code-review/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/code-review/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/design-system/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/design-system/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/design-system/references/component-specs.md",
+      "label": "component-specs.md",
+      "type": "document",
+      "source_file": ".agents/skills/design-system/references/component-specs.md",
+      "description": "Documentation file: component-specs.md"
+    },
+    {
+      "id": "doc:.agents/skills/design-system/references/states-and-variants.md",
+      "label": "states-and-variants.md",
+      "type": "document",
+      "source_file": ".agents/skills/design-system/references/states-and-variants.md",
+      "description": "Documentation file: states-and-variants.md"
+    },
+    {
+      "id": "doc:.agents/skills/design-system/references/tailwind-integration.md",
+      "label": "tailwind-integration.md",
+      "type": "document",
+      "source_file": ".agents/skills/design-system/references/tailwind-integration.md",
+      "description": "Documentation file: tailwind-integration.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/banner-sizes-and-styles.md",
+      "label": "banner-sizes-and-styles.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/banner-sizes-and-styles.md",
+      "description": "Documentation file: banner-sizes-and-styles.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/cip-deliverable-guide.md",
+      "label": "cip-deliverable-guide.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/cip-deliverable-guide.md",
+      "description": "Documentation file: cip-deliverable-guide.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/cip-design.md",
+      "label": "cip-design.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/cip-design.md",
+      "description": "Documentation file: cip-design.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/cip-prompt-engineering.md",
+      "label": "cip-prompt-engineering.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/cip-prompt-engineering.md",
+      "description": "Documentation file: cip-prompt-engineering.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/cip-style-guide.md",
+      "label": "cip-style-guide.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/cip-style-guide.md",
+      "description": "Documentation file: cip-style-guide.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/design-routing.md",
+      "label": "design-routing.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/design-routing.md",
+      "description": "Documentation file: design-routing.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/icon-design.md",
+      "label": "icon-design.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/icon-design.md",
+      "description": "Documentation file: icon-design.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/logo-color-psychology.md",
+      "label": "logo-color-psychology.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/logo-color-psychology.md",
+      "description": "Documentation file: logo-color-psychology.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/logo-design.md",
+      "label": "logo-design.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/logo-design.md",
+      "description": "Documentation file: logo-design.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/logo-prompt-engineering.md",
+      "label": "logo-prompt-engineering.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/logo-prompt-engineering.md",
+      "description": "Documentation file: logo-prompt-engineering.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/logo-style-guide.md",
+      "label": "logo-style-guide.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/logo-style-guide.md",
+      "description": "Documentation file: logo-style-guide.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/slides-copywriting-formulas.md",
+      "label": "slides-copywriting-formulas.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/slides-copywriting-formulas.md",
+      "description": "Documentation file: slides-copywriting-formulas.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/slides-create.md",
+      "label": "slides-create.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/slides-create.md",
+      "description": "Documentation file: slides-create.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/slides-html-template.md",
+      "label": "slides-html-template.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/slides-html-template.md",
+      "description": "Documentation file: slides-html-template.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/slides-layout-patterns.md",
+      "label": "slides-layout-patterns.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/slides-layout-patterns.md",
+      "description": "Documentation file: slides-layout-patterns.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/slides-strategies.md",
+      "label": "slides-strategies.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/slides-strategies.md",
+      "description": "Documentation file: slides-strategies.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/slides.md",
+      "label": "slides.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/slides.md",
+      "description": "Documentation file: slides.md"
+    },
+    {
+      "id": "doc:.agents/skills/design/references/social-photos-design.md",
+      "label": "social-photos-design.md",
+      "type": "document",
+      "source_file": ".agents/skills/design/references/social-photos-design.md",
+      "description": "Documentation file: social-photos-design.md"
+    },
+    {
+      "id": "doc:.agents/skills/dispatching-parallel-agents/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/dispatching-parallel-agents/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/executing-plans/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/executing-plans/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/finishing-a-development-branch/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/finishing-a-development-branch/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/add-watch.md",
+      "label": "add-watch.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/add-watch.md",
+      "description": "Documentation file: add-watch.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/exports.md",
+      "label": "exports.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/exports.md",
+      "description": "Documentation file: exports.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/extraction-spec.md",
+      "label": "extraction-spec.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/extraction-spec.md",
+      "description": "Documentation file: extraction-spec.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/github-and-merge.md",
+      "label": "github-and-merge.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/github-and-merge.md",
+      "description": "Documentation file: github-and-merge.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/hooks.md",
+      "label": "hooks.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/hooks.md",
+      "description": "Documentation file: hooks.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/query.md",
+      "label": "query.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/query.md",
+      "description": "Documentation file: query.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/transcribe.md",
+      "label": "transcribe.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/transcribe.md",
+      "description": "Documentation file: transcribe.md"
+    },
+    {
+      "id": "doc:.agents/skills/graphify/references/update.md",
+      "label": "update.md",
+      "type": "document",
+      "source_file": ".agents/skills/graphify/references/update.md",
+      "description": "Documentation file: update.md"
+    },
+    {
+      "id": "doc:.agents/skills/grill-me/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/grill-me/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/handoff/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/handoff/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/idea-orchestrator/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/idea-orchestrator/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/implement/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/implement/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ponytail-audit/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ponytail-audit/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ponytail-debt/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ponytail-debt/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ponytail-gain/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ponytail-gain/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ponytail-help/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ponytail-help/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ponytail-review/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ponytail-review/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ponytail/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ponytail/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/receiving-code-review/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/receiving-code-review/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/requesting-code-review/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/requesting-code-review/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/requesting-code-review/code-reviewer.md",
+      "label": "code-reviewer.md",
+      "type": "document",
+      "source_file": ".agents/skills/requesting-code-review/code-reviewer.md",
+      "description": "Documentation file: code-reviewer.md"
+    },
+    {
+      "id": "doc:.agents/skills/slides/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/slides/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/slides/references/copywriting-formulas.md",
+      "label": "copywriting-formulas.md",
+      "type": "document",
+      "source_file": ".agents/skills/slides/references/copywriting-formulas.md",
+      "description": "Documentation file: copywriting-formulas.md"
+    },
+    {
+      "id": "doc:.agents/skills/slides/references/create.md",
+      "label": "create.md",
+      "type": "document",
+      "source_file": ".agents/skills/slides/references/create.md",
+      "description": "Documentation file: create.md"
+    },
+    {
+      "id": "doc:.agents/skills/slides/references/html-template.md",
+      "label": "html-template.md",
+      "type": "document",
+      "source_file": ".agents/skills/slides/references/html-template.md",
+      "description": "Documentation file: html-template.md"
+    },
+    {
+      "id": "doc:.agents/skills/slides/references/layout-patterns.md",
+      "label": "layout-patterns.md",
+      "type": "document",
+      "source_file": ".agents/skills/slides/references/layout-patterns.md",
+      "description": "Documentation file: layout-patterns.md"
+    },
+    {
+      "id": "doc:.agents/skills/slides/references/slide-strategies.md",
+      "label": "slide-strategies.md",
+      "type": "document",
+      "source_file": ".agents/skills/slides/references/slide-strategies.md",
+      "description": "Documentation file: slide-strategies.md"
+    },
+    {
+      "id": "doc:.agents/skills/subagent-driven-development/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/subagent-driven-development/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/subagent-driven-development/implementer-prompt.md",
+      "label": "implementer-prompt.md",
+      "type": "document",
+      "source_file": ".agents/skills/subagent-driven-development/implementer-prompt.md",
+      "description": "Documentation file: implementer-prompt.md"
+    },
+    {
+      "id": "doc:.agents/skills/subagent-driven-development/task-reviewer-prompt.md",
+      "label": "task-reviewer-prompt.md",
+      "type": "document",
+      "source_file": ".agents/skills/subagent-driven-development/task-reviewer-prompt.md",
+      "description": "Documentation file: task-reviewer-prompt.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/CREATION-LOG.md",
+      "label": "CREATION-LOG.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/CREATION-LOG.md",
+      "description": "Documentation file: CREATION-LOG.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/condition-based-waiting.md",
+      "label": "condition-based-waiting.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/condition-based-waiting.md",
+      "description": "Documentation file: condition-based-waiting.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/defense-in-depth.md",
+      "label": "defense-in-depth.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/defense-in-depth.md",
+      "description": "Documentation file: defense-in-depth.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/root-cause-tracing.md",
+      "label": "root-cause-tracing.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/root-cause-tracing.md",
+      "description": "Documentation file: root-cause-tracing.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/test-academic.md",
+      "label": "test-academic.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/test-academic.md",
+      "description": "Documentation file: test-academic.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/test-pressure-1.md",
+      "label": "test-pressure-1.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/test-pressure-1.md",
+      "description": "Documentation file: test-pressure-1.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/test-pressure-2.md",
+      "label": "test-pressure-2.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/test-pressure-2.md",
+      "description": "Documentation file: test-pressure-2.md"
+    },
+    {
+      "id": "doc:.agents/skills/systematic-debugging/test-pressure-3.md",
+      "label": "test-pressure-3.md",
+      "type": "document",
+      "source_file": ".agents/skills/systematic-debugging/test-pressure-3.md",
+      "description": "Documentation file: test-pressure-3.md"
+    },
+    {
+      "id": "doc:.agents/skills/test-driven-development/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/test-driven-development/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/test-driven-development/testing-anti-patterns.md",
+      "label": "testing-anti-patterns.md",
+      "type": "document",
+      "source_file": ".agents/skills/test-driven-development/testing-anti-patterns.md",
+      "description": "Documentation file: testing-anti-patterns.md"
+    },
+    {
+      "id": "doc:.agents/skills/to-spec/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/to-spec/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/to-ticket/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/to-ticket/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/references/canvas-design-system.md",
+      "label": "canvas-design-system.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/references/canvas-design-system.md",
+      "description": "Documentation file: canvas-design-system.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/references/shadcn-accessibility.md",
+      "label": "shadcn-accessibility.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/references/shadcn-accessibility.md",
+      "description": "Documentation file: shadcn-accessibility.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/references/shadcn-components.md",
+      "label": "shadcn-components.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/references/shadcn-components.md",
+      "description": "Documentation file: shadcn-components.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/references/shadcn-theming.md",
+      "label": "shadcn-theming.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/references/shadcn-theming.md",
+      "description": "Documentation file: shadcn-theming.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/references/tailwind-customization.md",
+      "label": "tailwind-customization.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/references/tailwind-customization.md",
+      "description": "Documentation file: tailwind-customization.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/references/tailwind-responsive.md",
+      "label": "tailwind-responsive.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/references/tailwind-responsive.md",
+      "description": "Documentation file: tailwind-responsive.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-styling/references/tailwind-utilities.md",
+      "label": "tailwind-utilities.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-styling/references/tailwind-utilities.md",
+      "description": "Documentation file: tailwind-utilities.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-ux-pro-max/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-ux-pro-max/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-ux-pro-max/references/pro-rules.md",
+      "label": "pro-rules.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-ux-pro-max/references/pro-rules.md",
+      "description": "Documentation file: pro-rules.md"
+    },
+    {
+      "id": "doc:.agents/skills/ui-ux-pro-max/references/quick-reference.md",
+      "label": "quick-reference.md",
+      "type": "document",
+      "source_file": ".agents/skills/ui-ux-pro-max/references/quick-reference.md",
+      "description": "Documentation file: quick-reference.md"
+    },
+    {
+      "id": "doc:.agents/skills/using-git-worktrees/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/using-git-worktrees/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/using-superpowers/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/using-superpowers/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/using-superpowers/references/antigravity-tools.md",
+      "label": "antigravity-tools.md",
+      "type": "document",
+      "source_file": ".agents/skills/using-superpowers/references/antigravity-tools.md",
+      "description": "Documentation file: antigravity-tools.md"
+    },
+    {
+      "id": "doc:.agents/skills/using-superpowers/references/codex-tools.md",
+      "label": "codex-tools.md",
+      "type": "document",
+      "source_file": ".agents/skills/using-superpowers/references/codex-tools.md",
+      "description": "Documentation file: codex-tools.md"
+    },
+    {
+      "id": "doc:.agents/skills/using-superpowers/references/pi-tools.md",
+      "label": "pi-tools.md",
+      "type": "document",
+      "source_file": ".agents/skills/using-superpowers/references/pi-tools.md",
+      "description": "Documentation file: pi-tools.md"
+    },
+    {
+      "id": "doc:.agents/skills/verification-before-completion/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/verification-before-completion/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/writing-plans/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/writing-plans/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/writing-plans/plan-document-reviewer-prompt.md",
+      "label": "plan-document-reviewer-prompt.md",
+      "type": "document",
+      "source_file": ".agents/skills/writing-plans/plan-document-reviewer-prompt.md",
+      "description": "Documentation file: plan-document-reviewer-prompt.md"
+    },
+    {
+      "id": "doc:.agents/skills/writing-skills/SKILL.md",
+      "label": "SKILL.md",
+      "type": "document",
+      "source_file": ".agents/skills/writing-skills/SKILL.md",
+      "description": "Documentation file: SKILL.md"
+    },
+    {
+      "id": "doc:.agents/skills/writing-skills/anthropic-best-practices.md",
+      "label": "anthropic-best-practices.md",
+      "type": "document",
+      "source_file": ".agents/skills/writing-skills/anthropic-best-practices.md",
+      "description": "Documentation file: anthropic-best-practices.md"
+    },
+    {
+      "id": "doc:.agents/skills/writing-skills/examples/CLAUDE_MD_TESTING.md",
+      "label": "CLAUDE_MD_TESTING.md",
+      "type": "document",
+      "source_file": ".agents/skills/writing-skills/examples/CLAUDE_MD_TESTING.md",
+      "description": "Documentation file: CLAUDE_MD_TESTING.md"
+    },
+    {
+      "id": "doc:.agents/skills/writing-skills/persuasion-principles.md",
+      "label": "persuasion-principles.md",
+      "type": "document",
+      "source_file": ".agents/skills/writing-skills/persuasion-principles.md",
+      "description": "Documentation file: persuasion-principles.md"
+    },
+    {
+      "id": "doc:.agents/skills/writing-skills/testing-skills-with-subagents.md",
+      "label": "testing-skills-with-subagents.md",
+      "type": "document",
+      "source_file": ".agents/skills/writing-skills/testing-skills-with-subagents.md",
+      "description": "Documentation file: testing-skills-with-subagents.md"
+    },
+    {
+      "id": "doc:GEMINI.md",
+      "label": "GEMINI.md",
+      "type": "document",
+      "source_file": "GEMINI.md",
+      "description": "Documentation file: GEMINI.md"
+    },
+    {
+      "id": "doc:README.md",
+      "label": "README.md",
+      "type": "document",
+      "source_file": "README.md",
+      "description": "Documentation file: README.md"
+    },
+    {
+      "id": "doc:agent.md",
+      "label": "agent.md",
+      "type": "document",
+      "source_file": "agent.md",
+      "description": "Documentation file: agent.md"
+    },
+    {
+      "id": "doc:architecture.md",
+      "label": "architecture.md",
+      "type": "document",
+      "source_file": "architecture.md",
+      "description": "Documentation file: architecture.md"
+    },
+    {
+      "id": "doc:database.md",
+      "label": "database.md",
+      "type": "document",
+      "source_file": "database.md",
+      "description": "Documentation file: database.md"
+    },
+    {
+      "id": "doc:design-system/sses-t2-report/MASTER.md",
+      "label": "MASTER.md",
+      "type": "document",
+      "source_file": "design-system/sses-t2-report/MASTER.md",
+      "description": "Documentation file: MASTER.md"
+    },
+    {
+      "id": "doc:docs/superpowers/plans/2026-08-20-codebase-hardening-and-documentation.md",
+      "label": "2026-08-20-codebase-hardening-and-documentation.md",
+      "type": "document",
+      "source_file": "docs/superpowers/plans/2026-08-20-codebase-hardening-and-documentation.md",
+      "description": "Documentation file: 2026-08-20-codebase-hardening-and-documentation.md"
+    },
+    {
+      "id": "doc:prd.md",
+      "label": "prd.md",
+      "type": "document",
+      "source_file": "prd.md",
+      "description": "Documentation file: prd.md"
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

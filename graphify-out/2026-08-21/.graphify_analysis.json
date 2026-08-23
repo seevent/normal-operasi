@@ -532,8 +532,11 @@
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_validate_config_valid"
     ],
     "15": [
+      "lucide_react",
       "netlify_vite_plugin_tanstack_start",
+      "package_dependencies_lucide_react",
       "package_devdependencies",
+      "package_devdependencies_lucide_react",
       "package_devdependencies_netlify_vite_plugin_tanstack_start",
       "package_devdependencies_rimraf",
       "package_devdependencies_types_node",
@@ -625,17 +628,12 @@
       "src_components_features_tabkegiatan_tabkegiatan",
       "src_components_features_tabkehadiran",
       "src_components_features_tabkehadiran_tabkehadiran",
-      "src_components_features_tabperbaikan",
-      "src_components_features_tabperbaikan_formatnamapersonel",
-      "src_components_features_tabperbaikan_tabperbaikan",
       "src_lib_data_masterdata_getjabatanrank",
       "src_lib_data_masterdata_sortpersonelbyjabatan",
       "src_lib_services_shareservice_fallbackshare",
       "src_lib_services_shareservice_sharetowhatsapp",
       "src_lib_utils_canvasutils_compressimagefile",
-      "src_lib_utils_locationrules_getlokasi2options",
       "src_lib_utils_wagenerator_generatewa_initialreport",
-      "src_lib_utils_wagenerator_generatewa_perbaikan",
       "src_store_useappstore",
       "src_store_useappstore_appstate",
       "src_store_useappstore_useappstore"
@@ -741,48 +739,49 @@
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_18",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_205",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_22",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_45",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_temp_project",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_success",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_default_project_root",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
     ],
     "26": [
-      "agents_skills_design_system_templates_design_tokens_starter_button_padding_y",
-      "agents_skills_design_system_templates_design_tokens_starter_input_padding_y",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_y_type",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_y_value"
-    ],
-    "27": [
       "src_components_features_tabkalibrasi",
       "src_components_features_tabkalibrasi_tabkalibrasi",
-      "src_components_features_tabstoring",
-      "src_components_features_tabstoring_tabstoring",
+      "src_components_features_tabperbaikan",
+      "src_components_features_tabperbaikan_formatnamapersonel",
+      "src_components_features_tabperbaikan_tabperbaikan",
       "src_lib_utils_locationrules",
-      "src_lib_utils_locationrules_checkneedsstoringsupervisoravsec",
-      "src_lib_utils_locationrules_formattanggalindo",
-      "src_lib_utils_locationrules_getacnomoroptions",
       "src_lib_utils_locationrules_getgenerallokasioptions",
       "src_lib_utils_locationrules_getintersectedlocations",
+      "src_lib_utils_locationrules_getlokasi2options",
       "src_lib_utils_locationrules_getstoringnomoroptions",
-      "src_lib_utils_locationrules_getstoringsupervisorlocations",
       "src_lib_utils_locationrules_getstoringvalidlocations",
       "src_lib_utils_locationrules_getstoringvalidnumbers",
       "src_lib_utils_locationrules_getvalidmodels",
       "src_lib_utils_locationrules_getvalidxraymodels",
+      "src_lib_utils_wagenerator_generatewa_kalibrasi",
+      "src_lib_utils_wagenerator_generatewa_perbaikan"
+    ],
+    "27": [
+      "src_components_features_tabstoring",
+      "src_components_features_tabstoring_tabstoring",
+      "src_lib_utils_locationrules_checkneedsstoringsupervisoravsec",
+      "src_lib_utils_locationrules_formattanggalindo",
+      "src_lib_utils_locationrules_getacnomoroptions",
+      "src_lib_utils_locationrules_getstoringsupervisorlocations",
       "src_lib_utils_wagenerator",
       "src_lib_utils_wagenerator_formataclokasilist",
       "src_lib_utils_wagenerator_formatpersonnellist",
       "src_lib_utils_wagenerator_generatewa_baserahterima",
       "src_lib_utils_wagenerator_generatewa_briefing",
       "src_lib_utils_wagenerator_generatewa_checklist",
-      "src_lib_utils_wagenerator_generatewa_kalibrasi",
       "src_lib_utils_wagenerator_generatewa_kegiatan",
       "src_lib_utils_wagenerator_generatewa_kehadiran",
       "src_lib_utils_wagenerator_generatewa_storing"
@@ -956,6 +955,7 @@
       "agents_skills_design_system_templates_design_tokens_starter_fast_value",
       "agents_skills_design_system_templates_design_tokens_starter_normal_type",
       "agents_skills_design_system_templates_design_tokens_starter_normal_value",
+      "agents_skills_design_system_templates_design_tokens_starter_primitive",
       "agents_skills_design_system_templates_design_tokens_starter_primitive_duration",
       "agents_skills_design_system_templates_design_tokens_starter_slow_type",
       "agents_skills_design_system_templates_design_tokens_starter_slow_value"
@@ -1089,23 +1089,21 @@
       "src_store_useauthstore_useauthstore"
     ],
     "51": [
-      "agents_skills_design_system_templates_design_tokens_starter_button_padding_x",
+      "agents_skills_design_system_templates_design_tokens_starter_button_padding_y",
       "agents_skills_design_system_templates_design_tokens_starter_component_input",
       "agents_skills_design_system_templates_design_tokens_starter_focus_ring_type",
       "agents_skills_design_system_templates_design_tokens_starter_focus_ring_value",
       "agents_skills_design_system_templates_design_tokens_starter_input_focus_ring",
-      "agents_skills_design_system_templates_design_tokens_starter_input_padding_x",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_x_type",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_x_value"
+      "agents_skills_design_system_templates_design_tokens_starter_input_padding_y",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_y_type",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_y_value"
     ],
     "52": [
       "agents_skills_design_system_templates_design_tokens_starter_default_type",
       "agents_skills_design_system_templates_design_tokens_starter_default_value",
       "agents_skills_design_system_templates_design_tokens_starter_full_type",
       "agents_skills_design_system_templates_design_tokens_starter_full_value",
-      "agents_skills_design_system_templates_design_tokens_starter_primitive",
       "agents_skills_design_system_templates_design_tokens_starter_primitive_radius",
-      "agents_skills_design_system_templates_design_tokens_starter_primitive_shadow",
       "agents_skills_design_system_templates_design_tokens_starter_radius_default",
       "agents_skills_design_system_templates_design_tokens_starter_radius_full",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_default"
@@ -1169,6 +1167,7 @@
     ],
     "59": [
       "agents_skills_design_system_templates_design_tokens_starter_fontsize_sm",
+      "agents_skills_design_system_templates_design_tokens_starter_primitive_shadow",
       "agents_skills_design_system_templates_design_tokens_starter_radius_sm",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_sm",
       "agents_skills_design_system_templates_design_tokens_starter_sm_type",
@@ -1196,9 +1195,10 @@
       "agents_skills_design_system_templates_design_tokens_starter_shadow_lg"
     ],
     "63": [
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
+      "agents_skills_design_system_templates_design_tokens_starter_button_padding_x",
+      "agents_skills_design_system_templates_design_tokens_starter_input_padding_x",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_x_type",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_x_value"
     ],
     "64": [
       "agents_skills_design_system_templates_design_tokens_starter_fontsize_xl",
@@ -1286,9 +1286,9 @@
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_init"
     ],
     "80": [
-      "lucide_react",
-      "package_dependencies_lucide_react",
-      "package_devdependencies_lucide_react"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
     ],
     "81": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_71",
@@ -1427,19 +1427,19 @@
     "12": 0.12554112554112554,
     "13": 0.14736842105263157,
     "14": 0.1,
-    "15": 0.11764705882352941,
+    "15": 0.1,
     "16": 0.14210526315789473,
     "17": 0.10526315789473684,
     "18": 0.1111111111111111,
-    "19": 0.2028985507246377,
+    "19": 0.22807017543859648,
     "20": 0.16993464052287582,
     "21": 0.11764705882352941,
     "22": 0.14705882352941177,
     "23": 0.2,
     "24": 0.125,
     "25": 0.14166666666666666,
-    "26": 0.6666666666666666,
-    "27": 0.2,
+    "26": 0.3,
+    "27": 0.2857142857142857,
     "28": 0.21978021978021978,
     "29": 0.25274725274725274,
     "30": 0.2087912087912088,
@@ -1451,7 +1451,7 @@
     "36": 0.16666666666666666,
     "37": 0.3090909090909091,
     "38": 0.2,
-    "39": 0.2,
+    "39": 0.18181818181818182,
     "40": 0.2,
     "41": 0.28888888888888886,
     "42": 0.35555555555555557,
@@ -1464,14 +1464,14 @@
     "49": 0.3333333333333333,
     "50": 0.3333333333333333,
     "51": 0.2857142857142857,
-    "52": 0.24444444444444444,
+    "52": 0.2857142857142857,
     "53": 0.2857142857142857,
     "54": 0.35714285714285715,
     "55": 0.2857142857142857,
     "56": 0.42857142857142855,
     "57": 0.42857142857142855,
     "58": 0.2857142857142857,
-    "59": 0.6,
+    "59": 0.4666666666666667,
     "60": 0.6,
     "61": 0.6,
     "62": 0.6,
@@ -1588,6 +1588,17 @@
       "why": "connects across different repos/directories; bridges separate communities"
     },
     {
+      "source": "TabPerbaikan()",
+      "target": "react",
+      "source_files": [
+        "src/components/features/TabPerbaikan.tsx",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
       "source": "TabStoring()",
       "target": "react",
       "source_files": [
@@ -1619,54 +1630,10 @@
       "confidence": "EXTRACTED",
       "relation": "references",
       "why": "connects across different repos/directories; bridges separate communities"
-    },
-    {
-      "source": "TestDomainDetection",
-      "target": "BM25",
-      "source_files": [
-        ".agents/skills/ui-ux-pro-max/scripts/tests/test_core.py",
-        ".agents/skills/design/scripts/cip/core.py"
-      ],
-      "confidence": "INFERRED",
-      "relation": "uses",
-      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
     }
   ],
-  "questions": [
-    {
-      "type": "bridge_node",
-      "question": "Why does `primitive` connect `radius` to `gray`, `spacing`, `duration`, `fontSize`, `design-tokens-starter.json`?",
-      "why": "High betweenness centrality (0.034) - this node is a cross-community bridge."
-    },
-    {
-      "type": "bridge_node",
-      "question": "Why does `color` connect `color` to `destructive`, `destructive-foreground`, `muted`, `primary-foreground`, `ring`, `secondary-foreground`, `$type`, `design-tokens-starter.json`?",
-      "why": "High betweenness centrality (0.021) - this node is a cross-community bridge."
-    },
-    {
-      "type": "bridge_node",
-      "question": "Why does `color` connect `gray` to `radius`?",
-      "why": "High betweenness centrality (0.021) - this node is a cross-community bridge."
-    },
-    {
-      "type": "verify_inferred",
-      "question": "Are the 36 inferred relationships involving `TailwindConfigGenerator` (e.g. with `TestGeneratedConfigIsValidJs` and `.test_node_check_parses_generated_config()`) actually correct?",
-      "why": "`TailwindConfigGenerator` has 36 INFERRED edges - model-reasoned connections that need verification."
-    },
-    {
-      "type": "verify_inferred",
-      "question": "Are the 23 inferred relationships involving `ShadcnInstaller` (e.g. with `TestShadcnInstaller` and `.test_add_all_components_dry_run()`) actually correct?",
-      "why": "`ShadcnInstaller` has 23 INFERRED edges - model-reasoned connections that need verification."
-    },
-    {
-      "type": "isolated_nodes",
-      "question": "What connects `crypto`, `http`, `fs` to the rest of the system?",
-      "why": "213 weakly-connected nodes found - possible documentation gaps or missing edges."
-    },
-    {
-      "type": "low_cohesion",
-      "question": "Should `server.cjs` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.05868118572292801 - nodes in this community are weakly interconnected."
-    }
-  ]
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
 }

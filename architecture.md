@@ -9,7 +9,7 @@ Aplikasi **SSES T2 Generator Laporan** dibangun menggunakan arsitektur **Single 
 
 ```mermaid
 graph TD
-    User([User / Mobile Browser]) --> UI[React 19 Mobile-First UI]
+    User([User / Mobile Browser]) --> UI[React 19 Mobile-First UI\n12 Modul Tab + Touch Swipe Navigation]
     UI --> Router[TanStack Router]
     UI --> Store[Zustand Stores\nuseAppStore | useAuthStore | useMasterDataStore]
     
@@ -17,7 +17,7 @@ graph TD
     Store <--> Supabase[(Supabase Backend\nAuth | PostgreSQL | Realtime)]
     
     UI --> WAGen[WA Generator\nwaGenerator.ts]
-    UI --> CanvasEngine[Canvas & Konva Engine\nPhoto Annotation & Live Collage]
+    UI --> CanvasEngine[Canvas, Konva & Signature Engine\nPhoto Annotation, Live Collage, SignaturePad]
     
     WAGen --> WAShare[Web Share API / WhatsApp Direct Link]
     
@@ -41,6 +41,7 @@ graph TD
 | **State Management** | Zustand | `5.0.14` | Client-side state management yang ringan dan reaktif. |
 | **Database & Auth** | `@supabase/supabase-js` | `2.108.2` | Client REST & Realtime PostgreSQL + Authentication. |
 | **Canvas & Anotasi** | Konva / `react-konva` | `10.3.0` / `19.2.5` | Engine render canvas 2D untuk anotasi foto & text overlay. |
+| **Digital Signature** | HTML5 Canvas Signature Pad | Native | Input tanda tangan digital untuk Berita Acara Serah Terima. |
 | **Spreadsheet & Import** | SheetJS (`xlsx`) | `0.18.5` | Parsing berkas Excel jadwal shift harian secara client-side. |
 | **Ekspor PDF/Canvas** | `html2pdf.js` / `html2canvas` | `0.14.0` / `1.4.1` | Generator PDF dan konversi DOM ke gambar PNG. |
 | **Icon System** | Lucide React | `0.576.0` | Set ikon UI modern & konsisten. |
@@ -53,47 +54,49 @@ graph TD
 ```
 src/
 ├── components/
-│   ├── App.tsx                     # Root Layout: Header status, Tab Navigation (11 tab), Floating Share
-│   ├── features/                   # Komponen Fitur (11 Tab Modul & Admin CRUD)
+│   ├── App.tsx                     # Root Layout: Header status, Tab Navigation (12 tab), Floating Share
+│   ├── features/                   # Komponen Fitur (12 Tab Modul & Admin CRUD)
 │   │   ├── TabKehadiran.tsx        # Laporan kehadiran shift (API & OM IAS)
-│   │   ├── TabBriefing.tsx         # Laporan kegiatan briefing
+│   │   ├── TabBriefing.tsx         # Laporan kegiatan briefing & sparepart
 │   │   ├── TabStoring.tsx          # Laporan storing peralatan
 │   │   ├── TabChecklist.tsx        # Checklist operasi peralatan
-│   │   ├── TabInitialReport.tsx    # Laporan awal indikasi gangguan peralatan
-│   │   ├── TabPerbaikan.tsx        # Laporan perbaikan/verifikasi peralatan
+│   │   ├── TabInitialReport.tsx    # Laporan awal gangguan (Smart Mitigasi & Dampak)
+│   │   ├── TabPerbaikan.tsx        # Laporan perbaikan (Auto Sumber Laporan Avsec/Custom)
 │   │   ├── TabKalibrasi.tsx        # Laporan PM & kalibrasi peralatan
 │   │   ├── TabKegiatan.tsx         # Laporan kegiatan harian
+│   │   ├── TabBASerahTerima.tsx    # Berita Acara Serah Terima Barang & Tanda Tangan
 │   │   ├── TabShiftReport.tsx      # Rekapitulasi pergantian shift
 │   │   ├── TabTip.tsx              # Tracker TIP performance & chart
 │   │   ├── TabData.tsx             # Panel Admin Data & Authentication
 │   │   ├── AssetManager.tsx        # CRUD Manajemen penempatan relasional aset
 │   │   ├── AssetMasterLokasi.tsx   # CRUD Master Lokasi & Titik Lokasi
 │   │   ├── AssetMasterPeralatan.tsx# CRUD Master Jenis & Tipe Peralatan
+│   │   ├── UnitPeralatanManager.tsx# CRUD Unit Peralatan (SN, status operasi, kepemilikan)
+│   │   ├── SparepartManager.tsx    # CRUD Stok Sparepart & Briefing Toggle
 │   │   ├── ChecklistDataEditor.tsx # Konfigurasi editor item checklist
-│   │   ├── SparepartManager.tsx    # Manajemen stok & penggunaan sparepart
-│   │   ├── UnitPeralatanManager.tsx# Manajemen unit peralatan per lokasi
 │   │   └── ScheduleUploader.tsx    # Parser & Uploader Jadwal Shift Excel
 │   └── shared/                     # Reusable UI Components
 │       ├── PhotoUploader.tsx       # Photo upload, reorder, and management component
 │       ├── LiveCollagePreview.tsx  # Dynamic multi-layout collage generator (Canvas API)
 │       ├── PhotoTextEditorModal.tsx# Photo text annotation modal (Konva Canvas)
+│       ├── SignaturePad.tsx        # Digital signature pad component (Canvas)
 │       └── MonitorSearchIcon.tsx   # Custom MonitorSearch icon
 ├── lib/
 │   ├── data/
 │   │   ├── constants.ts            # Key konstanta localStorage & app configuration
-│   │   └── masterData.ts           # Initial fallback master data & helper functions
+│   │   └── masterData.ts           # Initial fallback master data, hirarki jabatan, & helper formatting
 │   ├── services/
 │   │   ├── shareService.ts         # Utility Web Share API & Clipboard fallback
 │   │   └── sheetsSyncService.ts    # Service sinkronisasi data dengan Google Sheets API
 │   ├── utils/
-│   │   ├── waGenerator.ts          # Template engine pesan WhatsApp untuk 11 tab
+│   │   ├── waGenerator.ts          # Template engine pesan WhatsApp untuk 12 tab
 │   │   ├── locationRules.ts        # Business logic filter lokasi relasional
 │   │   └── canvasUtils.ts          # Utility kompresi & pembuatan kolase foto HTML5 Canvas
 │   └── supabaseClient.ts           # Inisialisasi Supabase Client & environment setup
 ├── store/
 │   ├── useAppStore.ts              # State UI global (activeTab, toast, status UI)
 │   ├── useAuthStore.ts             # State autentikasi Admin
-│   └── useMasterDataStore.ts       # State master data & metode pencocokan relasi
+│   └── useMasterDataStore.ts       # State master data, spareparts, & metode pencocokan relasi
 ├── routes/
 │   ├── __root.tsx                  # Root HTML Shell & Meta Viewport setup
 │   └── index.tsx                   # Route "/" -> render App component

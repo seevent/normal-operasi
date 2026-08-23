@@ -17,20 +17,21 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 * **Ukuran Touch Target**: Area sentuh tombol dan elemen interaktif minimal **44px x 44px**.
 
 ### 2.2. Isolasi Komponen Tab (`src/components/features/`)
-* Setiap tab dari 11 modul utama memiliki file komponen khusus di `src/components/features/Tab<NamaFitur>.tsx`.
-* **Jangan menggabungkan logika antar-tab** ke dalam satu file raksasa. Jika terdapat UI reusable (seperti uploader foto, modal editor, atau icon), tempatkan di `src/components/shared/`.
+* Setiap tab dari 12 modul utama memiliki file komponen khusus di `src/components/features/Tab<NamaFitur>.tsx`.
+* **Jangan menggabungkan logika antar-tab** ke dalam satu file raksasa. Jika terdapat UI reusable (seperti uploader foto, signature pad, modal editor, atau icon), tempatkan di `src/components/shared/`.
 
 ### 2.3. Manajemen State Relasional (`useMasterDataStore.ts`)
-* Selalu gunakan `useMasterDataStore` untuk mengakses data relasional (Lokasi, Titik, Jenis Peralatan, Tipe Peralatan, Personel, Jadwal Shift).
+* Selalu gunakan `useMasterDataStore` untuk mengakses data relasional (Lokasi, Titik, Jenis Peralatan, Tipe Peralatan, Unit Peralatan, Spareparts, Personel, Jadwal Shift).
 * Ketika menambahkan filter lokasi pada form baru, selalu manfaatkan helper function dari `src/lib/utils/locationRules.ts` untuk memastikan pencocokan peralatan ↔ lokasi ↔ titik berjalan konsisten dengan database.
 
 ### 2.4. Template Generator WhatsApp (`waGenerator.ts`)
 * Format pesan WhatsApp yang dihasilkan oleh `waGenerator.ts` mengikuti standar format laporan resmi operasional SSES T2.
 * **Aturan Penting**: Jangan mengubah emoji header, pemisah baris, atau penataan bullet point secara acak tanpa permintaan eksplisit dari pengguna, karena format ini di-parse otomatis oleh sistem rekapitulasi eksternal di grup WhatsApp operasional.
 
-### 2.5. Pemrosesan Canvas & Konva Anotasi (`canvasUtils.ts` & `PhotoTextEditorModal.tsx`)
+### 2.5. Pemrosesan Canvas, Konva Anotasi & Signature Pad (`canvasUtils.ts`, `PhotoTextEditorModal.tsx`, `SignaturePad.tsx`)
 * Gambar yang diunggah harus dikompres secara efisien via Canvas API sebelum dikirim ke backend/Google Drive untuk menghemat bandwidth.
 * Saat mengubah `PhotoTextEditorModal.tsx`, pastikan posisi koordinat teks overlay diskalakan sesuai rasio asli gambar (`stage.width() / image.width`).
+* Pada `SignaturePad.tsx`, pastikan event touch (`onTouchStart`, `onTouchMove`, `onTouchEnd`) ditangani dengan `preventDefault()` agar kanvas tidak menyebabkan scroll halaman saat ditandatangani di ponsel.
 
 ---
 
@@ -38,10 +39,10 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 
 | Path File | Fungsi Utama | Perhatian Khusus bagi Agent |
 |---|---|---|
-| [`src/components/App.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/App.tsx) | Navigation root & tab bar | Menangani navigasi 11 tab & floating WhatsApp share button. |
-| [`src/lib/utils/waGenerator.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/waGenerator.ts) | Template pesan WA | Memiliki generator khusus per-tab. |
+| [`src/components/App.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/App.tsx) | Navigation root & tab bar | Menangani navigasi 12 tab, swipe touch, & floating WhatsApp share button. |
+| [`src/lib/utils/waGenerator.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/waGenerator.ts) | Template pesan WA | Memiliki generator khusus per-tab untuk seluruh 12 modul operasional. |
 | [`src/lib/utils/locationRules.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/locationRules.ts) | Helper relasi lokasi & peralatan | Memfilter dropdown lokasi berdasarkan peralatan terpilih. |
-| [`src/store/useMasterDataStore.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/store/useMasterDataStore.ts) | Zustand store master data | Mengelola pencocokan Supabase & local cache. |
+| [`src/store/useMasterDataStore.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/store/useMasterDataStore.ts) | Zustand store master data | Mengelola pencocokan Supabase, spareparts, & local cache. |
 | [`Code.gs`](file:///c:/Users/Yuli%20Syarif/normal-operasi/Code.gs) | Apps Script Google Sheets API | Backend Google Sheets & Drive image uploader. |
 
 ---

@@ -58,7 +58,8 @@ Menyimpan merk, tipe, atau varian spesifik dari suatu jenis peralatan.
 |---|---|---|---|
 | `id` | `UUID` / `BIGINT` | **PK** | Identifier unik tipe peralatan. |
 | `id_jenis` | `UUID` / `BIGINT` | **FK** | Referensi ke `jenis_peralatan(id)`. |
-| `nama_tipe` | `VARCHAR(150)` | **NOT NULL** | Nama merk/tipe (misal: Rapiscan 620DV, Heimann HI-SCAN 6040i, Nuctech). |
+| `nama` / `nama_tipe` | `VARCHAR(150)` | **NOT NULL** | Nama merk/tipe (misal: Rapiscan 620DV, Smiths Heimann, Nuctech). |
+| `varian` | `VARCHAR(50)` | NULL | Varian peralatan (misal: `Cabin`, `Bagasi`, `Dekstop`, `Portable`). |
 | `brand` | `VARCHAR(100)` | NULL | Merk manufaktur. |
 | `spesifikasi` | `TEXT` | NULL | Catatan spesifikasi teknis peralatan. |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembuatan data. |
@@ -71,7 +72,7 @@ Menyimpan daftar nama lokasi atau area utama di Terminal 2 Bandara Soekarno-Hatt
 | Nama Kolom | Tipe Data | Kunci | Keterangan |
 |---|---|---|---|
 | `id` | `UUID` / `BIGINT` | **PK** | Identifier unik lokasi. |
-| `nama_lokasi` | `VARCHAR(150)` | **NOT NULL** | Nama lokasi (misal: SSCP D, HBSCP E, SCP Main Gate, Arrival, Departure). |
+| `nama_lokasi` | `VARCHAR(150)` | **NOT NULL** | Nama lokasi (misal: PSCP D, HBSCP E, SSCP F, Umrah, Arrival Hall F). |
 | `kode_lokasi` | `VARCHAR(50)` | NULL | Kode singkat area/lokasi. |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembuatan data. |
 
@@ -104,7 +105,42 @@ Menghubungkan tipe peralatan dengan lokasi dan titik penempatannya secara relasi
 
 ---
 
-### 3.6. Tabel `unit_kerja`
+### 3.6. Tabel `unit_peralatan`
+Menyimpan inventaris unit fisik peralatan per nomor seri (SN) dan status operasionalnya.
+
+| Nama Kolom | Tipe Data | Kunci | Keterangan |
+|---|---|---|---|
+| `id` | `UUID` | **PK** | Identifier unik unit peralatan. |
+| `id_tipe` | `UUID` / `BIGINT` | **FK** | Referensi ke `tipe_peralatan(id)`. |
+| `sn` | `VARCHAR(100)` | NULL | Nomor Seri (*Serial Number*) unit peralatan. |
+| `no_sertifikasi` | `VARCHAR(100)` | NULL | Nomor sertifikasi kelaikan operasi. |
+| `tahun_instalasi` | `VARCHAR(10)` | NULL | Tahun pemasangan unit di bandara. |
+| `ampere` | `VARCHAR(20)` | NULL | Konsumsi/kapasitas daya listrik (Ampere). |
+| `milik` | `VARCHAR(50)` | DEFAULT `'API'` | Kepemilikan aset (API / OM / IAS / Custom). |
+| `status` | `VARCHAR(50)` | DEFAULT `'operasi'` | Status (operasi / backup / rusak / storing / scrap). |
+| `catatan` | `TEXT` | NULL | Catatan riwayat atau kondisi khusus unit. |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pencatatan unit. |
+
+---
+
+### 3.7. Tabel `spareparts`
+Menyimpan inventaris komponen suku cadang dan konfigurasi item pembahasan briefing.
+
+| Nama Kolom | Tipe Data | Kunci | Keterangan |
+|---|---|---|---|
+| `id` | `UUID` | **PK** | Identifier unik sparepart. |
+| `name` | `VARCHAR(150)` | **NOT NULL** | Nama komponen sparepart. |
+| `sku` | `VARCHAR(100)` | NULL | Kode part number / SKU inventaris. |
+| `id_tipe` | `UUID` / `BIGINT` | **FK** | Kompatibilitas dengan `tipe_peralatan(id)`. |
+| `qty` | `INTEGER` | DEFAULT `0` | Jumlah stok tersedia. |
+| `satuan` | `VARCHAR(30)` | DEFAULT `'Pcs'` | Satuan barang (Pcs, Set, Roll, Meter, dll.). |
+| `lokasi_rak` | `VARCHAR(100)` | NULL | Posisi penyimpanan di gudang/workshop. |
+| `in_briefing` | `BOOLEAN` | DEFAULT `false` | Menentukan apakah tampil di tab Briefing Unit. |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu penambahan sparepart. |
+
+---
+
+### 3.8. Tabel `unit_kerja`
 Menyimpan daftar unit kerja operasional.
 
 | Nama Kolom | Tipe Data | Kunci | Keterangan |
@@ -116,23 +152,24 @@ Menyimpan daftar unit kerja operasional.
 
 ---
 
-### 3.7. Tabel `personel`
+### 3.9. Tabel `personel`
 Menyimpan data anggota personel teknisi SSES T2.
 
 | Nama Kolom | Tipe Data | Kunci | Keterangan |
 |---|---|---|---|
 | `id` | `UUID` / `BIGINT` | **PK** | Identifier unik personel. |
 | `nama` | `VARCHAR(150)` | **NOT NULL** | Nama lengkap personel. |
-| `nik` | `VARCHAR(50)` | NULL | Nomor Induk Karyawan / NIK. |
+| `nik` | `VARCHAR(50)` | NULL | Nomor Induk Karyawan / NIK personel. |
 | `phone` | `VARCHAR(20)` | NULL | Nomor WhatsApp / kontak. |
 | `id_unit` | `UUID` / `BIGINT` | **FK** | Referensi ke `unit_kerja(id)`. |
-| `role` | `VARCHAR(50)` | DEFAULT `'Teknisi'`| Peran (Teknisi / Leader / Admin). |
+| `jabatan` | `VARCHAR(100)` | NULL | Jabatan struktural (Manager, Supervisor, Engineer, Team Leader, Teknisi, dll.). |
+| `role` | `VARCHAR(50)` | DEFAULT `'Teknisi'`| Peran otorisasi (Teknisi / Leader / Admin). |
 | `status` | `VARCHAR(20)` | DEFAULT `'Aktif'` | Status keanggotaan. |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pendaftaran. |
 
 ---
 
-### 3.8. Tabel `jadwal_shift`
+### 3.10. Tabel `jadwal_shift`
 Menyimpan alokasi jadwal shift harian personel teknisi yang dapat diunggah dari berkas Excel.
 
 | Nama Kolom | Tipe Data | Kunci | Keterangan |
@@ -140,12 +177,13 @@ Menyimpan alokasi jadwal shift harian personel teknisi yang dapat diunggah dari 
 | `id` | `UUID` / `BIGINT` | **PK** | Identifier unik jadwal shift. |
 | `tanggal` | `DATE` | **NOT NULL** | Tanggal tugas shift (YYYY-MM-DD). |
 | `id_personel` | `UUID` / `BIGINT` | **FK** | Referensi ke `personel(id)`. |
-| `shift` | `VARCHAR(20)` | **NOT NULL** | Kode shift (Pagi / Siang / Malam / Off / Cuti / Special). |
+| `shift` | `VARCHAR(20)` | **NOT NULL** | Kode shift (PS / Pagi / Siang / M / Malam / Off / Cuti / Special). |
+| `status_kehadiran` | `VARCHAR(20)` | DEFAULT `'Hadir'` | Status presensi personel. |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pencatatan. |
 
 ---
 
-### 3.9. Tabel `master_configs` (JSONB)
+### 3.11. Tabel `master_configs` (JSONB)
 Menyimpan konfigurasi fleksibel dan data agregat dalam format JSONB.
 
 | Nama Kolom | Tipe Data | Kunci | Keterangan |
