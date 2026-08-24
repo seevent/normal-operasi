@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, FileText, Download, Loader2, CheckCircle, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
-import { GOOGLE_SHEETS_WEBAPP_URL } from '../../lib/data/constants';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { syncToGoogleSheets, updateSheetReport, deleteSheetReport } from '../../lib/services/sheetsSyncService';
 // html2pdf.js is loaded dynamically (browser-only, references `self`)
 import { supabase } from '../../lib/supabaseClient';
 
@@ -79,58 +77,47 @@ export const TabShiftReport: React.FC = () => {
     setIsCrudModalOpen(true);
   };
 
-  const handleDeleteItem = async (rowIndex: number, namaAlat: string) => {
-    if (!window.confirm(`Hapus laporan kegiatan "${namaAlat}" ini dari Google Sheets?`)) return;
+  const handleDeleteItem = (rowIndex: number, namaAlat: string) => {
+    if (!window.confirm(`Hapus laporan kegiatan "${namaAlat}" ini?`)) return;
     setDeletingRowIndex(rowIndex);
-    try {
-      const ok = await deleteSheetReport(rowIndex);
-      if (ok) {
-        setStatusMsg({ text: "Laporan berhasil dihapus.", type: 'success' });
-        await loadShiftReports(date, shift);
-      } else {
-        setStatusMsg({ text: "Gagal menghapus laporan dari server.", type: 'error' });
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setDeletingRowIndex(null);
-    }
+    setReports(prev => prev.filter(item => item.rowIndex !== rowIndex));
+    setStatusMsg({ text: "Laporan berhasil dihapus.", type: 'success' });
+    setDeletingRowIndex(null);
+    setTimeout(() => setStatusMsg(null), 3000);
   };
 
-  const handleCrudSubmit = async (e: React.FormEvent) => {
+  const handleCrudSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCrudSubmitting(true);
     try {
       if (modalMode === 'add') {
-        await syncToGoogleSheets({
-          jenis: crudForm.jenis,
-          tanggal: date,
-          waktu: crudForm.waktu,
-          shift: shift,
-          lokasi: crudForm.lokasi || '-',
-          peralatan: crudForm.peralatan || '-',
-          uraian: crudForm.uraian || '-',
-          tindakLanjut: crudForm.tindakLanjut || '-',
-          status: crudForm.status || 'Normal Operasi'
-        });
+        const newReport = {
+          rowIndex: Date.now(),
+          Jenis: crudForm.jenis,
+          Waktu: crudForm.waktu,
+          Peralatan: crudForm.peralatan || '-',
+          Lokasi: crudForm.lokasi || '-',
+          Uraian: crudForm.uraian || '-',
+          TindakLanjut: crudForm.tindakLanjut || '-',
+          Status: crudForm.status || 'Normal Operasi'
+        };
+        setReports(prev => [...prev, newReport]);
         setStatusMsg({ text: "Laporan baru ditambahkan.", type: 'success' });
-      } else if (modalMode === 'edit' && editingRowIndex) {
-        await updateSheetReport({
-          rowIndex: editingRowIndex,
-          jenis: crudForm.jenis,
-          tanggal: date,
-          waktu: crudForm.waktu,
-          shift: shift,
-          lokasi: crudForm.lokasi || '-',
-          peralatan: crudForm.peralatan || '-',
-          uraian: crudForm.uraian || '-',
-          tindakLanjut: crudForm.tindakLanjut || '-',
-          status: crudForm.status || 'Normal Operasi'
-        });
+      } else if (modalMode === 'edit' && editingRowIndex !== null) {
+        setReports(prev => prev.map(r => r.rowIndex === editingRowIndex ? {
+          ...r,
+          Jenis: crudForm.jenis,
+          Waktu: crudForm.waktu,
+          Peralatan: crudForm.peralatan || '-',
+          Lokasi: crudForm.lokasi || '-',
+          Uraian: crudForm.uraian || '-',
+          TindakLanjut: crudForm.tindakLanjut || '-',
+          Status: crudForm.status || 'Normal Operasi'
+        } : r));
         setStatusMsg({ text: "Laporan diperbarui.", type: 'success' });
       }
       setIsCrudModalOpen(false);
-      setTimeout(() => loadShiftReports(date, shift), 1000);
+      setTimeout(() => setStatusMsg(null), 3000);
     } catch (err) {
       console.error(err);
       setStatusMsg({ text: "Gagal menyimpan perubahan.", type: 'error' });
@@ -179,47 +166,8 @@ export const TabShiftReport: React.FC = () => {
     loadShiftReports(date, shift);
   }, [date, shift]);
 
-  const loadShiftReports = async (targetDate: string, targetShift: string) => {
-    if (!targetDate) return [];
-    setFetchingLive(true);
-    try {
-      const res1 = await fetch(`${GOOGLE_SHEETS_WEBAPP_URL}?action=get_daily&date=${targetDate}`);
-      const data1 = await res1.json();
-      let allData = (data1 && data1.status === 'success' && Array.isArray(data1.data)) ? data1.data : [];
-
-      if (targetShift === 'M') {
-        const nextDateObj = new Date(targetDate);
-        nextDateObj.setDate(nextDateObj.getDate() + 1);
-        const nextDateStr = nextDateObj.toISOString().split('T')[0];
-        
-        const res2 = await fetch(`${GOOGLE_SHEETS_WEBAPP_URL}?action=get_daily&date=${nextDateStr}`);
-        const data2 = await res2.json();
-        if (data2 && data2.status === 'success' && Array.isArray(data2.data)) {
-          allData = [...allData, ...data2.data];
-        }
-      }
-
-      const filtered = allData.filter((r: any) => {
-        if (!r.Waktu) return true;
-        const timeMatch = String(r.Waktu).match(/(\d{2}):(\d{2})/);
-        if (!timeMatch) return true;
-        const hour = parseInt(timeMatch[1], 10);
-        
-        if (targetShift === 'PS') {
-          return hour >= 8 && hour < 20;
-        } else {
-          return hour >= 20 || hour < 8;
-        }
-      });
-
-      setReports(filtered);
-      return filtered;
-    } catch (err) {
-      console.error("Gagal menarik data harian shift:", err);
-      return [];
-    } finally {
-      setFetchingLive(false);
-    }
+  const loadShiftReports = (_targetDate: string, _targetShift: string) => {
+    return reports;
   };
 
   const fetchAndGeneratePDF = async () => {
@@ -227,15 +175,10 @@ export const TabShiftReport: React.FC = () => {
     setLoading(true);
     setStatusMsg({ text: "Mempersiapkan laporan PDF...", type: 'info' });
 
-    let currentList = reports;
-    if (currentList.length === 0) {
-      currentList = await loadShiftReports(date, shift) || [];
-    }
-
-    if (currentList.length > 0) {
-      setStatusMsg({ text: `Memproses ${currentList.length} laporan ke dalam PDF...`, type: 'info' });
+    if (reports.length > 0) {
+      setStatusMsg({ text: `Memproses ${reports.length} laporan ke dalam PDF...`, type: 'info' });
       setTimeout(async () => {
-        await generateAndSharePdf(currentList);
+        await generateAndSharePdf(reports);
       }, 1000);
     } else {
       setStatusMsg({ text: "Tidak ada laporan pada shift tersebut.", type: 'error' });
@@ -258,34 +201,12 @@ export const TabShiftReport: React.FC = () => {
       const html2pdf = (await import('html2pdf.js')).default;
       const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
       
-      setStatusMsg({ text: "PDF berhasil dibuat. Menyimpan ke Google Drive...", type: 'info' });
-
-      const reader = new FileReader();
-      reader.readAsDataURL(pdfBlob);
-      reader.onloadend = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        try {
-          await fetch(GOOGLE_SHEETS_WEBAPP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'save_pdf',
-              filename: `Laporan_Shift_${shift}_${date}.pdf`,
-              pdfBase64: base64String
-            })
-          });
-          setStatusMsg({ text: "PDF tersimpan di Drive. Meneruskan ke WA...", type: 'success' });
-        } catch (e) {
-          setStatusMsg({ text: "Gagal menyimpan ke Drive, tapi tetap dibagikan ke WA.", type: 'error' });
-        }
-
-        const pdfFile = new File([pdfBlob], `Laporan_Shift_${shift}_${date}.pdf`, { type: 'application/pdf' });
-        await shareToWhatsApp(`Berikut lampiran rekap laporan perbaikan Shift ${shift} tanggal ${date}`, pdfFile, () => {});
-        
-        setTimeout(() => setStatusMsg(null), 4000);
-        setLoading(false);
-      };
+      const pdfFile = new File([pdfBlob], `Laporan_Shift_${shift}_${date}.pdf`, { type: 'application/pdf' });
+      await shareToWhatsApp(`Berikut lampiran rekap laporan perbaikan Shift ${shift} tanggal ${date}`, pdfFile, () => {});
       
+      setStatusMsg({ text: "PDF berhasil dibuat dan dibagikan.", type: 'success' });
+      setTimeout(() => setStatusMsg(null), 4000);
+      setLoading(false);
     } catch (err) {
       setStatusMsg({ text: "Gagal membuat PDF.", type: 'error' });
       setLoading(false);
@@ -382,9 +303,9 @@ export const TabShiftReport: React.FC = () => {
                     {deletingRowIndex === item.rowIndex ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                {item.Drive_Image_ID && item.Drive_Image_ID !== '-' && item.Drive_Image_ID !== '' ? (
+                {item.imageUrl ? (
                   <img 
-                    src={`https://drive.google.com/uc?export=view&id=${item.Drive_Image_ID}`} 
+                    src={item.imageUrl} 
                     alt="Foto" 
                     className="w-24 h-24 rounded-lg object-cover bg-slate-200 border border-slate-300 shrink-0"
                     onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="%23cbd5e1"/><text x="50%" y="50%" font-size="10" text-anchor="middle" dominant-baseline="middle" fill="%2364748b">No Foto</text></svg>'; }}
@@ -576,9 +497,9 @@ export const TabShiftReport: React.FC = () => {
                   <td className="border-[3px] border-black p-1 font-bold">{getTime(report.Waktu)}</td>
                   <td className="border-[3px] border-black p-1 font-bold">{report.Status === 'Normal' ? 'Normal' : report.Status}</td>
                   <td className="border-[3px] border-black p-1">
-                    {report.Drive_Image_ID ? (
+                    {report.imageUrl ? (
                       <img 
-                        src={`https://drive.google.com/uc?id=${report.Drive_Image_ID}`} 
+                        src={report.imageUrl} 
                         alt="Dok" 
                         crossOrigin="anonymous" 
                         className="w-full h-12 object-cover"

@@ -52,7 +52,6 @@ export default function App() {
   const { initializeAuth } = useAuthStore();
 
   const [isResetting, setIsResetting] = useState(false);
-  const [showGsheetNotif] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [tabResetKeys, setTabResetKeys] = useState<Record<string, number>>({});
 
@@ -124,19 +123,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 flex items-center justify-center font-sans relative">
-      {/* Notifikasi Top Dropdown Google Sheets */}
-      <div className={`fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none transition-all duration-500 ease-out ${showGsheetNotif ? 'translate-y-6 opacity-100' : '-translate-y-full opacity-0'}`}>
-        <div className="bg-emerald-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-3">
-          <CheckCircle className="w-6 h-6 animate-pulse" /> 
-          Laporan Terkirim ke Google Sheets
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 flex items-center justify-center font-sans relative print:min-h-0 print:bg-white print:p-0 print:m-0 print:block">
 
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 print:max-w-none print:w-full print:border-none print:shadow-none print:rounded-none print:overflow-visible">
         
         {/* === HEADER BERSAMA === */}
-        <div className="bg-blue-800 px-6 py-5 flex flex-col gap-4">
+        <div className="bg-blue-800 px-6 py-5 flex flex-col gap-4 print:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {activeTab === 'initial' ? <FileWarning className="text-white w-7 h-7" /> :
@@ -187,7 +179,7 @@ export default function App() {
         </div>
 
         {/* === TAB NAVIGATION (SLIDABLE 8-TAB PAGES) === */}
-        <div className="relative bg-slate-50 border-b border-slate-200 overflow-hidden select-none">
+        <div className="relative bg-slate-50 border-b border-slate-200 overflow-hidden select-none print:hidden">
           
           {/* Side Arrow Navigation Buttons */}
           {currentPage > 0 && (

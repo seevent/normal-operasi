@@ -7,7 +7,6 @@ import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec, getStoringSupervisorLocations } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
 import { saveStoringToChecklistSync } from '../../lib/services/checklistSyncService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
@@ -201,22 +200,6 @@ export const TabStoring: React.FC = () => {
     }
 
     const message = generateWA_Storing(storingData);
-    
-    const waktuFull = storingData.waktuSelesai ? `${storingData.waktuMulai} - ${storingData.waktuSelesai}` : storingData.waktuMulai;
-    const lokasiFull = storingData.lokasi || (storingData.acLokasi && storingData.acLokasi.length > 0 ? storingData.acLokasi.join(', ') : '-');
-    const alatFull = storingData.peralatan.join(', ') || 'Peralatan';
-
-    syncToGoogleSheets({
-      jenis: 'Storing',
-      tanggal: storingData.tanggal,
-      waktu: waktuFull,
-      lokasi: lokasiFull,
-      peralatan: alatFull,
-      uraian: `Kegiatan Storing : ${alatFull}${storingData.supervisorAvsec ? `\nSupervisor Avsec : ${storingData.supervisorAvsec}` : ''}`,
-      tindakLanjut: '-',
-      status: storingData.hasil || 'Normal Operasi',
-      imageFile: generatedCollageFile || (finalFilesToShare.length > 0 ? finalFilesToShare[0] : null)
-    });
 
     saveStoringToChecklistSync({
       supervisorAvsec: storingData.supervisorAvsec,

@@ -43,7 +43,6 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 | [`src/lib/utils/waGenerator.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/waGenerator.ts) | Template pesan WA | Memiliki generator khusus per-tab untuk seluruh 12 modul operasional. |
 | [`src/lib/utils/locationRules.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/locationRules.ts) | Helper relasi lokasi & peralatan | Memfilter dropdown lokasi berdasarkan peralatan terpilih. |
 | [`src/store/useMasterDataStore.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/store/useMasterDataStore.ts) | Zustand store master data | Mengelola pencocokan Supabase, spareparts, & local cache. |
-| [`Code.gs`](file:///c:/Users/Yuli%20Syarif/normal-operasi/Code.gs) | Apps Script Google Sheets API | Backend Google Sheets & Drive image uploader. |
 
 ---
 

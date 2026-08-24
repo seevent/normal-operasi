@@ -9,7 +9,6 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase } from '../../lib/data/masterData';
-import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 function formatNamaPersonel(fullName: string): string {
@@ -507,8 +506,7 @@ export const TabInitialReport: React.FC = () => {
     }
 
     if (hasPscpLoc && isXRay) {
-      const hasPscpUmrah = list.some(item => { const s = (item.lokasi1 || '').toLowerCase(); return s.includes('pscp') && (s.includes('umrah') || s.includes('umroh')); });
-      addItem(hasPscpUmrah ? 'Pindahkan jalur pemeriksaan pada line yang kosong.' : 'Pindahkan jalur pemeriksaan pada X-Ray no 3.');
+      addItem('Pindahkan jalur pemeriksaan pada line yang kosong.');
     }
 
     if (isAccessControl) {
@@ -1127,23 +1125,6 @@ export const TabInitialReport: React.FC = () => {
     }
 
     const message = generateWA_InitialReport(formData);
-
-    const lokasiFinal = activeLocs.map((loc: any) => {
-      return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
-    }).join(', ') || '-';
-
-    syncToGoogleSheets({
-      jenis: 'Initial Report',
-      tanggal: formData.tanggal,
-      waktu: formData.waktuMulai || '-',
-      lokasi: lokasiFinal,
-      peralatan: formData.peralatan || '-',
-      uraian: `[Permasalahan: ${formData.permasalahan}] ${formData.uraian}`,
-      tindakLanjut: `[Mitigasi: ${formData.tindakanMitigasi}]`,
-      status: formData.status || '-',
-      teknisi: formData.teknisi,
-      imageFile: customFilesArray.length > 0 ? customFilesArray[0] : null
-    });
 
     await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
       setIsCopied(true);

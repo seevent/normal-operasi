@@ -6,9 +6,7 @@ import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/loca
 import { generateWA_Perbaikan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
-import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase } from '../../lib/data/masterData';
-import { syncToGoogleSheets } from '../../lib/services/sheetsSyncService';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 
 function formatNamaPersonel(fullName: string): string {
@@ -675,26 +673,6 @@ export const TabPerbaikan: React.FC = () => {
     }
 
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
-    
-    const uraianText = `Permasalahan : ${formData.permasalahan}`;
-    const lokasiFull = activeLocs.map((l: any) => {
-      if (l.isManual || (l.lokasi2 === '-' && !l.lokasi2)) return l.lokasi1;
-      return l.lokasi1 + (l.lokasi2 && l.lokasi2 !== '-' ? ` - ${l.lokasi2}` : '');
-    }).join(', ');
-    const waktuFull = formData.waktuSelesai ? `${formData.waktuMulai} - ${formData.waktuSelesai}` : formData.waktuMulai;
-
-    syncToGoogleSheets({
-      jenis: 'Perbaikan',
-      tanggal: formData.tanggal,
-      waktu: waktuFull,
-      teknisi: formData.teknisi,
-      lokasi: lokasiFull || '-',
-      peralatan: formData.peralatan,
-      uraian: uraianText,
-      tindakLanjut: formData.tindakLanjut,
-      status: formData.status,
-      imageFile: customFilesArray.length > 0 ? customFilesArray[0] : null
-    });
 
     await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
       setIsCopied(true);

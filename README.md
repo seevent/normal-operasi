@@ -10,7 +10,7 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 
 * 📄 **[Product Requirements Document (PRD)](prd.md)**: Spesifikasi produk, visi, daftar 12 fitur tab, target pengguna, dan Kebutuhan Non-Fungsional (NFR).
 * 🏗️ **[System Architecture Document](architecture.md)**: Arsitektur SPA, diagram alur data, stack teknologi, state management (Zustand), dan pipeline Canvas Konva / Signature Pad.
-* 🗄️ **[Database & Data Schema Specification](database.md)**: Skema tabel Supabase PostgreSQL (termasuk Unit Peralatan, Sparepart, NIK Personel), ERD relasional peralatan-lokasi, struktur JSONB `master_configs`, dan integrasi `Code.gs` Google Sheets.
+* 🗄️ **[Database & Data Schema Specification](database.md)**: Skema tabel Supabase PostgreSQL (termasuk Unit Peralatan, Sparepart, NIK Personel), ERD relasional peralatan-lokasi, dan struktur JSONB `master_configs`.
 * 🤖 **[AI Agent & Developer Guidelines](agent.md)**: Panduan konvensi pengkodean, aturan mobile-first, isolasi komponen tab, dan checklist verifikasi untuk AI Assistant.
 
 ---
@@ -30,7 +30,7 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 | **BA Serah Terima** | Generator Berita Acara (BA) Serah Terima Barang & Material. Dilengkapi **Digital Signature Canvas (Pad Tanda Tangan)** untuk Pihak 1, Pihak 2, dan Supervisor yang bertugas dinas, multi-item serial number, lampiran foto, serta ekspor format WA & PDF. |
 | **Shift Report** | Rekapitulasi laporan pergantian shift (*Shift Handover Report*). |
 | **TIP** | Tracker TIP (*Threat Image Projection*) Performance bulanan/tahunan dengan visualisasi skor dan ekspor gambar. Data tersimpan ke Supabase Cloud. |
-| **Data** | Panel admin (login required) untuk mengelola master data, penempatan relasional aset, unit peralatan per lokasi, sparepart, upload jadwal Excel, sinkronisasi Google Sheets, dan konfigurasi personel (termasuk NIK). |
+| **Data** | Panel admin (login required) untuk mengelola master data, penempatan relasional aset, unit peralatan per lokasi, sparepart, upload jadwal Excel, dan konfigurasi personel (termasuk NIK). |
 
 ---
 
@@ -45,7 +45,7 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 | **Icons** | Lucide React | `0.576.0` |
 | **State Management** | Zustand (App, Auth, & Master Data Stores) | `5.0.14` |
 | **Backend / Cloud DB** | Supabase (PostgreSQL, Auth, Realtime) | `@supabase/supabase-js 2.108.2` |
-| **Spreadsheet Sync** | Google Apps Script (`Code.gs`) & SheetJS (`xlsx`) | `0.18.5` |
+| **Spreadsheet Import** | SheetJS (`xlsx`) | `0.18.5` |
 | **Canvas / Photo Annotation** | Konva + React Konva (`PhotoTextEditorModal.tsx`) | `10.3.0` / `19.2.5` |
 | **Digital Signature** | HTML5 Canvas Signature Pad (`SignaturePad.tsx`) | Native Canvas |
 | **Deployment** | Netlify | - |
@@ -89,8 +89,7 @@ src/
 │   │   ├── masterData.ts          # Fallback master data, hirarki jabatan, & helper formatting
 │   │   └── constants.ts           # Key konstanta aplikasi & localStorage
 │   ├── services/
-│   │   ├── shareService.ts        # Web Share API + fallback clipboard
-│   │   └── sheetsSyncService.ts   # Sinkronisasi laporan dengan Google Sheets API
+│   │   └── shareService.ts        # Web Share API + fallback clipboard
 │   ├── utils/
 │   │   ├── waGenerator.ts         # Generator teks WhatsApp 12 tab
 │   │   ├── locationRules.ts       # Logika lokasi relasional (Peralatan ↔ Lokasi ↔ Titik)

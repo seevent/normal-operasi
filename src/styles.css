@@ -21,3 +21,31 @@ select, input, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Print Optimization for Surat Berita Acara & Laporan */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:break-before-page,
+  [class*="print:break-before-page"] {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+}

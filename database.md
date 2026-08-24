@@ -5,11 +5,10 @@
 
 ## 1. Ringkasan Arsitektur Data
 
-Aplikasi **SSES T2 Generator Laporan** menerapkan arsitektur data hibrida (*Hybrid Data Architecture*):
+Aplikasi **SSES T2 Generator Laporan** menerapkan arsitektur data:
 
 1. **Cloud Database (Supabase PostgreSQL)**: Menyimpan master data terstruktur, relasi peralatan-lokasi, data personel, jadwal shift, serta catatan performa TIP.
-2. **Spreadsheet Backend (Google Sheets & Apps Script)**: Menyimpan rekapitulasi histori laporan harian operasional dan lampiran gambar di Google Drive.
-3. **Local Storage Fallback**: Menyimpan draf formulir pengguna dan data master lokal di peramban pengguna (*offline resilience*).
+2. **Local Storage Fallback**: Menyimpan draf formulir pengguna dan data master lokal di peramban pengguna (*offline resilience*).
 
 ---
 
@@ -233,30 +232,7 @@ Menyimpan konfigurasi fleksibel dan data agregat dalam format JSONB.
 
 ---
 
-## 5. Integrasi Google Sheets Backend (`Code.gs`)
-
-Google Apps Script berfungsi menerima HTTP POST/GET request dari frontend untuk pencatatan laporan harian.
-
-### 5.1. Skema Sheet `Laporan_Harian`
-
-| Kolom | Indeks | Nama Header | Tipe Data | Keterangan |
-|---|---|---|---|---|
-| A | 1 | Tanggal | `String` (YYYY-MM-DD) | Tanggal laporan. |
-| B | 2 | Waktu | `String` (HH:mm) | Jam kejadian/pencatatan. |
-| C | 3 | Shift | `String` | Kode shift (Pagi/Siang/Malam). |
-| D | 4 | Jenis | `String` | Jenis laporan (Kegiatan, Perbaikan, Initial Report, Storing). |
-| E | 5 | Teknisi | `String` | Nama personel penanggung jawab. |
-| F | 6 | Lokasi | `String` | Nama lokasi penempatan. |
-| G | 7 | Peralatan | `String` | Nama/tipe peralatan terkait. |
-| H | 8 | Uraian | `String` | Deskripsi rinci kegiatan/gangguan. |
-| I | 9 | TindakLanjut | `String` | Langkah penanganan yang telah dilakukan. |
-| J | 10 | Status | `String` | Status akhir (Normal / Gangguan / Monitoring). |
-| K | 11 | Drive_Image_ID | `String` | File ID Google Drive foto dokumentasi. |
-| L | 12 | Foto_Preview | `Formula` | `=IMAGE("https://drive.google.com/uc?export=view&id=FILE_ID")` |
-
----
-
-## 6. Penyimpanan Lokal (`localStorage` Key Schema)
+## 5. Penyimpanan Lokal (`localStorage` Key Schema)
 
 | Key Name | Tipe | Deskripsi |
 |---|---|---|

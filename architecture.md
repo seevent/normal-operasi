@@ -5,7 +5,7 @@
 
 ## 1. Ikhtisar Arsitektur Sistem
 
-Aplikasi **SSES T2 Generator Laporan** dibangun menggunakan arsitektur **Single Page Application (SPA) Mobile-First** berbasis **React 19**, **TypeScript 5**, **TanStack Router/Start**, dan **Vite 7**. Aplikasi menggunakan **Supabase PostgreSQL** sebagai backend cloud utama dan **Google Apps Script (`Code.gs`)** sebagai backend pendukung untuk sinkronisasi Google Sheets & Drive Storage.
+Aplikasi **SSES T2 Generator Laporan** dibangun menggunakan arsitektur **Single Page Application (SPA) Mobile-First** berbasis **React 19**, **TypeScript 5**, **TanStack Router/Start**, dan **Vite 7**. Aplikasi menggunakan **Supabase PostgreSQL** sebagai backend cloud utama.
 
 ```mermaid
 graph TD
@@ -20,11 +20,6 @@ graph TD
     UI --> CanvasEngine[Canvas, Konva & Signature Engine\nPhoto Annotation, Live Collage, SignaturePad]
     
     WAGen --> WAShare[Web Share API / WhatsApp Direct Link]
-    
-    UI --> SheetsService[Sheets Sync Service\nsheetsSyncService.ts]
-    SheetsService <--> GAS[Google Apps Script\nCode.gs Web App]
-    GAS <--> GSheets[(Google Sheets\nLaporan_Harian)]
-    GAS <--> GDrive[(Google Drive\nSSES_Report_Images)]
 ```
 
 ---
@@ -86,8 +81,7 @@ src/
 │   │   ├── constants.ts            # Key konstanta localStorage & app configuration
 │   │   └── masterData.ts           # Initial fallback master data, hirarki jabatan, & helper formatting
 │   ├── services/
-│   │   ├── shareService.ts         # Utility Web Share API & Clipboard fallback
-│   │   └── sheetsSyncService.ts    # Service sinkronisasi data dengan Google Sheets API
+│   │   └── shareService.ts         # Utility Web Share API & Clipboard fallback
 │   ├── utils/
 │   │   ├── waGenerator.ts          # Template engine pesan WhatsApp untuk 12 tab
 │   │   ├── locationRules.ts        # Business logic filter lokasi relasional
@@ -162,8 +156,7 @@ Modul **Initial Report**, **Briefing**, **Perbaikan**, dan **Kalibrasi** menggun
        ▼
 [LiveCollagePreview.tsx] ──(Canvas Render Grid)──► [Canvas Result PNG / Base64]
        │
-       ├──► [Attach to WhatsApp Share / Local Preview]
-       └──► [Google Apps Script (`Code.gs`) -> Google Drive Storage]
+       └──► [Attach to WhatsApp Share / Local Preview]
 ```
 
 1. **Konva Anotasi (`PhotoTextEditorModal.tsx`)**: Mengizinkan pengguna menambah label teks, mengubah warna font, ukuran, dan posisi di atas gambar.
@@ -186,17 +179,11 @@ Form State (React)
 
 ---
 
-## 7. Integrasi Backend Dual-Layer (Supabase & Google Apps Script)
+## 7. Integrasi Backend Cloud (Supabase)
 
-### 7.1. Layer 1: Supabase Cloud Database
+### Supabase Cloud Database
 - Digunakan untuk data relasional terstruktur: Master Peralatan, Lokasi, Penempatan Relasional, Personel, Jadwal Shift, dan Data TIP.
 - Menggunakan REST API Client (`@supabase/supabase-js`) dengan kunci anonim (`VITE_SUPABASE_ANON_KEY`).
-
-### 7.2. Layer 2: Google Apps Script (`Code.gs`)
-- Bertindak sebagai webhook serverless untuk:
-  - Menyimpan rekapitulasi laporan harian langsung ke Google Sheets (`Laporan_Harian`).
-  - Mengunggah gambar berukuran besar dari kolase foto langsung ke folder Google Drive (`SSES_Report_Images`).
-  - Menghasilkan tautan Google Drive publik yang disematkan langsung dalam rumus spreadsheet `=IMAGE("https://drive.google.com/uc?export=view&id=...")`.
 
 ---
 
