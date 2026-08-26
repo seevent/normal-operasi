@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, FileText, Download, Loader2, CheckCircle, Clock, Plus, Edit, Trash2, X } from 'lucide-react';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-// html2pdf.js is loaded dynamically (browser-only, references `self`)
+import { generatePdfBlob } from '../../lib/services/pdfService';
 import { supabase } from '../../lib/supabaseClient';
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -173,22 +173,17 @@ export const TabShiftReport: React.FC = () => {
   const fetchAndGeneratePDF = async () => {
     if (!date) return;
     setLoading(true);
-    setStatusMsg({ text: "Mempersiapkan laporan PDF...", type: 'info' });
-
-    if (reports.length > 0) {
-      setStatusMsg({ text: `Memproses ${reports.length} laporan ke dalam PDF...`, type: 'info' });
-      setTimeout(async () => {
-        await generateAndSharePdf(reports);
-      }, 1000);
-    } else {
-      setStatusMsg({ text: "Tidak ada laporan pada shift tersebut.", type: 'error' });
-      setLoading(false);
-    }
+    setStatusMsg({ text: "Mempersiapkan dan membuat laporan PDF...", type: 'info' });
+    await generateAndSharePdf(reports);
   };
 
   const generateAndSharePdf = async (_reportData: any[]) => {
     try {
-      if (!pdfRef.current) return;
+      if (!pdfRef.current) {
+        setStatusMsg({ text: "Elemen PDF tidak ditemukan.", type: 'error' });
+        setLoading(false);
+        return;
+      }
       const element = pdfRef.current;
       const opt = {
         margin:       5, // smaller margin for landscape
@@ -198,17 +193,18 @@ export const TabShiftReport: React.FC = () => {
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
       };
 
-      const html2pdf = (await import('html2pdf.js')).default;
-      const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+      const pdfBlob = await generatePdfBlob(element, opt);
       
       const pdfFile = new File([pdfBlob], `Laporan_Shift_${shift}_${date}.pdf`, { type: 'application/pdf' });
       await shareToWhatsApp(`Berikut lampiran rekap laporan perbaikan Shift ${shift} tanggal ${date}`, pdfFile, () => {});
       
-      setStatusMsg({ text: "PDF berhasil dibuat dan dibagikan.", type: 'success' });
+      setStatusMsg({ text: "PDF berhasil dibuat dan dibagikan ke WhatsApp.", type: 'success' });
       setTimeout(() => setStatusMsg(null), 4000);
-      setLoading(false);
     } catch (err) {
+      console.error("Error creating PDF:", err);
       setStatusMsg({ text: "Gagal membuat PDF.", type: 'error' });
+      setTimeout(() => setStatusMsg(null), 4000);
+    } finally {
       setLoading(false);
     }
   };
@@ -402,8 +398,8 @@ export const TabShiftReport: React.FC = () => {
         )}
       </div>
 
-      {/* HIDDEN PDF CONTENT */}
-      <div className="overflow-hidden h-0 w-0 absolute opacity-0 pointer-events-none">
+      {/* OFF-SCREEN PDF CONTENT */}
+      <div className="fixed -left-[99999px] top-0 pointer-events-none z-[-1] opacity-100">
         {/* Landscape A4 width is roughly 1122px */}
         <div ref={pdfRef} className="w-[1100px] p-4 bg-white text-black font-sans">
           

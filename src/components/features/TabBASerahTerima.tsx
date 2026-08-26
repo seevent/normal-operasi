@@ -5,6 +5,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_BASerahTerima } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
+import { generatePdfBlob } from '../../lib/services/pdfService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { SignaturePad } from '../shared/SignaturePad';
@@ -311,7 +312,6 @@ export const TabBASerahTerima: React.FC = () => {
       let pdfFile: File | null = null;
 
       if (printableBaRef.current) {
-        const html2pdf = (await import('html2pdf.js')).default;
         const opt = {
           margin: [10, 10, 10, 10],
           filename: `BA_Serah_Terima_${baData.tanggal}.pdf`,
@@ -321,7 +321,7 @@ export const TabBASerahTerima: React.FC = () => {
           pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
-        const pdfBlob = await html2pdf().set(opt).from(printableBaRef.current).output('blob');
+        const pdfBlob = await generatePdfBlob(printableBaRef.current, opt);
         pdfFile = new File([pdfBlob], `BA_Serah_Terima_${baData.tanggal}.pdf`, { type: 'application/pdf' });
       }
 
@@ -881,7 +881,7 @@ export const TabBASerahTerima: React.FC = () => {
         {/* LEMBAR LAMPIRAN DOKUMENTASI / EVIDENCE (LEMBAR 2 - HANYA JIKA ADA FOTO YANG DITAMBAHKAN) */}
         {photos.length > 0 && (
           <div className="html2pdf__page-break print:mt-0 print:border-none print:p-0 print:pt-0 print:break-before-page print:[page-break-before:always]">
-            <div className="flex items-center justify-between mb-4 print:hidden">
+            <div data-html2canvas-ignore="true" className="flex items-center justify-between mb-4 print:hidden">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-emerald-600" /> Preview Lembar Evidence / Lampiran Foto (Siap Cetak / PDF)
               </h3>

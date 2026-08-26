@@ -8,6 +8,8 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { toTitleCase } from '../../lib/data/masterData';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
+import { supabase } from '../../lib/supabaseClient';
+import { useMasterDataStore } from '../../store/useMasterDataStore';
 
 function formatNamaPersonel(fullName: string): string {
   if (!fullName) return '';
@@ -26,6 +28,7 @@ function formatNamaPersonel(fullName: string): string {
 
 export const TabPerbaikan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
+  const { penempatanData } = useMasterDataStore();
 
   const [formData, setFormData] = useState(() => {
     const now = new Date();
@@ -50,52 +53,68 @@ export const TabPerbaikan: React.FC = () => {
   // Ambil data teknisi dan tipe peralatan dari Supabase
   React.useEffect(() => {
     const fetchData = async () => {
-      // 1. Fetch Teknisi
-      const now = new Date();
-      const currentHour = now.getHours();
-      const logicalDateObj = new Date(now.getTime());
-      if (currentHour < 8) {
-        logicalDateObj.setDate(logicalDateObj.getDate() - 1);
-      }
-      const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;
-      const todayStr = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split('T')[0];
-      const isPagi = currentHour >= 8 && currentHour < 20;
+      try {
+        // 1. Fetch Teknisi
+        const now = new Date();
+        const currentHour = now.getHours();
+        const logicalDateObj = new Date(now.getTime());
+        if (currentHour < 8) {
+          logicalDateObj.setDate(logicalDateObj.getDate() - 1);
+        }
+        const tzOffset = logicalDateObj.getTimezoneOffset() * 60000;
+        const todayStr = new Date(logicalDateObj.getTime() - tzOffset).toISOString().split('T')[0];
+        const isPagi = currentHour >= 8 && currentHour < 20;
 
-      const { data: dataTeknisi } = await supabase
-        .from('jadwal_shift')
-        .select(`id, shift, status_kehadiran, personel:personel_id(nama, unit_kerja(nama))`)
-        .eq('tanggal', todayStr)
-        .eq('status_kehadiran', 'Hadir');
+        const { data: dataTeknisi } = await supabase
+          .from('jadwal_shift')
+          .select(`id, shift, status_kehadiran, personel:personel_id(nama, unit_kerja(nama))`)
+          .eq('tanggal', todayStr)
+          .eq('status_kehadiran', 'Hadir');
 
-      if (dataTeknisi) {
-        const filteredTeknisi = dataTeknisi.filter((d: any) => {
-          const s = (d.shift || '').toUpperCase();
-          if (isPagi) {
-            return s === 'PS';
-          } else {
-            return s === 'M';
+        if (dataTeknisi) {
+          const filteredTeknisi = dataTeknisi.filter((d: any) => {
+            const s = (d.shift || '').toUpperCase();
+            if (isPagi) {
+              return s === 'PS';
+            } else {
+              return s === 'M';
+            }
+          });
+
+          setAvailableTeknisi(filteredTeknisi.map((d: any) => ({
+            id: d.id,
+            name: formatNamaPersonel(toTitleCase(d.personel?.nama || '')),
+            unit: d.personel?.unit_kerja?.nama || ''
+          })).filter((t: any) => t.name !== ''));
+        }
+
+        // 2. Fetch Tipe Peralatan
+        const { data: dataTipe } = await supabase
+          .from('tipe_peralatan')
+          .select('nama')
+          .order('nama', { ascending: true });
+          
+        if (dataTipe && dataTipe.length > 0) {
+          setTipePeralatanOptions(dataTipe.map(d => d.nama));
+        } else {
+          // Fallback from penempatanData in store
+          const penempatan = useMasterDataStore.getState().penempatanData || [];
+          const uniqueTipe = Array.from(new Set(penempatan.map((p: any) => p.tipe_peralatan?.nama).filter(Boolean)));
+          if (uniqueTipe.length > 0) {
+            setTipePeralatanOptions(uniqueTipe as string[]);
           }
-        });
-
-        setAvailableTeknisi(filteredTeknisi.map((d: any) => ({
-          id: d.id,
-          name: formatNamaPersonel(toTitleCase(d.personel?.nama || '')),
-          unit: d.personel?.unit_kerja?.nama || ''
-        })).filter((t: any) => t.name !== ''));
-      }
-
-      // 2. Fetch Tipe Peralatan
-      const { data: dataTipe } = await supabase
-        .from('tipe_peralatan')
-        .select('nama')
-        .order('nama', { ascending: true });
-        
-      if (dataTipe) {
-        setTipePeralatanOptions(dataTipe.map(d => d.nama));
+        }
+      } catch (err) {
+        console.error('Error fetching data in TabPerbaikan:', err);
+        const penempatan = useMasterDataStore.getState().penempatanData || [];
+        const uniqueTipe = Array.from(new Set(penempatan.map((p: any) => p.tipe_peralatan?.nama).filter(Boolean)));
+        if (uniqueTipe.length > 0) {
+          setTipePeralatanOptions(uniqueTipe as string[]);
+        }
       }
     };
     fetchData();
-  }, []);
+  }, [penempatanData]);
 
   // Update string 'teknisi' di formData jika checkbox berubah
   React.useEffect(() => {
