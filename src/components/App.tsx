@@ -211,7 +211,7 @@ export default function App() {
           isBottomBorder ? 'border-b border-slate-200' : ''
         } ${
           isActive
-            ? 'bg-blue-700 text-white font-extrabold shadow-inner shadow-blue-950/30 border-b-4 border-amber-400 relative z-10'
+            ? 'bg-blue-700 text-white font-extrabold shadow-inner shadow-blue-950/30 border-b-4 border-slate-200 relative z-10'
             : 'bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200 hover:text-slate-900'
         }`}
       >
@@ -223,7 +223,7 @@ export default function App() {
           }}
           className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center bg-gradient-to-b ${tab.gradient} border-t border-white/50 transition-all duration-200 ${
             isActive
-              ? 'scale-110 -translate-y-0.5 ring-2 ring-amber-300'
+              ? 'scale-110 -translate-y-0.5 ring-2 ring-white/60'
               : 'group-hover:scale-105 group-hover:-translate-y-0.5 opacity-90 group-hover:opacity-100'
           }`}
         >
@@ -268,7 +268,7 @@ export default function App() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">SSES T2</h1>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold bg-blue-500/25 text-blue-100 border border-blue-400/30">
                         {currentTab.label}
                       </span>
                     </div>

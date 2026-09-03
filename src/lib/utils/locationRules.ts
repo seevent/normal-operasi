@@ -112,6 +112,39 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
   try {
     const penempatanData = useMasterDataStore.getState().penempatanData || [];
 
+    if (peralatanArray.length > 1) {
+      const equipMap: Record<string, Set<string>> = {};
+      peralatanArray.forEach(eq => { equipMap[eq] = new Set(); });
+
+      penempatanData.forEach((p: any) => {
+        if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase()) {
+          const jenisNama = p.tipe_peralatan?.jenis_peralatan?.nama;
+          const tipeNama = p.tipe_peralatan?.nama;
+          peralatanArray.forEach(eq => {
+            if (jenisNama === eq || tipeNama === eq) {
+              if (p.titik_lokasi?.nomor) equipMap[eq].add(p.titik_lokasi.nomor);
+            }
+          });
+        }
+      });
+
+      const sets = Object.values(equipMap).filter(s => s.size > 0);
+      if (sets.length > 1) {
+        let common = Array.from(sets[0]);
+        for (let i = 1; i < sets.length; i++) {
+          common = common.filter(num => sets[i].has(num));
+        }
+        if (common.length > 0) {
+          return common.sort((a, b) => {
+            const numA = parseInt(a.replace(/[^0-9]/g, ''), 10);
+            const numB = parseInt(b.replace(/[^0-9]/g, ''), 10);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b);
+          });
+        }
+      }
+    }
+
     penempatanData.forEach((p: any) => {
       if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase()) {
         // Jika ada filter peralatanArray, pastikan titik lokasi ini memang untuk salah satu peralatan tersebut

@@ -6,7 +6,6 @@ import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getInterse
 import { generateWA_Kalibrasi } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
-import { LayoutGrid } from 'lucide-react';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
 
@@ -15,9 +14,11 @@ export const TabKalibrasi: React.FC = () => {
   const { jenisPeralatanData } = useMasterDataStore();
   const [showErrors, setShowErrors] = useState(false);
   
-  const kalibrasiEquipments = jenisPeralatanData
-    .filter((j: any) => j.tampil_di_kalibrasi)
-    .map((j: any) => j.nama);
+  const kalibrasiEquipments = jenisPeralatanData && jenisPeralatanData.length > 0
+    ? jenisPeralatanData
+        .filter((j: any) => j.tampil_di_kalibrasi)
+        .map((j: any) => j.nama)
+    : ['X-Ray', 'WTMD', 'HHMD', 'Body Scanner', 'ETD', 'Access Control', 'Extension Conveyor'];
 
   // === STATE UNTUK TAB 5: KALIBRASI (MULTI LOKASI) ===
   const createEmptyKalibrasiEntry = () => ({
@@ -28,6 +29,9 @@ export const TabKalibrasi: React.FC = () => {
     hhmdModel: 'Semua HHMD',
     bsModel: 'Semua Body Scanner',
     etdModel: 'Semua ETD',
+    ecGearbox: 'Normal',
+    ecTension: 'Normal',
+    ecBelt: 'Normal',
     lokasi1: '', lokasi2: '',
     acLokasi: [] as string[],
     acEmlock: 'Berfungsi', acIntercom: 'Berfungsi', acFingerprint: 'Berfungsi', acCctv: 'Berfungsi', acPengontrolan: 'Berfungsi', acRecordCctv: '+- 1 bulan',
@@ -94,10 +98,43 @@ export const TabKalibrasi: React.FC = () => {
     const { name, value } = e.target;
     setKalibrasiEntries(prev => {
       const newEntries = [...prev];
-      newEntries[index] = { ...newEntries[index], [name]: value };
+      const updated = { ...newEntries[index], [name]: value };
       if (name === 'lokasi1') {
-        newEntries[index].lokasi2 = ''; 
+        updated.lokasi2 = ''; 
       }
+
+      const l1 = updated.lokasi1;
+      const l2 = name === 'lokasi1' ? '' : (name === 'lokasi2' ? value : updated.lokasi2);
+
+      if (l1) {
+        if (updated.peralatan.includes('X-Ray')) {
+          const valid = getValidXRayModels(l1, l2).filter(m => !m.startsWith('Semua '));
+          if (valid.length === 1) updated.xrayModel = valid[0];
+          else if (!valid.includes(updated.xrayModel)) updated.xrayModel = 'Semua X-Ray';
+        }
+        if (updated.peralatan.includes('WTMD')) {
+          const valid = getValidModels(l1, 'WTMD', l2).filter(m => !m.startsWith('Semua '));
+          if (valid.length === 1) updated.wtmdModel = valid[0];
+          else if (!valid.includes(updated.wtmdModel)) updated.wtmdModel = 'Semua WTMD';
+        }
+        if (updated.peralatan.includes('HHMD')) {
+          const valid = getValidModels(l1, 'HHMD', l2).filter(m => !m.startsWith('Semua '));
+          if (valid.length === 1) updated.hhmdModel = valid[0];
+          else if (!valid.includes(updated.hhmdModel)) updated.hhmdModel = 'Semua HHMD';
+        }
+        if (updated.peralatan.includes('Body Scanner')) {
+          const valid = getValidModels(l1, 'Body Scanner', l2).filter(m => !m.startsWith('Semua '));
+          if (valid.length === 1) updated.bsModel = valid[0];
+          else if (!valid.includes(updated.bsModel)) updated.bsModel = 'Semua Body Scanner';
+        }
+        if (updated.peralatan.includes('ETD')) {
+          const valid = getValidModels(l1, 'ETD', l2).filter(m => !m.startsWith('Semua '));
+          if (valid.length === 1) updated.etdModel = valid[0];
+          else if (!valid.includes(updated.etdModel)) updated.etdModel = 'Semua ETD';
+        }
+      }
+
+      newEntries[index] = updated;
       return newEntries;
     });
   };
@@ -453,6 +490,9 @@ export const TabKalibrasi: React.FC = () => {
       if (entry.peralatan.includes('ETD')) {
         if (!entry.etdTnt || !entry.etdPetn || !entry.etdRdx) return true;
       }
+      if (entry.peralatan.includes('Extension Conveyor')) {
+        if (!entry.ecGearbox || !entry.ecTension || !entry.ecBelt) return true;
+      }
       return false;
     });
 
@@ -715,6 +755,61 @@ export const TabKalibrasi: React.FC = () => {
               </div>
 
               {/* Dynamic Configurations based on selected equipments */}
+              {entry.peralatan.includes('Extension Conveyor') && (
+                <div className="bg-teal-50/40 p-4 sm:p-5 rounded-xl border border-teal-200 space-y-4">
+                  <h3 className="font-bold text-teal-900 flex items-center gap-2 border-b border-teal-200 pb-3">
+                    🔄 Parameter Extension Conveyor
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Gearbox Motor</label>
+                      <select 
+                        name="ecGearbox" 
+                        value={entry.ecGearbox || 'Normal'} 
+                        onChange={(e) => handleKalibrasiEntryChange(index, e)} 
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none cursor-pointer focus:ring-1 focus:ring-teal-500"
+                      >
+                        <option value="Normal">Normal</option>
+                        <option value="Perlu Penyetelan">Perlu Penyetelan</option>
+                        <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                        <option value="Error">Error</option>
+                        <option value="Rusak">Rusak</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Tension Roller</label>
+                      <select 
+                        name="ecTension" 
+                        value={entry.ecTension || 'Normal'} 
+                        onChange={(e) => handleKalibrasiEntryChange(index, e)} 
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none cursor-pointer focus:ring-1 focus:ring-teal-500"
+                      >
+                        <option value="Normal">Normal</option>
+                        <option value="Perlu Penyetelan">Perlu Penyetelan</option>
+                        <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                        <option value="Error">Error</option>
+                        <option value="Rusak">Rusak</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">Conveyor Belt</label>
+                      <select 
+                        name="ecBelt" 
+                        value={entry.ecBelt || 'Normal'} 
+                        onChange={(e) => handleKalibrasiEntryChange(index, e)} 
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm outline-none cursor-pointer focus:ring-1 focus:ring-teal-500"
+                      >
+                        <option value="Normal">Normal</option>
+                        <option value="Perlu Penyetelan">Perlu Penyetelan</option>
+                        <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                        <option value="Error">Error</option>
+                        <option value="Rusak">Rusak</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {entry.peralatan.includes('X-Ray') && (
                 <div className={`bg-blue-50/40 p-4 sm:p-5 rounded-xl border space-y-4 ${
                   showErrors && (!entry.xrayKvV.trim() || !entry.xrayKvH.trim() || !entry.xrayMaV.trim() || !entry.xrayMaH.trim() || !entry.xrayOnV.trim() || !entry.xrayOnH.trim() || !entry.xrayArchive.trim()) ? 'border-red-400 ring-2 ring-red-200' : 'border-blue-200'
