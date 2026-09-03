@@ -250,9 +250,9 @@ export default function App() {
               <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-400/15 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-10 left-1/4 w-40 h-40 bg-indigo-400/15 rounded-full blur-2xl pointer-events-none" />
 
-              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                 {/* Brand, Subtitle & Active Tab Indicator */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                   <div 
                     style={{
                       boxShadow: `0 4px 10px rgba(0,0,0,0.3), 0 2px 0 0 ${currentTab.shadowColor || '#1e3a8a'}`
@@ -265,49 +265,49 @@ export default function App() {
                       })}
                     </span>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">SSES T2</h1>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
                         {currentTab.label}
                       </span>
                     </div>
-                    <p className="text-blue-200 text-xs sm:text-sm font-medium">WhatsApp Report Generator</p>
+                    <p className="text-blue-200 text-xs sm:text-sm font-medium truncate">WhatsApp Report Generator</p>
                   </div>
                 </div>
 
                 {/* Actions: Sparepart & Reset */}
-                <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
                   <a
                     href="https://masih-berapa.vercel.app"
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Buka Inventaris & Manajemen Sparepart SSES T2"
-                    className="group relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-extrabold bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-300/80 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-400/40 active:scale-95"
+                    className="group relative flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-extrabold bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-300/80 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-400/40 active:scale-95 w-full sm:w-auto text-center"
                   >
-                    <span className="relative flex h-2 w-2">
+                    <span className="relative flex h-2 w-2 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-600 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-700"></span>
                     </span>
-                    <Package className="w-4 h-4 text-slate-900 group-hover:rotate-12 transition-transform duration-300" />
-                    <span>Sparepart</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-900/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                    <Package className="w-4 h-4 text-slate-900 group-hover:rotate-12 transition-transform duration-300 shrink-0" />
+                    <span className="truncate">Sparepart</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-900/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300 shrink-0" />
                   </a>
 
                   <button
                     type="button"
                     onClick={handleReset}
                     disabled={isResetting}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-300 border ${
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-300 border w-full sm:w-auto text-center ${
                       isResetting 
                         ? 'bg-emerald-500 text-white border-emerald-400 shadow-md' 
                         : 'bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm hover:shadow-sm active:scale-95'
                     }`}
                   >
                     {isResetting ? (
-                      <><Check className="w-4 h-4 animate-pulse" /> Di-reset!</>
+                      <><Check className="w-4 h-4 animate-pulse shrink-0" /> <span className="truncate">Di-reset!</span></>
                     ) : (
-                      <><RefreshCw className="w-4 h-4 text-blue-200" /> Reset</>
+                      <><RefreshCw className="w-4 h-4 text-blue-200 shrink-0" /> <span className="truncate">Reset</span></>
                     )}
                   </button>
                 </div>
