@@ -82,8 +82,8 @@ export const AssetManager: React.FC = () => {
   };
 
   const handleAddAsset = async () => {
-    if (!formLokasi || !formTipe || !formTitik.trim()) {
-      setErrorMsg('Mohon lengkapi semua field (Lokasi, Tipe, Titik)!');
+    if (!formLokasi || !formTipe || !formUnit || !formTitik.trim()) {
+      setErrorMsg('Mohon lengkapi semua field (Lokasi, Tipe, Unit S/N, Titik)!');
       return;
     }
     
@@ -95,6 +95,10 @@ export const AssetManager: React.FC = () => {
       
       if (titikArray.length === 0) {
         throw new Error('Format titik tidak valid.');
+      }
+
+      if (titikArray.length > 1) {
+        throw new Error('Satu unit spesifik hanya dapat ditempatkan pada satu nomor titik.');
       }
 
       // Loop for each titik
@@ -135,7 +139,8 @@ export const AssetManager: React.FC = () => {
         if (penempatanErr) throw penempatanErr;
       }
 
-      // Reset form (keep jenis and lokasi for faster multi-adds, just reset titik)
+      // Reset form (keep jenis and lokasi for faster multi-adds, reset unit & titik)
+      setFormUnit('');
       setFormTitik('');
       // Reload lists
       await loadBaseData();
@@ -188,8 +193,9 @@ export const AssetManager: React.FC = () => {
   });
 
   // --- Form Select Options ---
+  const placedUnitIds = new Set(allAssets.map(a => a.id_unit).filter(Boolean));
   const filteredTipeForForm = tipeData.filter(t => t.id_jenis === formJenis);
-  const filteredUnitsForForm = unitsData.filter(u => u.id_tipe === formTipe);
+  const filteredUnitsForForm = unitsData.filter(u => u.id_tipe === formTipe && !placedUnitIds.has(u.id));
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -255,6 +261,7 @@ export const AssetManager: React.FC = () => {
                         onChange={(e) => {
                           setFormJenis(e.target.value);
                           setFormTipe(''); // Reset tipe if jenis changes
+                          setFormUnit('');
                         }}
                         className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
                       >
@@ -284,14 +291,14 @@ export const AssetManager: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-blue-800 mb-1">Pilih Unit Spesifik (S/N) <span className="font-normal text-slate-500">(Opsional)</span></label>
+                      <label className="block text-xs font-semibold text-blue-800 mb-1">Pilih Unit Spesifik (S/N)</label>
                       <select 
                         value={formUnit}
                         onChange={(e) => setFormUnit(e.target.value)}
                         disabled={!formTipe || filteredUnitsForForm.length === 0}
                         className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:opacity-50"
                       >
-                        <option value="">-- Semua / Umum (Tanpa S/N) --</option>
+                        <option value="">-- Pilih Unit (S/N) --</option>
                         {filteredUnitsForForm.map(u => (
                           <option key={u.id} value={u.id}>
                             S/N: {u.serial_number || 'Tanpa S/N'} ({u.milik || 'API'})
@@ -299,7 +306,7 @@ export const AssetManager: React.FC = () => {
                         ))}
                       </select>
                       {formTipe && filteredUnitsForForm.length === 0 && (
-                        <p className="text-[11px] text-amber-700 mt-1">Belum ada data unit fisik untuk tipe ini.</p>
+                        <p className="text-[11px] text-amber-700 mt-1">Tidak ada unit fisik yang tersedia untuk tipe ini.</p>
                       )}
                     </div>
 
@@ -330,7 +337,7 @@ export const AssetManager: React.FC = () => {
                     
                     <button 
                       onClick={handleAddAsset}
-                      disabled={saving || !formTipe || !formLokasi || !formTitik.trim()}
+                      disabled={saving || !formTipe || !formUnit || !formLokasi || !formTitik.trim()}
                       className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}

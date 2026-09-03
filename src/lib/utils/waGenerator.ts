@@ -497,7 +497,7 @@ Terimakasih atas perhatiannya.`;
 export const generateWA_BASerahTerima = (baData: any) => {
   const formattedDate = formatTanggalIndo(baData.tanggal);
   const waktuText = baData.waktu ? `${baData.waktu} WIB` : '...';
-  const jenisText = baData.jenisTransaksi === 'masuk' ? 'PEMASUKAN BARANG' : 'PENYERAHAN BARANG';
+  const jenisText = baData.jenisTransaksi === 'masuk' ? 'PENERIMAAN BARANG' : 'PENYERAHAN BARANG';
 
   const barangListText = Array.isArray(baData.items) && baData.items.length > 0
     ? baData.items.map((it: any, idx: number) => {
