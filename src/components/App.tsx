@@ -18,6 +18,7 @@ import { TabData } from './features/TabData';
 import { TabKegiatan } from './features/TabKegiatan';
 import { TabShiftReport } from './features/TabShiftReport';
 import { TabBASerahTerima } from './features/TabBASerahTerima';
+import { AntigravityPet } from './features/AntigravityPet';
 import { useAppStore } from '../store/useAppStore';
 import { useMasterDataStore } from '../store/useMasterDataStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -237,9 +238,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8 px-4 sm:px-6 flex items-center justify-center font-sans relative print:min-h-0 print:bg-white print:p-0 print:m-0 print:block">
+    <div className="min-h-screen bg-slate-100 py-3 px-2 sm:py-6 sm:px-4 lg:py-8 lg:px-6 flex items-start sm:items-center justify-center font-sans relative print:min-h-0 print:bg-white print:p-0 print:m-0 print:block">
 
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 print:max-w-none print:w-full print:border-none print:shadow-none print:rounded-none print:overflow-visible">
+      <div className={`w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 print:max-w-none print:w-full print:border-none print:shadow-none print:rounded-none print:overflow-visible transition-all duration-300 ${activeTab === 'data' || activeTab === 'ba_serah_terima' ? 'max-w-6xl xl:max-w-7xl' : 'max-w-2xl'}`}>
         
         {/* === HEADER BERSAMA === */}
         {(() => {
@@ -447,6 +448,9 @@ export default function App() {
         {activeTab === 'ba_serah_terima' && <TabBASerahTerima key={`ba_serah_terima-${tabResetKeys['ba_serah_terima'] || 0}`} />}
 
       </div>
+
+      {/* Floating Antigravity Pet (Chibi Iron Man) */}
+      <AntigravityPet />
     </div>
   );
 }
