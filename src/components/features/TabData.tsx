@@ -318,7 +318,7 @@ const LocalDataEditor: React.FC = () => {
       </div>
 
       {activeSubTab === 'upload_jadwal' ? (
-        <div className="p-6">
+        <div className="p-3 sm:p-5 md:p-6">
           <ScheduleUploader />
         </div>
       ) : activeSubTab === 'sparepart_list' ? (
@@ -326,15 +326,15 @@ const LocalDataEditor: React.FC = () => {
           <SparepartManager />
         </div>
       ) : activeSubTab === 'manajemen_aset' ? (
-        <div className="p-6 bg-slate-50 min-h-[500px]">
+        <div className="p-2.5 sm:p-4 md:p-6 bg-slate-50 min-h-[500px]">
           <AssetManager />
         </div>
       ) : activeSubTab === 'checklist_config' ? (
-        <div className="p-6">
+        <div className="p-3 sm:p-5 md:p-6">
           <ChecklistDataEditor />
         </div>
       ) : activeSubTab === 'kalibrasi_equip' ? (
-        <div className="p-6">
+        <div className="p-3 sm:p-5 md:p-6">
           <h3 className="text-lg font-bold text-slate-800 mb-4">Peralatan untuk Tab Kalibrasi</h3>
           <p className="text-sm text-slate-500 mb-6">Pilih jenis peralatan dari database yang akan dimunculkan sebagai opsi di halaman Kalibrasi.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

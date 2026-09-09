@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { MapPin, Cpu, Hash, Trash2, Plus, Loader2, AlertCircle, LayoutGrid, Database, Layers } from 'lucide-react';
+import { MapPin, Cpu, Hash, Trash2, Plus, Loader2, AlertCircle, LayoutGrid, Database, Layers, Edit2, Save, X } from 'lucide-react';
 import { AssetMasterLokasi } from './AssetMasterLokasi';
 import { AssetMasterPeralatan } from './AssetMasterPeralatan';
 import { UnitPeralatanManager } from './UnitPeralatanManager';
+
+const MILIK_OPTIONS = ['API', 'Bea Cukai', 'Sewa', 'Lainnya'];
+const STATUS_OPTIONS = [
+  { val: 'operasi', label: 'Beroperasi Normal' },
+  { val: 'standby', label: 'Standby / Cadangan' },
+  { val: 'backup', label: 'Unit Backup' },
+  { val: 'rusak', label: 'Rusak / Perbaikan' },
+  { val: 'rekondisi', label: 'Sedang Rekondisi' }
+];
 
 type TabType = 'penempatan' | 'lokasi' | 'peralatan' | 'unit';
 
@@ -35,6 +44,26 @@ export const AssetManager: React.FC = () => {
   const [formTitik, setFormTitik] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
 
+  // Edit Placement State (ubah lokasi & nomor titik)
+  const [editingPlacement, setEditingPlacement] = useState<any | null>(null);
+  const [editPlacLokasi, setEditPlacLokasi] = useState<string>('');
+  const [editPlacTitik, setEditPlacTitik] = useState<string>('');
+  const [savingPlacement, setSavingPlacement] = useState<boolean>(false);
+  const [editPlacementError, setEditPlacementError] = useState<string>('');
+
+  // Edit Unit Fisik State
+  const [editingUnit, setEditingUnit] = useState<any | null>(null);
+  const [editUnitSn, setEditUnitSn] = useState<string>('');
+  const [editUnitMilik, setEditUnitMilik] = useState<string>('API');
+  const [editUnitCustomMilik, setEditUnitCustomMilik] = useState<string>('');
+  const [editUnitStatus, setEditUnitStatus] = useState<string>('operasi');
+  const [editUnitNoSertifikasi, setEditUnitNoSertifikasi] = useState<string>('');
+  const [editUnitTahunInstalasi, setEditUnitTahunInstalasi] = useState<string>('');
+  const [editUnitAmpere, setEditUnitAmpere] = useState<string>('');
+  const [editUnitCatatan, setEditUnitCatatan] = useState<string>('');
+  const [savingUnit, setSavingUnit] = useState<boolean>(false);
+  const [editUnitError, setEditUnitError] = useState<string>('');
+
   useEffect(() => {
     if (activeTab === 'penempatan') {
       loadBaseData();
@@ -55,7 +84,7 @@ export const AssetManager: React.FC = () => {
           id_lokasi,
           id_unit,
           tipe_peralatan ( id, id_jenis, nama, jenis_peralatan ( nama ) ),
-          unit_peralatan ( id, serial_number, milik, status ),
+          unit_peralatan ( id, serial_number, milik, status, no_sertifikasi, tahun_instalasi, ampere, catatan ),
           titik_lokasi ( id, nomor ),
           lokasi ( id, nama )
         `)
@@ -169,6 +198,126 @@ export const AssetManager: React.FC = () => {
     }
   };
 
+  // --- Handler Edit Penempatan (hanya mengubah lokasi dan titik) ---
+  const handleOpenEditPenempatan = (asset: any) => {
+    setEditingPlacement(asset);
+    setEditPlacLokasi(asset.id_lokasi || '');
+    setEditPlacTitik(asset.titik_lokasi?.nomor || '');
+    setEditPlacementError('');
+  };
+
+  const handleSaveEditPenempatan = async () => {
+    if (!editingPlacement) return;
+    if (!editPlacLokasi || !editPlacTitik.trim()) {
+      setEditPlacementError('Mohon pilih Lokasi dan isi Nomor Titik.');
+      return;
+    }
+
+    setSavingPlacement(true);
+    setEditPlacementError('');
+    try {
+      const titikStr = editPlacTitik.trim();
+
+      // 1. Cari atau buat Titik Lokasi
+      let titikId = null;
+      const { data: existingTitik, error: titikErr } = await supabase
+        .from('titik_lokasi')
+        .select('id')
+        .eq('id_lokasi', editPlacLokasi)
+        .eq('nomor', titikStr)
+        .maybeSingle();
+
+      if (titikErr) throw titikErr;
+
+      if (existingTitik) {
+        titikId = existingTitik.id;
+      } else {
+        const { data: newTitik, error: insertErr } = await supabase
+          .from('titik_lokasi')
+          .insert({ id_lokasi: editPlacLokasi, nomor: titikStr })
+          .select('id')
+          .single();
+
+        if (insertErr) throw insertErr;
+        titikId = newTitik.id;
+      }
+
+      // 2. Update penempatan_peralatan
+      const { error: updateErr } = await supabase
+        .from('penempatan_peralatan')
+        .update({
+          id_lokasi: editPlacLokasi,
+          id_titik: titikId
+        })
+        .eq('id', editingPlacement.id);
+
+      if (updateErr) throw updateErr;
+
+      setEditingPlacement(null);
+      await loadBaseData();
+      initializeSupabaseData();
+    } catch (err: any) {
+      console.error('Gagal mengupdate penempatan', err);
+      setEditPlacementError(err.message || 'Gagal menyimpan perubahan penempatan.');
+    } finally {
+      setSavingPlacement(false);
+    }
+  };
+
+  // --- Handler Edit Unit Fisik ---
+  const handleOpenEditUnit = (unit: any) => {
+    setEditingUnit(unit);
+    setEditUnitSn(unit.serial_number || '');
+    if (MILIK_OPTIONS.includes(unit.milik || 'API')) {
+      setEditUnitMilik(unit.milik || 'API');
+      setEditUnitCustomMilik('');
+    } else {
+      setEditUnitMilik('Lainnya');
+      setEditUnitCustomMilik(unit.milik || '');
+    }
+    setEditUnitStatus(unit.status || 'operasi');
+    setEditUnitNoSertifikasi(unit.no_sertifikasi || '');
+    setEditUnitTahunInstalasi(unit.tahun_instalasi ? String(unit.tahun_instalasi) : '');
+    setEditUnitAmpere(unit.ampere || '');
+    setEditUnitCatatan(unit.catatan || '');
+    setEditUnitError('');
+  };
+
+  const handleSaveEditUnit = async () => {
+    if (!editingUnit) return;
+    setSavingUnit(true);
+    setEditUnitError('');
+    try {
+      const finalMilik = editUnitMilik === 'Lainnya' 
+        ? (editUnitCustomMilik.trim() || 'Lainnya') 
+        : editUnitMilik;
+
+      const { error: unitErr } = await supabase
+        .from('unit_peralatan')
+        .update({
+          serial_number: editUnitSn.trim() || null,
+          milik: finalMilik,
+          status: editUnitStatus,
+          no_sertifikasi: editUnitNoSertifikasi.trim() || null,
+          tahun_instalasi: editUnitTahunInstalasi ? parseInt(editUnitTahunInstalasi, 10) : null,
+          ampere: editUnitAmpere.trim() || null,
+          catatan: editUnitCatatan.trim() || null
+        })
+        .eq('id', editingUnit.id);
+
+      if (unitErr) throw unitErr;
+
+      setEditingUnit(null);
+      await loadBaseData();
+      initializeSupabaseData();
+    } catch (err: any) {
+      console.error('Gagal mengupdate data unit', err);
+      setEditUnitError(err.message || 'Gagal menyimpan perubahan unit.');
+    } finally {
+      setSavingUnit(false);
+    }
+  };
+
   // --- Filtering Logic for Display List ---
   
   // Calculate which locations actually contain the currently filtered Jenis
@@ -204,31 +353,31 @@ export const AssetManager: React.FC = () => {
       <div className="flex border-b border-slate-200 bg-slate-50 overflow-x-auto hide-scrollbar">
         <button 
           onClick={() => setActiveTab('penempatan')}
-          className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'penempatan' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+          className={`flex items-center gap-2 px-3 sm:px-5 py-3 sm:py-4 font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'penempatan' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
         >
-          <LayoutGrid className="w-4 h-4" /> Penempatan Mesin
+          <LayoutGrid className="w-4 h-4 shrink-0" /> Penempatan Mesin
         </button>
         <button 
           onClick={() => setActiveTab('unit')}
-          className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'unit' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+          className={`flex items-center gap-2 px-3 sm:px-5 py-3 sm:py-4 font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'unit' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
         >
-          <Layers className="w-4 h-4" /> Unit Peralatan
+          <Layers className="w-4 h-4 shrink-0" /> Unit Peralatan
         </button>
         <button 
           onClick={() => setActiveTab('lokasi')}
-          className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'lokasi' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+          className={`flex items-center gap-2 px-3 sm:px-5 py-3 sm:py-4 font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'lokasi' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
         >
-          <MapPin className="w-4 h-4" /> Master Lokasi
+          <MapPin className="w-4 h-4 shrink-0" /> Master Lokasi
         </button>
         <button 
           onClick={() => setActiveTab('peralatan')}
-          className={`flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'peralatan' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+          className={`flex items-center gap-2 px-3 sm:px-5 py-3 sm:py-4 font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'peralatan' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
         >
-          <Database className="w-4 h-4" /> Master Peralatan
+          <Database className="w-4 h-4 shrink-0" /> Master Peralatan
         </button>
       </div>
 
-      <div className="p-6">
+      <div className="p-3 sm:p-5 md:p-6">
         {activeTab === 'unit' && <UnitPeralatanManager />}
         {activeTab === 'lokasi' && <AssetMasterLokasi />}
         {activeTab === 'peralatan' && <AssetMasterPeralatan />}
@@ -237,11 +386,11 @@ export const AssetManager: React.FC = () => {
           loadingBase ? (
             <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /></div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
               
               {/* ADD FORM SECTION */}
-              <div className="lg:col-span-1">
-                <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 sticky top-4">
+              <div className="lg:col-span-5 xl:col-span-4">
+                <div className="bg-blue-50 p-4 sm:p-5 rounded-xl border border-blue-100 sticky top-4">
                   <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
                     <Plus className="w-5 h-5" /> Tambah Penempatan
                   </h3>
@@ -348,7 +497,7 @@ export const AssetManager: React.FC = () => {
               </div>
               
               {/* LIST SECTION */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-7 xl:col-span-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                     <Layers className="w-5 h-5 text-slate-500" /> Daftar Mesin Terpasang
@@ -356,7 +505,7 @@ export const AssetManager: React.FC = () => {
                 </div>
 
                 {/* FILTERS */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 flex flex-col sm:flex-row gap-4">
+                <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 mb-6 flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <div className="flex-1">
                     <label className="block text-xs font-semibold text-slate-600 mb-1">Filter Jenis Peralatan</label>
                     <select 
@@ -392,16 +541,16 @@ export const AssetManager: React.FC = () => {
                 ) : (
                   <div className="space-y-3">
                     {displayAssets.map((asset) => (
-                      <div key={asset.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-slate-200 rounded-xl bg-white hover:border-blue-300 transition-colors shadow-sm gap-4">
+                      <div key={asset.id} className="flex flex-col md:flex-row md:items-center justify-between p-3.5 sm:p-4 border border-slate-200 rounded-xl bg-white hover:border-blue-300 transition-colors shadow-sm gap-3 sm:gap-4">
                         
-                        <div className="flex items-start gap-4">
-                          <div className="bg-slate-100 p-2.5 rounded-lg shrink-0">
-                            <Cpu className="w-5 h-5 text-slate-600" />
+                        <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                          <div className="bg-slate-100 p-2 sm:p-2.5 rounded-lg shrink-0 mt-0.5">
+                            <Cpu className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                               <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded flex items-center gap-1">
-                                <MapPin className="w-3 h-3" /> {asset.lokasi?.nama || 'Unknown'}
+                                <MapPin className="w-3 h-3 shrink-0" /> {asset.lokasi?.nama || 'Unknown'}
                               </span>
                               <span className="text-xs font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded">
                                 {asset.tipe_peralatan?.jenis_peralatan?.nama || 'Unknown'}
@@ -409,28 +558,48 @@ export const AssetManager: React.FC = () => {
                               {!asset.is_active && (
                                 <span className="text-xs font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded">Nonaktif</span>
                               )}
-                             </div>
-                            <p className="font-bold text-slate-800">{asset.tipe_peralatan?.nama || 'Tipe Tidak Diketahui'}</p>
+                            </div>
+                            <p className="font-bold text-slate-800 text-sm sm:text-base break-words">{asset.tipe_peralatan?.nama || 'Tipe Tidak Diketahui'}</p>
                             
                             {asset.unit_peralatan?.serial_number && (
-                              <div className="flex items-center gap-1.5 mt-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 w-fit">
+                              <div className="flex items-center gap-1.5 mt-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 w-fit flex-wrap">
                                 <span>S/N: <strong className="font-mono">{asset.unit_peralatan.serial_number}</strong></span>
                                 {asset.unit_peralatan.milik && <span className="text-blue-500">• {asset.unit_peralatan.milik}</span>}
                               </div>
                             )}
 
-                            <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
-                              <Hash className="w-3.5 h-3.5" /> Titik: <strong className="text-slate-700">{asset.titik_lokasi?.nomor || '-'}</strong>
+                            <div className="flex items-center gap-1 text-xs sm:text-sm text-slate-500 mt-1">
+                              <Hash className="w-3.5 h-3.5 shrink-0" /> Titik: <strong className="text-slate-700">{asset.titik_lokasi?.nomor || '-'}</strong>
                             </div>
                           </div>
                         </div>
                         
-                        <button 
-                          onClick={() => handleDeleteAsset(asset.id)}
-                          className="flex items-center justify-center gap-1 px-3 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors sm:w-auto w-full shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" /> Hapus
-                        </button>
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-2.5 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0 w-full md:w-auto justify-start md:justify-end">
+                          <button 
+                            onClick={() => handleOpenEditPenempatan(asset)}
+                            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 rounded-lg transition-colors whitespace-nowrap"
+                            title="Ubah lokasi dan titik unit"
+                          >
+                            <MapPin className="w-3.5 h-3.5 shrink-0" /> Edit Penempatan
+                          </button>
+
+                          {asset.unit_peralatan && (
+                            <button 
+                              onClick={() => handleOpenEditUnit(asset.unit_peralatan)}
+                              className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-lg transition-colors whitespace-nowrap"
+                              title="Ubah rincian unit fisik (S/N, kepemilikan, status)"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 shrink-0" /> Edit Unit
+                            </button>
+                          )}
+
+                          <button 
+                            onClick={() => handleDeleteAsset(asset.id)}
+                            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200/80 rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 shrink-0" /> Hapus
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -441,6 +610,233 @@ export const AssetManager: React.FC = () => {
           )
         )}
       </div>
+
+      {/* MODAL EDIT PENEMPATAN (LOKASI & TITIK) */}
+      {editingPlacement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-blue-600" /> Edit Penempatan Unit
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {editingPlacement.tipe_peralatan?.nama} {editingPlacement.unit_peralatan?.serial_number ? `(S/N: ${editingPlacement.unit_peralatan.serial_number})` : ''}
+                </p>
+              </div>
+              <button 
+                onClick={() => setEditingPlacement(null)} 
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editPlacementError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {editPlacementError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Lokasi</label>
+                <select 
+                  value={editPlacLokasi}
+                  onChange={(e) => setEditPlacLokasi(e.target.value)}
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="">- Pilih Lokasi -</option>
+                  {locations.map(loc => (
+                    <option key={loc.id} value={loc.id}>{loc.nama}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nomor Titik</label>
+                <input 
+                  type="text"
+                  value={editPlacTitik}
+                  onChange={(e) => setEditPlacTitik(e.target.value)}
+                  placeholder="Contoh: 1, Gate 2, Line 3"
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setEditingPlacement(null)}
+                  className="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg text-sm transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveEditPenempatan}
+                  disabled={savingPlacement || !editPlacLokasi || !editPlacTitik.trim()}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingPlacement ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Simpan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDIT UNIT FISIK */}
+      {editingUnit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-4 sm:p-6 my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                  <Cpu className="w-5 h-5 text-emerald-600" /> Edit Unit Fisik Peralatan
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  S/N: {editingUnit.serial_number || 'Tanpa S/N'}
+                </p>
+              </div>
+              <button 
+                onClick={() => setEditingUnit(null)} 
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editUnitError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {editUnitError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Serial Number (S/N)</label>
+                  <input 
+                    type="text"
+                    value={editUnitSn}
+                    onChange={(e) => setEditUnitSn(e.target.value)}
+                    placeholder="S/N unit"
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Kepemilikan</label>
+                  <select 
+                    value={editUnitMilik}
+                    onChange={(e) => setEditUnitMilik(e.target.value)}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    {MILIK_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {editUnitMilik === 'Lainnya' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Kepemilikan Lainnya</label>
+                  <input 
+                    type="text"
+                    value={editUnitCustomMilik}
+                    onChange={(e) => setEditUnitCustomMilik(e.target.value)}
+                    placeholder="Sebutkan instansi / vendor..."
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Status Operasional</label>
+                  <select 
+                    value={editUnitStatus}
+                    onChange={(e) => setEditUnitStatus(e.target.value)}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s.val} value={s.val}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">No. Sertifikasi Kelaikan</label>
+                  <input 
+                    type="text"
+                    value={editUnitNoSertifikasi}
+                    onChange={(e) => setEditUnitNoSertifikasi(e.target.value)}
+                    placeholder="No sertifikasi..."
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tahun Instalasi</label>
+                  <input 
+                    type="number"
+                    value={editUnitTahunInstalasi}
+                    onChange={(e) => setEditUnitTahunInstalasi(e.target.value)}
+                    placeholder="Contoh: 2021"
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Daya / Ampere</label>
+                  <input 
+                    type="text"
+                    value={editUnitAmpere}
+                    onChange={(e) => setEditUnitAmpere(e.target.value)}
+                    placeholder="Contoh: 16A"
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Catatan Khusus</label>
+                <textarea 
+                  value={editUnitCatatan}
+                  onChange={(e) => setEditUnitCatatan(e.target.value)}
+                  rows={2}
+                  placeholder="Catatan kondisi mesin..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setEditingUnit(null)}
+                  className="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-lg text-sm transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveEditUnit}
+                  disabled={savingUnit}
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {savingUnit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Simpan Unit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

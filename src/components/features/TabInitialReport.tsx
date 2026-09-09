@@ -744,7 +744,7 @@ export const TabInitialReport: React.FC = () => {
     if (isAccessControl) {
       items.push(
         'Pintu Access tidak bisa terkunci.',
-        'Pintu Access tidak bisa dikontrol oleh Avsec.',
+        'Pintu Access tidak bisa dibuka oleh Operator Avsec.',
         'CCTV Access freeze.',
         'Mikrofon tidak mengeluarkan suara/suara kecil.',
         'Breakglass pecah.',
@@ -1523,17 +1523,25 @@ export const TabInitialReport: React.FC = () => {
             
             <div className="flex flex-wrap items-center gap-1.5 mb-2">
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">Shortcut:</span>
-              {mitigasiShortcuts.map((text, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleAddMitigasiItem(text)}
-                  className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 rounded-lg text-slate-700 font-medium transition-all text-left cursor-pointer"
-                  title="Klik untuk menyisipkan ke isian mitigasi"
-                >
-                  + {text}
-                </button>
-              ))}
+              {mitigasiShortcuts.map((text, idx) => {
+                const isBreakglass = text === 'Pecahkan Emergency Breakglass jika diperlukan.';
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleAddMitigasiItem(text)}
+                    style={isBreakglass ? { fontSize: 'calc(0.75rem * 1.15)' } : undefined}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition-all text-left cursor-pointer border ${
+                      isBreakglass
+                        ? 'text-xs bg-red-50 hover:bg-red-100 text-red-600 border-red-300 hover:border-red-400 font-bold'
+                        : 'text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border-slate-200 text-slate-700'
+                    }`}
+                    title="Klik untuk menyisipkan ke isian mitigasi"
+                  >
+                    + {text}
+                  </button>
+                );
+              })}
             </div>
 
             <textarea ref={mitigasiRef} name="tindakanMitigasi" required rows={3} value={formData.tindakanMitigasi} onChange={(e) => handleNumberedChange(e, 'tindakanMitigasi')} onKeyDown={(e) => handleNumberedKeyDown(e, 'tindakanMitigasi')} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed transition-all ${

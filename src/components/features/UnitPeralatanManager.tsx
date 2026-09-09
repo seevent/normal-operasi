@@ -210,31 +210,31 @@ export const UnitPeralatanManager: React.FC = () => {
     switch (status) {
       case 'operasi':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Operasi
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap shrink-0">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Operasi
           </span>
         );
       case 'standby':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
-            <Clock className="w-3.5 h-3.5 text-blue-600" /> Standby
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap shrink-0">
+            <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" /> Standby
           </span>
         );
       case 'gudang':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
-            <Box className="w-3.5 h-3.5 text-slate-500" /> Gudang
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300 whitespace-nowrap shrink-0">
+            <Box className="w-3.5 h-3.5 text-slate-500 shrink-0" /> Gudang
           </span>
         );
       case 'rusak':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Rusak
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 whitespace-nowrap shrink-0">
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" /> Rusak
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 whitespace-nowrap shrink-0">
             {status}
           </span>
         );
@@ -459,7 +459,7 @@ export const UnitPeralatanManager: React.FC = () => {
       )}
 
       {/* FILTER & SEARCH BAR */}
-      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row gap-3">
+      <div className="bg-slate-50 p-3.5 sm:p-4 rounded-2xl border border-slate-200 flex flex-col md:flex-row gap-3">
         <div className="flex-1 relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -471,8 +471,8 @@ export const UnitPeralatanManager: React.FC = () => {
           />
         </div>
 
-        <div className="flex gap-3">
-          <div className="w-44 sm:w-48">
+        <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3 w-full md:w-auto">
+          <div className="w-full sm:w-48">
             <select
               value={filterJenis}
               onChange={(e) => setFilterJenis(e.target.value)}
@@ -485,7 +485,7 @@ export const UnitPeralatanManager: React.FC = () => {
             </select>
           </div>
 
-          <div className="w-36 sm:w-40">
+          <div className="w-full sm:w-40">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -524,15 +524,15 @@ export const UnitPeralatanManager: React.FC = () => {
             return (
               <div
                 key={unit.id}
-                className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-md transition-all flex flex-col justify-between"
+                className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 hover:border-blue-300 hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div>
                   {/* TOP ROW: Badge Jenis & Status */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg flex items-center gap-1.5 border border-slate-200/80">
-                      <Cpu className="w-3.5 h-3.5 text-blue-600" /> {jenisNama}
+                  <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                    <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg flex items-center gap-1.5 border border-slate-200/80 max-w-[160px] sm:max-w-none">
+                      <Cpu className="w-3.5 h-3.5 text-blue-600 shrink-0" /> <span className="truncate">{jenisNama}</span>
                     </span>
-                    {getStatusBadge(unit.status)}
+                    <div className="shrink-0">{getStatusBadge(unit.status)}</div>
                   </div>
 
                   {/* TITLE & S/N */}
