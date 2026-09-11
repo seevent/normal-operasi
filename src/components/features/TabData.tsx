@@ -6,15 +6,38 @@ import { ScheduleUploader } from './ScheduleUploader';
 import { ChecklistDataEditor } from './ChecklistDataEditor';
 import { AssetManager } from './AssetManager';
 import { SparepartManager } from './SparepartManager';
+import { GoogleDriveSettingsPanel } from './GoogleDriveSettingsPanel';
 
 export const TabData: React.FC = () => {
   const { user, logout } = useAuthStore();
   
-  if (!user) {
-    return <AdminLogin />;
-  }
+  return (
+    <div className="p-6 animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center border-b border-slate-300 pb-3 mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <Database className="w-6 h-6 text-blue-600" /> Pengaturan Data
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Kelola konfigurasi dan master data laporan.
+          </p>
+        </div>
+        {user && (
+          <button onClick={logout} className="flex items-center gap-2 px-3.5 py-2 bg-rose-100 text-rose-700 hover:bg-rose-200 font-bold text-xs rounded-xl transition-colors cursor-pointer">
+            <LogOut className="w-4 h-4" /> Keluar
+          </button>
+        )}
+      </div>
 
-  return <AdminDashboard logout={logout} />;
+      {!user ? (
+        <AdminLogin />
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+          <LocalDataEditor />
+        </div>
+      )}
+    </div>
+  );
 };
 
 // ==========================================
@@ -43,7 +66,7 @@ const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-12 flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in duration-500">
+    <div className="py-8 flex flex-col items-center justify-center animate-in fade-in duration-500">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
@@ -96,32 +119,6 @@ const AdminLogin: React.FC = () => {
             {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Login'}
           </button>
         </form>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// 2. KOMPONEN DASHBOARD CRUD
-// ==========================================
-const AdminDashboard: React.FC<{ logout: () => void }> = ({ logout }) => {
-  return (
-    <div className="p-6 animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-            <Database className="w-7 h-7 text-blue-600" /> Pengaturan Data
-          </h2>
-          <p className="text-slate-500 mt-1 font-medium">Kelola konfigurasi dan master data laporan.</p>
-        </div>
-        <button onClick={logout} className="flex items-center gap-2 px-4 py-2.5 bg-rose-100 text-rose-700 hover:bg-rose-200 font-bold rounded-xl transition-colors">
-          <LogOut className="w-5 h-5" /> Keluar
-        </button>
-      </div>
-
-      {/* Content Area */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-        <LocalDataEditor />
       </div>
     </div>
   );
@@ -309,7 +306,8 @@ const LocalDataEditor: React.FC = () => {
           { id: 'om_ias_t2', label: 'Personel OM/IAS' },
           { id: 'checklist_config', label: 'Checklist Config' },
           { id: 'kalibrasi_equip', label: 'Config Peralatan Kalibrasi' },
-          { id: 'tip_data_manager', label: 'Data TIP Tersimpan' }
+          { id: 'tip_data_manager', label: 'Data TIP Tersimpan' },
+          { id: 'google_drive', label: 'Google Drive' }
         ].map(t => (
           <button key={t.id} onClick={() => setActiveSubTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeSubTab === t.id ? 'bg-blue-600' : 'hover:bg-slate-700 text-slate-300'}`}>
             {t.label}
@@ -363,6 +361,8 @@ const LocalDataEditor: React.FC = () => {
         <div className="p-0 border border-slate-200 rounded-xl overflow-hidden m-6">
           <TipDataManager />
         </div>
+      ) : activeSubTab === 'google_drive' ? (
+        <GoogleDriveSettingsPanel />
       ) : (
         <div className="p-6 flex-1 space-y-4">
           {localData.map((item, index) => (
@@ -554,4 +554,3 @@ const TipDataManager: React.FC = () => {
     </div>
   );
 };
-

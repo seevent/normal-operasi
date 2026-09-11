@@ -197,6 +197,24 @@ export const TabInitialReport: React.FC = () => {
 
   const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (name === 'waktuMulai' && value) {
+      if (formData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
+    if (name === 'tanggal' && value) {
+      if (value === todayStr && formData.waktuMulai && formData.waktuMulai > currentTimeStr) {
+        alert(`Pukul direset karena melebihi waktu saat ini (${currentTimeStr})`);
+        setFormData(prev => ({ ...prev, tanggal: value, waktuMulai: '' }));
+        return;
+      }
+    }
+
     let newFormData = { ...formData, [name]: value };
 
     if (name === 'peralatan') {
@@ -1334,9 +1352,17 @@ export const TabInitialReport: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul</label>
-              <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleFieldChange} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                showErrors && !formData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
-              }`} />
+              <input 
+                type="time" 
+                name="waktuMulai" 
+                required 
+                max={formData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
+                value={formData.waktuMulai} 
+                onChange={handleFieldChange} 
+                className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                  showErrors && !formData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                }`} 
+              />
               {showErrors && !formData.waktuMulai && (
                 <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
                   <AlertCircle className="w-3.5 h-3.5" /> Wajib diisi!

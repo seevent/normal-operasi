@@ -6,6 +6,7 @@ import { generateWA_Checklist } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { fetchChecklistShiftData, saveChecklistSupervisorDirect } from '../../lib/services/checklistSyncService';
+import { calculateChecklistSummary, saveChecklistSummary } from '../../lib/services/operationalReportService';
 
 export const TabChecklist: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -175,23 +176,38 @@ export const TabChecklist: React.FC = () => {
 
   const handleChecklistChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (name === 'waktuMulai' && value) {
+      if (checklistData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Mulai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
     if (name === 'waktuSelesai' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       if (checklistData.tanggal === todayStr && value > currentTimeStr) {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
     }
     if (name === 'tanggal' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      if (value === todayStr && checklistData.waktuSelesai && checklistData.waktuSelesai > currentTimeStr) {
-        alert(`Pukul Selesai direset karena melebihi waktu saat ini (${currentTimeStr})`);
-        setChecklistData(prev => ({ ...prev, tanggal: value, waktuSelesai: '' }));
-        return;
+      let resetWaktuMulai = false;
+      let resetWaktuSelesai = false;
+      if (value === todayStr) {
+        if (checklistData.waktuMulai && checklistData.waktuMulai > currentTimeStr) resetWaktuMulai = true;
+        if (checklistData.waktuSelesai && checklistData.waktuSelesai > currentTimeStr) resetWaktuSelesai = true;
+        if (resetWaktuMulai || resetWaktuSelesai) {
+          alert(`Pukul direset karena melebihi waktu saat ini (${currentTimeStr})`);
+          setChecklistData(prev => ({
+            ...prev,
+            tanggal: value,
+            ...(resetWaktuMulai ? { waktuMulai: '' } : {}),
+            ...(resetWaktuSelesai ? { waktuSelesai: '' } : {})
+          }));
+          return;
+        }
       }
     }
     setChecklistData(prev => ({ ...prev, [name]: value }));
@@ -252,6 +268,16 @@ export const TabChecklist: React.FC = () => {
       alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
       return;
     }
+    // Simpan ringkasan kesiapan peralatan (serviceability) ke Supabase laporan_checklist
+    try {
+      const hour = new Date().getHours();
+      const currentShift = (hour >= 8 && hour < 20) ? 'PS' : 'M';
+      const summaryItems = calculateChecklistSummary(checklistDataMaster, toggles);
+      await saveChecklistSummary(checklistData.tanggal, currentShift, summaryItems);
+    } catch (err) {
+      console.error("Gagal menyimpan ringkasan checklist ke database:", err);
+    }
+
     const message = generateWA_Checklist(checklistData, checklistDataMaster, toggles);
     await shareToWhatsApp(message, null, () => {
       setIsCopied(true);
@@ -279,7 +305,15 @@ export const TabChecklist: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuMulai" required value={checklistData.waktuMulai} onChange={handleChecklistChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input 
+                type="time" 
+                name="waktuMulai" 
+                required 
+                max={checklistData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
+                value={checklistData.waktuMulai} 
+                onChange={handleChecklistChange} 
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+              />
             </div>
           </div>
 
@@ -287,7 +321,15 @@ export const TabChecklist: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuSelesai" required max={checklistData.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={checklistData.waktuSelesai} onChange={handleChecklistChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input 
+                type="time" 
+                name="waktuSelesai" 
+                required 
+                max={checklistData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
+                value={checklistData.waktuSelesai} 
+                onChange={handleChecklistChange} 
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+              />
             </div>
           </div>
         </div>

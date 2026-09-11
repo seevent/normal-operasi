@@ -138,6 +138,24 @@ export const TabBASerahTerima: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (name === 'waktu' && value) {
+      if (baData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
+    if (name === 'tanggal' && value) {
+      if (value === todayStr && baData.waktu && baData.waktu > currentTimeStr) {
+        alert(`Pukul direset karena melebihi waktu saat ini (${currentTimeStr})`);
+        setBaData(prev => ({ ...prev, tanggal: value, waktu: '' }));
+        return;
+      }
+    }
+
     if (name === 'penyerahNama' || name === 'penerimaNama') {
       setBaData(prev => ({ ...prev, [name]: toTitleCase(value) }));
     } else {
@@ -418,13 +436,14 @@ export const TabBASerahTerima: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Waktu (WIB)</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Pukul (WIB)</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input
                 type="time"
                 name="waktu"
                 required
+                max={baData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
                 value={baData.waktu}
                 onChange={handleChange}
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium"
@@ -958,7 +977,7 @@ export const TabBASerahTerima: React.FC = () => {
       {/* Teks Format WA Realtime */}
       <div className="mt-8 border-t border-slate-200 pt-8 print:hidden">
         <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-600" /> Preview Format WhatsApp (Real-time)
+          <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan BA Serah Terima (Real-time)
         </h3>
         <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
           <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">

@@ -10,6 +10,8 @@ import { toTitleCase } from '../../lib/data/masterData';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
+import { uploadPhotoToGoogleDrive } from '../../lib/services/googleDriveService';
+import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 
 function formatNamaPersonel(fullName: string): string {
   if (!fullName) return '';
@@ -31,15 +33,10 @@ export const TabPerbaikan: React.FC = () => {
   const { penempatanData } = useMasterDataStore();
 
   const [formData, setFormData] = useState(() => {
-    const now = new Date();
-    // Real-time local date for the tanggal field
-    const realYear = now.getFullYear();
-    const realMonth = String(now.getMonth() + 1).padStart(2, '0');
-    const realDay = String(now.getDate()).padStart(2, '0');
-    const realDate = `${realYear}-${realMonth}-${realDay}`;
+    const { date: defaultDate } = getOperationalShiftAndDate();
     return {
       peralatan: '', lokasi1: '', lokasi2: '', lokasiList: [{ lokasi1: '', lokasi2: '', isManual: false }] as { lokasi1: string; lokasi2: string; isManual?: boolean }[], sumberLaporan: 'Avsec', indikasiAwal: '',
-      tanggal: realDate, waktuMulai: '', waktuSelesai: '',
+      tanggal: defaultDate, waktuMulai: '', waktuSelesai: '',
       lamaPengerjaan: '', teknisi: '', permasalahan: '• ', tindakLanjut: '• ', status: 'Pekerjaan Selesai'
     };
   });
@@ -207,23 +204,39 @@ export const TabPerbaikan: React.FC = () => {
   // === Handlers ===
   const handleRepairChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (name === 'waktuMulai' && value) {
+      if (formData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Mulai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
     if (name === 'waktuSelesai' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       if (formData.tanggal === todayStr && value > currentTimeStr) {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
     }
     if (name === 'tanggal' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      if (value === todayStr && formData.waktuSelesai && formData.waktuSelesai > currentTimeStr) {
-        alert(`Pukul Selesai direset karena melebihi waktu saat ini (${currentTimeStr})`);
-        setFormData(prev => ({ ...prev, tanggal: value, waktuSelesai: '', lamaPengerjaan: '' }));
-        return;
+      let resetWaktuMulai = false;
+      let resetWaktuSelesai = false;
+      if (value === todayStr) {
+        if (formData.waktuMulai && formData.waktuMulai > currentTimeStr) resetWaktuMulai = true;
+        if (formData.waktuSelesai && formData.waktuSelesai > currentTimeStr) resetWaktuSelesai = true;
+        if (resetWaktuMulai || resetWaktuSelesai) {
+          alert(`Pukul direset karena melebihi waktu saat ini (${currentTimeStr})`);
+          setFormData(prev => ({
+            ...prev,
+            tanggal: value,
+            ...(resetWaktuMulai ? { waktuMulai: '' } : {}),
+            ...(resetWaktuSelesai ? { waktuSelesai: '' } : {}),
+            lamaPengerjaan: ''
+          }));
+          return;
+        }
       }
     }
     let newFormData = { ...formData, [name]: value };
@@ -691,6 +704,50 @@ export const TabPerbaikan: React.FC = () => {
       }
     }
 
+    // 1. Upload foto ke Google Drive
+    const uploadedPhotoUrls: string[] = [];
+    if (customFilesArray.length > 0) {
+      for (const file of customFilesArray) {
+        try {
+          const res = await uploadPhotoToGoogleDrive(file, `Perbaikan_${formData.peralatan.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
+          if (res && res.url) {
+            uploadedPhotoUrls.push(res.url);
+          }
+        } catch (e) {
+          console.error("Gagal upload foto perbaikan ke Google Drive:", e);
+        }
+      }
+    }
+
+    // 2. Simpan catatan kegiatan ke Supabase laporan_operasional
+    try {
+      const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
+      const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
+      const lokasiFinal = activeLocs.map((loc: any) => {
+        if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
+        return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
+      }).join(', ');
+
+      const waktuRange = `${formData.waktuMulai || ''}${formData.waktuSelesai ? ' - ' + formData.waktuSelesai : ''}`;
+
+      await saveOperationalLog({
+        tanggal: formData.tanggal || opDate,
+        shift: opShift,
+        jenis: 'Perbaikan',
+        waktu: waktuRange,
+        lokasi: lokasiFinal || formData.lokasi1 || '-',
+        peralatan: formData.peralatan,
+        kategori_maintenance: 'CORRECTIVE',
+        uraian: formData.permasalahan,
+        tindak_lanjut: formData.tindakLanjut,
+        status: formData.status || 'Normal Operasi',
+        teknisi: formData.teknisi,
+        foto_urls: uploadedPhotoUrls
+      });
+    } catch (dbErr) {
+      console.error("Gagal menyimpan ke laporan_operasional:", dbErr);
+    }
+
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
 
     await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
@@ -933,9 +990,17 @@ export const TabPerbaikan: React.FC = () => {
             </div>
             <div className="col-span-1">
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
-              <input type="time" name="waktuMulai" required value={formData.waktuMulai} onChange={handleRepairChange} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                showErrors && !formData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
-              }`} />
+              <input 
+                type="time" 
+                name="waktuMulai" 
+                required 
+                max={formData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
+                value={formData.waktuMulai} 
+                onChange={handleRepairChange} 
+                className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                  showErrors && !formData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                }`} 
+              />
               {showErrors && !formData.waktuMulai && (
                 <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
                   <AlertCircle className="w-3.5 h-3.5" /> Wajib diisi!
@@ -944,7 +1009,15 @@ export const TabPerbaikan: React.FC = () => {
             </div>
             <div className="col-span-1">
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
-              <input type="time" name="waktuSelesai" required max={formData.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={formData.waktuSelesai} onChange={handleRepairChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input 
+                type="time" 
+                name="waktuSelesai" 
+                required 
+                max={formData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
+                value={formData.waktuSelesai} 
+                onChange={handleRepairChange} 
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+              />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1">Lama Pengerjaan</label>

@@ -69,26 +69,40 @@ export const TabKalibrasi: React.FC = () => {
     };
   }, []);
 
-  // === HANDLERS ===
   const handleKalibrasiGlobalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (name === 'waktuMulai' && value) {
+      if (kalibrasiGlobal.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Mulai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
     if (name === 'waktuSelesai' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       if (kalibrasiGlobal.tanggal === todayStr && value > currentTimeStr) {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
     }
     if (name === 'tanggal' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      if (value === todayStr && kalibrasiGlobal.waktuSelesai && kalibrasiGlobal.waktuSelesai > currentTimeStr) {
-        alert(`Pukul Selesai direset karena melebihi waktu saat ini (${currentTimeStr})`);
-        setKalibrasiGlobal(prev => ({ ...prev, tanggal: value, waktuSelesai: '' }));
-        return;
+      let resetWaktuMulai = false;
+      let resetWaktuSelesai = false;
+      if (value === todayStr) {
+        if (kalibrasiGlobal.waktuMulai && kalibrasiGlobal.waktuMulai > currentTimeStr) resetWaktuMulai = true;
+        if (kalibrasiGlobal.waktuSelesai && kalibrasiGlobal.waktuSelesai > currentTimeStr) resetWaktuSelesai = true;
+        if (resetWaktuMulai || resetWaktuSelesai) {
+          alert(`Pukul direset karena melebihi waktu saat ini (${currentTimeStr})`);
+          setKalibrasiGlobal(prev => ({
+            ...prev,
+            tanggal: value,
+            ...(resetWaktuMulai ? { waktuMulai: '' } : {}),
+            ...(resetWaktuSelesai ? { waktuSelesai: '' } : {})
+          }));
+          return;
+        }
       }
     }
     setKalibrasiGlobal(prev => ({ ...prev, [name]: value }));
@@ -562,9 +576,17 @@ export const TabKalibrasi: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuMulai" required value={kalibrasiGlobal.waktuMulai} onChange={handleKalibrasiGlobalChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                showErrors && !kalibrasiGlobal.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
-              }`} />
+              <input 
+                type="time" 
+                name="waktuMulai" 
+                required 
+                max={kalibrasiGlobal.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
+                value={kalibrasiGlobal.waktuMulai} 
+                onChange={handleKalibrasiGlobalChange} 
+                className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                  showErrors && !kalibrasiGlobal.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                }`} 
+              />
             </div>
             {showErrors && !kalibrasiGlobal.waktuMulai && (
               <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
@@ -576,9 +598,17 @@ export const TabKalibrasi: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
             <div className="relative">
               <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="time" name="waktuSelesai" required max={kalibrasiGlobal.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={kalibrasiGlobal.waktuSelesai} onChange={handleKalibrasiGlobalChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                showErrors && !kalibrasiGlobal.waktuSelesai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
-              }`} />
+              <input 
+                type="time" 
+                name="waktuSelesai" 
+                required 
+                max={kalibrasiGlobal.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
+                value={kalibrasiGlobal.waktuSelesai} 
+                onChange={handleKalibrasiGlobalChange} 
+                className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                  showErrors && !kalibrasiGlobal.waktuSelesai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                }`} 
+              />
             </div>
             {showErrors && !kalibrasiGlobal.waktuSelesai && (
               <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">

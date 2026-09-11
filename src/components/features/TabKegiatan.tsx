@@ -6,21 +6,21 @@ import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
+import { uploadPhotoToGoogleDrive } from '../../lib/services/googleDriveService';
+import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 
 export const TabKegiatan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [showErrors, setShowErrors] = useState(false);
 
   const [kegiatanData, setKegiatanData] = useState(() => {
+    const { date: defaultDate } = getOperationalShiftAndDate();
     const now = new Date();
-    const tzOffset = now.getTimezoneOffset() * 60000;
-    const localDate = new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
-    
     const currentHour = now.getHours().toString().padStart(2, '0');
     const currentMinute = now.getMinutes().toString().padStart(2, '0');
 
     return {
-      tanggal: localDate,
+      tanggal: defaultDate,
       waktuMulai: `${currentHour}:${currentMinute}`,
       waktuSelesai: '',
       lokasi: '',
@@ -48,7 +48,41 @@ export const TabKegiatan: React.FC = () => {
   // === Handlers ===
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setKegiatanData({ ...kegiatanData, [name]: value });
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (name === 'waktuMulai' && value) {
+      if (kegiatanData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Mulai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
+    if (name === 'waktuSelesai' && value) {
+      if (kegiatanData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
+    if (name === 'tanggal' && value) {
+      let resetWaktuMulai = false;
+      let resetWaktuSelesai = false;
+      if (value === todayStr) {
+        if (kegiatanData.waktuMulai && kegiatanData.waktuMulai > currentTimeStr) resetWaktuMulai = true;
+        if (kegiatanData.waktuSelesai && kegiatanData.waktuSelesai > currentTimeStr) resetWaktuSelesai = true;
+        if (resetWaktuMulai || resetWaktuSelesai) {
+          alert(`Pukul direset karena melebihi waktu saat ini (${currentTimeStr})`);
+          setKegiatanData(prev => ({
+            ...prev,
+            tanggal: value,
+            ...(resetWaktuMulai ? { waktuMulai: '' } : {}),
+            ...(resetWaktuSelesai ? { waktuSelesai: '' } : {})
+          }));
+          return;
+        }
+      }
+    }
+    setKegiatanData(prev => ({ ...prev, [name]: value }));
   };
 
   // === Photo Handlers ===
@@ -144,6 +178,43 @@ export const TabKegiatan: React.FC = () => {
       if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
 
+    // 1. Upload foto ke Google Drive
+    const uploadedPhotoUrls: string[] = [];
+    if (finalFilesToShare.length > 0) {
+      for (const file of finalFilesToShare) {
+        try {
+          const res = await uploadPhotoToGoogleDrive(file, `Kegiatan_${kegiatanData.lokasi.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
+          if (res && res.url) {
+            uploadedPhotoUrls.push(res.url);
+          }
+        } catch (e) {
+          console.error("Gagal upload foto kegiatan ke Google Drive:", e);
+        }
+      }
+    }
+
+    // 2. Simpan catatan kegiatan ke Supabase
+    try {
+      const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
+      const waktuRange = `${kegiatanData.waktuMulai || ''}${kegiatanData.waktuSelesai ? ' - ' + kegiatanData.waktuSelesai : ''}`;
+
+      await saveOperationalLog({
+        tanggal: kegiatanData.tanggal || opDate,
+        shift: opShift,
+        jenis: 'Kegiatan',
+        waktu: waktuRange,
+        lokasi: kegiatanData.lokasi,
+        peralatan: 'All Faskampen',
+        kategori_maintenance: 'KEGIATAN',
+        uraian: `Kegiatan : ${kegiatanData.kegiatan}`,
+        tindak_lanjut: kegiatanData.kegiatan,
+        status: 'Normal',
+        foto_urls: uploadedPhotoUrls
+      });
+    } catch (dbErr) {
+      console.error("Gagal menyimpan data kegiatan ke database:", dbErr);
+    }
+
     const message = generateWA_Kegiatan(kegiatanData);
 
     await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
@@ -180,9 +251,17 @@ export const TabKegiatan: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
               <div className="relative">
                 <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <input type="time" name="waktuMulai" required value={kegiatanData.waktuMulai} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                  showErrors && !kegiatanData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
-                }`} />
+                <input 
+                  type="time" 
+                  name="waktuMulai" 
+                  required 
+                  max={kegiatanData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
+                  value={kegiatanData.waktuMulai} 
+                  onChange={handleChange} 
+                  className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                    showErrors && !kegiatanData.waktuMulai ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-300'
+                  }`} 
+                />
               </div>
               {showErrors && !kegiatanData.waktuMulai && (
                 <p className="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
@@ -194,7 +273,14 @@ export const TabKegiatan: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai <span className="text-slate-400 text-xs font-normal">(Opsional)</span></label>
               <div className="relative">
                 <Clock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <input type="time" name="waktuSelesai" value={kegiatanData.waktuSelesai} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input 
+                  type="time" 
+                  name="waktuSelesai" 
+                  max={kegiatanData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
+                  value={kegiatanData.waktuSelesai} 
+                  onChange={handleChange} 
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                />
               </div>
             </div>
           </div>

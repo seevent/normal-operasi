@@ -581,7 +581,7 @@ export const generateWA_BASerahTerima = (baData: any) => {
 *Tipe:* ${jenisText}
 
 🗓️ Hari/Tanggal : ${formattedDate}
-🕝 Waktu : ${waktuText}
+🕝 Pukul : ${waktuText}
 
 👤 *PIHAK KESATU (YANG MENYERAHKAN)*
 - Nama : ${baData.penyerahNama || '-'}

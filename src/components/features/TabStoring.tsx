@@ -10,6 +10,8 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { saveStoringToChecklistSync } from '../../lib/services/checklistSyncService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
+import { uploadPhotoToGoogleDrive } from '../../lib/services/googleDriveService';
+import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 
 export const TabStoring: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -18,7 +20,7 @@ export const TabStoring: React.FC = () => {
   const storingEquipments = Array.from(new Set(jenisPeralatanData.map(j => j.nama)));
 
   const [storingData, setStoringData] = useState({
-    tanggal: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
+    tanggal: getOperationalShiftAndDate().date,
     waktuMulai: '',
     waktuSelesai: '',
     peralatan: [] as string[],
@@ -51,23 +53,38 @@ export const TabStoring: React.FC = () => {
   // === Handlers ===
   const handleStoringChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (name === 'waktuMulai' && value) {
+      if (storingData.tanggal === todayStr && value > currentTimeStr) {
+        alert(`Pukul Mulai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+        return;
+      }
+    }
     if (name === 'waktuSelesai' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       if (storingData.tanggal === todayStr && value > currentTimeStr) {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
     }
     if (name === 'tanggal' && value) {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      if (value === todayStr && storingData.waktuSelesai && storingData.waktuSelesai > currentTimeStr) {
-        alert(`Pukul Selesai direset karena melebihi waktu saat ini (${currentTimeStr})`);
-        setStoringData(prev => ({ ...prev, tanggal: value, waktuSelesai: '' }));
-        return;
+      let resetWaktuMulai = false;
+      let resetWaktuSelesai = false;
+      if (value === todayStr) {
+        if (storingData.waktuMulai && storingData.waktuMulai > currentTimeStr) resetWaktuMulai = true;
+        if (storingData.waktuSelesai && storingData.waktuSelesai > currentTimeStr) resetWaktuSelesai = true;
+        if (resetWaktuMulai || resetWaktuSelesai) {
+          alert(`Pukul direset karena melebihi waktu saat ini (${currentTimeStr})`);
+          setStoringData(prev => ({
+            ...prev,
+            tanggal: value,
+            ...(resetWaktuMulai ? { waktuMulai: '' } : {}),
+            ...(resetWaktuSelesai ? { waktuSelesai: '' } : {})
+          }));
+          return;
+        }
       }
     }
     setStoringData(prev => ({ ...prev, [name]: value }));
@@ -199,6 +216,47 @@ export const TabStoring: React.FC = () => {
       if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
 
+    // 1. Upload foto ke Google Drive
+    const uploadedPhotoUrls: string[] = [];
+    if (finalFilesToShare.length > 0) {
+      for (const file of finalFilesToShare) {
+        try {
+          const res = await uploadPhotoToGoogleDrive(file, `Storing_${storingData.peralatan.join('_')}_${Date.now()}.jpg`);
+          if (res && res.url) {
+            uploadedPhotoUrls.push(res.url);
+          }
+        } catch (e) {
+          console.error("Gagal upload foto storing ke Google Drive:", e);
+        }
+      }
+    }
+
+    // 2. Simpan catatan storing ke Supabase
+    try {
+      const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
+      const locString = (storingData.acLokasi && storingData.acLokasi.length > 0)
+        ? storingData.acLokasi.join(', ')
+        : (storingData.lokasi ? `${storingData.lokasi} ${storingData.nomor || ''}`.trim() : 'Terminal 2');
+
+      const waktuRange = `${storingData.waktuMulai || ''}${storingData.waktuSelesai ? ' - ' + storingData.waktuSelesai : ''}`;
+
+      await saveOperationalLog({
+        tanggal: storingData.tanggal || opDate,
+        shift: opShift,
+        jenis: 'Storing',
+        waktu: waktuRange,
+        lokasi: locString,
+        peralatan: storingData.peralatan.join(', ') || 'All Faskampen',
+        kategori_maintenance: 'STORING',
+        uraian: `Storing Peralatan: ${storingData.peralatan.join(', ')}`,
+        tindak_lanjut: storingData.hasil || 'Storing Peralatan',
+        status: storingData.hasil || 'Normal',
+        foto_urls: uploadedPhotoUrls
+      });
+    } catch (dbErr) {
+      console.error("Gagal menyimpan data storing ke database:", dbErr);
+    }
+
     const message = generateWA_Storing(storingData);
 
     saveStoringToChecklistSync({
@@ -236,11 +294,27 @@ export const TabStoring: React.FC = () => {
           
           <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Mulai</label>
-            <input type="time" name="waktuMulai" required value={storingData.waktuMulai} onChange={handleStoringChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input 
+              type="time" 
+              name="waktuMulai" 
+              required 
+              max={storingData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
+              value={storingData.waktuMulai} 
+              onChange={handleStoringChange} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+            />
           </div>
           <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
-            <input type="time" name="waktuSelesai" required max={storingData.tanggal === new Date().toISOString().split('T')[0] ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} value={storingData.waktuSelesai} onChange={handleStoringChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input 
+              type="time" 
+              name="waktuSelesai" 
+              required 
+              max={storingData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
+              value={storingData.waktuSelesai} 
+              onChange={handleStoringChange} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+            />
           </div>
 
           <div className="col-span-2">
