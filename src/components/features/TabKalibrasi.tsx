@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X, ImagePlus, Type, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, ZoomIn, ZoomOut, X, ImagePlus, Type, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
@@ -8,11 +8,14 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
+import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 
 export const TabKalibrasi: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData } = useMasterDataStore();
   const [showErrors, setShowErrors] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   
   const kalibrasiEquipments = jenisPeralatanData && jenisPeralatanData.length > 0
     ? jenisPeralatanData
@@ -471,11 +474,21 @@ export const TabKalibrasi: React.FC = () => {
 
   const handleKalibrasiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    const unlock = () => {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    };
+
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     if (kalibrasiGlobal.tanggal === todayStr && kalibrasiGlobal.waktuSelesai && kalibrasiGlobal.waktuSelesai > currentTimeStr) {
       alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+      unlock();
       return;
     }
 
@@ -512,7 +525,9 @@ export const TabKalibrasi: React.FC = () => {
 
     if (hasEmptyGlobalTime || hasEmptyEntryParams) {
       setShowErrors(true);
+      alert("Harap lengkapi semua data wajib: Waktu pelaksanaan kalibrasi, pemilihan peralatan, dan parameter kalibrasi!");
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      unlock();
       return;
     }
     
@@ -541,12 +556,49 @@ export const TabKalibrasi: React.FC = () => {
       }
     }
 
+    // Simpan log kegiatan kalibrasi ke Supabase di background secara non-blocking
+    (async () => {
+      try {
+        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
+        const waktuRange = `${kalibrasiGlobal.waktuMulai || ''} - ${kalibrasiGlobal.waktuSelesai || ''}`;
+
+        for (const entry of kalibrasiEntries) {
+          if (entry.peralatan.length === 0) continue;
+          const alatStr = entry.peralatan.join(', ');
+          const locStr = entry.peralatan.includes('Access Control')
+            ? (entry.acLokasi?.join(', ') || 'Access Control')
+            : `${entry.lokasi1 || ''} ${entry.lokasi2 && entry.lokasi2 !== '-' ? 'No.' + entry.lokasi2 : ''}`.trim();
+
+          await saveOperationalLog({
+            tanggal: kalibrasiGlobal.tanggal || opDate,
+            shift: opShift,
+            jenis: 'Kalibrasi',
+            waktu: waktuRange,
+            lokasi: locStr || 'Terminal 2',
+            peralatan: alatStr,
+            kategori_maintenance: 'PREVENTIVE',
+            uraian: `Preventive Maintenance & Kalibrasi Peralatan: ${alatStr}`,
+            tindak_lanjut: 'Peralatan telah dikalibrasi & normal operasi',
+            status: 'Normal Operasi',
+            teknisi: '-',
+            foto_urls: []
+          });
+        }
+      } catch (err) {
+        console.error("Gagal menyimpan log kalibrasi ke Supabase:", err);
+      }
+    })();
+
     const message = generateWA_Kalibrasi(kalibrasiGlobal, kalibrasiEntries);
 
-    await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 3000);
-    });
+    try {
+      await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 3000);
+      });
+    } finally {
+      setTimeout(unlock, 2500);
+    }
   };
 
   return (
@@ -1176,8 +1228,30 @@ export const TabKalibrasi: React.FC = () => {
       })()}
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
-        <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:-translate-y-0.5 text-white'}`}>
-          {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Kalibrasi ke WA</>}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${
+            isSubmitting
+              ? 'bg-emerald-600 opacity-70 cursor-not-allowed text-white'
+              : isCopied
+              ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]'
+              : 'bg-[#25D366] hover:bg-[#20b858] hover:-translate-y-0.5 text-white'
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <RefreshCw className="w-6 h-6 animate-spin" /> Memproses Share...
+            </>
+          ) : isCopied ? (
+            <>
+              <CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!
+            </>
+          ) : (
+            <>
+              <Share2 className="w-6 h-6" /> Share Kalibrasi ke WA
+            </>
+          )}
         </button>
       </div>
 

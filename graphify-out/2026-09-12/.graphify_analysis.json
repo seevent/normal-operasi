@@ -116,6 +116,59 @@
       "agents_skills_design_system_templates_design_tokens_starter_yellow_500"
     ],
     "2": [
+      "src_components_features_checklistdataeditor",
+      "src_components_features_checklistdataeditor_blockeditor",
+      "src_components_features_checklistdataeditor_categorylist",
+      "src_components_features_checklistdataeditor_checklistdataeditor",
+      "src_components_features_sparepartmanager",
+      "src_components_features_sparepartmanager_sparepartmanager",
+      "src_components_features_tabbriefing",
+      "src_components_features_tabbriefing_tabbriefing",
+      "src_components_features_tabkehadiran",
+      "src_components_features_tabkehadiran_tabkehadiran",
+      "src_components_shared_livecollagepreview",
+      "src_components_shared_livecollagepreview_livecollagepreview",
+      "src_components_shared_livecollagepreview_livecollagepreviewprops",
+      "src_components_shared_phototexteditormodal",
+      "src_components_shared_phototexteditormodal_drawtextoncanvas",
+      "src_components_shared_phototexteditormodal_drawtextoverlay",
+      "src_components_shared_phototexteditormodal_phototexteditormodal",
+      "src_components_shared_phototexteditormodal_phototexteditormodalprops",
+      "src_components_shared_photouploader",
+      "src_components_shared_photouploader_photo",
+      "src_components_shared_photouploader_photoannotation",
+      "src_components_shared_photouploader_photouploader",
+      "src_components_shared_photouploader_photouploaderprops",
+      "src_lib_data_masterdata",
+      "src_lib_data_masterdata_default_checklist_data",
+      "src_lib_data_masterdata_default_data_api_t2",
+      "src_lib_data_masterdata_default_data_om_ias_t2",
+      "src_lib_data_masterdata_default_storing_equipments",
+      "src_lib_data_masterdata_default_storing_loc_ac",
+      "src_lib_data_masterdata_default_storing_loc_default",
+      "src_lib_data_masterdata_default_tip_left_col",
+      "src_lib_data_masterdata_default_tip_right_col",
+      "src_lib_data_masterdata_getjabatanrank",
+      "src_lib_data_masterdata_sortpersonelbyjabatan",
+      "src_lib_data_masterdata_totitlecase",
+      "src_lib_utils_canvasutils",
+      "src_lib_utils_canvasutils_compressimagefile",
+      "src_lib_utils_canvasutils_drawcelltextoverlay",
+      "src_lib_utils_canvasutils_processphotostocollage",
+      "src_lib_utils_wagenerator_formatpersonnellist",
+      "src_lib_utils_wagenerator_generatewa_briefing",
+      "src_lib_utils_wagenerator_generatewa_kehadiran",
+      "src_store_useappstore",
+      "src_store_useappstore_appstate",
+      "src_store_useappstore_useappstore",
+      "src_store_usemasterdatastore",
+      "src_store_usemasterdatastore_loadmasterdata",
+      "src_store_usemasterdatastore_masterdatastate",
+      "src_store_usemasterdatastore_saveconfigtosupabase",
+      "src_store_usemasterdatastore_savemasterdatatolocal",
+      "src_store_usemasterdatastore_usemasterdatastore"
+    ],
+    "3": [
       "agents_skills_design_scripts_cip_core",
       "agents_skills_design_scripts_cip_core_bm25",
       "agents_skills_design_scripts_cip_core_bm25_fit",
@@ -167,56 +220,105 @@
       "agents_skills_design_scripts_cip_search_rationale_18",
       "agents_skills_design_scripts_cip_search_rationale_33"
     ],
-    "3": [
-      "src_components_features_assetmanager",
-      "src_components_features_assetmanager_assetmanager",
-      "src_components_features_assetmanager_tabtype",
-      "src_components_features_assetmasterlokasi",
-      "src_components_features_assetmasterlokasi_assetmasterlokasi",
-      "src_components_features_assetmasterperalatan",
-      "src_components_features_assetmasterperalatan_assetmasterperalatan",
-      "src_components_features_checklistdataeditor",
-      "src_components_features_checklistdataeditor_blockeditor",
-      "src_components_features_checklistdataeditor_categorylist",
-      "src_components_features_checklistdataeditor_checklistdataeditor",
-      "src_components_features_scheduleuploader",
-      "src_components_features_scheduleuploader_scheduleuploader",
-      "src_components_features_sparepartmanager",
-      "src_components_features_sparepartmanager_sparepartmanager",
-      "src_components_features_tabdata",
-      "src_components_features_tabdata_admindashboard",
-      "src_components_features_tabdata_adminlogin",
-      "src_components_features_tabdata_genericcrudtable",
-      "src_components_features_tabdata_localdataeditor",
-      "src_components_features_tabdata_tipdatamanager",
-      "src_components_features_tabtip",
-      "src_components_features_tabtip_getdefaulttipperiod",
-      "src_components_features_tabtip_tabtip",
-      "src_components_features_tabtip_tip_months",
-      "src_components_features_unitperalatanmanager",
-      "src_components_features_unitperalatanmanager_unitperalatanmanager",
-      "src_lib_data_masterdata",
-      "src_lib_data_masterdata_default_checklist_data",
-      "src_lib_data_masterdata_default_data_api_t2",
-      "src_lib_data_masterdata_default_data_om_ias_t2",
-      "src_lib_data_masterdata_default_storing_equipments",
-      "src_lib_data_masterdata_default_storing_loc_ac",
-      "src_lib_data_masterdata_default_storing_loc_default",
-      "src_lib_data_masterdata_default_tip_left_col",
-      "src_lib_data_masterdata_default_tip_right_col",
-      "src_lib_data_masterdata_totitlecase",
-      "src_lib_supabaseclient",
-      "src_lib_supabaseclient_supabase",
-      "src_store_useauthstore",
-      "src_store_useauthstore_authstate",
-      "src_store_usemasterdatastore",
-      "src_store_usemasterdatastore_loadmasterdata",
-      "src_store_usemasterdatastore_masterdatastate",
-      "src_store_usemasterdatastore_saveconfigtosupabase",
-      "src_store_usemasterdatastore_savemasterdatatolocal",
-      "src_store_usemasterdatastore_usemasterdatastore"
-    ],
     "4": [
+      "agents_skills_design_system_templates_design_tokens_starter",
+      "agents_skills_design_system_templates_design_tokens_starter_background_type",
+      "agents_skills_design_system_templates_design_tokens_starter_background_value",
+      "agents_skills_design_system_templates_design_tokens_starter_color_background",
+      "agents_skills_design_system_templates_design_tokens_starter_color_destructive",
+      "agents_skills_design_system_templates_design_tokens_starter_color_destructive_foreground",
+      "agents_skills_design_system_templates_design_tokens_starter_color_foreground",
+      "agents_skills_design_system_templates_design_tokens_starter_color_muted",
+      "agents_skills_design_system_templates_design_tokens_starter_color_muted_foreground",
+      "agents_skills_design_system_templates_design_tokens_starter_color_primary",
+      "agents_skills_design_system_templates_design_tokens_starter_color_primary_foreground",
+      "agents_skills_design_system_templates_design_tokens_starter_color_primary_hover",
+      "agents_skills_design_system_templates_design_tokens_starter_color_ring",
+      "agents_skills_design_system_templates_design_tokens_starter_color_secondary",
+      "agents_skills_design_system_templates_design_tokens_starter_color_secondary_foreground",
+      "agents_skills_design_system_templates_design_tokens_starter_component_type",
+      "agents_skills_design_system_templates_design_tokens_starter_component_value",
+      "agents_skills_design_system_templates_design_tokens_starter_dark",
+      "agents_skills_design_system_templates_design_tokens_starter_dark_semantic",
+      "agents_skills_design_system_templates_design_tokens_starter_destructive_foreground_type",
+      "agents_skills_design_system_templates_design_tokens_starter_destructive_foreground_value",
+      "agents_skills_design_system_templates_design_tokens_starter_destructive_type",
+      "agents_skills_design_system_templates_design_tokens_starter_destructive_value",
+      "agents_skills_design_system_templates_design_tokens_starter_foreground_type",
+      "agents_skills_design_system_templates_design_tokens_starter_foreground_value",
+      "agents_skills_design_system_templates_design_tokens_starter_muted_foreground_type",
+      "agents_skills_design_system_templates_design_tokens_starter_muted_foreground_value",
+      "agents_skills_design_system_templates_design_tokens_starter_muted_type",
+      "agents_skills_design_system_templates_design_tokens_starter_muted_value",
+      "agents_skills_design_system_templates_design_tokens_starter_primary_foreground_type",
+      "agents_skills_design_system_templates_design_tokens_starter_primary_foreground_value",
+      "agents_skills_design_system_templates_design_tokens_starter_primary_hover_type",
+      "agents_skills_design_system_templates_design_tokens_starter_primary_hover_value",
+      "agents_skills_design_system_templates_design_tokens_starter_primary_type",
+      "agents_skills_design_system_templates_design_tokens_starter_primary_value",
+      "agents_skills_design_system_templates_design_tokens_starter_ring_type",
+      "agents_skills_design_system_templates_design_tokens_starter_ring_value",
+      "agents_skills_design_system_templates_design_tokens_starter_schema",
+      "agents_skills_design_system_templates_design_tokens_starter_secondary_foreground_type",
+      "agents_skills_design_system_templates_design_tokens_starter_secondary_foreground_value",
+      "agents_skills_design_system_templates_design_tokens_starter_secondary_type",
+      "agents_skills_design_system_templates_design_tokens_starter_secondary_value",
+      "agents_skills_design_system_templates_design_tokens_starter_section_type",
+      "agents_skills_design_system_templates_design_tokens_starter_section_value",
+      "agents_skills_design_system_templates_design_tokens_starter_semantic",
+      "agents_skills_design_system_templates_design_tokens_starter_semantic_color",
+      "agents_skills_design_system_templates_design_tokens_starter_semantic_spacing",
+      "agents_skills_design_system_templates_design_tokens_starter_spacing_component",
+      "agents_skills_design_system_templates_design_tokens_starter_spacing_section"
+    ],
+    "5": [
+      "agents_skills_design_system_templates_design_tokens_starter_bg_type",
+      "agents_skills_design_system_templates_design_tokens_starter_bg_value",
+      "agents_skills_design_system_templates_design_tokens_starter_border_type",
+      "agents_skills_design_system_templates_design_tokens_starter_border_value",
+      "agents_skills_design_system_templates_design_tokens_starter_button_bg",
+      "agents_skills_design_system_templates_design_tokens_starter_button_fg",
+      "agents_skills_design_system_templates_design_tokens_starter_button_font_size",
+      "agents_skills_design_system_templates_design_tokens_starter_button_hover_bg",
+      "agents_skills_design_system_templates_design_tokens_starter_button_padding_x",
+      "agents_skills_design_system_templates_design_tokens_starter_button_padding_y",
+      "agents_skills_design_system_templates_design_tokens_starter_button_radius",
+      "agents_skills_design_system_templates_design_tokens_starter_card_bg",
+      "agents_skills_design_system_templates_design_tokens_starter_card_border",
+      "agents_skills_design_system_templates_design_tokens_starter_card_padding",
+      "agents_skills_design_system_templates_design_tokens_starter_card_radius",
+      "agents_skills_design_system_templates_design_tokens_starter_card_shadow",
+      "agents_skills_design_system_templates_design_tokens_starter_color_border",
+      "agents_skills_design_system_templates_design_tokens_starter_component",
+      "agents_skills_design_system_templates_design_tokens_starter_component_button",
+      "agents_skills_design_system_templates_design_tokens_starter_component_card",
+      "agents_skills_design_system_templates_design_tokens_starter_component_input",
+      "agents_skills_design_system_templates_design_tokens_starter_fg_type",
+      "agents_skills_design_system_templates_design_tokens_starter_fg_value",
+      "agents_skills_design_system_templates_design_tokens_starter_focus_ring_type",
+      "agents_skills_design_system_templates_design_tokens_starter_focus_ring_value",
+      "agents_skills_design_system_templates_design_tokens_starter_font_size_type",
+      "agents_skills_design_system_templates_design_tokens_starter_font_size_value",
+      "agents_skills_design_system_templates_design_tokens_starter_hover_bg_type",
+      "agents_skills_design_system_templates_design_tokens_starter_hover_bg_value",
+      "agents_skills_design_system_templates_design_tokens_starter_input_bg",
+      "agents_skills_design_system_templates_design_tokens_starter_input_border",
+      "agents_skills_design_system_templates_design_tokens_starter_input_focus_ring",
+      "agents_skills_design_system_templates_design_tokens_starter_input_padding_x",
+      "agents_skills_design_system_templates_design_tokens_starter_input_padding_y",
+      "agents_skills_design_system_templates_design_tokens_starter_input_radius",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_type",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_value",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_x_type",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_x_value",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_y_type",
+      "agents_skills_design_system_templates_design_tokens_starter_padding_y_value",
+      "agents_skills_design_system_templates_design_tokens_starter_radius_type",
+      "agents_skills_design_system_templates_design_tokens_starter_radius_value",
+      "agents_skills_design_system_templates_design_tokens_starter_shadow_type",
+      "agents_skills_design_system_templates_design_tokens_starter_shadow_value"
+    ],
+    "6": [
       "agents_skills_design_system_scripts_search_slides",
       "agents_skills_design_system_scripts_search_slides_format_context",
       "agents_skills_design_system_scripts_search_slides_format_result",
@@ -260,7 +362,7 @@
       "agents_skills_design_system_scripts_slide_search_core_search_with_context",
       "agents_skills_design_system_scripts_slide_search_core_should_use_full_bleed"
     ],
-    "5": [
+    "7": [
       "agents_skills_design_system_templates_design_tokens_starter_0_type",
       "agents_skills_design_system_templates_design_tokens_starter_0_value",
       "agents_skills_design_system_templates_design_tokens_starter_10_type",
@@ -296,7 +398,7 @@
       "agents_skills_design_system_templates_design_tokens_starter_spacing_6",
       "agents_skills_design_system_templates_design_tokens_starter_spacing_8"
     ],
-    "6": [
+    "8": [
       "agents_skills_design_system_scripts_html_token_validator",
       "agents_skills_design_system_scripts_html_token_validator_get_context",
       "agents_skills_design_system_scripts_html_token_validator_is_allowed_exception",
@@ -326,7 +428,7 @@
       "agents_skills_design_system_scripts_html_token_validator_validationresult_add_warning",
       "agents_skills_design_system_scripts_html_token_validator_validationresult_init"
     ],
-    "7": [
+    "9": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_101",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_138",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_151",
@@ -356,7 +458,7 @@
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_write_config",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_write_config_creates_content"
     ],
-    "8": [
+    "10": [
       "ref_dom",
       "ref_dom_iterable",
       "ref_es2022",
@@ -384,7 +486,7 @@
       "tsconfig_compileroptions_verbatimmodulesyntax",
       "tsconfig_include"
     ],
-    "9": [
+    "11": [
       "agents_skills_design_scripts_logo_core",
       "agents_skills_design_scripts_logo_core_bm25",
       "agents_skills_design_scripts_logo_core_bm25_fit",
@@ -411,7 +513,34 @@
       "agents_skills_design_scripts_logo_search_rationale_16",
       "agents_skills_design_scripts_logo_search_rationale_38"
     ],
-    "10": [
+    "12": [
+      "src_components_features_assetmanager",
+      "src_components_features_assetmanager_assetmanager",
+      "src_components_features_assetmanager_milik_options",
+      "src_components_features_assetmanager_status_options",
+      "src_components_features_assetmanager_tabtype",
+      "src_components_features_assetmasterlokasi",
+      "src_components_features_assetmasterlokasi_assetmasterlokasi",
+      "src_components_features_assetmasterperalatan",
+      "src_components_features_assetmasterperalatan_assetmasterperalatan",
+      "src_components_features_scheduleuploader",
+      "src_components_features_tabdata",
+      "src_components_features_tabdata_adminlogin",
+      "src_components_features_tabdata_genericcrudtable",
+      "src_components_features_tabdata_localdataeditor",
+      "src_components_features_tabdata_tabdata",
+      "src_components_features_tabdata_tipdatamanager",
+      "src_components_features_tabperbaikan",
+      "src_components_features_tabperbaikan_formatnamapersonel",
+      "src_components_features_unitperalatanmanager",
+      "src_components_features_unitperalatanmanager_unitperalatanmanager",
+      "src_lib_supabaseclient",
+      "src_lib_supabaseclient_supabase",
+      "src_store_useauthstore",
+      "src_store_useauthstore_authstate",
+      "src_store_useauthstore_useauthstore"
+    ],
+    "13": [
       "agents_skills_ui_ux_pro_max_scripts_design_system",
       "agents_skills_ui_ux_pro_max_scripts_design_system_ansi_ljust",
       "agents_skills_ui_ux_pro_max_scripts_design_system_detect_page_type",
@@ -437,33 +566,57 @@
       "agents_skills_ui_ux_pro_max_scripts_search_format_output",
       "agents_skills_ui_ux_pro_max_scripts_search_rationale_45"
     ],
-    "11": [
-      "src_components_features_tabbaserahterima",
-      "src_components_features_tabbaserahterima_barangitem",
-      "src_components_features_tabbriefing",
-      "src_components_features_tabkegiatan",
-      "src_components_shared_livecollagepreview",
-      "src_components_shared_livecollagepreview_livecollagepreview",
-      "src_components_shared_livecollagepreview_livecollagepreviewprops",
-      "src_components_shared_phototexteditormodal",
-      "src_components_shared_phototexteditormodal_drawtextoncanvas",
-      "src_components_shared_phototexteditormodal_drawtextoverlay",
-      "src_components_shared_phototexteditormodal_phototexteditormodal",
-      "src_components_shared_phototexteditormodal_phototexteditormodalprops",
-      "src_components_shared_photouploader",
-      "src_components_shared_photouploader_photo",
-      "src_components_shared_photouploader_photoannotation",
-      "src_components_shared_photouploader_photouploader",
-      "src_components_shared_photouploader_photouploaderprops",
-      "src_components_shared_signaturepad",
-      "src_components_shared_signaturepad_signaturepad",
-      "src_components_shared_signaturepad_signaturepadprops",
-      "src_lib_services_shareservice",
-      "src_lib_utils_canvasutils",
-      "src_lib_utils_canvasutils_drawcelltextoverlay",
-      "src_lib_utils_canvasutils_processphotostocollage"
+    "14": [
+      "database_master_configs",
+      "prd_non_functional_requirements",
+      "prd_product_requirements_document",
+      "prd_tab_ba_serah_terima",
+      "prd_tab_checklist",
+      "prd_tab_data",
+      "prd_tab_initial_report",
+      "prd_tab_kalibrasi",
+      "prd_tab_kehadiran",
+      "prd_tab_perbaikan",
+      "prd_tab_storing",
+      "prd_tab_tip",
+      "prd_target_user_personas",
+      "readme_modul_ba_serah_terima",
+      "readme_modul_checklist",
+      "readme_modul_data",
+      "readme_modul_initial_report",
+      "readme_modul_kalibrasi",
+      "readme_modul_kehadiran",
+      "readme_modul_perbaikan",
+      "readme_modul_storing",
+      "readme_modul_tip",
+      "readme_smart_shortcut_mitigasi",
+      "readme_ssest2"
     ],
-    "12": [
+    "15": [
+      "agent_canvas_signature_rules",
+      "agent_gdrive_pdf_rules",
+      "agent_guidelines",
+      "agent_mobile_first_philosophy",
+      "agent_relational_state_management",
+      "agent_shift_boundary_rules",
+      "agent_tab_component_isolation",
+      "agent_verification_checklist",
+      "agent_wa_generator_rule",
+      "architecture_canvas_konva_engine",
+      "architecture_google_drive_service",
+      "architecture_operational_report_service",
+      "architecture_pdf_service",
+      "architecture_service_layer",
+      "architecture_spa_mobile_first",
+      "architecture_supabase_backend",
+      "architecture_system_architecture",
+      "architecture_wa_generator",
+      "architecture_zustand_stores",
+      "database_local_storage_schema",
+      "docs_superpowers_plans_2026_09_11_google_drive_settings_data_tab_task2_panel",
+      "prd_shared_utilities"
+    ],
+    "16": [
       "agents_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator",
       "agents_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_apply_reasoning",
       "agents_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator_extract_results",
@@ -487,7 +640,54 @@
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testreasoningmatch_test_known_category_matches_exactly",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testreasoningmatch_test_unknown_category_falls_back_gracefully"
     ],
-    "13": [
+    "17": [
+      "src_components_features_tabinitialreport",
+      "src_components_features_tabinitialreport_formatnamapersonel",
+      "src_components_features_tabinitialreport_tabinitialreport",
+      "src_components_features_tabkalibrasi",
+      "src_components_features_tabkalibrasi_tabkalibrasi",
+      "src_lib_utils_locationrules",
+      "src_lib_utils_locationrules_formattanggalindo",
+      "src_lib_utils_locationrules_getgenerallokasioptions",
+      "src_lib_utils_locationrules_getintersectedlocations",
+      "src_lib_utils_locationrules_getlokasi2options",
+      "src_lib_utils_locationrules_getstoringnomoroptions",
+      "src_lib_utils_locationrules_getstoringvalidlocations",
+      "src_lib_utils_locationrules_getstoringvalidnumbers",
+      "src_lib_utils_locationrules_getvalidmodels",
+      "src_lib_utils_locationrules_getvalidxraymodels",
+      "src_lib_utils_wagenerator",
+      "src_lib_utils_wagenerator_formataclokasilist",
+      "src_lib_utils_wagenerator_generatewa_initialreport",
+      "src_lib_utils_wagenerator_generatewa_kalibrasi",
+      "src_lib_utils_wagenerator_generatewa_kegiatan",
+      "src_lib_utils_wagenerator_generatewa_perbaikan",
+      "src_lib_utils_wagenerator_generatewa_storing"
+    ],
+    "18": [
+      "lucide_react",
+      "netlify_vite_plugin_tanstack_start",
+      "package_dependencies_lucide_react",
+      "package_dependencies_tailwindcss_vite",
+      "package_devdependencies",
+      "package_devdependencies_lucide_react",
+      "package_devdependencies_netlify_vite_plugin_tanstack_start",
+      "package_devdependencies_tailwindcss_vite",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react",
+      "tailwindcss_vite",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "typescript",
+      "vite",
+      "vitejs_plugin_react"
+    ],
+    "19": [
       "agents_skills_design_system_scripts_generate_slide",
       "agents_skills_design_system_scripts_generate_slide_e",
       "agents_skills_design_system_scripts_generate_slide_generate_chart_slide",
@@ -509,7 +709,7 @@
       "agents_skills_design_system_scripts_generate_slide_rationale_638",
       "agents_skills_design_system_scripts_generate_slide_safe_url"
     ],
-    "14": [
+    "20": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_23",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_97",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator",
@@ -531,26 +731,29 @@
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_validate_config_empty_theme",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_validate_config_valid"
     ],
-    "15": [
-      "netlify_vite_plugin_tanstack_start",
-      "package_devdependencies",
-      "package_devdependencies_netlify_vite_plugin_tanstack_start",
-      "package_devdependencies_rimraf",
-      "package_devdependencies_types_node",
-      "package_devdependencies_types_react",
-      "package_devdependencies_types_react_dom",
-      "package_devdependencies_typescript",
-      "package_devdependencies_vite",
-      "package_devdependencies_vitejs_plugin_react",
-      "rimraf",
-      "types_node",
-      "types_react",
-      "types_react_dom",
-      "typescript",
-      "vite",
-      "vitejs_plugin_react"
+    "21": [
+      "src_components_features_tabchecklist",
+      "src_components_features_tabchecklist_tabchecklist",
+      "src_components_features_tabshiftreport",
+      "src_components_features_tabshiftreport_months",
+      "src_components_features_tabshiftreport_tabshiftreport",
+      "src_lib_services_operationalreportservice",
+      "src_lib_services_operationalreportservice_calculatechecklistsummary",
+      "src_lib_services_operationalreportservice_checklistsummaryitem",
+      "src_lib_services_operationalreportservice_fetchchecklistsummary",
+      "src_lib_services_operationalreportservice_fetchdailyshiftcounts",
+      "src_lib_services_operationalreportservice_fetchshiftoperationallogs",
+      "src_lib_services_operationalreportservice_getlocaldatestring",
+      "src_lib_services_operationalreportservice_getreportdefaultdateandshift",
+      "src_lib_services_operationalreportservice_istimewithinshiftboundary",
+      "src_lib_services_operationalreportservice_operationallog",
+      "src_lib_services_operationalreportservice_savechecklistsummary",
+      "src_lib_services_shareservice",
+      "src_lib_services_shareservice_fallbackshare",
+      "src_lib_services_shareservice_triggerfiledownload",
+      "src_lib_utils_wagenerator_generatewa_checklist"
     ],
-    "16": [
+    "22": [
       "src_router",
       "src_router_getrouter",
       "src_routes_index",
@@ -572,28 +775,7 @@
       "src_routetree_gen_tanstack_react_router",
       "src_routetree_gen_tanstack_react_start"
     ],
-    "17": [
-      "agents_skills_design_system_templates_design_tokens_starter_background_type",
-      "agents_skills_design_system_templates_design_tokens_starter_background_value",
-      "agents_skills_design_system_templates_design_tokens_starter_color_background",
-      "agents_skills_design_system_templates_design_tokens_starter_color_foreground",
-      "agents_skills_design_system_templates_design_tokens_starter_color_muted_foreground",
-      "agents_skills_design_system_templates_design_tokens_starter_color_primary",
-      "agents_skills_design_system_templates_design_tokens_starter_color_primary_hover",
-      "agents_skills_design_system_templates_design_tokens_starter_color_secondary",
-      "agents_skills_design_system_templates_design_tokens_starter_foreground_type",
-      "agents_skills_design_system_templates_design_tokens_starter_foreground_value",
-      "agents_skills_design_system_templates_design_tokens_starter_muted_foreground_type",
-      "agents_skills_design_system_templates_design_tokens_starter_muted_foreground_value",
-      "agents_skills_design_system_templates_design_tokens_starter_primary_hover_type",
-      "agents_skills_design_system_templates_design_tokens_starter_primary_hover_value",
-      "agents_skills_design_system_templates_design_tokens_starter_primary_type",
-      "agents_skills_design_system_templates_design_tokens_starter_primary_value",
-      "agents_skills_design_system_templates_design_tokens_starter_secondary_type",
-      "agents_skills_design_system_templates_design_tokens_starter_secondary_value",
-      "agents_skills_design_system_templates_design_tokens_starter_semantic_color"
-    ],
-    "18": [
+    "23": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen_main",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_123",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_136",
@@ -614,33 +796,7 @@
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_validate_config",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_write_config"
     ],
-    "19": [
-      "package_dependencies_react",
-      "react",
-      "src_components_features_tabbaserahterima_tabbaserahterima",
-      "src_components_features_tabbriefing_tabbriefing",
-      "src_components_features_tabinitialreport",
-      "src_components_features_tabinitialreport_formatnamapersonel",
-      "src_components_features_tabinitialreport_tabinitialreport",
-      "src_components_features_tabkegiatan_tabkegiatan",
-      "src_components_features_tabkehadiran",
-      "src_components_features_tabkehadiran_tabkehadiran",
-      "src_components_features_tabperbaikan",
-      "src_components_features_tabperbaikan_formatnamapersonel",
-      "src_components_features_tabperbaikan_tabperbaikan",
-      "src_lib_data_masterdata_getjabatanrank",
-      "src_lib_data_masterdata_sortpersonelbyjabatan",
-      "src_lib_services_shareservice_fallbackshare",
-      "src_lib_services_shareservice_sharetowhatsapp",
-      "src_lib_utils_canvasutils_compressimagefile",
-      "src_lib_utils_locationrules_getlokasi2options",
-      "src_lib_utils_wagenerator_generatewa_initialreport",
-      "src_lib_utils_wagenerator_generatewa_perbaikan",
-      "src_store_useappstore",
-      "src_store_useappstore_appstate",
-      "src_store_useappstore_useappstore"
-    ],
-    "20": [
+    "24": [
       "agents_skills_design_system_scripts_fetch_background",
       "agents_skills_design_system_scripts_fetch_background_generate_css_for_background",
       "agents_skills_design_system_scripts_fetch_background_get_background_image",
@@ -660,27 +816,27 @@
       "agents_skills_design_system_scripts_fetch_background_rationale_40",
       "agents_skills_design_system_scripts_fetch_background_resolve_token_reference"
     ],
-    "21": [
+    "25": [
+      "html2canvas",
       "html2pdf_js",
+      "konva",
       "package_dependencies",
+      "package_dependencies_html2canvas",
       "package_dependencies_html2pdf_js",
-      "package_dependencies_react_dom",
-      "package_dependencies_supabase_supabase_js",
+      "package_dependencies_konva",
       "package_dependencies_tanstack_react_router",
       "package_dependencies_tanstack_react_start",
       "package_dependencies_tanstack_react_store",
       "package_dependencies_tanstack_router_plugin",
-      "package_dependencies_tanstack_store",
-      "package_dependencies_use_image",
-      "react_dom",
-      "supabase_supabase_js",
+      "package_dependencies_vite_tsconfig_paths",
+      "package_dependencies_zustand",
       "tanstack_react_router",
       "tanstack_react_start",
       "tanstack_router_plugin",
-      "tanstack_store",
-      "use_image"
+      "vite_tsconfig_paths",
+      "zustand"
     ],
-    "22": [
+    "26": [
       "agents_skills_ui_ux_pro_max_scripts_core_bm25",
       "agents_skills_ui_ux_pro_max_scripts_core_bm25_fit",
       "agents_skills_ui_ux_pro_max_scripts_core_bm25_init",
@@ -699,7 +855,7 @@
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testtokenizer_test_stopwords_removed",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testtokenizer_test_synonym_normalization"
     ],
-    "23": [
+    "27": [
       "agents_skills_design_scripts_icon_generate",
       "agents_skills_design_scripts_icon_generate_apply_color",
       "agents_skills_design_scripts_icon_generate_apply_viewbox_size",
@@ -717,7 +873,7 @@
       "agents_skills_design_scripts_icon_generate_rationale_288",
       "agents_skills_design_scripts_icon_generate_rationale_372"
     ],
-    "24": [
+    "28": [
       "agents_skills_design_system_templates_design_tokens_starter_2xl_type",
       "agents_skills_design_system_templates_design_tokens_starter_2xl_value",
       "agents_skills_design_system_templates_design_tokens_starter_3xl_type",
@@ -735,59 +891,25 @@
       "agents_skills_design_system_templates_design_tokens_starter_xs_type",
       "agents_skills_design_system_templates_design_tokens_starter_xs_value"
     ],
-    "25": [
+    "29": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_147",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_158",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_18",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_205",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_22",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_45",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_temp_project",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_all_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_dry_run",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_success",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_default_project_root",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
     ],
-    "26": [
-      "agents_skills_design_system_templates_design_tokens_starter_button_padding_y",
-      "agents_skills_design_system_templates_design_tokens_starter_input_padding_y",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_y_type",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_y_value"
-    ],
-    "27": [
-      "src_components_features_tabkalibrasi",
-      "src_components_features_tabkalibrasi_tabkalibrasi",
-      "src_components_features_tabstoring",
-      "src_components_features_tabstoring_tabstoring",
-      "src_lib_utils_locationrules",
-      "src_lib_utils_locationrules_checkneedsstoringsupervisoravsec",
-      "src_lib_utils_locationrules_formattanggalindo",
-      "src_lib_utils_locationrules_getacnomoroptions",
-      "src_lib_utils_locationrules_getgenerallokasioptions",
-      "src_lib_utils_locationrules_getintersectedlocations",
-      "src_lib_utils_locationrules_getstoringnomoroptions",
-      "src_lib_utils_locationrules_getstoringsupervisorlocations",
-      "src_lib_utils_locationrules_getstoringvalidlocations",
-      "src_lib_utils_locationrules_getstoringvalidnumbers",
-      "src_lib_utils_locationrules_getvalidmodels",
-      "src_lib_utils_locationrules_getvalidxraymodels",
-      "src_lib_utils_wagenerator",
-      "src_lib_utils_wagenerator_formataclokasilist",
-      "src_lib_utils_wagenerator_formatpersonnellist",
-      "src_lib_utils_wagenerator_generatewa_baserahterima",
-      "src_lib_utils_wagenerator_generatewa_briefing",
-      "src_lib_utils_wagenerator_generatewa_checklist",
-      "src_lib_utils_wagenerator_generatewa_kalibrasi",
-      "src_lib_utils_wagenerator_generatewa_kegiatan",
-      "src_lib_utils_wagenerator_generatewa_kehadiran",
-      "src_lib_utils_wagenerator_generatewa_storing"
-    ],
-    "28": [
+    "30": [
       "agents_skills_brand_scripts_extract_colors",
       "agents_skills_brand_scripts_extract_colors_calculatecompliance",
       "agents_skills_brand_scripts_extract_colors_colordistance",
@@ -803,7 +925,7 @@
       "agents_skills_brand_scripts_extract_colors_path",
       "agents_skills_brand_scripts_extract_colors_rgbtohex"
     ],
-    "29": [
+    "31": [
       "agents_skills_brand_scripts_validate_asset",
       "agents_skills_brand_scripts_validate_asset_checkmanifest",
       "agents_skills_brand_scripts_validate_asset_formatbytes",
@@ -819,7 +941,7 @@
       "agents_skills_brand_scripts_validate_asset_validatefilesize",
       "agents_skills_brand_scripts_validate_asset_validateformat"
     ],
-    "30": [
+    "32": [
       "agents_skills_ui_ux_pro_max_scripts_core",
       "agents_skills_ui_ux_pro_max_scripts_core_domain_keywords",
       "agents_skills_ui_ux_pro_max_scripts_core_get_bm25",
@@ -835,22 +957,23 @@
       "agents_skills_ui_ux_pro_max_scripts_core_suggest_terms",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testsearchdomains_test_every_stack_file_exists_and_is_searchable"
     ],
-    "31": [
-      "agents_skills_design_system_templates_design_tokens_starter",
-      "agents_skills_design_system_templates_design_tokens_starter_component",
-      "agents_skills_design_system_templates_design_tokens_starter_component_type",
-      "agents_skills_design_system_templates_design_tokens_starter_component_value",
-      "agents_skills_design_system_templates_design_tokens_starter_dark",
-      "agents_skills_design_system_templates_design_tokens_starter_dark_semantic",
-      "agents_skills_design_system_templates_design_tokens_starter_schema",
-      "agents_skills_design_system_templates_design_tokens_starter_section_type",
-      "agents_skills_design_system_templates_design_tokens_starter_section_value",
-      "agents_skills_design_system_templates_design_tokens_starter_semantic",
-      "agents_skills_design_system_templates_design_tokens_starter_semantic_spacing",
-      "agents_skills_design_system_templates_design_tokens_starter_spacing_component",
-      "agents_skills_design_system_templates_design_tokens_starter_spacing_section"
+    "33": [
+      "package_dependencies_react",
+      "react",
+      "src_components_features_tabkegiatan",
+      "src_components_features_tabkegiatan_tabkegiatan",
+      "src_components_features_tabperbaikan_tabperbaikan",
+      "src_components_features_tabstoring",
+      "src_components_features_tabstoring_tabstoring",
+      "src_lib_services_googledriveservice_uploadphototogoogledrive",
+      "src_lib_services_operationalreportservice_getoperationalshiftanddate",
+      "src_lib_services_operationalreportservice_saveoperationallog",
+      "src_lib_services_shareservice_sharetowhatsapp",
+      "src_lib_utils_locationrules_checkneedsstoringsupervisoravsec",
+      "src_lib_utils_locationrules_getacnomoroptions",
+      "src_lib_utils_locationrules_getstoringsupervisorlocations"
     ],
-    "32": [
+    "34": [
       "agents_skills_ui_styling_scripts_shadcn_add_main",
       "agents_skills_ui_styling_scripts_shadcn_add_rationale_147",
       "agents_skills_ui_styling_scripts_shadcn_add_rationale_193",
@@ -865,22 +988,22 @@
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_get_shadcn_version",
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_list_installed"
     ],
-    "33": [
-      "src_components_features_tabshiftreport",
-      "src_components_features_tabshiftreport_months",
-      "src_components_features_tabshiftreport_tabshiftreport",
-      "src_lib_data_constants",
-      "src_lib_data_constants_tip_months",
-      "src_lib_services_sheetssyncservice",
-      "src_lib_services_sheetssyncservice_deletesheetreport",
-      "src_lib_services_sheetssyncservice_determineshift",
-      "src_lib_services_sheetssyncservice_filetobase64",
-      "src_lib_services_sheetssyncservice_syncreportpayload",
-      "src_lib_services_sheetssyncservice_synctogooglesheets",
-      "src_lib_services_sheetssyncservice_updatereportpayload",
-      "src_lib_services_sheetssyncservice_updatesheetreport"
+    "35": [
+      "database_jadwal_shift",
+      "database_jenis_peralatan",
+      "database_lokasi",
+      "database_penempatan_peralatan",
+      "database_personel",
+      "database_spareparts",
+      "database_specification",
+      "database_tipe_peralatan",
+      "database_titik_lokasi",
+      "database_unit_kerja",
+      "database_unit_peralatan",
+      "prd_tab_briefing",
+      "readme_modul_briefing"
     ],
-    "34": [
+    "36": [
       "agents_skills_design_system_scripts_validate_tokens",
       "agents_skills_design_system_scripts_validate_tokens_extensions",
       "agents_skills_design_system_scripts_validate_tokens_formatreport",
@@ -894,21 +1017,7 @@
       "agents_skills_design_system_scripts_validate_tokens_shouldskip",
       "agents_skills_design_system_scripts_validate_tokens_skippatterns"
     ],
-    "35": [
-      "agents_skills_design_system_templates_design_tokens_starter_bg_type",
-      "agents_skills_design_system_templates_design_tokens_starter_bg_value",
-      "agents_skills_design_system_templates_design_tokens_starter_button_bg",
-      "agents_skills_design_system_templates_design_tokens_starter_card_bg",
-      "agents_skills_design_system_templates_design_tokens_starter_card_padding",
-      "agents_skills_design_system_templates_design_tokens_starter_card_shadow",
-      "agents_skills_design_system_templates_design_tokens_starter_component_card",
-      "agents_skills_design_system_templates_design_tokens_starter_input_bg",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_type",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_value",
-      "agents_skills_design_system_templates_design_tokens_starter_shadow_type",
-      "agents_skills_design_system_templates_design_tokens_starter_shadow_value"
-    ],
-    "36": [
+    "37": [
       "agents_skills_ui_styling_scripts_shadcn_add_rationale_18",
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_104",
@@ -922,7 +1031,21 @@
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_check_shadcn_config_not_exists",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_custom_project_root"
     ],
-    "37": [
+    "38": [
+      "src_components_app",
+      "src_components_app_all_tabs",
+      "src_components_app_app",
+      "src_components_app_tabitem",
+      "src_components_app_total_pages",
+      "src_components_features_antigravitypet",
+      "src_components_features_antigravitypet_antigravitypet",
+      "src_components_features_antigravitypet_pet_quotes",
+      "src_components_features_tabtip",
+      "src_components_features_tabtip_getdefaulttipperiod",
+      "src_components_features_tabtip_tabtip",
+      "src_components_features_tabtip_tip_months"
+    ],
+    "39": [
       "agents_skills_brand_scripts_inject_brand_context",
       "agents_skills_brand_scripts_inject_brand_context_extractcolorsfromtable",
       "agents_skills_brand_scripts_inject_brand_context_extractcoreattributes",
@@ -935,7 +1058,7 @@
       "agents_skills_brand_scripts_inject_brand_context_main",
       "agents_skills_brand_scripts_inject_brand_context_path"
     ],
-    "38": [
+    "40": [
       "agents_skills_design_system_scripts_embed_tokens",
       "agents_skills_design_system_scripts_embed_tokens_args",
       "agents_skills_design_system_scripts_embed_tokens_extracttokens",
@@ -948,7 +1071,7 @@
       "agents_skills_design_system_scripts_embed_tokens_tokenspath",
       "agents_skills_design_system_scripts_embed_tokens_wrapstyle"
     ],
-    "39": [
+    "41": [
       "agents_skills_design_system_templates_design_tokens_starter_duration_fast",
       "agents_skills_design_system_templates_design_tokens_starter_duration_normal",
       "agents_skills_design_system_templates_design_tokens_starter_duration_slow",
@@ -956,11 +1079,12 @@
       "agents_skills_design_system_templates_design_tokens_starter_fast_value",
       "agents_skills_design_system_templates_design_tokens_starter_normal_type",
       "agents_skills_design_system_templates_design_tokens_starter_normal_value",
+      "agents_skills_design_system_templates_design_tokens_starter_primitive",
       "agents_skills_design_system_templates_design_tokens_starter_primitive_duration",
       "agents_skills_design_system_templates_design_tokens_starter_slow_type",
       "agents_skills_design_system_templates_design_tokens_starter_slow_value"
     ],
-    "40": [
+    "42": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_1",
@@ -973,7 +1097,20 @@
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testgeneratedconfigisvalidjs_test_node_check_parses_generated_config",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testgeneratedconfigisvalidjs_test_property_before_plugins_is_comma_terminated"
     ],
-    "41": [
+    "43": [
+      "architecture_antigravity_pet",
+      "docs_superpowers_plans_2026_09_10_antigravity_pet_plan",
+      "docs_superpowers_plans_2026_09_10_antigravity_pet_task1_css",
+      "docs_superpowers_plans_2026_09_10_antigravity_pet_task2_component",
+      "docs_superpowers_plans_2026_09_10_antigravity_pet_task3_integration",
+      "docs_superpowers_specs_2026_09_10_antigravity_pet_design_character_visual",
+      "docs_superpowers_specs_2026_09_10_antigravity_pet_design_dialog_tips",
+      "docs_superpowers_specs_2026_09_10_antigravity_pet_design_spec",
+      "docs_superpowers_specs_2026_09_10_antigravity_pet_design_zero_g_physics",
+      "prd_antigravity_pet",
+      "readme_antigravity_pet"
+    ],
+    "44": [
       "agents_skills_design_scripts_logo_generate",
       "agents_skills_design_scripts_logo_generate_enhance_prompt",
       "agents_skills_design_scripts_logo_generate_generate_batch",
@@ -985,7 +1122,7 @@
       "agents_skills_design_scripts_logo_generate_rationale_231",
       "agents_skills_design_scripts_logo_generate_rationale_30"
     ],
-    "42": [
+    "45": [
       "agents_skills_design_system_scripts_generate_tokens",
       "agents_skills_design_system_scripts_generate_tokens_flattentokens",
       "agents_skills_design_system_scripts_generate_tokens_fs",
@@ -997,19 +1134,7 @@
       "agents_skills_design_system_scripts_generate_tokens_resolvereference",
       "agents_skills_design_system_scripts_generate_tokens_tocssvarname"
     ],
-    "43": [
-      "agents_skills_design_system_templates_design_tokens_starter_button_fg",
-      "agents_skills_design_system_templates_design_tokens_starter_button_font_size",
-      "agents_skills_design_system_templates_design_tokens_starter_button_hover_bg",
-      "agents_skills_design_system_templates_design_tokens_starter_component_button",
-      "agents_skills_design_system_templates_design_tokens_starter_fg_type",
-      "agents_skills_design_system_templates_design_tokens_starter_fg_value",
-      "agents_skills_design_system_templates_design_tokens_starter_font_size_type",
-      "agents_skills_design_system_templates_design_tokens_starter_font_size_value",
-      "agents_skills_design_system_templates_design_tokens_starter_hover_bg_type",
-      "agents_skills_design_system_templates_design_tokens_starter_hover_bg_value"
-    ],
-    "44": [
+    "46": [
       "agents_skills_ui_styling_scripts_tailwind_config_gen_py_path",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_31",
       "agents_skills_ui_styling_scripts_tailwind_config_gen_rationale_45",
@@ -1021,19 +1146,7 @@
       "agents_skills_ui_styling_scripts_tailwind_config_gen_tailwindconfiggenerator_init",
       "any"
     ],
-    "45": [
-      "src_components_features_tabchecklist",
-      "src_components_features_tabchecklist_tabchecklist",
-      "src_lib_services_checklistsyncservice",
-      "src_lib_services_checklistsyncservice_checklistshiftdatavalue",
-      "src_lib_services_checklistsyncservice_default_shift_data",
-      "src_lib_services_checklistsyncservice_fetchchecklistshiftdata",
-      "src_lib_services_checklistsyncservice_savechecklistsupervisordirect",
-      "src_lib_services_checklistsyncservice_savestoringtochecklistsync",
-      "src_lib_utils_locationrules_getcurrentshiftkey",
-      "src_lib_utils_locationrules_mapstoringtochecklistsupervisorkeys"
-    ],
-    "46": [
+    "47": [
       "agents_skills_brainstorming_scripts_helper",
       "agents_skills_brainstorming_scripts_helper_connect",
       "agents_skills_brainstorming_scripts_helper_nextreconnectdelay",
@@ -1044,7 +1157,7 @@
       "agents_skills_brainstorming_scripts_helper_showtombstone",
       "agents_skills_brainstorming_scripts_helper_websocketurl"
     ],
-    "47": [
+    "48": [
       "agents_skills_brand_scripts_sync_brand_to_tokens",
       "agents_skills_brand_scripts_sync_brand_to_tokens_adjustbrightness",
       "agents_skills_brand_scripts_sync_brand_to_tokens_execfilesync",
@@ -1055,7 +1168,7 @@
       "agents_skills_brand_scripts_sync_brand_to_tokens_path",
       "agents_skills_brand_scripts_sync_brand_to_tokens_updatedesigntokens"
     ],
-    "48": [
+    "49": [
       "agents_skills_design_system_scripts_tests_test_validate_tokens",
       "agents_skills_design_system_scripts_tests_test_validate_tokens_py_path",
       "agents_skills_design_system_scripts_tests_test_validate_tokens_rationale_1",
@@ -1066,7 +1179,7 @@
       "agents_skills_design_system_scripts_tests_test_validate_tokens_test_token_only_line_reports_no_violation",
       "completedprocess"
     ],
-    "49": [
+    "50": [
       "agents_skills_writing_skills_render_graphs",
       "agents_skills_writing_skills_render_graphs_combinegraphs",
       "agents_skills_writing_skills_render_graphs_execsync",
@@ -1077,35 +1190,23 @@
       "agents_skills_writing_skills_render_graphs_path",
       "agents_skills_writing_skills_render_graphs_rendertosvg"
     ],
-    "50": [
-      "src_components_app",
-      "src_components_app_all_tabs",
-      "src_components_app_app",
-      "src_components_app_tabitem",
-      "src_components_app_total_pages",
-      "src_components_features_tabdata_tabdata",
-      "src_components_shared_monitorsearchicon",
-      "src_components_shared_monitorsearchicon_monitorsearchicon",
-      "src_store_useauthstore_useauthstore"
-    ],
     "51": [
-      "agents_skills_design_system_templates_design_tokens_starter_button_padding_x",
-      "agents_skills_design_system_templates_design_tokens_starter_component_input",
-      "agents_skills_design_system_templates_design_tokens_starter_focus_ring_type",
-      "agents_skills_design_system_templates_design_tokens_starter_focus_ring_value",
-      "agents_skills_design_system_templates_design_tokens_starter_input_focus_ring",
-      "agents_skills_design_system_templates_design_tokens_starter_input_padding_x",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_x_type",
-      "agents_skills_design_system_templates_design_tokens_starter_padding_x_value"
+      "src_components_features_tabbaserahterima",
+      "src_components_features_tabbaserahterima_barangitem",
+      "src_components_features_tabbaserahterima_formatdateindo",
+      "src_components_features_tabbaserahterima_tabbaserahterima",
+      "src_lib_services_pdfservice",
+      "src_lib_services_pdfservice_generatepdfblob",
+      "src_lib_services_pdfservice_pdfoptions",
+      "src_lib_services_pdfservice_purgehtml2pdfartifacts",
+      "src_lib_utils_wagenerator_generatewa_baserahterima"
     ],
     "52": [
       "agents_skills_design_system_templates_design_tokens_starter_default_type",
       "agents_skills_design_system_templates_design_tokens_starter_default_value",
       "agents_skills_design_system_templates_design_tokens_starter_full_type",
       "agents_skills_design_system_templates_design_tokens_starter_full_value",
-      "agents_skills_design_system_templates_design_tokens_starter_primitive",
       "agents_skills_design_system_templates_design_tokens_starter_primitive_radius",
-      "agents_skills_design_system_templates_design_tokens_starter_primitive_shadow",
       "agents_skills_design_system_templates_design_tokens_starter_radius_default",
       "agents_skills_design_system_templates_design_tokens_starter_radius_full",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_default"
@@ -1141,6 +1242,16 @@
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testpersistence_test_persist_writes_only_under_output_dir"
     ],
     "56": [
+      "src_lib_services_checklistsyncservice",
+      "src_lib_services_checklistsyncservice_checklistshiftdatavalue",
+      "src_lib_services_checklistsyncservice_default_shift_data",
+      "src_lib_services_checklistsyncservice_fetchchecklistshiftdata",
+      "src_lib_services_checklistsyncservice_savechecklistsupervisordirect",
+      "src_lib_services_checklistsyncservice_savestoringtochecklistsync",
+      "src_lib_utils_locationrules_getcurrentshiftkey",
+      "src_lib_utils_locationrules_mapstoringtochecklistsupervisorkeys"
+    ],
+    "57": [
       "agents_skills_brainstorming_scripts_stop_server",
       "agents_skills_brainstorming_scripts_stop_server_command_has_server_id",
       "agents_skills_brainstorming_scripts_stop_server_command_line_for_pid",
@@ -1149,7 +1260,7 @@
       "agents_skills_brainstorming_scripts_stop_server_read_expected_server_id",
       "agents_skills_brainstorming_scripts_stop_server_sh__entry"
     ],
-    "57": [
+    "58": [
       "agents_skills_ui_ux_pro_max_scripts_core_detect_domain",
       "agents_skills_ui_ux_pro_max_scripts_core_rationale_378",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testdomaindetection",
@@ -1158,7 +1269,16 @@
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testdomaindetection_test_empty_query_falls_back_to_style",
       "agents_skills_ui_ux_pro_max_scripts_tests_test_core_testdomaindetection_test_style_keywords_route_to_style"
     ],
-    "58": [
+    "59": [
+      "docs_superpowers_plans_2026_09_11_google_drive_settings_data_tab_plan",
+      "docs_superpowers_plans_2026_09_11_google_drive_settings_data_tab_task1_test",
+      "docs_superpowers_plans_2026_09_11_google_drive_settings_data_tab_task3_move",
+      "docs_superpowers_plans_2026_09_11_google_drive_settings_data_tab_task4_verify",
+      "docs_superpowers_specs_2026_09_11_google_drive_settings_data_tab_design_component",
+      "docs_superpowers_specs_2026_09_11_google_drive_settings_data_tab_design_dataflow",
+      "docs_superpowers_specs_2026_09_11_google_drive_settings_data_tab_design_spec"
+    ],
+    "60": [
       "package",
       "package_name",
       "package_private",
@@ -1167,38 +1287,29 @@
       "package_scripts_dev",
       "package_type"
     ],
-    "59": [
+    "61": [
+      "src_components_features_googledrivesettingspanel",
+      "src_components_features_googledrivesettingspanel_googledrivesettingspanel",
+      "src_lib_services_googledriveservice",
+      "src_lib_services_googledriveservice_getgooglescripturl",
+      "src_lib_services_googledriveservice_setgooglescripturl",
+      "src_lib_services_googledriveservice_tobase64payload",
+      "src_lib_services_googledriveservice_uploadresult"
+    ],
+    "62": [
       "agents_skills_design_system_templates_design_tokens_starter_fontsize_sm",
+      "agents_skills_design_system_templates_design_tokens_starter_primitive_shadow",
       "agents_skills_design_system_templates_design_tokens_starter_radius_sm",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_sm",
       "agents_skills_design_system_templates_design_tokens_starter_sm_type",
       "agents_skills_design_system_templates_design_tokens_starter_sm_value"
     ],
-    "60": [
-      "agents_skills_design_system_templates_design_tokens_starter_border_type",
-      "agents_skills_design_system_templates_design_tokens_starter_border_value",
-      "agents_skills_design_system_templates_design_tokens_starter_card_border",
-      "agents_skills_design_system_templates_design_tokens_starter_color_border",
-      "agents_skills_design_system_templates_design_tokens_starter_input_border"
-    ],
-    "61": [
-      "agents_skills_design_system_templates_design_tokens_starter_button_radius",
-      "agents_skills_design_system_templates_design_tokens_starter_card_radius",
-      "agents_skills_design_system_templates_design_tokens_starter_input_radius",
-      "agents_skills_design_system_templates_design_tokens_starter_radius_type",
-      "agents_skills_design_system_templates_design_tokens_starter_radius_value"
-    ],
-    "62": [
+    "63": [
       "agents_skills_design_system_templates_design_tokens_starter_fontsize_lg",
       "agents_skills_design_system_templates_design_tokens_starter_lg_type",
       "agents_skills_design_system_templates_design_tokens_starter_lg_value",
       "agents_skills_design_system_templates_design_tokens_starter_radius_lg",
       "agents_skills_design_system_templates_design_tokens_starter_shadow_lg"
-    ],
-    "63": [
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_90",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_no_config",
-      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_no_config"
     ],
     "64": [
       "agents_skills_design_system_templates_design_tokens_starter_fontsize_xl",
@@ -1231,180 +1342,178 @@
       "agents_skills_ui_ux_pro_max_scripts_validate_data_read_rows"
     ],
     "69": [
+      "database_laporan_checklist",
+      "prd_tab_shift_report",
+      "readme_modul_shift_report",
+      "readme_serviceability_diagram"
+    ],
+    "70": [
       "agents_skills_brainstorming_scripts_start_server",
       "agents_skills_brainstorming_scripts_start_server_is_windows_like_shell",
       "agents_skills_brainstorming_scripts_start_server_sh__entry"
     ],
-    "70": [
+    "71": [
       "agents_skills_brand_scripts_tests_test_sync_brand_to_tokens",
       "agents_skills_brand_scripts_tests_test_sync_brand_to_tokens_rationale_1",
       "agents_skills_brand_scripts_tests_test_sync_brand_to_tokens_test_sync_parses_bundled_starter_template"
     ],
-    "71": [
+    "72": [
       "agents_skills_design_system_scripts_slide_token_validator",
       "agents_skills_design_system_scripts_slide_token_validator_main",
       "agents_skills_design_system_scripts_slide_token_validator_rationale_21"
     ],
-    "72": [
-      "agents_skills_design_system_templates_design_tokens_starter_color_destructive",
-      "agents_skills_design_system_templates_design_tokens_starter_destructive_type",
-      "agents_skills_design_system_templates_design_tokens_starter_destructive_value"
-    ],
     "73": [
-      "agents_skills_design_system_templates_design_tokens_starter_color_destructive_foreground",
-      "agents_skills_design_system_templates_design_tokens_starter_destructive_foreground_type",
-      "agents_skills_design_system_templates_design_tokens_starter_destructive_foreground_value"
-    ],
-    "74": [
-      "agents_skills_design_system_templates_design_tokens_starter_color_muted",
-      "agents_skills_design_system_templates_design_tokens_starter_muted_type",
-      "agents_skills_design_system_templates_design_tokens_starter_muted_value"
-    ],
-    "75": [
-      "agents_skills_design_system_templates_design_tokens_starter_color_primary_foreground",
-      "agents_skills_design_system_templates_design_tokens_starter_primary_foreground_type",
-      "agents_skills_design_system_templates_design_tokens_starter_primary_foreground_value"
-    ],
-    "76": [
-      "agents_skills_design_system_templates_design_tokens_starter_color_ring",
-      "agents_skills_design_system_templates_design_tokens_starter_ring_type",
-      "agents_skills_design_system_templates_design_tokens_starter_ring_value"
-    ],
-    "77": [
-      "agents_skills_design_system_templates_design_tokens_starter_color_secondary_foreground",
-      "agents_skills_design_system_templates_design_tokens_starter_secondary_foreground_type",
-      "agents_skills_design_system_templates_design_tokens_starter_secondary_foreground_value"
-    ],
-    "78": [
       "agents_skills_ui_styling_scripts_shadcn_add",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_1"
     ],
-    "79": [
+    "74": [
       "agents_skills_ui_styling_scripts_shadcn_add_py_path",
       "agents_skills_ui_styling_scripts_shadcn_add_rationale_21",
       "agents_skills_ui_styling_scripts_shadcn_add_shadcninstaller_init"
     ],
-    "80": [
-      "lucide_react",
-      "package_dependencies_lucide_react",
-      "package_devdependencies_lucide_react"
+    "75": [
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_248",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_empty",
+      "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_list_installed_with_components"
     ],
-    "81": [
+    "76": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_71",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_empty",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_get_installed_components_with_files"
     ],
-    "82": [
+    "77": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_291",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_full_configuration_javascript",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_full_configuration_typescript"
     ],
-    "83": [
+    "78": [
+      "database_laporan_operasional",
+      "prd_tab_kegiatan",
+      "readme_modul_kegiatan"
+    ],
+    "79": [
       "package_dependencies_tailwindcss",
       "package_devdependencies_tailwindcss",
       "tailwindcss"
     ],
-    "84": [
-      "package_dependencies_tailwindcss_vite",
-      "package_devdependencies_tailwindcss_vite",
-      "tailwindcss_vite"
+    "80": [
+      "package_dependencies_xlsx",
+      "src_components_features_scheduleuploader_scheduleuploader",
+      "xlsx"
     ],
-    "85": [
+    "81": [
+      "src_components_shared_signaturepad",
+      "src_components_shared_signaturepad_signaturepad",
+      "src_components_shared_signaturepad_signaturepadprops"
+    ],
+    "82": [
       "agents_skills_subagent_driven_development_scripts_review_package",
       "agents_skills_subagent_driven_development_scripts_review_package__entry"
     ],
-    "86": [
+    "83": [
       "agents_skills_subagent_driven_development_scripts_sdd_workspace",
       "agents_skills_subagent_driven_development_scripts_sdd_workspace__entry"
     ],
-    "87": [
+    "84": [
       "agents_skills_subagent_driven_development_scripts_task_brief",
       "agents_skills_subagent_driven_development_scripts_task_brief__entry"
     ],
-    "88": [
+    "85": [
       "agents_skills_systematic_debugging_find_polluter",
       "agents_skills_systematic_debugging_find_polluter_sh__entry"
     ],
-    "89": [
+    "86": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_112",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_already_installed"
     ],
-    "90": [
+    "87": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_182",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_subprocess_error"
     ],
-    "91": [
+    "88": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_195",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_npx_not_found"
     ],
-    "92": [
+    "89": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_56",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_init_dry_run"
     ],
-    "93": [
+    "90": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_61",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_check_shadcn_config_exists"
     ],
-    "94": [
+    "91": [
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_rationale_96",
       "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller_test_add_components_no_components"
     ],
-    "95": [
+    "92": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_112",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_add_color_palette"
     ],
-    "96": [
+    "93": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_173",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_add_plugins_no_duplicates"
     ],
-    "97": [
+    "94": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_182",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_recommend_plugins"
     ],
-    "98": [
+    "95": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_190",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_recommend_plugins_nextjs"
     ],
-    "99": [
+    "96": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_239",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_validate_config_no_content"
     ],
-    "100": [
+    "97": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_26",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_init_javascript"
     ],
-    "101": [
+    "98": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_282",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_write_config_invalid_path"
     ],
-    "102": [
+    "99": [
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_rationale_88",
       "agents_skills_ui_styling_scripts_tests_test_tailwind_config_gen_testtailwindconfiggenerator_test_add_colors"
     ],
-    "103": [
-      "html2canvas",
-      "package_dependencies_html2canvas"
+    "100": [
+      "package_dependencies_react_dom",
+      "react_dom"
     ],
-    "104": [
-      "konva",
-      "package_dependencies_konva"
-    ],
-    "105": [
+    "101": [
       "package_dependencies_react_konva",
       "react_konva"
     ],
+    "102": [
+      "package_dependencies_supabase_supabase_js",
+      "supabase_supabase_js"
+    ],
+    "103": [
+      "package_dependencies_tanstack_store",
+      "tanstack_store"
+    ],
+    "104": [
+      "package_dependencies_use_image",
+      "use_image"
+    ],
+    "105": [
+      "package_devdependencies_rimraf",
+      "rimraf"
+    ],
     "106": [
-      "package_dependencies_vite_tsconfig_paths",
-      "vite_tsconfig_paths"
+      "src_components_shared_monitorsearchicon",
+      "src_components_shared_monitorsearchicon_monitorsearchicon"
     ],
     "107": [
-      "package_dependencies_xlsx",
-      "xlsx"
+      "src_lib_data_constants",
+      "src_lib_data_constants_tip_months"
     ],
     "108": [
-      "package_dependencies_zustand",
-      "zustand"
+      "tests_google_drive_settings_location_test",
+      "tests_google_drive_settings_location_test_readprojectfile"
     ],
     "109": [
       "vite_config",
@@ -1414,75 +1523,75 @@
   "cohesion": {
     "0": 0.05868118572292801,
     "1": 0.05370101596516691,
-    "2": 0.061224489795918366,
-    "3": 0.09620721554116558,
-    "4": 0.07897793263646923,
-    "5": 0.058823529411764705,
-    "6": 0.13756613756613756,
-    "7": 0.07407407407407407,
-    "8": 0.07692307692307693,
-    "9": 0.11,
-    "10": 0.11231884057971014,
-    "11": 0.213768115942029,
-    "12": 0.12554112554112554,
-    "13": 0.14736842105263157,
-    "14": 0.1,
-    "15": 0.11764705882352941,
-    "16": 0.14210526315789473,
-    "17": 0.10526315789473684,
-    "18": 0.1111111111111111,
-    "19": 0.2028985507246377,
-    "20": 0.16993464052287582,
-    "21": 0.11764705882352941,
-    "22": 0.14705882352941177,
-    "23": 0.2,
-    "24": 0.125,
-    "25": 0.14166666666666666,
-    "26": 0.6666666666666666,
+    "2": 0.08392156862745098,
+    "3": 0.061224489795918366,
+    "4": 0.041666666666666664,
+    "5": 0.0595959595959596,
+    "6": 0.07897793263646923,
+    "7": 0.058823529411764705,
+    "8": 0.13756613756613756,
+    "9": 0.07407407407407407,
+    "10": 0.07692307692307693,
+    "11": 0.11,
+    "12": 0.12666666666666668,
+    "13": 0.11231884057971014,
+    "14": 0.11956521739130435,
+    "15": 0.12987012987012986,
+    "16": 0.12554112554112554,
+    "17": 0.23809523809523808,
+    "18": 0.09523809523809523,
+    "19": 0.14736842105263157,
+    "20": 0.1,
+    "21": 0.23684210526315788,
+    "22": 0.14210526315789473,
+    "23": 0.1111111111111111,
+    "24": 0.16993464052287582,
+    "25": 0.11764705882352941,
+    "26": 0.14705882352941177,
     "27": 0.2,
-    "28": 0.21978021978021978,
-    "29": 0.25274725274725274,
-    "30": 0.2087912087912088,
-    "31": 0.15384615384615385,
-    "32": 0.21794871794871795,
-    "33": 0.3076923076923077,
-    "34": 0.24242424242424243,
-    "35": 0.19696969696969696,
-    "36": 0.16666666666666666,
-    "37": 0.3090909090909091,
-    "38": 0.2,
-    "39": 0.2,
+    "28": 0.125,
+    "29": 0.14166666666666666,
+    "30": 0.21978021978021978,
+    "31": 0.25274725274725274,
+    "32": 0.2087912087912088,
+    "33": 0.3626373626373626,
+    "34": 0.21794871794871795,
+    "35": 0.2692307692307692,
+    "36": 0.24242424242424243,
+    "37": 0.16666666666666666,
+    "38": 0.22727272727272727,
+    "39": 0.3090909090909091,
     "40": 0.2,
-    "41": 0.28888888888888886,
-    "42": 0.35555555555555557,
-    "43": 0.2,
-    "44": 0.2222222222222222,
-    "45": 0.4444444444444444,
-    "46": 0.4166666666666667,
-    "47": 0.3333333333333333,
-    "48": 0.2777777777777778,
-    "49": 0.3333333333333333,
+    "41": 0.18181818181818182,
+    "42": 0.2,
+    "43": 0.18181818181818182,
+    "44": 0.28888888888888886,
+    "45": 0.35555555555555557,
+    "46": 0.2222222222222222,
+    "47": 0.4166666666666667,
+    "48": 0.3333333333333333,
+    "49": 0.2777777777777778,
     "50": 0.3333333333333333,
-    "51": 0.2857142857142857,
-    "52": 0.24444444444444444,
+    "51": 0.3611111111111111,
+    "52": 0.2857142857142857,
     "53": 0.2857142857142857,
     "54": 0.35714285714285715,
     "55": 0.2857142857142857,
-    "56": 0.42857142857142855,
+    "56": 0.5,
     "57": 0.42857142857142855,
-    "58": 0.2857142857142857,
-    "59": 0.6,
-    "60": 0.6,
-    "61": 0.6,
-    "62": 0.6,
-    "63": 0.6666666666666666,
+    "58": 0.42857142857142855,
+    "59": 0.2857142857142857,
+    "60": 0.2857142857142857,
+    "61": 0.47619047619047616,
+    "62": 0.4666666666666667,
+    "63": 0.6,
     "64": 0.6666666666666666,
     "65": 0.6666666666666666,
     "66": 0.6666666666666666,
     "67": 0.5,
     "68": 0.8333333333333334,
-    "69": 1.0,
-    "70": 0.6666666666666666,
+    "69": 0.5,
+    "70": 1.0,
     "71": 0.6666666666666666,
     "72": 0.6666666666666666,
     "73": 0.6666666666666666,
@@ -1494,9 +1603,9 @@
     "79": 0.6666666666666666,
     "80": 0.6666666666666666,
     "81": 0.6666666666666666,
-    "82": 0.6666666666666666,
-    "83": 0.6666666666666666,
-    "84": 0.6666666666666666,
+    "82": 1.0,
+    "83": 1.0,
+    "84": 1.0,
     "85": 1.0,
     "86": 1.0,
     "87": 1.0,
@@ -1540,11 +1649,6 @@
       "degree": 33
     },
     {
-      "id": "src_store_usemasterdatastore_usemasterdatastore",
-      "label": "useMasterDataStore",
-      "degree": 31
-    },
-    {
       "id": "agents_skills_ui_styling_scripts_tests_test_shadcn_add_testshadcninstaller",
       "label": "TestShadcnInstaller",
       "degree": 26
@@ -1555,16 +1659,6 @@
       "degree": 22
     },
     {
-      "id": "src_store_useappstore_useappstore",
-      "label": "useAppStore",
-      "degree": 21
-    },
-    {
-      "id": "src_lib_utils_canvasutils_processphotostocollage",
-      "label": "processPhotosToCollage()",
-      "degree": 19
-    },
-    {
       "id": "agents_skills_ui_ux_pro_max_scripts_design_system_designsystemgenerator",
       "label": "DesignSystemGenerator",
       "degree": 18
@@ -1573,80 +1667,90 @@
       "id": "tsconfig_compileroptions",
       "label": "compilerOptions",
       "degree": 18
+    },
+    {
+      "id": "src_lib_supabaseclient_supabase",
+      "label": "supabase",
+      "degree": 18
+    },
+    {
+      "id": "readme_ssest2",
+      "label": "SSES T2 - Generator Laporan Operasional",
+      "degree": 17
+    },
+    {
+      "id": "prd_product_requirements_document",
+      "label": "Product Requirements Document (PRD)",
+      "degree": 17
     }
   ],
   "surprises": [
     {
-      "source": "TabKalibrasi()",
-      "target": "react",
+      "source": "Tab Kehadiran",
+      "target": "PRD Tab Kehadiran",
       "source_files": [
-        "src/components/features/TabKalibrasi.tsx",
-        "package.json"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "references",
-      "why": "connects across different repos/directories; bridges separate communities"
-    },
-    {
-      "source": "TabStoring()",
-      "target": "react",
-      "source_files": [
-        "src/components/features/TabStoring.tsx",
-        "package.json"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "references",
-      "why": "connects across different repos/directories; bridges separate communities"
-    },
-    {
-      "source": "TabTip()",
-      "target": "react",
-      "source_files": [
-        "src/components/features/TabTip.tsx",
-        "package.json"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "references",
-      "why": "connects across different repos/directories; bridges separate communities"
-    },
-    {
-      "source": "ScheduleUploader()",
-      "target": "xlsx",
-      "source_files": [
-        "src/components/features/ScheduleUploader.tsx",
-        "package.json"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "references",
-      "why": "connects across different repos/directories; bridges separate communities"
-    },
-    {
-      "source": "TestDomainDetection",
-      "target": "BM25",
-      "source_files": [
-        ".agents/skills/ui-ux-pro-max/scripts/tests/test_core.py",
-        ".agents/skills/design/scripts/cip/core.py"
+        "README.md",
+        "prd.md"
       ],
       "confidence": "INFERRED",
-      "relation": "uses",
-      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; semantically similar concepts with no structural link"
+    },
+    {
+      "source": "Tab Briefing",
+      "target": "PRD Tab Briefing",
+      "source_files": [
+        "README.md",
+        "prd.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; semantically similar concepts with no structural link"
+    },
+    {
+      "source": "Tab Storing",
+      "target": "PRD Tab Storing",
+      "source_files": [
+        "README.md",
+        "prd.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; semantically similar concepts with no structural link"
+    },
+    {
+      "source": "Tab Checklist",
+      "target": "PRD Tab Checklist",
+      "source_files": [
+        "README.md",
+        "prd.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; semantically similar concepts with no structural link"
+    },
+    {
+      "source": "Tab Initial Report",
+      "target": "PRD Tab Initial Report",
+      "source_files": [
+        "README.md",
+        "prd.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; semantically similar concepts with no structural link"
     }
   ],
   "questions": [
     {
       "type": "bridge_node",
-      "question": "Why does `primitive` connect `radius` to `gray`, `spacing`, `duration`, `fontSize`, `design-tokens-starter.json`?",
-      "why": "High betweenness centrality (0.034) - this node is a cross-community bridge."
+      "question": "Why does `primitive` connect `generate.py` to `gray`, `slide_search_core.py`, `TestTailwindConfigGenerator`, `radius`, `extract-colors.cjs`, `lg`?",
+      "why": "High betweenness centrality (0.028) - this node is a cross-community bridge."
     },
     {
       "type": "bridge_node",
-      "question": "Why does `color` connect `color` to `destructive`, `destructive-foreground`, `muted`, `primary-foreground`, `ring`, `secondary-foreground`, `$type`, `design-tokens-starter.json`?",
-      "why": "High betweenness centrality (0.021) - this node is a cross-community bridge."
-    },
-    {
-      "type": "bridge_node",
-      "question": "Why does `color` connect `gray` to `radius`?",
-      "why": "High betweenness centrality (0.021) - this node is a cross-community bridge."
+      "question": "Why does `color` connect `slide_search_core.py` to `spacing`?",
+      "why": "High betweenness centrality (0.018) - this node is a cross-community bridge."
     },
     {
       "type": "verify_inferred",
@@ -1661,12 +1765,17 @@
     {
       "type": "isolated_nodes",
       "question": "What connects `crypto`, `http`, `fs` to the rest of the system?",
-      "why": "213 weakly-connected nodes found - possible documentation gaps or missing edges."
+      "why": "233 weakly-connected nodes found - possible documentation gaps or missing edges."
     },
     {
       "type": "low_cohesion",
-      "question": "Should `server.cjs` be split into smaller, more focused modules?",
+      "question": "Should `Troubleshooting & Initial Report` be split into smaller, more focused modules?",
       "why": "Cohesion score 0.05868118572292801 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `gray` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.05370101596516691 - nodes in this community are weakly interconnected."
     }
   ]
 }

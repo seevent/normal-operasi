@@ -5,9 +5,9 @@
     "semantic_hash": "8536c0b1b0a5a6da1637feed7ca91d43"
   },
   "package.json": {
-    "mtime": 1790055207.405455,
-    "ast_hash": "abb178f22017d7291c0df8a2c3fbb6cd",
-    "semantic_hash": "abb178f22017d7291c0df8a2c3fbb6cd"
+    "mtime": 1788985897.9750192,
+    "ast_hash": "5d7f512ac21f7f5708e1f03a68697613",
+    "semantic_hash": "5d7f512ac21f7f5708e1f03a68697613"
   },
   "src/components/App.tsx": {
     "mtime": 1788978174.2029617,
@@ -45,9 +45,9 @@
     "semantic_hash": "cacdd04b5e77dffba272092f383ca1db"
   },
   "src/components/features/TabChecklist.tsx": {
-    "mtime": 1790053692.328149,
-    "ast_hash": "9fb3b95a637e232657e2f8140bcd772e",
-    "semantic_hash": "9fb3b95a637e232657e2f8140bcd772e"
+    "mtime": 1789143826.2352574,
+    "ast_hash": "c11a2bdf51d25eab4d160c61b5e247dd",
+    "semantic_hash": "c11a2bdf51d25eab4d160c61b5e247dd"
   },
   "src/components/features/TabData.tsx": {
     "mtime": 1789125887.2800608,
@@ -60,14 +60,14 @@
     "semantic_hash": "4e4e540381decb3364f674031f70b86b"
   },
   "src/components/features/TabKalibrasi.tsx": {
-    "mtime": 1790072032.4142425,
-    "ast_hash": "05ae47abdd584150df8ea1734984fa47",
-    "semantic_hash": "05ae47abdd584150df8ea1734984fa47"
+    "mtime": 1789143875.2633731,
+    "ast_hash": "774906a9d8a9a76c954323ea0d508a96",
+    "semantic_hash": "774906a9d8a9a76c954323ea0d508a96"
   },
   "src/components/features/TabKegiatan.tsx": {
-    "mtime": 1790053668.400115,
-    "ast_hash": "410a8c5dab055216fac36ffd3e6fe259",
-    "semantic_hash": "410a8c5dab055216fac36ffd3e6fe259"
+    "mtime": 1789143898.2598708,
+    "ast_hash": "6032491573f7e74e9c9b820c2f2ae839",
+    "semantic_hash": "6032491573f7e74e9c9b820c2f2ae839"
   },
   "src/components/features/TabKehadiran.tsx": {
     "mtime": 1785511931.123963,
@@ -75,19 +75,19 @@
     "semantic_hash": "b935a1631025fc1dd69b9df52326f30d"
   },
   "src/components/features/TabPerbaikan.tsx": {
-    "mtime": 1790086319.9473398,
-    "ast_hash": "e5fa98cbd84784c19df97eef3f59586e",
-    "semantic_hash": "e5fa98cbd84784c19df97eef3f59586e"
+    "mtime": 1789143853.1617184,
+    "ast_hash": "591250f0c011fd5c344c9afd48a94168",
+    "semantic_hash": "591250f0c011fd5c344c9afd48a94168"
   },
   "src/components/features/TabShiftReport.tsx": {
-    "mtime": 1790096056.4524636,
-    "ast_hash": "12c8f07a284c8042b8d5a818469a065b",
-    "semantic_hash": "12c8f07a284c8042b8d5a818469a065b"
+    "mtime": 1789147559.259678,
+    "ast_hash": "4807afca2551d18c4ee8515edad45436",
+    "semantic_hash": "4807afca2551d18c4ee8515edad45436"
   },
   "src/components/features/TabStoring.tsx": {
-    "mtime": 1790071787.0542243,
-    "ast_hash": "63781fcabe50afb52f0ba7adf12cd477",
-    "semantic_hash": "63781fcabe50afb52f0ba7adf12cd477"
+    "mtime": 1789143806.8134074,
+    "ast_hash": "d754a685554aac06bfabab4bdd9cda10",
+    "semantic_hash": "d754a685554aac06bfabab4bdd9cda10"
   },
   "src/components/features/TabTip.tsx": {
     "mtime": 1788989293.0561209,
@@ -130,9 +130,9 @@
     "semantic_hash": "e52801ae687bd0940de47dbd2e05c573"
   },
   "src/lib/services/shareService.ts": {
-    "mtime": 1790053588.6909368,
-    "ast_hash": "ba08e4a39b524247d66bd50c39fb2bb4",
-    "semantic_hash": "ba08e4a39b524247d66bd50c39fb2bb4"
+    "mtime": 1787771261.6873777,
+    "ast_hash": "efabba039b19b503e7be638744e48240",
+    "semantic_hash": "efabba039b19b503e7be638744e48240"
   },
   "src/lib/supabaseClient.ts": {
     "mtime": 1788455837.6030593,
@@ -195,9 +195,9 @@
     "semantic_hash": "e3090607cdbe61101ae5032244ac1d76"
   },
   "vite.config.ts": {
-    "mtime": 1790055279.0645666,
-    "ast_hash": "b075235217c4db12819886df95e61c30",
-    "semantic_hash": "b075235217c4db12819886df95e61c30"
+    "mtime": 1782071208.070939,
+    "ast_hash": "89e5f3682d3016d417fa0f8151e9350c",
+    "semantic_hash": "89e5f3682d3016d417fa0f8151e9350c"
   },
   ".agents/skills/brand/scripts/extract-colors.cjs": {
     "mtime": 1784652934.194167,
@@ -1125,24 +1125,24 @@
     "semantic_hash": "15bcbb42a293d8330f82a349b4281d6f"
   },
   "README.md": {
-    "mtime": 1790097954.8533356,
-    "ast_hash": "a8ca56145dccbb29bce17ef204e28db4",
-    "semantic_hash": "a8ca56145dccbb29bce17ef204e28db4"
+    "mtime": 1789148946.4771087,
+    "ast_hash": "946f1633d97370f5b6a1e9b9afaa9f97",
+    "semantic_hash": "946f1633d97370f5b6a1e9b9afaa9f97"
   },
   "agent.md": {
-    "mtime": 1790098242.4125834,
-    "ast_hash": "aa20263ba6eb1e6a1123d27da8f45a49",
-    "semantic_hash": "aa20263ba6eb1e6a1123d27da8f45a49"
+    "mtime": 1789149025.6937306,
+    "ast_hash": "41ee44bf7035d23418c27ade0a8c3a70",
+    "semantic_hash": "41ee44bf7035d23418c27ade0a8c3a70"
   },
   "architecture.md": {
-    "mtime": 1790098062.946818,
-    "ast_hash": "a2d35664ac189f74d7033ff567f7ac52",
-    "semantic_hash": "a2d35664ac189f74d7033ff567f7ac52"
+    "mtime": 1789148976.860766,
+    "ast_hash": "db6c777dd86ff2c1178272e4636a9b59",
+    "semantic_hash": "db6c777dd86ff2c1178272e4636a9b59"
   },
   "database.md": {
-    "mtime": 1790098150.6277542,
-    "ast_hash": "6a5ad65af23991996a6ff1df310dc4c0",
-    "semantic_hash": "6a5ad65af23991996a6ff1df310dc4c0"
+    "mtime": 1789148996.2528484,
+    "ast_hash": "1cccfe1e686b116b77c0db807671ebbb",
+    "semantic_hash": "1cccfe1e686b116b77c0db807671ebbb"
   },
   "design-system/sses-t2-report/MASTER.md": {
     "mtime": 1784653091.631328,
@@ -1150,9 +1150,9 @@
     "semantic_hash": "7a170f5dd7b1db9e98860ccdb27923cf"
   },
   "prd.md": {
-    "mtime": 1790098214.1660032,
-    "ast_hash": "5440865200faef44e38d5ef8305e9c2c",
-    "semantic_hash": "5440865200faef44e38d5ef8305e9c2c"
+    "mtime": 1789149011.148871,
+    "ast_hash": "43d64ca992b66320a78803753ccd7a2a",
+    "semantic_hash": "43d64ca992b66320a78803753ccd7a2a"
   },
   "public/tanstack-circle-logo.png": {
     "mtime": 1780846167.8580315,
@@ -1225,19 +1225,19 @@
     "semantic_hash": "5285ae5ec3b61035c9418b52a48bfedf"
   },
   "src/components/features/GoogleDriveSettingsPanel.tsx": {
-    "mtime": 1790093708.91856,
-    "ast_hash": "5470da9c016f5b01f8cc2e2cbb01ec13",
-    "semantic_hash": "5470da9c016f5b01f8cc2e2cbb01ec13"
+    "mtime": 1789123765.8053572,
+    "ast_hash": "25d6f8fda9d87f225a277c1b0c0e47b7",
+    "semantic_hash": "25d6f8fda9d87f225a277c1b0c0e47b7"
   },
   "src/lib/services/googleDriveService.ts": {
-    "mtime": 1790095804.3584592,
-    "ast_hash": "c4ec6439ccc650def9f3f33445b154ed",
-    "semantic_hash": "c4ec6439ccc650def9f3f33445b154ed"
+    "mtime": 1788983653.4338212,
+    "ast_hash": "e72c1b51775a347fad2e797403842964",
+    "semantic_hash": "e72c1b51775a347fad2e797403842964"
   },
   "src/lib/services/operationalReportService.ts": {
-    "mtime": 1790071367.978567,
-    "ast_hash": "4181b3d5465d60ac506c548dc88d4fbf",
-    "semantic_hash": "4181b3d5465d60ac506c548dc88d4fbf"
+    "mtime": 1789147492.7255526,
+    "ast_hash": "27bda7f19bb7683785eb3c4ab3df3445",
+    "semantic_hash": "27bda7f19bb7683785eb3c4ab3df3445"
   },
   "src/lib/services/pdfService.ts": {
     "mtime": 1787772045.568268,

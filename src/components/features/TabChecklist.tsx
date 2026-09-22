@@ -268,15 +268,18 @@ export const TabChecklist: React.FC = () => {
       alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
       return;
     }
-    // Simpan ringkasan kesiapan peralatan (serviceability) ke Supabase laporan_checklist
-    try {
-      const hour = new Date().getHours();
-      const currentShift = (hour >= 8 && hour < 20) ? 'PS' : 'M';
-      const summaryItems = calculateChecklistSummary(checklistDataMaster, toggles);
-      await saveChecklistSummary(checklistData.tanggal, currentShift, summaryItems);
-    } catch (err) {
-      console.error("Gagal menyimpan ringkasan checklist ke database:", err);
-    }
+    // Simpan ringkasan kesiapan peralatan (serviceability) ke Supabase laporan_checklist secara non-blocking
+    // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka seketika
+    (async () => {
+      try {
+        const hour = new Date().getHours();
+        const currentShift = (hour >= 8 && hour < 20) ? 'PS' : 'M';
+        const summaryItems = calculateChecklistSummary(checklistDataMaster, toggles);
+        await saveChecklistSummary(checklistData.tanggal, currentShift, summaryItems);
+      } catch (err) {
+        console.error("Gagal menyimpan ringkasan checklist ke database:", err);
+      }
+    })();
 
     const message = generateWA_Checklist(checklistData, checklistDataMaster, toggles);
     await shareToWhatsApp(message, null, () => {

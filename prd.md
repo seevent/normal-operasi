@@ -68,17 +68,20 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * Pilihan jenis & tipe peralatan keamanan otomatis dari database relasional.
   * Auto-complete nama teknisi penanggung jawab.
   * Pengisian rincian masalah, penyebab, tindakan perbaikan, dan status akhir (Normal / Monitoring / Pending).
+  * Lampiran foto dokumentasi perbaikan dengan kompresi Canvas dan dual-tier cloud storage.
 
 ### 3.7. Tab Kalibrasi
 * **Fungsi**: Generator laporan Preventative Maintenance (PM) & Kalibrasi peralatan keamanan multi-lokasi.
 * **Fitur Utama**:
-  * Parameter pengujian dinamis sesuai standar penerbangan (STP test piece untuk X-Ray, test strip ETD, dll.).
+  * Parameter pengujian dinamis sesuai standar penerbangan (STP test piece untuk X-Ray, test strip ETD, WTMD detection zones, HHMD, Body Scanner, Access Control).
+  * Pengujian & parameter khusus **Extension Conveyor** (Forward/Reverse speed, Emergency Stop, Roller Condition, Belt Tracking, Motor Drive).
   * Multi-lokasi pencatatan kalibrasi harian/mingguan.
 
 ### 3.8. Tab Kegiatan
 * **Fungsi**: Generator laporan kegiatan harian rutin personel di lapangan (non-perbaikan).
 * **Fitur Utama**:
   * Pencatatan uraian kegiatan harian, waktu pelaksanaan, dan teknisi yang bertugas.
+  * Penyimpanan riwayat log kegiatan ke tabel Supabase `laporan_operasional`.
 
 ### 3.9. Tab BA Serah Terima (Berita Acara)
 * **Fungsi**: Generator Berita Acara Serah Terima Barang/Material antar unit dan pihak terkait.
@@ -87,12 +90,16 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * Multi-item barang dengan kuantitas, satuan, kondisi barang, dan input daftar Serial Number (SN) dinamis.
   * **Digital Signature Canvas**: Pad tanda tangan digital interaktif untuk Pihak I, Pihak II, dan Supervisor yang bertugas dinas.
   * Lampiran dokumentasi foto serah terima.
-  * Ekspor pesan WhatsApp dan unduh format PDF resmi.
+  * Ekspor pesan WhatsApp dan unduh format PDF resmi non-blocking via `pdfService.ts`.
 
 ### 3.10. Tab Shift Report
-* **Fungsi**: Generator rekapitulasi laporan pergantian shift (*Shift Handover Report*).
+* **Fungsi**: Generator rekapitulasi laporan pergantian shift (*Shift Handover Report*) dan pemantauan kelaikan peralatan.
 * **Fitur Utama**:
-  * Rangkuman status seluruh peralatan di Terminal 2 (Normal, Gangguan, Storing).
+  * **Interactive Serviceability Diagram**: Visualisasi denah matriks kelaikan peralatan keamanan di sub-terminal D, E, dan F Terminal 2 dengan koordinat sinkron.
+  * **In-Modal Photo Upload & Viewer**: Modal CRUD untuk menambahkan atau memperbarui entri kegiatan dengan lampiran foto langsung yang diunggah ke Google Drive / Supabase Storage dan ditampilkan pada kartu laporan.
+  * **Editable Total & Off Counts**: Fleksibilitas penyesuaian jumlah unit operasi vs rusak secara langsung.
+  * **Kalkulasi Kesiapan Real-time**: Indikator persentase kelaikan dinamis per kategori peralatan (X-Ray, WTMD, HHMD, Body Scanner, ETD, Access Control, CCTV).
+  * **Sinkronisasi Database Cloud**: Riwayat kegiatan dan rekapitulasi tersimpan otomatis ke `laporan_operasional` (dengan constraint anti-base64) dan `laporan_checklist` (dengan atomic upsert).
   * Catatan penting untuk shift berikutnya.
 
 ### 3.11. Tab TIP (Threat Image Projection)
@@ -110,10 +117,17 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * **Master Lokasi & Peralatan**: CRUD master lokasi, titik lokasi, jenis peralatan, dan tipe peralatan.
   * **Unit Peralatan Manager**: CRUD unit fisik peralatan dengan SN, sertifikasi, tahun instalasi, kapasitas ampere, dan status operasi.
   * **Sparepart Manager**: Manajemen inventaris sparepart dan seleksi item sparepart untuk tab briefing.
+  * **Google Drive Settings Panel**: Konfigurasi URL Google Apps Script Web App untuk penyimpanan cloud foto dokumentasi.
   * **Schedule Uploader**: Upload jadwal shift harian dari berkas Excel (`.xlsx`).
-  * **Google Sheets Sync**: Sinkronisasi dua arah dengan Google Sheets via Google Apps Script.
   * **Checklist Editor**: Pengaturan parameter checklist operasi.
   * **Personel Editor**: Manajemen data personel teknisi termasuk NIK dan unit kerja.
+
+### 3.13. Maskot Asisten (AntigravityPet)
+* **Fungsi**: Widget asisten mengambang interaktif berbasis karakter Chibi Iron Man di layout utama aplikasi.
+* **Fitur Utama**:
+  * Fisika melayang (zero-gravity float) & animasi partikel thruster.
+  * Dialog tips operasional, pengingat keselamatan, dan status kesiapan bandara.
+  * Respons interaktif terhadap ketukan/sentuhan pengguna.
 
 ---
 
@@ -125,10 +139,15 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
 2. **Editor Anotasi Foto & Kolase (`PhotoTextEditorModal.tsx` & `LiveCollagePreview.tsx`)**:
    * Pengeditan foto berbasis HTML5 Canvas & Konva.js.
    * Pembuatan kolase foto otomatis (1x1, 2x1, 2x2, grid) untuk efisiensi lampiran laporan di WhatsApp/Drive.
-3. **Canvas Signature Pad (`SignaturePad.tsx`)**:
+3. **Dual-Tier Photo Cloud Storage (`googleDriveService.ts`)**:
+   * Kompresi otomatis berbasis Canvas (JPEG 80%, maks. 1280px, ~150–250 KB).
+   * Primary upload ke Google Drive (`SSES_T2_Dokumentasi`) via Google Apps Script Web App.
+   * Fail-safe fallback otomatis ke Supabase Storage bucket `dokumentasi` jika Drive offline atau menolak izin akses.
+   * Zero-Base64 enforcement: database dilindungi oleh check constraint `chk_foto_urls_no_base64`.
+4. **Canvas Signature Pad (`SignaturePad.tsx`)**:
    * Tanda tangan digital interaktif berbasis touch event & mouse event HTML5 Canvas dengan fitur clear dan preview.
-4. **Ekspor Dokumentasi**:
-   * Ekspor laporan ke PDF (`html2pdf.js`), Excel (`xlsx`), atau gambar PNG (`html2canvas`).
+5. **Ekspor Dokumentasi Teroptimasi (`pdfService.ts`)**:
+   * Ekspor laporan ke PDF (`html2pdf.js`) non-blocking, Excel (`xlsx`), atau gambar PNG (`html2canvas`).
 
 ---
 
@@ -136,14 +155,18 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
 
 * **Mobile-First UX/UI**: Dioptimalkan untuk perangkat seluler Android dan iOS dengan paginasi dan gesture swipe tab horizontal. Seluruh input teks menggunakan `font-size: 16px` untuk mencegah auto-zoom pada iOS Safari.
 * **Performa & Ukuran Bundle**: Menggunakan Vite 7 dengan Code Splitting TanStack Router untuk waktu muat awal < 2 detik pada jaringan 4G.
+* **Protokol Aman (HTTPS Local & Production)**: Menggunakan plugin `@vitejs/plugin-basic-ssl` pada environment pengembang lokal untuk memastikan Web Share API dan Camera API berfungsi di browser ponsel.
 * **Offline Resilience & Data Persistence**: Menyimpan draf input sementara ke `localStorage` agar tidak hilang jika terjadi kegagalan koneksi.
 * **Keamanan Akses**: Tab **Data** dilindungi oleh sistem autentikasi password/pin admin berbasis Zustand & Supabase Auth.
-* **Reliabilitas Integrasi**: Dukungan fallback otomatis dari Supabase Cloud ke Google Sheets API / Local Storage jika terjadi hambatan koneksi backend.
+* **Reliabilitas Integrasi**: Dukungan fallback otomatis dari Supabase Cloud ke Local Storage jika terjadi hambatan koneksi backend.
 
 ---
 
 ## 6. Roadmap & Pengembangan Mendatang
 
+* [x] Integrasi Penyimpanan Cloud Foto Dokumentasi Dual-Tier (Google Drive + Supabase Storage).
+* [x] Diagram Serviceability Interaktif & Persistensi Cloud Laporan Operasional.
+* [x] In-Modal Photo Upload & Attachment pada Tab Shift Report.
 * [ ] Integrasi Notifikasi Push (PWA Service Worker) untuk jadwal shift.
 * [ ] Ekspor Otomatis Rekap Bulanan ke Google Drive PDF Folder.
 * [ ] Mode Dark Mode / Light Mode switchable.

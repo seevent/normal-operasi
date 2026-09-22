@@ -5,7 +5,7 @@ import {
   Calendar, FileText, Loader2, CheckCircle, Clock, Plus, 
   Edit, Trash2, X, Share2, ExternalLink, Printer, BarChart2, Save
 } from 'lucide-react';
-import { shareToWhatsApp, triggerFileDownload } from '../../lib/services/shareService';
+import { shareToWhatsApp } from '../../lib/services/shareService';
 import { generatePdfBlob } from '../../lib/services/pdfService';
 import { supabase } from '../../lib/supabaseClient';
 import { 
@@ -18,6 +18,7 @@ import {
   getReportDefaultDateAndShift,
   isTimeWithinShiftBoundary
 } from '../../lib/services/operationalReportService';
+import { uploadPhotoToGoogleDrive } from '../../lib/services/googleDriveService';
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -131,6 +132,8 @@ export const TabShiftReport: React.FC = () => {
     tindakLanjut: '-',
     status: 'Normal Operasi'
   });
+  const [crudPhotoFile, setCrudPhotoFile] = useState<File | null>(null);
+  const [crudPhotoPreview, setCrudPhotoPreview] = useState<string | null>(null);
 
   const [apiPersonil, setApiPersonil] = useState<any[]>([]);
   const [iasPersonil, setIasPersonil] = useState<any[]>([]);
@@ -235,6 +238,8 @@ export const TabShiftReport: React.FC = () => {
   const openAddModal = () => {
     setModalMode('add');
     setEditingRowIndex(null);
+    setCrudPhotoFile(null);
+    setCrudPhotoPreview(null);
     const now = new Date();
     const timeStr = `${('0'+now.getHours()).slice(-2)}:${('0'+now.getMinutes()).slice(-2)}`;
     setCrudForm({
@@ -252,6 +257,8 @@ export const TabShiftReport: React.FC = () => {
   const openEditModal = (item: any) => {
     setModalMode('edit');
     setEditingRowIndex(item.rowIndex);
+    setCrudPhotoFile(null);
+    setCrudPhotoPreview(item.imageUrl || null);
     setCrudForm({
       jenis: (item.Jenis as any) || 'Kegiatan',
       waktu: item.Waktu || '',
@@ -288,7 +295,17 @@ export const TabShiftReport: React.FC = () => {
     e.preventDefault();
     setCrudSubmitting(true);
     try {
+      // 1. Upload foto jika pengguna memilih file foto baru
+      let uploadedUrl: string | null = null;
+      if (crudPhotoFile) {
+        const uploadRes = await uploadPhotoToGoogleDrive(crudPhotoFile, `${crudForm.jenis}_${Date.now()}.jpg`);
+        if (uploadRes && uploadRes.url) {
+          uploadedUrl = uploadRes.url;
+        }
+      }
+
       if (modalMode === 'add') {
+        const finalFotoUrls = uploadedUrl ? [uploadedUrl] : [];
         // Simpan ke Supabase
         const dbRes = await saveOperationalLog({
           tanggal: date,
@@ -300,7 +317,8 @@ export const TabShiftReport: React.FC = () => {
           kategori_maintenance: crudForm.jenis === 'Perbaikan' ? 'CORRECTIVE' : (crudForm.jenis === 'Storing' ? 'STORING' : 'KEGIATAN'),
           uraian: crudForm.uraian || '-',
           tindak_lanjut: crudForm.tindakLanjut || '-',
-          status: crudForm.status || 'Normal Operasi'
+          status: crudForm.status || 'Normal Operasi',
+          foto_urls: finalFotoUrls
         });
 
         const newReport = {
@@ -312,12 +330,17 @@ export const TabShiftReport: React.FC = () => {
           Lokasi: crudForm.lokasi || '-',
           Uraian: crudForm.uraian || '-',
           TindakLanjut: crudForm.tindakLanjut || '-',
-          Status: crudForm.status || 'Normal Operasi'
+          Status: crudForm.status || 'Normal Operasi',
+          imageUrl: uploadedUrl,
+          fotoUrls: finalFotoUrls
         };
         setReports(prev => [...prev, newReport]);
         setStatusMsg({ text: "Laporan baru berhasil ditambahkan.", type: 'success' });
       } else if (modalMode === 'edit' && editingRowIndex !== null) {
         const targetItem = reports.find(r => r.rowIndex === editingRowIndex);
+        const finalFotoUrls = uploadedUrl ? [uploadedUrl] : (targetItem?.fotoUrls || (targetItem?.imageUrl ? [targetItem.imageUrl] : []));
+        const finalImageUrl = uploadedUrl || targetItem?.imageUrl || null;
+
         if (targetItem?.id) {
           await supabase.from('laporan_operasional').update({
             jenis: crudForm.jenis,
@@ -326,7 +349,8 @@ export const TabShiftReport: React.FC = () => {
             lokasi: crudForm.lokasi,
             uraian: crudForm.uraian,
             tindak_lanjut: crudForm.tindakLanjut,
-            status: crudForm.status
+            status: crudForm.status,
+            foto_urls: finalFotoUrls
           }).eq('id', targetItem.id);
         }
 
@@ -338,7 +362,9 @@ export const TabShiftReport: React.FC = () => {
           Lokasi: crudForm.lokasi || '-',
           Uraian: crudForm.uraian || '-',
           TindakLanjut: crudForm.tindakLanjut || '-',
-          Status: crudForm.status || 'Normal Operasi'
+          Status: crudForm.status || 'Normal Operasi',
+          imageUrl: finalImageUrl,
+          fotoUrls: finalFotoUrls
         } : r));
         setStatusMsg({ text: "Laporan berhasil diperbarui.", type: 'success' });
       }
@@ -363,10 +389,11 @@ export const TabShiftReport: React.FC = () => {
   };
 
   // Format Pesan WhatsApp Executive Summary
+  // Format Pesan WhatsApp Executive Summary
   const generateShiftWaSummary = () => {
     const formattedDate = formatDateIndo(date);
     const dayName = getDayName(date);
-    const shiftLabel = shift === 'M' ? 'Malam (M)' : 'Pagi (PS)';
+    const shiftLabel = shift === 'M' ? 'Malam (M)' : (shift === 'PS' ? 'Pagi (PS)' : 'Semua Shift (24 Jam)');
 
     const apiNames = apiPersonil.map(p => p.personel?.nama).filter(Boolean).join(', ') || '-';
     const iasNames = iasPersonil.map(p => p.personel?.nama).filter(Boolean).join(', ') || '-';
@@ -397,7 +424,14 @@ export const TabShiftReport: React.FC = () => {
         const title = r.Peralatan || r.Jenis || 'Pekerjaan';
         const loc = r.Lokasi && r.Lokasi !== '-' ? ` [${r.Lokasi}]` : '';
         const time = r.Waktu && r.Waktu !== '-' ? `(${r.Waktu}) ` : '';
-        summaryText += `${idx + 1}. ${time}${title}${loc} - ${r.Status || 'Normal Operasi'}\n`;
+        let detail = '';
+        if (r.Uraian && r.Uraian !== '-') {
+          detail = `\n   Ket: ${r.Uraian}`;
+        }
+        if (r.TindakLanjut && r.TindakLanjut !== '-' && r.TindakLanjut !== 'Normal Operasi') {
+          detail += ` | TL: ${r.TindakLanjut}`;
+        }
+        summaryText += `${idx + 1}. ${time}${title}${loc} - ${r.Status || 'Normal Operasi'}${detail}\n`;
       });
     }
 
@@ -405,14 +439,17 @@ export const TabShiftReport: React.FC = () => {
     return summaryText;
   };
 
-  // Konversi semua gambar di dalam kontainer PDF menjadi Base64 Data URL agar tidak terjadi CORS tainted canvas error
+  // Konversi semua gambar di dalam kontainer PDF menjadi Base64 Data URL dengan timeout aman agar bebas tainted canvas
   const prepareImagesForPdf = async (container: HTMLElement) => {
     const imgs = Array.from(container.querySelectorAll('img'));
     await Promise.all(imgs.map(async (img) => {
       const src = img.getAttribute('src');
       if (!src || src.startsWith('data:')) return;
       try {
-        const resp = await fetch(src, { mode: 'cors' });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const resp = await fetch(src, { mode: 'cors', signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const blob = await resp.blob();
         await new Promise((resolve) => {
@@ -427,106 +464,58 @@ export const TabShiftReport: React.FC = () => {
           reader.readAsDataURL(blob);
         });
       } catch (e) {
-        console.warn("Gambar dilewati pada render PDF:", src, e);
-        // Sembunyikan gambar yang gagal agar tidak merusak kanvas
+        // Sembunyikan gambar yang gagal di-fetch agar tidak merusak kanvas PDF
         img.style.display = 'none';
       }
     }));
   };
 
-  // 1. Ekspor & Langsung Unduh Berkas PDF Resmi
-  const handleDownloadPdf = async () => {
-    try {
-      setLoading(true);
-      setStatusMsg({ text: "Sedang memproses & mengonversi dokumen ke PDF...", type: 'info' });
-
-      if (!pdfRef.current) {
-        setStatusMsg({ text: "Elemen template PDF tidak ditemukan.", type: 'error' });
-        setLoading(false);
-        return;
-      }
-
-      const element = pdfRef.current;
-      // Konversi gambar ke base64 agar aman dari tainted canvas
-      await prepareImagesForPdf(element);
-
-      const filename = `SSES_T2_Laporan_Shift_${shift}_${date}.pdf`;
-      const opt = {
-        margin:       [5, 5, 5, 5],
-        filename:     filename,
-        image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' as const },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      const pdfBlob = await generatePdfBlob(element, opt);
-      const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-      // Langsung download file ke komputer / HP
-      triggerFileDownload(pdfFile);
-      
-      setStatusMsg({ text: "✓ Dokumen PDF berhasil diunduh ke perangkat Anda!", type: 'success' });
-      setTimeout(() => setStatusMsg(null), 4000);
-    } catch (err: any) {
-      console.error("Error creating PDF:", err);
-      setStatusMsg({ text: "Gagal membuat PDF otomatis. Silakan gunakan tombol Cetak (Print) sebagai alternatif.", type: 'error' });
-      setTimeout(() => setStatusMsg(null), 5000);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 2. Cetak Langsung (Dialog Print Browser - 100% Reliabel & Bersih)
+  // 1. Cetak Langsung (Dialog Print Browser - 100% Reliabel & Bersih)
   const handleDirectPrint = () => {
     window.print();
   };
 
-  // 3. Bagikan PDF dan Pesan Ringkasan ke WhatsApp
-  const handleSharePdfToWa = async () => {
+  // 2. Bagikan pesan ringkasan shift & lampirkan berkas PDF ke WhatsApp
+  const handleShareWa = async () => {
+    setSharingWa(true);
+    setStatusMsg({ text: "Membuat dokumen PDF Laporan Shift...", type: 'info' });
+
     try {
-      setLoading(true);
-      setStatusMsg({ text: "Membuat PDF untuk dilampirkan ke WhatsApp...", type: 'info' });
+      let pdfFile: File | null = null;
 
-      if (!pdfRef.current) return;
-      const element = pdfRef.current;
-      await prepareImagesForPdf(element);
+      if (pdfRef.current) {
+        const element = pdfRef.current;
+        await prepareImagesForPdf(element);
 
-      const filename = `SSES_T2_Laporan_Shift_${shift}_${date}.pdf`;
-      const opt = {
-        margin:       [5, 5, 5, 5],
-        filename:     filename,
-        image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' as const },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-      };
+        const filename = `SSES_T2_Laporan_Shift_${shift}_${date}.pdf`;
+        const opt = {
+          margin: [5, 5, 5, 5],
+          filename: filename,
+          image: { type: 'jpeg' as const, quality: 0.95 },
+          html2canvas: { scale: 1.5, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
 
-      const pdfBlob = await generatePdfBlob(element, opt);
-      const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+        const pdfBlob = await generatePdfBlob(element, opt);
+        pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+      }
 
       const waMessage = generateShiftWaSummary();
-      await shareToWhatsApp(waMessage, pdfFile, () => {});
+      await shareToWhatsApp(waMessage, pdfFile, () => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 3000);
+      });
 
-      setStatusMsg({ text: "PDF berhasil dibuat dan dibagikan ke WhatsApp.", type: 'success' });
+      setStatusMsg({ text: "Dokumen PDF & ringkasan shift berhasil dibagikan ke WhatsApp!", type: 'success' });
       setTimeout(() => setStatusMsg(null), 4000);
     } catch (err) {
-      console.error("Error creating/sharing PDF to WA:", err);
+      console.error("Gagal membuat PDF / share:", err);
+      // Fallback: bagikan teks ringkasan jika PDF bermasalah
       const waMessage = generateShiftWaSummary();
       await shareToWhatsApp(waMessage, null, () => {});
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 4. Hanya bagikan pesan teks WhatsApp tanpa PDF
-  const shareTextOnly = async () => {
-    setSharingWa(true);
-    try {
-      const waMessage = generateShiftWaSummary();
-      await shareToWhatsApp(waMessage, null, () => {});
-      setStatusMsg({ text: "Ringkasan WhatsApp berhasil disalin/dibagikan.", type: 'success' });
-      setTimeout(() => setStatusMsg(null), 3000);
+      setStatusMsg({ text: "WhatsApp terbuka dengan ringkasan laporan (PDF dilewati).", type: 'info' });
+      setTimeout(() => setStatusMsg(null), 4000);
     } finally {
       setSharingWa(false);
     }
@@ -634,9 +623,9 @@ export const TabShiftReport: React.FC = () => {
 
             {/* Tombol Kirim ke WhatsApp */}
             <button 
-              onClick={handleSharePdfToWa} 
+              onClick={handleShareWa} 
               disabled={loading || sharingWa}
-              title="Bagikan laporan dan lampirkan PDF ke WhatsApp"
+              title="Bagikan ringkasan laporan shift ke WhatsApp"
               className="flex-1 min-w-[130px] flex justify-center items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
             >
               {sharingWa ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
@@ -1041,10 +1030,9 @@ export const TabShiftReport: React.FC = () => {
         id="printable-shift-report"
         style={{ 
           position: 'fixed', 
-          left: 0, 
+          left: '-9999px', 
           top: 0, 
           width: '1100px', 
-          opacity: 0, 
           pointerEvents: 'none', 
           zIndex: -1000 
         }}
@@ -1457,6 +1445,27 @@ export const TabShiftReport: React.FC = () => {
                     value={crudForm.status}
                     onChange={(e) => setCrudForm({ ...crudForm, status: e.target.value })}
                     className="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Foto Dokumentasi</label>
+                <div className="flex items-center gap-3">
+                  {crudPhotoPreview && (
+                    <img src={crudPhotoPreview} alt="Preview" className="w-14 h-14 rounded-lg object-cover border border-slate-300 shrink-0" />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setCrudPhotoFile(file);
+                        setCrudPhotoPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                    className="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                   />
                 </div>
               </div>

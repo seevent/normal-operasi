@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, Wrench, Camera, Move, ZoomIn, ZoomOut, ImagePlus, Type, Trash2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, Wrench, Camera, Move, ZoomIn, ZoomOut, ImagePlus, Type, Trash2, RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
@@ -23,14 +23,22 @@ function formatNamaPersonel(fullName: string): string {
   const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad', 'abdul'];
   
   if (titlePrefixes.includes(firstWord)) {
-    return words[1];
+    const secondWord = words[1] ? words[1].charAt(0).toUpperCase() + words[1].slice(1).toLowerCase() : '';
+    const thirdInitial = words[2] ? ` ${words[2].charAt(0).toUpperCase()}.` : '';
+    return `${words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase()} ${secondWord}${thirdInitial}`.trim();
   }
-  return words[0];
+  
+  const firstName = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
+  const secondInitial = words[1] ? ` ${words[1].charAt(0).toUpperCase()}.` : '';
+  return `${firstName}${secondInitial}`;
 }
 
 export const TabPerbaikan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
-  const { penempatanData } = useMasterDataStore();
+  const { jenisPeralatanData, lokasiMasterData, personelData, penempatanData } = useMasterDataStore();
+  const [showErrors, setShowErrors] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const [formData, setFormData] = useState(() => {
     const { date: defaultDate } = getOperationalShiftAndDate();
@@ -136,7 +144,6 @@ export const TabPerbaikan: React.FC = () => {
     });
   }, [selectedTeknisi, manualTeknisi]);
 
-  const [showErrors, setShowErrors] = useState(false);
   const toggleTeknisi = (name: string) => {
     setSelectedTeknisi(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
   };
@@ -704,49 +711,51 @@ export const TabPerbaikan: React.FC = () => {
       }
     }
 
-    // 1. Upload foto ke Google Drive
-    const uploadedPhotoUrls: string[] = [];
-    if (customFilesArray.length > 0) {
-      for (const file of customFilesArray) {
-        try {
-          const res = await uploadPhotoToGoogleDrive(file, `Perbaikan_${formData.peralatan.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
-          if (res && res.url) {
-            uploadedPhotoUrls.push(res.url);
+    // Jalankan upload Google Drive & simpan ke Supabase di background secara non-blocking
+    // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka dengan media
+    (async () => {
+      const uploadedPhotoUrls: string[] = [];
+      if (customFilesArray.length > 0) {
+        for (const file of customFilesArray) {
+          try {
+            const res = await uploadPhotoToGoogleDrive(file, `Perbaikan_${formData.peralatan.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
+            if (res && res.url) {
+              uploadedPhotoUrls.push(res.url);
+            }
+          } catch (e) {
+            console.error("Gagal upload foto perbaikan ke Google Drive:", e);
           }
-        } catch (e) {
-          console.error("Gagal upload foto perbaikan ke Google Drive:", e);
         }
       }
-    }
 
-    // 2. Simpan catatan kegiatan ke Supabase laporan_operasional
-    try {
-      const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
-      const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
-      const lokasiFinal = activeLocs.map((loc: any) => {
-        if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
-        return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
-      }).join(', ');
+      try {
+        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
+        const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
+        const lokasiFinal = activeLocs.map((loc: any) => {
+          if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
+          return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
+        }).join(', ');
 
-      const waktuRange = `${formData.waktuMulai || ''}${formData.waktuSelesai ? ' - ' + formData.waktuSelesai : ''}`;
+        const waktuRange = `${formData.waktuMulai || ''}${formData.waktuSelesai ? ' - ' + formData.waktuSelesai : ''}`;
 
-      await saveOperationalLog({
-        tanggal: formData.tanggal || opDate,
-        shift: opShift,
-        jenis: 'Perbaikan',
-        waktu: waktuRange,
-        lokasi: lokasiFinal || formData.lokasi1 || '-',
-        peralatan: formData.peralatan,
-        kategori_maintenance: 'CORRECTIVE',
-        uraian: formData.permasalahan,
-        tindak_lanjut: formData.tindakLanjut,
-        status: formData.status || 'Normal Operasi',
-        teknisi: formData.teknisi,
-        foto_urls: uploadedPhotoUrls
-      });
-    } catch (dbErr) {
-      console.error("Gagal menyimpan ke laporan_operasional:", dbErr);
-    }
+        await saveOperationalLog({
+          tanggal: formData.tanggal || opDate,
+          shift: opShift,
+          jenis: 'Perbaikan',
+          waktu: waktuRange,
+          lokasi: lokasiFinal || formData.lokasi1 || '-',
+          peralatan: formData.peralatan,
+          kategori_maintenance: 'CORRECTIVE',
+          uraian: formData.permasalahan,
+          tindak_lanjut: formData.tindakLanjut,
+          status: formData.status || 'Normal Operasi',
+          teknisi: formData.teknisi,
+          foto_urls: uploadedPhotoUrls
+        });
+      } catch (dbErr) {
+        console.error("Gagal menyimpan ke laporan_operasional:", dbErr);
+      }
+    })();
 
     const message = generateWA_Perbaikan(formData, isVerifikasiETD);
 

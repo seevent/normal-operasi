@@ -29,11 +29,35 @@ export interface ChecklistSummaryItem {
   persenRusak: number;
 }
 
+// Cache untuk mencegah double insert log operasional dalam rentang waktu singkat
+const recentOperationalLogs = new Set<string>();
+
 /**
  * Menyimpan catatan kegiatan harian dari tab manapun ke Supabase
  */
 export const saveOperationalLog = async (log: OperationalLog) => {
   try {
+    // Kunci deduplikasi berdasarkan atribut data utama
+    const dedupeKey = `${log.tanggal}|${log.shift}|${log.jenis}|${log.lokasi}|${log.peralatan}|${log.uraian}|${log.waktu}`;
+    if (recentOperationalLogs.has(dedupeKey)) {
+      console.warn('⚠️ Mencegah double save ke database (duplicate log diabaikan):', dedupeKey);
+      return { success: true, duplicated: true };
+    }
+    recentOperationalLogs.add(dedupeKey);
+    // Buka kembali kunci setelah 10 detik
+    setTimeout(() => {
+      recentOperationalLogs.delete(dedupeKey);
+    }, 10000);
+
+    // Sanitasi foto_urls: HANYA izinkan string URL web valid (http/https) dengan panjang < 500 karakter
+    // Larang mutlak Base64 agar kuota database Supabase aman
+    const safeFotoUrls = (log.foto_urls || []).filter(
+      (url): url is string => typeof url === 'string' &&
+        (url.startsWith('https://') || url.startsWith('http://')) &&
+        !url.startsWith('data:') &&
+        url.length < 500
+    );
+
     const payload = {
       tanggal: log.tanggal,
       shift: log.shift,
@@ -46,7 +70,7 @@ export const saveOperationalLog = async (log: OperationalLog) => {
       tindak_lanjut: log.tindak_lanjut || '-',
       status: log.status || 'Normal Operasi',
       teknisi: log.teknisi || '-',
-      foto_urls: log.foto_urls || []
+      foto_urls: safeFotoUrls
     };
 
     const { data, error } = await supabase
@@ -290,25 +314,14 @@ export const calculateChecklistSummary = (
 export const saveChecklistSummary = async (tanggal: string, shift: string, summary: ChecklistSummaryItem[]) => {
   try {
     const targetShift = shift === 'ALL' ? 'PS' : shift;
-    const { data: existing } = await supabase
+    const { error } = await supabase
       .from('laporan_checklist')
-      .select('id')
-      .eq('tanggal', tanggal)
-      .eq('shift', targetShift)
-      .maybeSingle();
+      .upsert(
+        [{ tanggal, shift: targetShift, summary, created_at: new Date().toISOString() }],
+        { onConflict: 'tanggal,shift' }
+      );
 
-    if (existing && existing.id) {
-      const { error } = await supabase
-        .from('laporan_checklist')
-        .update({ summary, created_at: new Date().toISOString() })
-        .eq('id', existing.id);
-      return { success: !error, error };
-    } else {
-      const { error } = await supabase
-        .from('laporan_checklist')
-        .insert([{ tanggal, shift: targetShift, summary, created_at: new Date().toISOString() }]);
-      return { success: !error, error };
-    }
+    return { success: !error, error };
   } catch (err) {
     console.error('Catch saveChecklistSummary:', err);
     return { success: false, error: err };

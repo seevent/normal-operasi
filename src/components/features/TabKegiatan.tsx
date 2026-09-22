@@ -178,42 +178,44 @@ export const TabKegiatan: React.FC = () => {
       if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
 
-    // 1. Upload foto ke Google Drive
-    const uploadedPhotoUrls: string[] = [];
-    if (finalFilesToShare.length > 0) {
-      for (const file of finalFilesToShare) {
-        try {
-          const res = await uploadPhotoToGoogleDrive(file, `Kegiatan_${kegiatanData.lokasi.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
-          if (res && res.url) {
-            uploadedPhotoUrls.push(res.url);
+    // Jalankan upload Google Drive & simpan ke Supabase di background secara non-blocking
+    // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka dengan media
+    (async () => {
+      const uploadedPhotoUrls: string[] = [];
+      if (finalFilesToShare.length > 0) {
+        for (const file of finalFilesToShare) {
+          try {
+            const res = await uploadPhotoToGoogleDrive(file, `Kegiatan_${kegiatanData.lokasi.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
+            if (res && res.url) {
+              uploadedPhotoUrls.push(res.url);
+            }
+          } catch (e) {
+            console.error("Gagal upload foto kegiatan ke Google Drive:", e);
           }
-        } catch (e) {
-          console.error("Gagal upload foto kegiatan ke Google Drive:", e);
         }
       }
-    }
 
-    // 2. Simpan catatan kegiatan ke Supabase
-    try {
-      const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
-      const waktuRange = `${kegiatanData.waktuMulai || ''}${kegiatanData.waktuSelesai ? ' - ' + kegiatanData.waktuSelesai : ''}`;
+      try {
+        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
+        const waktuRange = `${kegiatanData.waktuMulai || ''}${kegiatanData.waktuSelesai ? ' - ' + kegiatanData.waktuSelesai : ''}`;
 
-      await saveOperationalLog({
-        tanggal: kegiatanData.tanggal || opDate,
-        shift: opShift,
-        jenis: 'Kegiatan',
-        waktu: waktuRange,
-        lokasi: kegiatanData.lokasi,
-        peralatan: 'All Faskampen',
-        kategori_maintenance: 'KEGIATAN',
-        uraian: `Kegiatan : ${kegiatanData.kegiatan}`,
-        tindak_lanjut: kegiatanData.kegiatan,
-        status: 'Normal',
-        foto_urls: uploadedPhotoUrls
-      });
-    } catch (dbErr) {
-      console.error("Gagal menyimpan data kegiatan ke database:", dbErr);
-    }
+        await saveOperationalLog({
+          tanggal: kegiatanData.tanggal || opDate,
+          shift: opShift,
+          jenis: 'Kegiatan',
+          waktu: waktuRange,
+          lokasi: kegiatanData.lokasi,
+          peralatan: 'All Faskampen',
+          kategori_maintenance: 'KEGIATAN',
+          uraian: `Kegiatan : ${kegiatanData.kegiatan}`,
+          tindak_lanjut: kegiatanData.kegiatan,
+          status: 'Normal',
+          foto_urls: uploadedPhotoUrls
+        });
+      } catch (dbErr) {
+        console.error("Gagal menyimpan data kegiatan ke database:", dbErr);
+      }
+    })();
 
     const message = generateWA_Kegiatan(kegiatanData);
 

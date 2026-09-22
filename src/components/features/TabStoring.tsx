@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User, RefreshCw } from 'lucide-react';
 import { MonitorSearchIcon } from '../shared/MonitorSearchIcon';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
@@ -16,6 +16,9 @@ import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/servic
 export const TabStoring: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData, storingLocAc, storingLocDefault } = useMasterDataStore();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const storingEquipments = Array.from(new Set(jenisPeralatanData.map(j => j.nama)));
 
@@ -180,16 +183,27 @@ export const TabStoring: React.FC = () => {
   // === Submit ===
   const handleStoringSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    const unlock = () => {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    };
+
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     if (storingData.tanggal === todayStr && storingData.waktuSelesai && storingData.waktuSelesai > currentTimeStr) {
       alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
+      unlock();
       return;
     }
     
     if (storingData.peralatan.length > 0 && (storingData.acLokasi || []).length === 0) {
       alert("Pastikan Anda memilih minimal 1 lokasi untuk peralatan terpilih!");
+      unlock();
       return;
     }
     
@@ -216,62 +230,68 @@ export const TabStoring: React.FC = () => {
       if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
 
-    // 1. Upload foto ke Google Drive
-    const uploadedPhotoUrls: string[] = [];
-    if (finalFilesToShare.length > 0) {
-      for (const file of finalFilesToShare) {
-        try {
-          const res = await uploadPhotoToGoogleDrive(file, `Storing_${storingData.peralatan.join('_')}_${Date.now()}.jpg`);
-          if (res && res.url) {
-            uploadedPhotoUrls.push(res.url);
+    // Jalankan upload Google Drive, simpan Supabase, dan sync checklist di background secara non-blocking
+    // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka dengan media
+    (async () => {
+      const uploadedPhotoUrls: string[] = [];
+      if (finalFilesToShare.length > 0) {
+        for (const file of finalFilesToShare) {
+          try {
+            const res = await uploadPhotoToGoogleDrive(file, `Storing_${storingData.peralatan.join('_')}_${Date.now()}.jpg`);
+            if (res && res.url) {
+              uploadedPhotoUrls.push(res.url);
+            }
+          } catch (e) {
+            console.error("Gagal upload foto storing ke Google Drive:", e);
           }
-        } catch (e) {
-          console.error("Gagal upload foto storing ke Google Drive:", e);
         }
       }
-    }
 
-    // 2. Simpan catatan storing ke Supabase
-    try {
-      const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
-      const locString = (storingData.acLokasi && storingData.acLokasi.length > 0)
-        ? storingData.acLokasi.join(', ')
-        : (storingData.lokasi ? `${storingData.lokasi} ${storingData.nomor || ''}`.trim() : 'Terminal 2');
+      try {
+        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
+        const locString = (storingData.acLokasi && storingData.acLokasi.length > 0)
+          ? storingData.acLokasi.join(', ')
+          : (storingData.lokasi ? `${storingData.lokasi} ${storingData.nomor || ''}`.trim() : 'Terminal 2');
 
-      const waktuRange = `${storingData.waktuMulai || ''}${storingData.waktuSelesai ? ' - ' + storingData.waktuSelesai : ''}`;
+        const waktuRange = `${storingData.waktuMulai || ''}${storingData.waktuSelesai ? ' - ' + storingData.waktuSelesai : ''}`;
 
-      await saveOperationalLog({
-        tanggal: storingData.tanggal || opDate,
-        shift: opShift,
-        jenis: 'Storing',
-        waktu: waktuRange,
-        lokasi: locString,
-        peralatan: storingData.peralatan.join(', ') || 'All Faskampen',
-        kategori_maintenance: 'STORING',
-        uraian: `Storing Peralatan: ${storingData.peralatan.join(', ')}`,
-        tindak_lanjut: storingData.hasil || 'Storing Peralatan',
-        status: storingData.hasil || 'Normal',
-        foto_urls: uploadedPhotoUrls
+        await saveOperationalLog({
+          tanggal: storingData.tanggal || opDate,
+          shift: opShift,
+          jenis: 'Storing',
+          waktu: waktuRange,
+          lokasi: locString,
+          peralatan: storingData.peralatan.join(', ') || 'All Faskampen',
+          kategori_maintenance: 'STORING',
+          uraian: `Storing Peralatan: ${storingData.peralatan.join(', ')}`,
+          tindak_lanjut: storingData.hasil || 'Storing Peralatan',
+          status: storingData.hasil || 'Normal',
+          foto_urls: uploadedPhotoUrls
+        });
+      } catch (dbErr) {
+        console.error("Gagal menyimpan data storing ke database:", dbErr);
+      }
+
+      saveStoringToChecklistSync({
+        supervisorAvsec: storingData.supervisorAvsec,
+        supervisorAvsecMap: storingData.supervisorAvsecMap,
+        acLokasi: storingData.acLokasi,
+        acNomor: storingData.acNomor,
+        waktuMulai: storingData.waktuMulai,
+        waktuSelesai: storingData.waktuSelesai
       });
-    } catch (dbErr) {
-      console.error("Gagal menyimpan data storing ke database:", dbErr);
-    }
+    })();
 
     const message = generateWA_Storing(storingData);
 
-    saveStoringToChecklistSync({
-      supervisorAvsec: storingData.supervisorAvsec,
-      supervisorAvsecMap: storingData.supervisorAvsecMap,
-      acLokasi: storingData.acLokasi,
-      acNomor: storingData.acNomor,
-      waktuMulai: storingData.waktuMulai,
-      waktuSelesai: storingData.waktuSelesai
-    });
-
-    await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 3000);
-    });
+    try {
+      await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 3000);
+      });
+    } finally {
+      setTimeout(unlock, 2500);
+    }
   };
 
   return (
@@ -512,8 +532,30 @@ export const TabStoring: React.FC = () => {
       />
 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
-        <button type="submit" className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${isCopied ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]' : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'}`}>
-          {isCopied ? <><CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!</> : <><Share2 className="w-6 h-6" /> Share Storing ke WA</>}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`w-full font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-300 transform ${
+            isSubmitting
+              ? 'bg-emerald-600 opacity-70 cursor-not-allowed text-white'
+              : isCopied
+              ? 'bg-emerald-500 hover:bg-emerald-600 text-white scale-[1.02]'
+              : 'bg-[#25D366] hover:bg-[#20b858] hover:shadow-xl hover:-translate-y-0.5 text-white'
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <RefreshCw className="w-6 h-6 animate-spin" /> Memproses Share...
+            </>
+          ) : isCopied ? (
+            <>
+              <CheckCircle className="w-6 h-6 animate-pulse" /> Berhasil Disalin / Dibagikan!
+            </>
+          ) : (
+            <>
+              <Share2 className="w-6 h-6" /> Share Storing ke WA
+            </>
+          )}
         </button>
       </div>
 

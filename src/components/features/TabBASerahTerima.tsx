@@ -44,35 +44,71 @@ export const TabBASerahTerima: React.FC = () => {
   const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+  const [baData, setBaData] = useState({
+    jenisTransaksi: 'masuk' as 'masuk' | 'keluar',
+    tanggal: dateStr,
+    waktu: timeStr,
+    
+    // Pihak Kesatu (Menyerahkan)
+    penyerahNama: '',
+    penyerahJabatan: '',
+    penyerahInstansi: '', // Default kosong
+
+    // Pihak Kedua (Menerima)
+    penerimaNama: '',
+    penerimaJabatan: 'T2 - Safety & Security Electronic Services',
+    penerimaInstansi: 'T2 - Safety & Security Electronic Services',
+  });
+
   const [dinasPersonelList, setDinasPersonelList] = useState<any[]>([]);
+  const [activeShiftLabel, setActiveShiftLabel] = useState<string>('');
 
   useEffect(() => {
     const loadDinasPersonel = async () => {
       try {
-        const currentHour = new Date().getHours();
-        const targetShiftCode = (currentHour >= 8 && currentHour < 20) ? 'PS' : 'M';
+        const targetDateInput = baData.tanggal || dateStr;
+        const targetTimeInput = baData.waktu || timeStr;
+        const parts = targetDateInput.split('-').map(Number);
+        let hour = parseInt((targetTimeInput || '').split(':')[0], 10);
+        if (isNaN(hour)) hour = new Date().getHours();
+
+        const logicalDate = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+        const isPagi = hour >= 8 && hour < 20;
+        if (hour < 8) {
+          logicalDate.setDate(logicalDate.getDate() - 1);
+        }
+
+        const y = logicalDate.getFullYear();
+        const m = String(logicalDate.getMonth() + 1).padStart(2, '0');
+        const d = String(logicalDate.getDate()).padStart(2, '0');
+        const targetDate = `${y}-${m}-${d}`;
+        const targetShiftCode = isPagi ? 'PS' : 'M';
+        setActiveShiftLabel(isPagi ? 'Shift Pagi/Siang' : 'Shift Malam');
+
         const { data } = await supabase
           .from('jadwal_shift')
           .select(`
             id, shift, status_kehadiran,
             personel:personel_id (id, nama, jabatan, unit_kerja(nama))
           `)
-          .eq('tanggal', dateStr)
+          .eq('tanggal', targetDate)
           .neq('shift', 'D');
 
         if (data && data.length > 0) {
-          const filtered = data.filter((d: any) => {
-            const s = (d.shift || '').toUpperCase();
-            return targetShiftCode === 'PS' ? s === 'PS' : s === 'M';
+          const filtered = data.filter((item: any) => {
+            const s = (item.shift || '').toUpperCase();
+            const status = (item.status_kehadiran || '').toLowerCase();
+            return s === targetShiftCode && status !== 'sakit' && status !== 'cuti' && status !== 'libur';
           });
-          const list = filtered.map((d: any) => {
-            const unitName = d.personel?.unit_kerja?.nama || 'API T2';
+          const list = filtered.map((item: any) => {
+            const unitName = item.personel?.unit_kerja?.nama || 'API T2';
             return {
-              name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
-              jabatan: d.personel?.jabatan || '',
+              name: item.personel?.nama ? toTitleCase(item.personel.nama) : '',
+              jabatan: item.personel?.jabatan || '',
               unit: unitName
             };
           }).filter(p => p.name);
+
           if (list.length > 0) {
             setDinasPersonelList(list);
             return;
@@ -90,23 +126,7 @@ export const TabBASerahTerima: React.FC = () => {
     };
 
     loadDinasPersonel();
-  }, [dateStr, dataApiT2, dataOmIasT2]);
-
-  const [baData, setBaData] = useState({
-    jenisTransaksi: 'masuk' as 'masuk' | 'keluar',
-    tanggal: dateStr,
-    waktu: timeStr,
-    
-    // Pihak Kesatu (Menyerahkan)
-    penyerahNama: '',
-    penyerahJabatan: '',
-    penyerahInstansi: '', // Default kosong
-
-    // Pihak Kedua (Menerima)
-    penerimaNama: '',
-    penerimaJabatan: 'T2 - Safety & Security Electronic Services',
-    penerimaInstansi: 'T2 - Safety & Security Electronic Services',
-  });
+  }, [baData.tanggal, baData.waktu, dateStr, timeStr, dataApiT2, dataOmIasT2]);
 
   const [items, setItems] = useState<BarangItem[]>([
     { id: '1', nama: '', qty: 1, satuan: 'Pcs', kondisi: 'Baik / Baru', snList: [''] }
@@ -467,7 +487,7 @@ export const TabBASerahTerima: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Nama Penyerah {isPenyerahSses && '(Berdinas saat ini)'}
+                Nama Penyerah {isPenyerahSses && (activeShiftLabel ? `(${activeShiftLabel})` : '(Berdinas)')}
               </label>
               {isPenyerahSses ? (
                 <select
@@ -476,9 +496,11 @@ export const TabBASerahTerima: React.FC = () => {
                   onChange={(e) => handleSelectSsesPersonel(e.target.value, true)}
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium"
                 >
-                  <option value="">-- Pilih Personel SSES T2 Berdinas --</option>
+                  <option value="">-- Pilih Personel Berdinas --</option>
                   {dinasPersonelList.map((p, idx) => (
-                    <option key={idx} value={p.name}>{p.name} {p.jabatan ? `(${p.jabatan})` : ''}</option>
+                    <option key={`dinas-snd-${idx}`} value={p.name}>
+                      {p.name} {p.jabatan ? `(${p.jabatan})` : ''}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -546,7 +568,7 @@ export const TabBASerahTerima: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Nama Penerima {isPenerimaSses && '(Berdinas saat ini)'}
+                Nama Penerima {isPenerimaSses && (activeShiftLabel ? `(${activeShiftLabel})` : '(Berdinas)')}
               </label>
               {isPenerimaSses ? (
                 <select
@@ -555,9 +577,11 @@ export const TabBASerahTerima: React.FC = () => {
                   onChange={(e) => handleSelectSsesPersonel(e.target.value, false)}
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
                 >
-                  <option value="">-- Pilih Personel SSES T2 Berdinas --</option>
+                  <option value="">-- Pilih Personel Berdinas --</option>
                   {dinasPersonelList.map((p, idx) => (
-                    <option key={idx} value={p.name}>{p.name} {p.jabatan ? `(${p.jabatan})` : ''}</option>
+                    <option key={`dinas-rcv-${idx}`} value={p.name}>
+                      {p.name} {p.jabatan ? `(${p.jabatan})` : ''}
+                    </option>
                   ))}
                 </select>
               ) : (

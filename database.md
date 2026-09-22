@@ -5,14 +5,15 @@
 
 ## 1. Ringkasan Arsitektur Data
 
-Aplikasi **SSES T2 Generator Laporan** menerapkan arsitektur data:
+Aplikasi **SSES T2 Generator Laporan** menerapkan arsitektur data multi-tier:
 
-1. **Cloud Database (Supabase PostgreSQL)**: Menyimpan master data terstruktur, relasi peralatan-lokasi, data personel, jadwal shift, serta catatan performa TIP.
-2. **Local Storage Fallback**: Menyimpan draf formulir pengguna dan data master lokal di peramban pengguna (*offline resilience*).
+1. **Cloud Database (Supabase PostgreSQL)**: Menyimpan master data terstruktur, relasi peralatan-lokasi, data personel, jadwal shift, catatan performa TIP, log kegiatan operasional, dan ringkasan kelaikan peralatan.
+2. **Cloud Object Storage (Supabase Storage)**: Bucket publik `dokumentasi` sebagai fail-safe secondary storage untuk foto lampiran laporan operasional ketika Google Drive endpoint offline.
+3. **Local Storage Fallback**: Menyimpan draf formulir pengguna dan data master lokal di peramban pengguna (*offline resilience*).
 
 ---
 
-## 2. Diagram Relasi Entitas (ERD - Supabase PostgreSQL)
+## 2. Diagram Relasi Entitas (ERD - Supabase PostgreSQL & Storage)
 
 ```mermaid
 erDiagram
@@ -26,12 +27,44 @@ erDiagram
     UNIT_KERJA ||--o{ PERSONEL : "mewadahi"
     PERSONEL ||--o{ JADWAL_SHIFT : "memiliki jadwal"
 
+    LAPORAN_OPERASIONAL {
+        uuid id PK
+        date tanggal
+        string shift
+        string jenis
+        string lokasi
+        string peralatan
+        string kategori_maintenance
+        text uraian
+        text tindak_lanjut
+        string status
+        string teknisi
+        jsonb foto_urls "URL HTTPS only (chk_foto_urls_no_base64)"
+        timestamp created_at
+    }
+
+    LAPORAN_CHECKLIST {
+        uuid id PK
+        date tanggal "UK (tanggal, shift)"
+        string shift "UK (tanggal, shift)"
+        jsonb summary
+        timestamp created_at
+    }
+
     MASTER_CONFIGS {
         uuid id PK
         string config_key UK
         jsonb config_value
         timestamp updated_at
     }
+
+    STORAGE_BUCKET_DOKUMENTASI {
+        string bucket_id "dokumentasi"
+        string file_name "{timestamp}_{name}.jpg"
+        boolean is_public true
+    }
+
+    STORAGE_BUCKET_DOKUMENTASI ||--o{ LAPORAN_OPERASIONAL : "menyimpan foto lampiran"
 ```
 
 ---
@@ -194,6 +227,68 @@ Menyimpan konfigurasi fleksibel dan data agregat dalam format JSONB.
 
 ---
 
+### 3.12. Tabel `laporan_operasional`
+Menyimpan catatan kegiatan operasional harian teknisi (Perbaikan, Storing, Kegiatan, Kalibrasi) untuk sinkronisasi antar-shift dan rekapitulasi Shift Report.
+
+| Nama Kolom | Tipe Data | Kunci / Constraint | Keterangan |
+|---|---|---|---|
+| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik log kegiatan. |
+| `tanggal` | `DATE` / `VARCHAR(10)` | **NOT NULL** | Tanggal operasional log (YYYY-MM-DD). |
+| `shift` | `VARCHAR(10)` | **NOT NULL** | Shift dinas log ('PS' / 'M'). |
+| `jenis` | `VARCHAR(50)` | **NOT NULL** | Jenis kegiatan ('Perbaikan', 'Storing', 'Kegiatan', 'Kalibrasi'). |
+| `waktu` | `VARCHAR(20)` | NULL | Jam pelaksanaan (HH:mm). |
+| `lokasi` | `VARCHAR(150)` | NULL | Lokasi pelaksanaan. |
+| `peralatan` | `VARCHAR(150)` | NULL | Nama jenis & tipe peralatan terkait. |
+| `kategori_maintenance` | `VARCHAR(50)` | DEFAULT `'CORRECTIVE'` | Kategori pemeliharaan ('CORRECTIVE', 'PREVENTIVE', 'STORING', 'KEGIATAN'). |
+| `uraian` | `TEXT` | NULL | Deskripsi masalah / uraian kegiatan. |
+| `tindak_lanjut` | `TEXT` | NULL | Tindakan penanganan teknis / mitigasi. |
+| `status` | `VARCHAR(50)` | DEFAULT `'Normal Operasi'` | Status akhir peralatan / kegiatan. |
+| `teknisi` | `VARCHAR(150)` | NULL | Nama teknisi penanggung jawab dinas. |
+| `foto_urls` | `JSONB` / `TEXT[]` | **CHECK (`chk_foto_urls_no_base64`)** | Array tautan URL foto HTTPS (Google Drive / Supabase Storage). Check constraint memastikan string Base64 (`data:image`) ditolak. |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Timestamp pembuatan record. |
+
+> **Constraint Khusus**:
+> ```sql
+> ALTER TABLE laporan_operasional 
+> ADD CONSTRAINT chk_foto_urls_no_base64 
+> CHECK (foto_urls IS NULL OR foto_urls::text NOT LIKE '%data:image%');
+> ```
+
+---
+
+### 3.13. Tabel `laporan_checklist`
+Menyimpan rekapitulasi ringkasan kelaikan peralatan (*serviceability summary*) per tanggal dan shift dinas.
+
+| Nama Kolom | Tipe Data | Kunci / Constraint | Keterangan |
+|---|---|---|---|
+| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik laporan checklist. |
+| `tanggal` | `DATE` / `VARCHAR(10)` | **UNIQUE (`tanggal, shift`)** | Tanggal checklist (YYYY-MM-DD). |
+| `shift` | `VARCHAR(10)` | **UNIQUE (`tanggal, shift`)** | Shift dinas ('PS' / 'M'). |
+| `summary` | `JSONB` | **NOT NULL** | Array objek ringkasan kelaikan (`[{ no, nama, total, operasi, rusak, persenOperasi, persenRusak }]`). |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu penyimpanan record. |
+
+> **Constraint Khusus**:
+> ```sql
+> ALTER TABLE laporan_checklist 
+> ADD CONSTRAINT uq_laporan_checklist_tanggal_shift UNIQUE (tanggal, shift);
+> ```
+> Memungkinkan operasi **atomic upsert** (`INSERT ... ON CONFLICT (tanggal, shift) DO UPDATE SET summary = EXCLUDED.summary`) dari browser.
+
+---
+
+### 3.14. Supabase Storage Bucket: `dokumentasi`
+Bucket penyimpanan objek publik yang digunakan sebagai fail-safe secondary tier penyimpanan foto laporan operasional.
+
+| Parameter | Nilai | Keterangan |
+|---|---|---|
+| `bucket_id` | `dokumentasi` | Nama unik bucket pada Supabase Storage. |
+| `public` | `true` | URL objek dapat diakses secara publik via HTTPS tanpa token jangka pendek. |
+| `Format File` | `image/jpeg` | Seluruh foto dikompresi ke JPEG (maks. 1280px, kualitas 80%, ~150–250 KB) sebelum diunggah. |
+| `Penamaan Berkas` | `{timestamp}_{filename}.jpg` | Menghindari konflik penamaan file antar-pengguna. |
+| `RLS Policy` | `FOR ALL USING (bucket_id = 'dokumentasi')` | Mengizinkan select dan insert publik dari aplikasi frontend mobile. |
+
+---
+
 ## 4. Struktur Payload JSONB (`master_configs`)
 
 ### 4.1. Payload `checklist_config`
@@ -240,3 +335,6 @@ Menyimpan konfigurasi fleksibel dan data agregat dalam format JSONB.
 | `sses_master_data_cache` | `Object JSON` | Cache offline master data untuk mencegah lag UI jika Supabase slow-response. |
 | `sses_active_tab` | `String` | Tab UI aktif yang terakhir dibuka pengguna. |
 | `sses_tip_data_draft` | `Object JSON` | Draft sementara pengisian TIP performance. |
+| `sses_gdrive_script_url` | `String` | URL endpoint Google Apps Script Web App untuk unggah foto ke Google Drive. |
+| `sses_checklist_summary_cache` | `Object JSON` | Cache offline ringkasan kelaikan peralatan per shift. |
+

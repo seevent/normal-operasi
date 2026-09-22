@@ -25,27 +25,18 @@ export const fallbackShare = async (message: string, files: File[], setIsCopied:
     }
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2500);
-
-    if (files.length > 0) {
-      // Unduh otomatis berkas (PDF / Foto) agar pengguna di PC / Web dapat langsung melampirkannya
-      files.forEach((f) => triggerFileDownload(f));
-
-      const isPdf = files.some((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-      if (isPdf) {
-        alert(
-          'Dokumen PDF Berita Acara telah berhasil diunduh ke perangkat Anda dan format teks laporan telah disalin ke clipboard.\n\nSilakan "Paste" format teks di chat WhatsApp dan lampirkan dokumen PDF yang baru saja terunduh.'
-        );
-      } else {
-        alert(
-          'Foto dokumentasi telah diunduh dan format teks laporan telah disalin ke clipboard.\n\nSilakan "Paste" format teks di WhatsApp dan lampirkan foto Anda.'
-        );
-      }
-    }
   } catch (err) {
     console.error('Gagal menyalin teks', err);
   }
+
+  // Buka WhatsApp terlebih dahulu secara langsung agar tidak terblokir oleh popup blocker browser
   const encodedMessage = encodeURIComponent(message);
   window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+
+  if (files.length > 0) {
+    // Unduh otomatis berkas (PDF / Foto) agar pengguna di PC / Web dapat langsung melampirkannya
+    files.forEach((f) => triggerFileDownload(f));
+  }
 };
 
 export const shareToWhatsApp = async (
@@ -59,20 +50,16 @@ export const shareToWhatsApp = async (
     else finalFiles = [filesArray];
   }
 
-  // Coba salin teks ke clipboard terlebih dahulu sebagai backup
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(message);
-    }
-  } catch (e) {
-    // Ignore clipboard error
+  // Salin teks ke clipboard secara asinkron tanpa menahan (await) agar hak user gesture pada browser tidak kedaluwarsa
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(message).catch(() => {});
   }
 
   try {
     if (finalFiles.length > 0 && navigator.canShare && navigator.canShare({ files: finalFiles })) {
       await navigator.share({
         files: finalFiles,
-        title: 'Berita Acara Serah Terima Barang',
+        title: 'Laporan SSES T2',
         text: message
       });
       setIsCopied(true);
