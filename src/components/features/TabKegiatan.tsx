@@ -6,7 +6,7 @@ import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
-import { uploadPhotoToGoogleDrive } from '../../lib/services/googleDriveService';
+import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 
 export const TabKegiatan: React.FC = () => {
@@ -178,19 +178,23 @@ export const TabKegiatan: React.FC = () => {
       if (videoFiles.length > 0) finalFilesToShare.push(...videoFiles);
     }
 
-    // Jalankan upload Google Drive & simpan ke Supabase di background secara non-blocking
+    // Jalankan upload Cloudinary & simpan ke Supabase di background secara non-blocking
     // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka dengan media
     (async () => {
       const uploadedPhotoUrls: string[] = [];
       if (finalFilesToShare.length > 0) {
         for (const file of finalFilesToShare) {
           try {
-            const res = await uploadPhotoToGoogleDrive(file, `Kegiatan_${kegiatanData.lokasi.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
-            if (res && res.url) {
+            const res = await uploadPhotoToCloudinary(file, `Kegiatan_${kegiatanData.lokasi.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
+            if (res && res.status === 'success' && res.url) {
               uploadedPhotoUrls.push(res.url);
+            } else if (res && res.status === 'error') {
+              console.error("Upload Cloudinary gagal:", res.message);
+              alert(`⚠️ Foto gagal disimpan ke Cloudinary:\n${res.message}`);
             }
           } catch (e) {
-            console.error("Gagal upload foto kegiatan ke Google Drive:", e);
+            console.error("Gagal upload foto kegiatan ke Cloudinary:", e);
+            alert(`⚠️ Foto gagal disimpan ke Cloudinary:\n${(e as Error).message}`);
           }
         }
       }

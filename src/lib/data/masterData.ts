@@ -8,6 +8,21 @@ export const toTitleCase = (str: string): string => {
   );
 };
 
+export function formatNamaPersonel(fullName: string): string {
+  if (!fullName) return '';
+  const words = fullName.trim().split(/\s+/);
+  if (words.length === 0) return '';
+  if (words.length === 1) return words[0];
+  
+  const firstWord = words[0].toLowerCase();
+  const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad', 'abdul'];
+  
+  if (titlePrefixes.includes(firstWord)) {
+    return words[1];
+  }
+  return words[0];
+}
+
 export const getJabatanRank = (jabatan?: string): number => {
   if (!jabatan) return 999;
   const str = String(jabatan).trim();

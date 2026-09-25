@@ -6,32 +6,12 @@ import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/loca
 import { generateWA_Perbaikan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
-import { toTitleCase } from '../../lib/data/masterData';
+import { toTitleCase, formatNamaPersonel } from '../../lib/data/masterData';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { uploadPhotoToGoogleDrive } from '../../lib/services/googleDriveService';
+import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
-
-function formatNamaPersonel(fullName: string): string {
-  if (!fullName) return '';
-  const words = fullName.trim().split(/\s+/);
-  if (words.length === 0) return '';
-  if (words.length === 1) return words[0];
-  
-  const firstWord = words[0].toLowerCase();
-  const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad', 'abdul'];
-  
-  if (titlePrefixes.includes(firstWord)) {
-    const secondWord = words[1] ? words[1].charAt(0).toUpperCase() + words[1].slice(1).toLowerCase() : '';
-    const thirdInitial = words[2] ? ` ${words[2].charAt(0).toUpperCase()}.` : '';
-    return `${words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase()} ${secondWord}${thirdInitial}`.trim();
-  }
-  
-  const firstName = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
-  const secondInitial = words[1] ? ` ${words[1].charAt(0).toUpperCase()}.` : '';
-  return `${firstName}${secondInitial}`;
-}
 
 export const TabPerbaikan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -711,19 +691,23 @@ export const TabPerbaikan: React.FC = () => {
       }
     }
 
-    // Jalankan upload Google Drive & simpan ke Supabase di background secara non-blocking
+    // Jalankan upload Cloudinary & simpan ke Supabase di background secara non-blocking
     // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka dengan media
     (async () => {
       const uploadedPhotoUrls: string[] = [];
       if (customFilesArray.length > 0) {
         for (const file of customFilesArray) {
           try {
-            const res = await uploadPhotoToGoogleDrive(file, `Perbaikan_${formData.peralatan.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
-            if (res && res.url) {
+            const res = await uploadPhotoToCloudinary(file, `Perbaikan_${formData.peralatan.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
+            if (res && res.status === 'success' && res.url) {
               uploadedPhotoUrls.push(res.url);
+            } else if (res && res.status === 'error') {
+              console.error("Upload Cloudinary gagal:", res.message);
+              alert(`⚠️ Foto gagal disimpan ke Cloudinary:\n${res.message}`);
             }
           } catch (e) {
-            console.error("Gagal upload foto perbaikan ke Google Drive:", e);
+            console.error("Gagal upload foto perbaikan ke Cloudinary:", e);
+            alert(`⚠️ Foto gagal disimpan ke Cloudinary:\n${(e as Error).message}`);
           }
         }
       }

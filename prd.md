@@ -96,7 +96,7 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
 * **Fungsi**: Generator rekapitulasi laporan pergantian shift (*Shift Handover Report*) dan pemantauan kelaikan peralatan.
 * **Fitur Utama**:
   * **Interactive Serviceability Diagram**: Visualisasi denah matriks kelaikan peralatan keamanan di sub-terminal D, E, dan F Terminal 2 dengan koordinat sinkron.
-  * **In-Modal Photo Upload & Viewer**: Modal CRUD untuk menambahkan atau memperbarui entri kegiatan dengan lampiran foto langsung yang diunggah ke Google Drive / Supabase Storage dan ditampilkan pada kartu laporan.
+  * **In-Modal Photo Upload & Viewer**: Modal CRUD untuk menambahkan atau memperbarui entri kegiatan dengan lampiran foto langsung yang diunggah ke Cloudinary dan ditampilkan pada kartu laporan.
   * **Editable Total & Off Counts**: Fleksibilitas penyesuaian jumlah unit operasi vs rusak secara langsung.
   * **Kalkulasi Kesiapan Real-time**: Indikator persentase kelaikan dinamis per kategori peralatan (X-Ray, WTMD, HHMD, Body Scanner, ETD, Access Control, CCTV).
   * **Sinkronisasi Database Cloud**: Riwayat kegiatan dan rekapitulasi tersimpan otomatis ke `laporan_operasional` (dengan constraint anti-base64) dan `laporan_checklist` (dengan atomic upsert).
@@ -117,7 +117,7 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * **Master Lokasi & Peralatan**: CRUD master lokasi, titik lokasi, jenis peralatan, dan tipe peralatan.
   * **Unit Peralatan Manager**: CRUD unit fisik peralatan dengan SN, sertifikasi, tahun instalasi, kapasitas ampere, dan status operasi.
   * **Sparepart Manager**: Manajemen inventaris sparepart dan seleksi item sparepart untuk tab briefing.
-  * **Google Drive Settings Panel**: Konfigurasi URL Google Apps Script Web App untuk penyimpanan cloud foto dokumentasi.
+  * **Cloudinary Settings Panel**: Konfigurasi Cloud Name dan Unsigned Upload Preset untuk penyimpanan cloud foto dokumentasi berkecepatan tinggi.
   * **Schedule Uploader**: Upload jadwal shift harian dari berkas Excel (`.xlsx`).
   * **Checklist Editor**: Pengaturan parameter checklist operasi.
   * **Personel Editor**: Manajemen data personel teknisi termasuk NIK dan unit kerja.
@@ -138,11 +138,10 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
    * Tombol **"Kirim ke WhatsApp"** memanfaatkan Web Share API / WhatsApp direct link (`https://api.whatsapp.com/send?text=...`).
 2. **Editor Anotasi Foto & Kolase (`PhotoTextEditorModal.tsx` & `LiveCollagePreview.tsx`)**:
    * Pengeditan foto berbasis HTML5 Canvas & Konva.js.
-   * Pembuatan kolase foto otomatis (1x1, 2x1, 2x2, grid) untuk efisiensi lampiran laporan di WhatsApp/Drive.
-3. **Dual-Tier Photo Cloud Storage (`googleDriveService.ts`)**:
+   * Pembuatan kolase foto otomatis (1x1, 2x1, 2x2, grid) untuk efisiensi lampiran laporan di WhatsApp/Cloudinary.
+3. **Cloud Photo Storage (Cloudinary CDN - `cloudinaryService.ts`)**:
    * Kompresi otomatis berbasis Canvas (JPEG 80%, maks. 1280px, ~150–250 KB).
-   * Primary upload ke Google Drive (`SSES_T2_Dokumentasi`) via Google Apps Script Web App.
-   * Fail-safe fallback otomatis ke Supabase Storage bucket `dokumentasi` jika Drive offline atau menolak izin akses.
+   * Upload langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms).
    * Zero-Base64 enforcement: database dilindungi oleh check constraint `chk_foto_urls_no_base64`.
 4. **Canvas Signature Pad (`SignaturePad.tsx`)**:
    * Tanda tangan digital interaktif berbasis touch event & mouse event HTML5 Canvas dengan fitur clear dan preview.
@@ -164,10 +163,10 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
 
 ## 6. Roadmap & Pengembangan Mendatang
 
-* [x] Integrasi Penyimpanan Cloud Foto Dokumentasi Dual-Tier (Google Drive + Supabase Storage).
+* [x] Integrasi Penyimpanan Cloud Foto Dokumentasi Berbasis CDN (Cloudinary).
 * [x] Diagram Serviceability Interaktif & Persistensi Cloud Laporan Operasional.
 * [x] In-Modal Photo Upload & Attachment pada Tab Shift Report.
 * [ ] Integrasi Notifikasi Push (PWA Service Worker) untuk jadwal shift.
-* [ ] Ekspor Otomatis Rekap Bulanan ke Google Drive PDF Folder.
+* [ ] Ekspor Otomatis Rekap Bulanan ke PDF.
 * [ ] Mode Dark Mode / Light Mode switchable.
 * [ ] Pengenalan Suara (Voice-to-Text) untuk pengisian uraian perbaikan di lapangan.

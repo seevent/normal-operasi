@@ -29,7 +29,7 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 * **Aturan Penting**: Jangan mengubah emoji header, pemisah baris, atau penataan bullet point secara acak tanpa permintaan eksplisit dari pengguna, karena format ini di-parse otomatis oleh sistem rekapitulasi eksternal di grup WhatsApp operasional.
 
 ### 2.5. Pemrosesan Canvas, Konva Anotasi & Signature Pad (`canvasUtils.ts`, `PhotoTextEditorModal.tsx`, `SignaturePad.tsx`)
-* Gambar yang diunggah harus dikompres secara efisien via Canvas API sebelum dikirim ke backend/Google Drive untuk menghemat bandwidth.
+* Gambar yang diunggah harus dikompres secara efisien via Canvas API sebelum dikirim ke backend/Cloudinary untuk menghemat bandwidth.
 * Saat mengubah `PhotoTextEditorModal.tsx`, pastikan posisi koordinat teks overlay diskalakan sesuai rasio asli gambar (`stage.width() / image.width`).
 * Pada `SignaturePad.tsx`, pastikan event touch (`onTouchStart`, `onTouchMove`, `onTouchEnd`) ditangani dengan `preventDefault()` agar kanvas tidak menyebabkan scroll halaman saat ditandatangani di ponsel.
 
@@ -43,9 +43,9 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
   * Pukul `22:00 - 23:59`: Tanggal hari ini, Shift M.
 * **Persistensi Data**: Selalu gunakan fungsi `saveOperationalLog` dan `saveChecklistSummary` dari `operationalReportService.ts` agar kegiatan dari setiap tab tersinkronisasi ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
 
-### 2.7. Integrasi Dual-Tier Cloud Storage & Instant Web Share (`googleDriveService.ts`, `operationalReportService.ts`, `pdfService.ts`)
-* **Dual-Tier Upload**: Sistem mengunggah foto ke Google Drive via Google Apps Script Web App (`Content-Type: text/plain` untuk mencegah issue CORS). Jika Drive gagal/ditolak izinnya, sistem secara otomatis fallback mengunggah ke Supabase Storage bucket `dokumentasi`.
-* **Zero Base64 in DB**: Dilarang keras menyimpan string Base64 (`data:image/...`) ke dalam PostgreSQL Supabase karena akan memicu pelanggaran constraint `chk_foto_urls_no_base64` dan membuat kuota database penuh. Selalu gunakan URL HTTPS publik yang dikembalikan dari `uploadImageToGoogleDrive` / Supabase Storage.
+### 2.7. Integrasi Cloud Storage (Cloudinary) & Instant Web Share (`cloudinaryService.ts`, `operationalReportService.ts`, `pdfService.ts`)
+* **Cloudinary Upload**: Sistem mengunggah foto ke Cloudinary via Unsigned Upload Preset (kecepatan tinggi ~300-600ms, tanpa cold start, didukung Global CDN).
+* **Zero Base64 in DB**: Dilarang keras menyimpan string Base64 (`data:image/...`) ke dalam PostgreSQL Supabase karena akan memicu pelanggaran constraint `chk_foto_urls_no_base64` dan membuat kuota database penuh. Selalu gunakan URL HTTPS publik yang dikembalikan dari `uploadPhotoToCloudinary`.
 * **Instant Web Share**: Browser modern mewajibkan user gesture aktif untuk `navigator.share`. Panggil `navigator.share` secara sinkron/instan saat tombol ditekan, dan jalankan kompresi foto, upload cloud, serta penulisan Supabase secara asinkron di latar belakang dengan perlindungan deduplikasi `recentOperationalLogs`.
 * **Ekspor Non-blocking PDF**: Ekspor PDF Berita Acara atau rekapitulasi harus menggunakan `pdfService.ts` dengan dynamic import agar proses konversi DOM/Canvas tidak memblokir (*freeze*) antarmuka aplikasi.
 
@@ -59,7 +59,7 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 | [`src/components/features/AntigravityPet.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/AntigravityPet.tsx) | Interactive mascot widget | Maskot Chibi Iron Man terapung (zero-g physics & operational tips). |
 | [`src/components/features/TabShiftReport.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/TabShiftReport.tsx) | Shift report & serviceability | Interactive Serviceability Diagram (Zone D, E, F), in-modal photo upload/attachment, dan sinkronisasi kelaikan peralatan. |
 | [`src/lib/services/operationalReportService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/operationalReportService.ts) | Layanan persistensi operasional | Menyimpan & memfilter log operasional shift (dengan deduplikasi) dan kelaikan peralatan ke Supabase. |
-| [`src/lib/services/googleDriveService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/googleDriveService.ts) | Layanan cloud upload dual-tier | Mengunggah foto ke Google Drive dengan fallback otomatis ke Supabase Storage bucket `dokumentasi`. |
+| [`src/lib/services/cloudinaryService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/cloudinaryService.ts) | Layanan cloud upload Cloudinary | Mengunggah foto dokumentasi ke Cloudinary via Unsigned Upload Preset. |
 | [`src/lib/services/pdfService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/pdfService.ts) | Layanan ekspor PDF | Ekspor dokumen non-blocking menggunakan dynamic import `html2pdf.js`. |
 | [`src/lib/utils/waGenerator.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/waGenerator.ts) | Template pesan WA | Memiliki generator khusus per-tab untuk seluruh 12 modul operasional. |
 | [`src/lib/utils/locationRules.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/locationRules.ts) | Helper relasi lokasi & peralatan | Memfilter dropdown lokasi berdasarkan peralatan terpilih. |
@@ -87,7 +87,7 @@ Sebelum Agent menyatakan bahwa suatu perbaikan atau fitur telah selesai, lakukan
    Pastikan input teks tidak menyebabkan overflow horizontal dan tombol-tombol mudah ditekan di layar seluler.
 
 4. **Kemampuan Offline / Fallback**:
-   Pastikan jika Supabase atau Google Script tidak merespons, aplikasi tetap dapat menggunakan `masterData.ts` / `localStorage` secara aman tanpa crash.
+   Pastikan jika Supabase atau Cloudinary tidak merespons, aplikasi tetap dapat menggunakan `masterData.ts` / `localStorage` secara aman tanpa crash.
 
 5. **Pembaruan Knowledge Graph (Graphify)**:
    Jika terjadi penambahan file baru atau refactoring arsitektur skala besar, jalankan pembaruan `graphify` agar indeks keterkaitan antar file tetap up-to-date.

@@ -6,6 +6,7 @@ import { generateWA_Kehadiran } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
+import { formatPmRencanaKegiatan } from '../../lib/utils/pmScheduleParser';
 
 export const TabKehadiran: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -142,10 +143,32 @@ export const TabKehadiran: React.FC = () => {
           .map(r => ({ id: r.jadwal_id, personel_id: r.personel_id }))
       );
 
+      // Fetch Jadwal PM untuk tanggal & shift terpilih
+      const isPagi = targetShiftCode === 'PS';
+      const baseKegiatan = `- Monitoring Ops\n- Storing Peralatan`;
+
+      const { data: pmData } = await supabase
+        .from('jadwal_pm')
+        .select('lokasi, titik, jenis, tipe, kategori_pm, shift')
+        .eq('tanggal', attendanceData.tanggal);
+
+      const activePm = (pmData || []).filter((d: any) =>
+        !d.shift || d.shift === 'ALL' || d.shift === targetShiftCode
+      );
+
+      let newKegiatan: string;
+      if (activePm.length > 0) {
+        const pmBlock = formatPmRencanaKegiatan(activePm);
+        newKegiatan = `${baseKegiatan}\n- ${pmBlock}`;
+      } else {
+        newKegiatan = isPagi ? `${baseKegiatan}\n- Preventive Maintenance & Kalibrasi Perangkat` : baseKegiatan;
+      }
+
       setAttendanceData(prev => ({
         ...prev,
         apiList: sortPersonelByJabatan(apiRows),
-        omList: sortPersonelByJabatan(omRows)
+        omList: sortPersonelByJabatan(omRows),
+        rencanaKegiatan: newKegiatan
       }));
     } catch (err) {
       console.error('Error fetching jadwal:', err);
@@ -165,16 +188,10 @@ export const TabKehadiran: React.FC = () => {
 
   const handleShiftChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const shift = e.target.value;
-    const isPagi = shift.includes('Pagi');
-    const kegiatan = isPagi 
-      ? '- Monitoring Ops\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Perangkat' 
-      : '- Monitoring Ops\n- Storing Peralatan';
-
-    setAttendanceData({
-      ...attendanceData,
-      shift,
-      rencanaKegiatan: kegiatan
-    });
+    setAttendanceData(prev => ({
+      ...prev,
+      shift
+    }));
   };
 
   const handleRowChange = (listType: 'apiList' | 'omList', index: number, field: string, value: string) => {
@@ -219,18 +236,26 @@ export const TabKehadiran: React.FC = () => {
   };
 
   const handleDashChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: string) => {
-    let value = e.target.value;
-    if (!value.startsWith('- ')) {
-      value = '- ' + value.replace(/^- /, '');
-    }
-    value = value.replace(/\n([^-])/g, '\n- $1');
-    setAttendanceData(prev => ({ ...prev, [field]: value }));
+    setAttendanceData(prev => ({ ...prev, [field]: e.target.value }));
   };
 
   const handleDashKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, field: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      setAttendanceData(prev => ({ ...prev, [field]: prev[field as keyof typeof attendanceData] + '\n- ' }));
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const val = textarea.value;
+
+      const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+      const currentLine = val.substring(lineStart, start);
+      const prefix = currentLine.trim().startsWith('-') && !currentLine.includes('Preventive Maintenance') ? '\n- ' : '\n';
+
+      const newVal = val.substring(0, start) + prefix + val.substring(end);
+      setAttendanceData(prev => ({ ...prev, [field]: newVal }));
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + prefix.length;
+      }, 0);
     }
   };
 
@@ -399,20 +424,41 @@ export const TabKehadiran: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Rencana Kegiatan Harian</label>
             <textarea name="rencanaKegiatan" required rows={4} value={attendanceData.rencanaKegiatan} onChange={(e) => handleDashChange(e, 'rencanaKegiatan')} onKeyDown={(e) => handleDashKeyDown(e, 'rencanaKegiatan')} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"></textarea>
             {(() => {
-              const pmText = "- Preventive Maintenance & Kalibrasi Perangkat";
-              const hasPM = attendanceData.rencanaKegiatan.includes(pmText);
+              const hasPM = attendanceData.rencanaKegiatan.includes("Preventive Maintenance");
               return (
                 <button 
                   type="button" 
-                  onClick={() => {
+                  onClick={async () => {
+                    const baseKegiatan = '- Monitoring Ops\n- Storing Peralatan';
                     if (hasPM) {
-                      let newText = attendanceData.rencanaKegiatan.replace('\n' + pmText, '').replace(pmText, '').trim();
-                      setAttendanceData({ ...attendanceData, rencanaKegiatan: newText });
+                      let newText = attendanceData.rencanaKegiatan;
+                      const pmIndex = newText.indexOf('Preventive Maintenance');
+                      if (pmIndex !== -1) {
+                        const lineStart = newText.lastIndexOf('\n', pmIndex);
+                        newText = (lineStart !== -1 ? newText.substring(0, lineStart) : '').trim();
+                      }
+                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newText || baseKegiatan }));
                     } else {
-                      let newText = attendanceData.rencanaKegiatan.trim();
-                      if (newText.length > 0) newText += '\n';
-                      newText += pmText;
-                      setAttendanceData({ ...attendanceData, rencanaKegiatan: newText });
+                      const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
+                      const { data: pmData } = await supabase
+                        .from('jadwal_pm')
+                        .select('lokasi, titik, jenis, tipe, kategori_pm, shift')
+                        .eq('tanggal', attendanceData.tanggal);
+
+                      const activePm = (pmData || []).filter((d: any) =>
+                        !d.shift || d.shift === 'ALL' || d.shift === targetShiftCode
+                      );
+
+                      let pmBlock = '';
+                      if (activePm.length > 0) {
+                        pmBlock = formatPmRencanaKegiatan(activePm);
+                      } else {
+                        pmBlock = 'Preventive Maintenance & Kalibrasi Perangkat';
+                      }
+
+                      const current = attendanceData.rencanaKegiatan.trim();
+                      const newText = current ? `${current}\n- ${pmBlock}` : `- ${pmBlock}`;
+                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newText }));
                     }
                   }}
                   className="mt-2 flex items-center gap-1.5 text-sm font-medium transition-colors"

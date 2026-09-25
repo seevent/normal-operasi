@@ -6,7 +6,7 @@ import { ScheduleUploader } from './ScheduleUploader';
 import { ChecklistDataEditor } from './ChecklistDataEditor';
 import { AssetManager } from './AssetManager';
 import { SparepartManager } from './SparepartManager';
-import { GoogleDriveSettingsPanel } from './GoogleDriveSettingsPanel';
+import { CloudinarySettingsPanel } from './CloudinarySettingsPanel';
 
 export const TabData: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -307,7 +307,7 @@ const LocalDataEditor: React.FC = () => {
           { id: 'checklist_config', label: 'Checklist Config' },
           { id: 'kalibrasi_equip', label: 'Config Peralatan Kalibrasi' },
           { id: 'tip_data_manager', label: 'Data TIP Tersimpan' },
-          { id: 'google_drive', label: 'Google Drive' }
+          { id: 'cloudinary', label: 'Cloudinary CDN' }
         ].map(t => (
           <button key={t.id} onClick={() => setActiveSubTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeSubTab === t.id ? 'bg-blue-600' : 'hover:bg-slate-700 text-slate-300'}`}>
             {t.label}
@@ -361,8 +361,8 @@ const LocalDataEditor: React.FC = () => {
         <div className="p-0 border border-slate-200 rounded-xl overflow-hidden m-6">
           <TipDataManager />
         </div>
-      ) : activeSubTab === 'google_drive' ? (
-        <GoogleDriveSettingsPanel />
+      ) : (activeSubTab === 'cloudinary' || activeSubTab === 'google_drive') ? (
+        <CloudinarySettingsPanel />
       ) : (
         <div className="p-6 flex-1 space-y-4">
           {localData.map((item, index) => (

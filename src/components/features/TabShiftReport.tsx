@@ -18,7 +18,7 @@ import {
   getReportDefaultDateAndShift,
   isTimeWithinShiftBoundary
 } from '../../lib/services/operationalReportService';
-import { uploadPhotoToGoogleDrive } from '../../lib/services/googleDriveService';
+import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -298,9 +298,11 @@ export const TabShiftReport: React.FC = () => {
       // 1. Upload foto jika pengguna memilih file foto baru
       let uploadedUrl: string | null = null;
       if (crudPhotoFile) {
-        const uploadRes = await uploadPhotoToGoogleDrive(crudPhotoFile, `${crudForm.jenis}_${Date.now()}.jpg`);
-        if (uploadRes && uploadRes.url) {
+        const uploadRes = await uploadPhotoToCloudinary(crudPhotoFile, `${crudForm.jenis}_${Date.now()}.jpg`);
+        if (uploadRes && uploadRes.status === 'success' && uploadRes.url) {
           uploadedUrl = uploadRes.url;
+        } else if (uploadRes && uploadRes.status === 'error') {
+          alert(`⚠️ Foto gagal disimpan ke Cloudinary:\n${uploadRes.message}`);
         }
       }
 
@@ -556,7 +558,7 @@ export const TabShiftReport: React.FC = () => {
             <FileText className="w-6 h-6 text-blue-600" /> Laporan Harian Operasional
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Rekapitulasi shift terintegrasi database & Google Drive.
+            Rekapitulasi shift terintegrasi database & Cloudinary.
           </p>
         </div>
 
@@ -1533,7 +1535,7 @@ export const TabShiftReport: React.FC = () => {
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <span className="text-xs text-slate-500 font-medium">
-                Tersimpan di Google Drive
+                Tersimpan di Cloudinary
               </span>
               <a 
                 href={(() => {
@@ -1545,10 +1547,10 @@ export const TabShiftReport: React.FC = () => {
                 })()} 
                 target="_blank" 
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Buka di Google Drive</span>
+                <span>Buka di Cloudinary</span>
               </a>
             </div>
           </div>

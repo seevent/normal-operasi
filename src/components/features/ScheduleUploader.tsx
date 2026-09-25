@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { Calendar, FileSpreadsheet, Loader2, CheckCircle, AlertTriangle, Trash2, Clock } from 'lucide-react';
+import { PmScheduleUploader } from './PmScheduleUploader';
 
 export const ScheduleUploader: React.FC = () => {
   const store = useMasterDataStore();
@@ -188,104 +189,109 @@ export const ScheduleUploader: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
-          <Calendar className="w-6 h-6" />
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-slate-800">Upload Jadwal Teknisi</h2>
-          <p className="text-sm text-slate-500">Unggah file Excel (.xlsx) daftar jadwal bulanan.</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">Bulan</label>
-          <select value={selectedBulan} onChange={e => setSelectedBulan(Number(e.target.value))} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-            {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => (
-              <option key={i} value={i+1}>{m}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">Tahun</label>
-          <input type="number" value={selectedTahun} onChange={e => setSelectedTahun(Number(e.target.value))} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-        </div>
-      </div>
-
-      <div className="relative border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer text-center p-8">
-        <input 
-          type="file" 
-          accept=".xlsx, .xls"
-          onChange={handleFileUpload}
-          disabled={isUploading}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-        />
-        {isUploading ? (
-          <div className="flex flex-col items-center justify-center gap-3 text-blue-600">
-            <Loader2 className="w-10 h-10 animate-spin" />
-            <p className="font-bold">Memproses File Excel...</p>
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
+            <Calendar className="w-6 h-6" />
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-3 text-blue-600">
-            <FileSpreadsheet className="w-10 h-10" />
-            <p className="font-bold">Pilih File Excel Jadwal</p>
-            <p className="text-xs text-blue-500">Hanya .xlsx atau .xls (Format Harus Terdapat Kolom 'CODE' dan Angka 1-31)</p>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Upload Jadwal Teknisi</h2>
+            <p className="text-sm text-slate-500">Unggah file Excel (.xlsx) daftar jadwal bulanan.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Bulan</label>
+            <select value={selectedBulan} onChange={e => setSelectedBulan(Number(e.target.value))} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+              {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => (
+                <option key={i} value={i+1}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Tahun</label>
+            <input type="number" value={selectedTahun} onChange={e => setSelectedTahun(Number(e.target.value))} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+        </div>
+
+        <div className="relative border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer text-center p-8">
+          <input 
+            type="file" 
+            accept=".xlsx, .xls"
+            onChange={handleFileUpload}
+            disabled={isUploading}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+          />
+          {isUploading ? (
+            <div className="flex flex-col items-center justify-center gap-3 text-blue-600">
+              <Loader2 className="w-10 h-10 animate-spin" />
+              <p className="font-bold">Memproses File Excel...</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 text-blue-600">
+              <FileSpreadsheet className="w-10 h-10" />
+              <p className="font-bold">Pilih File Excel Jadwal</p>
+              <p className="text-xs text-blue-500">Hanya .xlsx atau .xls (Format Harus Terdapat Kolom 'CODE' dan Angka 1-31)</p>
+            </div>
+          )}
+        </div>
+
+        {uploadStatus.type === 'success' && (
+          <div className="mt-6 flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg">
+            <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Upload Berhasil!</p>
+              <p className="text-sm">{uploadStatus.message}</p>
+            </div>
           </div>
         )}
-      </div>
 
-      {uploadStatus.type === 'success' && (
-        <div className="mt-6 flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg">
-          <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold">Upload Berhasil!</p>
-            <p className="text-sm">{uploadStatus.message}</p>
+        {uploadStatus.type === 'error' && (
+          <div className="mt-6 flex items-start gap-3 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Upload Gagal</p>
+              <p className="text-sm">{uploadStatus.message}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {uploadStatus.type === 'error' && (
-        <div className="mt-6 flex items-start gap-3 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold">Upload Gagal</p>
-            <p className="text-sm">{uploadStatus.message}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Bagian Histori */}
-      <div className="mt-8 border-t border-slate-200 pt-8">
-        <h3 className="text-md font-bold text-slate-800 flex items-center gap-2 mb-4">
-          <Clock className="w-5 h-5 text-blue-600" /> Histori Upload Jadwal
-          {isFetchingHistory && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
-        </h3>
-        
-        {historyList.length === 0 && !isFetchingHistory ? (
-          <p className="text-sm text-slate-500 italic">Belum ada histori upload jadwal.</p>
-        ) : (
-          <div className="space-y-3">
-            {historyList.map(h => (
-              <div key={h.yearMonth} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div>
-                  <p className="font-bold text-slate-700">{h.yearMonth}</p>
-                  <p className="text-xs text-slate-500">{h.count} data shift</p>
+        {/* Bagian Histori */}
+        <div className="mt-8 border-t border-slate-200 pt-8">
+          <h3 className="text-md font-bold text-slate-800 flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-blue-600" /> Histori Upload Jadwal
+            {isFetchingHistory && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
+          </h3>
+          
+          {historyList.length === 0 && !isFetchingHistory ? (
+            <p className="text-sm text-slate-500 italic">Belum ada histori upload jadwal.</p>
+          ) : (
+            <div className="space-y-3">
+              {historyList.map(h => (
+                <div key={h.yearMonth} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div>
+                    <p className="font-bold text-slate-700">{h.yearMonth}</p>
+                    <p className="text-xs text-slate-500">{h.count} data shift</p>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteSchedule(h.yearMonth)}
+                    disabled={isDeleting === h.yearMonth}
+                    className="p-2 text-rose-600 hover:bg-rose-100 rounded-md transition-colors disabled:opacity-50"
+                    title="Hapus Jadwal"
+                  >
+                    {isDeleting === h.yearMonth ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                  </button>
                 </div>
-                <button 
-                  onClick={() => handleDeleteSchedule(h.yearMonth)}
-                  disabled={isDeleting === h.yearMonth}
-                  className="p-2 text-rose-600 hover:bg-rose-100 rounded-md transition-colors disabled:opacity-50"
-                  title="Hapus Jadwal"
-                >
-                  {isDeleting === h.yearMonth ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Bagian Upload Jadwal PM */}
+      <PmScheduleUploader />
     </div>
   );
 };

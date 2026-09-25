@@ -8,7 +8,7 @@
 Aplikasi **SSES T2 Generator Laporan** menerapkan arsitektur data multi-tier:
 
 1. **Cloud Database (Supabase PostgreSQL)**: Menyimpan master data terstruktur, relasi peralatan-lokasi, data personel, jadwal shift, catatan performa TIP, log kegiatan operasional, dan ringkasan kelaikan peralatan.
-2. **Cloud Object Storage (Supabase Storage)**: Bucket publik `dokumentasi` sebagai fail-safe secondary storage untuk foto lampiran laporan operasional ketika Google Drive endpoint offline.
+2. **Cloud Media Storage (Cloudinary Global CDN)**: Penyimpanan foto lampiran laporan operasional terkompresi (~150–250 KB) via Unsigned Upload Preset dengan CDN berkecepatan tinggi (~300–600ms).
 3. **Local Storage Fallback**: Menyimpan draf formulir pengguna dan data master lokal di peramban pengguna (*offline resilience*).
 
 ---
@@ -244,7 +244,7 @@ Menyimpan catatan kegiatan operasional harian teknisi (Perbaikan, Storing, Kegia
 | `tindak_lanjut` | `TEXT` | NULL | Tindakan penanganan teknis / mitigasi. |
 | `status` | `VARCHAR(50)` | DEFAULT `'Normal Operasi'` | Status akhir peralatan / kegiatan. |
 | `teknisi` | `VARCHAR(150)` | NULL | Nama teknisi penanggung jawab dinas. |
-| `foto_urls` | `JSONB` / `TEXT[]` | **CHECK (`chk_foto_urls_no_base64`)** | Array tautan URL foto HTTPS (Google Drive / Supabase Storage). Check constraint memastikan string Base64 (`data:image`) ditolak. |
+| `foto_urls` | `JSONB` / `TEXT[]` | **CHECK (`chk_foto_urls_no_base64`)** | Array tautan URL foto HTTPS (Cloudinary CDN). Check constraint memastikan string Base64 (`data:image`) ditolak. |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Timestamp pembuatan record. |
 
 > **Constraint Khusus**:
@@ -335,6 +335,7 @@ Bucket penyimpanan objek publik yang digunakan sebagai fail-safe secondary tier 
 | `sses_master_data_cache` | `Object JSON` | Cache offline master data untuk mencegah lag UI jika Supabase slow-response. |
 | `sses_active_tab` | `String` | Tab UI aktif yang terakhir dibuka pengguna. |
 | `sses_tip_data_draft` | `Object JSON` | Draft sementara pengisian TIP performance. |
-| `sses_gdrive_script_url` | `String` | URL endpoint Google Apps Script Web App untuk unggah foto ke Google Drive. |
+| `sses_cloudinary_cloud_name` | `String` | Cloud Name akun Cloudinary. |
+| `sses_cloudinary_upload_preset` | `String` | Nama Unsigned Upload Preset akun Cloudinary. |
 | `sses_checklist_summary_cache` | `Object JSON` | Cache offline ringkasan kelaikan peralatan per shift. |
 

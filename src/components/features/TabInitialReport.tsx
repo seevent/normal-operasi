@@ -8,23 +8,8 @@ import { generateWA_InitialReport } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { supabase } from '../../lib/supabaseClient';
-import { toTitleCase } from '../../lib/data/masterData';
+import { toTitleCase, formatNamaPersonel } from '../../lib/data/masterData';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
-
-function formatNamaPersonel(fullName: string): string {
-  if (!fullName) return '';
-  const words = fullName.trim().split(/\s+/);
-  if (words.length === 0) return '';
-  if (words.length === 1) return words[0];
-  
-  const firstWord = words[0].toLowerCase();
-  const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad', 'abdul'];
-  
-  if (titlePrefixes.includes(firstWord)) {
-    return words[1];
-  }
-  return words[0];
-}
 
 export const TabInitialReport: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();

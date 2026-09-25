@@ -30,7 +30,7 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 | **BA Serah Terima** | Generator Berita Acara (BA) Serah Terima Barang & Material. Dilengkapi **Digital Signature Canvas (Pad Tanda Tangan)** untuk Pihak 1, Pihak 2, dan Supervisor yang bertugas dinas, multi-item serial number, lampiran foto, serta ekspor format WA & PDF teroptimasi (`pdfService.ts`). |
 | **Shift Report** | Rekapitulasi laporan pergantian shift (*Shift Handover Report*). Dilengkapi **Interactive Serviceability Diagram** dengan sinkronisasi koordinat denah Terminal 2 (sub-terminal D, E, F), hitungan total & off peralatan yang dapat diedit, persentase kelaikan dinamis, fitur CRUD entri log dengan **lampiran foto langsung (in-modal upload/edit)**, dan persistensi otomatis ke database (`laporan_operasional`, `laporan_checklist`). |
 | **TIP** | Tracker TIP (*Threat Image Projection*) Performance bulanan/tahunan dengan visualisasi skor dan ekspor gambar. Data tersimpan ke Supabase Cloud. |
-| **Data** | Panel admin (login required) untuk mengelola master data, penempatan relasional aset, unit peralatan per lokasi, sparepart, konfigurasi Google Drive backup, upload jadwal Excel, dan konfigurasi personel (termasuk NIK). |
+| **Data** | Panel admin (login required) untuk mengelola master data, penempatan relasional aset, unit peralatan per lokasi, sparepart, konfigurasi Cloudinary CDN, upload jadwal Excel, dan konfigurasi personel (termasuk NIK). |
 
 ---
 
@@ -45,7 +45,7 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 | **Icons** | Lucide React | `0.576.0` |
 | **State Management** | Zustand (App, Auth, & Master Data Stores) | `5.0.14` |
 | **Backend / Cloud DB** | Supabase (PostgreSQL, Auth, Realtime) | `@supabase/supabase-js 2.108.2` |
-| **Cloud Storage** | Dual-Tier: Google Drive (Primary via Apps Script) + Supabase Storage (Fail-safe bucket `dokumentasi`) | Hybrid Cloud |
+| **Cloud Storage** | Cloudinary CDN | REST API (Unsigned Preset) |
 | **Dev Server / SSL** | Vite 7 + `@vitejs/plugin-basic-ssl` (HTTPS untuk Web Share & Camera API) | `7.3.3` |
 | **PDF Generation** | `html2pdf.js` + `html2canvas` | `0.14.0` / `1.4.1` |
 | **Spreadsheet Import** | SheetJS (`xlsx`) | `0.18.5` |
@@ -64,7 +64,7 @@ src/
 │   ├── App.tsx                    # Root layout: Header, Navigation 12 tab (pagination & touch swipe), Floating WA share, & AntigravityPet
 │   ├── features/                  # Komponen per-fitur (12 Tab Modul, Admin CRUD, Mascot)
 │   │   ├── AntigravityPet.tsx     # Floating Chibi Iron Man mascot dengan zero-g physics & operational tips
-│   │   ├── GoogleDriveSettingsPanel.tsx # Pengaturan Google Drive Web App endpoint & sync foto
+│   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) & sync foto
 │   │   ├── TabKehadiran.tsx       # Tab laporan kehadiran shift
 │   │   ├── TabBriefing.tsx        # Tab laporan briefing operasional
 │   │   ├── TabStoring.tsx         # Tab laporan storing peralatan
@@ -76,7 +76,7 @@ src/
 │   │   ├── TabBASerahTerima.tsx   # Tab Berita Acara Serah Terima Barang & Tanda Tangan Digital
 │   │   ├── TabShiftReport.tsx     # Tab rekapitulasi shift report & diagram serviceability
 │   │   ├── TabTip.tsx             # Tab TIP performance tracker & cloud storage
-│   │   ├── TabData.tsx            # Panel admin CRUD + Auth login & Google Drive settings
+│   │   ├── TabData.tsx            # Panel admin CRUD + Auth login & Cloudinary settings
 │   │   ├── AssetManager.tsx       # CRUD manajemen penempatan relasional aset
 │   │   ├── AssetMasterLokasi.tsx  # CRUD master lokasi & titik
 │   │   ├── AssetMasterPeralatan.tsx # CRUD master jenis & tipe peralatan
@@ -96,7 +96,7 @@ src/
 │   │   └── constants.ts           # Key konstanta aplikasi & localStorage
 │   ├── services/
 │   │   ├── checklistSyncService.ts # Sinkronisasi status checklist ke Supabase
-│   │   ├── googleDriveService.ts   # Upload foto ke Google Drive via Google Apps Script Web App
+│   │   ├── cloudinaryService.ts   # Upload foto ke Cloudinary via Unsigned Upload Preset
 │   │   ├── operationalReportService.ts # Layanan persistensi log kegiatan & checklist summary Supabase
 │   │   ├── pdfService.ts          # Layanan ekspor PDF non-blocking via dynamic import
 │   │   └── shareService.ts        # Web Share API + fallback clipboard & sanitasi share
@@ -142,7 +142,8 @@ src/
    ```env
    VITE_SUPABASE_URL=<your-supabase-url>
    VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-   VITE_GOOGLE_SCRIPT_URL=<optional-google-apps-script-url>
+   VITE_CLOUDINARY_CLOUD_NAME=<your-cloudinary-cloud-name>
+   VITE_CLOUDINARY_UPLOAD_PRESET=<your-unsigned-upload-preset>
    ```
 
 ---
@@ -161,7 +162,7 @@ Deploy otomatis terkonfigurasi ke **Netlify** via `netlify.toml`.
 
 - **Smart Shortcut Mitigasi & Dampak**: Tab Initial Report secara otomatis menampilkan tombol pintasan tindakan mitigasi dan dampak kerusakan yang relevan berdasarkan kombinasi jenis peralatan (X-Ray, Access Control, ETD, WTMD, HHMD, Mirroring, dll.) dan lokasi spesifik (PSCP, HBSCP, SSCP, Conveyor Belt, Area Custom, Lift, dll.).
 - **Interactive Serviceability Diagram & Persistensi Cloud**: Tab Shift Report menampilkan visual matriks kelaikan peralatan per sub-terminal (D, E, F), koordinat diagram yang sinkron, kalkulasi persentase kelaikan dinamis, fitur CRUD log dengan lampiran foto langsung, dan integrasi penyimpanan data log ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
-- **Dual-Tier Cloud Photo Storage (Google Drive + Supabase Storage Fallback)**: Unggah foto dokumentasi terkompresi (~150-250 KB via Canvas) langsung ke folder Google Drive (`SSES_T2_Dokumentasi`) via Google Apps Script Web App. Jika akses Google Drive terkendala, sistem otomatis fallback mengunggah ke bucket publik Supabase Storage (`dokumentasi`). Skema PostgreSQL diperkuat dengan constraint `chk_foto_urls_no_base64` sehingga database tetap ramping dan bebas dari string Base64.
+- **Cloud Photo Storage (Cloudinary Global CDN)**: Unggah foto dokumentasi terkompresi (~150–250 KB via Canvas) langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms). Skema PostgreSQL diperkuat dengan constraint `chk_foto_urls_no_base64` sehingga database tetap ramping dan bebas dari string Base64.
 - **Tanda Tangan Digital & Ekspor PDF Teroptimasi**: Tab BA Serah Terima memungkinkan pembuatan tanda tangan langsung pada layar sentuh ponsel dan konversi PDF resmi non-blocking via `pdfService.ts`.
 - **AntigravityPet Mascot (Chibi Iron Man)**: Maskot interaktif terapung di layar dengan animasi zero-g thruster yang memberikan tips operasional dan status sistem.
 - **Relasi Lokasi Relasional**: Pilihan lokasi pada Tab Perbaikan, Initial Report, Storing, dan Kalibrasi otomatis memfilter titik penempatan berdasarkan jenis peralatan yang dipilih.
