@@ -21,13 +21,8 @@ select, input, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Print Optimization for Surat Berita Acara & Laporan */
+/* Print Optimization */
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 12mm 15mm;
-  }
-
   html, body {
     background: #ffffff !important;
     background-color: #ffffff !important;

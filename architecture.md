@@ -18,14 +18,15 @@ graph TD
     Store <--> Supabase[(Supabase Cloud Backend\nAuth | PostgreSQL | Realtime)]
     Services <--> Supabase
     
-    Services --> CloudStorage{Cloud Photo Storage\ncloudinaryService.ts}
-    CloudStorage --> Cloudinary[(Cloudinary Global CDN\nFolder: SSES_T2_Dokumentasi)]
+    Services --> CloudStorage{Dual-Tier Cloud Storage\ncloudinaryService.ts}
+    CloudStorage -->|Primary| Cloudinary[(Cloudinary Global CDN\nFolder: SSES_T2_Dokumentasi)]
+    CloudStorage -->|Fallback Fail-Safe| SupabaseStorage[(Supabase Storage\nBucket: dokumentasi)]
     
     UI --> WAGen[WA Generator\nwaGenerator.ts]
     UI --> CanvasEngine[Canvas, Konva & Signature Engine\nPhoto Annotation, Live Collage, SignaturePad]
     
     WAGen --> WAShare[Web Share API Instant Gesture\nWhatsApp Direct Link]
-    Services --> PDFGen[PDF Generator\nhtml2pdf.js Non-blocking Offload]
+    Services --> PDFGen[PDF & Print Engine\nhtml2pdf.js Non-blocking & Scoped @page]
 ```
 
 ---
@@ -42,12 +43,12 @@ graph TD
 | **Styling** | Tailwind CSS | `4.2.2` | Framework utility-first untuk desain responsif & konsisten. |
 | **State Management** | Zustand | `5.0.14` | Client-side state management yang ringan dan reaktif. |
 | **Database & Auth** | `@supabase/supabase-js` | `2.108.2` | Client REST & Realtime PostgreSQL + Authentication. |
-| **Cloud Storage** | Cloudinary CDN | Unsigned REST API | Penyimpanan foto terkompresi berbasis Global CDN (~300-600ms), 25 GB free/bulan. |
+| **Cloud Storage** | Dual-Tier: Cloudinary + Supabase Storage | REST API / Supabase Client | Penyimpanan foto Global CDN (~300-600ms) dengan fail-safe otomatis ke bucket `dokumentasi`. |
 | **Canvas & Anotasi** | Konva / `react-konva` | `10.3.0` / `19.2.5` | Engine render canvas 2D untuk anotasi foto & text overlay. |
 | **Digital Signature** | HTML5 Canvas Signature Pad | Native | Input tanda tangan digital untuk Berita Acara Serah Terima. |
 | **Spreadsheet & Import** | SheetJS (`xlsx`) | `0.18.5` | Parsing berkas Excel jadwal shift harian secara client-side. |
-| **Ekspor PDF/Canvas** | `html2pdf.js` / `html2canvas` | `0.14.0` / `1.4.1` | Generator PDF terisolasi (`pdfService.ts`) mencegah UI freeze. |
-| **Testing** | Node.js Test Runner | `node --test` | Unit testing bawaan Node.js tanpa dependensi runner eksternal. |
+| **Ekspor PDF & Cetak** | `html2pdf.js` / Native CSS `@page` | `0.14.0` / Native CSS | Generator PDF terisolasi non-blocking & scoped print layout (A4 Landscape & Portrait). |
+| **Testing** | Node.js Test Runner (11 unit tests) | `node --test` | Unit testing bawaan Node.js untuk validasi aturan bisnis, layout, & regresi. |
 | **Icon System** | Lucide React | `0.576.0` | Set ikon UI modern & konsisten. |
 | **Hosting & Deploy** | Netlify | - | Static Web Hosting & Serverless SSR. |
 
@@ -170,14 +171,17 @@ Mengelola persistensi data kegiatan shift dan status kelaikan peralatan ke tabel
   * Pukul `22:00 - 23:59`: Tanggal hari ini, Shift M.
 * **Kalkulasi Kesiapan Peralatan**:
   Mengagregasi total unit operasi vs rusak untuk X-Ray, WTMD, HHMD, Body Scanner, ETD, Access Control, dan CCTV untuk menampilkan skor kesiapan operasional bandara.
+* **Dedicated Final Sheet Rekapitulasi & Serviceability**:
+  Tabel rekapitulasi checklist kesiapan fasilitas dan diagram batang serviceability diisolasi pada satu lembar tersendiri (`.serviceability-page-sheet`) di halaman terakhir laporan shift. Menggunakan aturan CSS cetak `page-break-before: always; break-before: page; page-break-after: avoid; page-break-inside: avoid;` serta tinggi terkompresi (~520px) yang berada di bawah batas area cetak A4 Landscape (~766px), menjamin zero content bleed dan bebas dari lembar kosong ekstra.
 * **Deduplikasi Log & Non-blocking Background Sync**:
   Menerapkan mekanisme in-memory lock `recentOperationalLogs` (window 30 detik) untuk mencegah duplikasi baris saat tombol simpan/share ditekan berulang. Pemicu Web Share API dieksekusi secara instan, sedangkan upload foto dan persistensi Supabase berjalan asinkron di latar belakang.
 
-### 5.2. Cloud Photo Upload Pipeline (`cloudinaryService.ts`)
-Untuk menjaga ukuran database PostgreSQL tetap hemat dan performa aplikasi tetap cepat, sistem menerapkan pipeline penyimpanan foto berbasis Cloudinary Global CDN:
+### 5.2. Cloud Photo Upload Pipeline Dual-Tier (`cloudinaryService.ts`)
+Untuk menjaga ukuran database PostgreSQL tetap hemat dan performa aplikasi tetap cepat, sistem menerapkan pipeline penyimpanan foto dual-tier:
 1. **Kompresi Canvas Otomatis**: Setiap foto kamera beresolusi tinggi (3–8 MB) secara otomatis dikompresi menjadi Blob JPEG 80% dengan batas resolusi maksimum 1280px (~150–250 KB) melalui Canvas API.
-2. **Cloudinary Unsigned Upload**: Foto diunggah langsung ke endpoint `https://api.cloudinary.com/v1_1/${cloudName}/image/upload` menggunakan *Unsigned Upload Preset*. File disimpan ke folder `SSES_T2_Dokumentasi` dan langsung mengembalikan URL HTTPS permanen dari CDN global Cloudinary (~300–600ms).
-3. **Perlindungan Anti-Base64**: Database membatasi bahwa kolom `foto_urls` hanya menerima array URL HTTPS yang valid. String Data URL Base64 dilarang masuk ke PostgreSQL oleh constraint database `chk_foto_urls_no_base64`.
+2. **Cloudinary Unsigned Upload (Primary)**: Foto diunggah langsung ke endpoint `https://api.cloudinary.com/v1_1/${cloudName}/image/upload` menggunakan *Unsigned Upload Preset*. File disimpan ke folder `SSES_T2_Dokumentasi` dan langsung mengembalikan URL HTTPS permanen dari CDN global Cloudinary (~300–600ms).
+3. **Supabase Storage Fail-Safe (Fallback)**: Jika kredensial Cloudinary belum diisi di `.env` / Admin atau terjadi kegagalan jaringan pada Cloudinary, sistem secara otomatis mengalihkan penyimpanan ke bucket publik Supabase Storage `dokumentasi`.
+4. **Perlindungan Anti-Base64**: Database membatasi bahwa kolom `foto_urls` hanya menerima array URL HTTPS yang valid. String Data URL Base64 dilarang masuk ke PostgreSQL oleh constraint database `chk_foto_urls_no_base64`. Seluruh tab operasional (Initial Report, Perbaikan, Kalibrasi, BA Serah Terima, dan Shift Report) terhubung ke pipeline ini.
 
 ### 5.3. Pipeline Pemrosesan Foto & Anotasi (Canvas Engine)
 ```
@@ -191,16 +195,23 @@ Untuk menjaga ukuran database PostgreSQL tetap hemat dan performa aplikasi tetap
 [LiveCollagePreview.tsx] ──(Canvas Render Grid & Kompresi JPEG 1280px)
        │
        ▼
-[cloudinaryService.ts Upload]
-       └──► [Cloudinary Global CDN: Folder SSES_T2_Dokumentasi via Unsigned Preset]
+[cloudinaryService.ts Upload Pipeline]
+       ├──► [Primary: Cloudinary Global CDN: Folder SSES_T2_Dokumentasi via Unsigned Preset]
+       └──► [Fallback Fail-Safe: Supabase Storage: Bucket dokumentasi]
        │
        ▼
 [HTTPS Public Image URLs] ──► [Database: laporan_operasional.foto_urls]
                           ──► [Direct Link WhatsApp & Shift Report Photo Modal]
 ```
 
-### 5.4. Non-blocking PDF Generation (`pdfService.ts`)
-Menggunakan dynamic import `html2pdf.js` untuk merender elemen dokumen DOM (seperti BA Serah Terima) ke PDF secara asinkron tanpa memblokir thread UI utama, mencegah freeze pada browser mobile saat pemrosesan dokumen besar.
+### 5.4. PDF Generation & Scoped Native Print Layout Architecture (`pdfService.ts` & CSS `@page`)
+1. **Pemisahan Orientasi Cetak (Scoped `@page`)**:
+   - Untuk menghindari konflik orientasi cetak antar tab, aturan global `@page { size: A4 portrait; }` dihapus dari `src/styles.css`.
+   - **Tab Shift Report**: Menggunakan layout cetak default **A4 Landscape** (`@page { size: landscape; size: A4 landscape; margin: 5mm; }`) dengan kontainer konten yang otomatis mengisi lebar penuh lembar landscape (`w-full` / `width: 100%`).
+   - **Tab BA Serah Terima**: Menggunakan layout cetak default **A4 Portrait** (`@page { size: portrait; size: A4 portrait; margin: 12mm 15mm; }`) sesuai format dokumen surat resmi.
+2. **Ekspor PDF Non-blocking (`pdfService.ts` / `html2pdf.js`)**:
+   - Menggunakan dynamic import `html2pdf.js` untuk merender berkas PDF laporan shift (`orientation: 'landscape'`) dan BA Serah Terima (`orientation: 'portrait'`) secara asinkron tanpa memblokir thread UI utama.
+   - Aturan page break dikonfigurasi menggunakan mode CSS (`opt.pagebreak = { mode: ['css'], before: '.serviceability-page-sheet' }`) dan menghindari class penjarak bawaan `.html2pdf__page-break` untuk mengeliminasi lembaran kosong di ujung dokumen PDF.
 
 ---
 
@@ -250,6 +261,11 @@ Form State (React)
 3. **Mobile Viewport Optimization**:
    * Layout responsif menggunakan `meta viewport` dengan `viewport-fit=cover`.
    * Skala font minimum 16px pada elemen `<input>`, `<select>`, dan `<textarea>` untuk mencegah automatic page zooming pada iOS Safari.
-4. **Pengujian Regresi**:
-   * Menjalankan suite pengujian unit berbasis `node --test` pada direktori `tests/` untuk memvalidasi kepemilikan sub-tab dan aturan isolasi modul.
+4. **Pengujian Regresi (Automated Unit Tests)**:
+   * Menjalankan suite pengujian unit berbasis `node --test` pada direktori `tests/` (11 unit tests) untuk memvalidasi:
+     - Logika kalkulasi pergantian shift operasional & filtering personel on-duty (`ba-shift-calculation.test.mjs`).
+     - Alokasi tab & pemanggilan pipeline upload Cloudinary di seluruh tab operasional (`cloudinary-settings.test.mjs`).
+     - Standardisasi format nama personel dengan prefix jabatan (`format-nama-personel.test.mjs`).
+     - Alur tombol Share WA laporan shift & non-blocking fallback WhatsApp (`share-report.test.mjs`).
+     - Default orientasi cetak: Tab Shift Report A4 Landscape vs Tab BA Serah Terima A4 Portrait serta pencegahan override global di `styles.css`.
 

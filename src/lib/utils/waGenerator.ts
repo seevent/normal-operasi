@@ -1,6 +1,6 @@
 // src/lib/utils/waGenerator.ts
 
-import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels } from './locationRules';
+import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels, parseLokasiDanTitik } from './locationRules';
 import { sortPersonelByJabatan } from '../data/masterData';
 
 export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
@@ -353,6 +353,216 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
   return result.trim();
 };
 
+export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
+  const hasAccessControl = Array.isArray(entry.peralatan)
+    ? entry.peralatan.some((p: string) => String(p).toLowerCase().includes('access control'))
+    : String(entry.peralatan || '').toLowerCase().includes('access control');
+
+  if (hasAccessControl) {
+    const locs = entry.acLokasi || (entry.lokasi1 ? [entry.lokasi1] : []);
+    let lokasiAC = '...';
+    if (locs.length === 1) {
+      lokasiAC = locs[0];
+    } else if (locs.length > 1) {
+      const lastLoc = locs[locs.length - 1];
+      const otherLocs = locs.slice(0, -1).join(', ');
+      lokasiAC = `${otherLocs} & ${lastLoc}`;
+    }
+
+    const kegiatan = `- Pembersihan Emlock, Switch, Intercom, Fingerprint & CCTV\n- Pengecekan Fungsi Emlock, Intercom, Fingerprint, CCTV, Pengontrolan Kunci Pintu, Record CCTV`;
+    const catatan = `- Fungsi Emlock : ${entry.acEmlock || 'Berfungsi'}\n- Fungsi Intercom : ${entry.acIntercom || 'Berfungsi'}\n- Fungsi Fingerprint: ${entry.acFingerprint || 'Berfungsi'}\n- Fungsi CCTV : ${entry.acCctv || 'Berfungsi'}\n- Fungsi Pengontrolan Kunci Pintu : ${entry.acPengontrolan || 'Berfungsi'}\n- Record CCTV : ${entry.acRecordCctv || '+- 1 bulan'}`;
+
+    return {
+      lokasiStr: lokasiAC,
+      equipString: 'Access Control',
+      kegiatan,
+      catatan,
+      fullText: `Kegiatan :\n${kegiatan}\n   \nCatatan :\n${catatan}`
+    };
+  }
+
+  const peralatanList = Array.isArray(entry.peralatan) 
+    ? entry.peralatan 
+    : (typeof entry.peralatan === 'string' ? entry.peralatan.split(/[,&]/).map((s: string) => s.trim()).filter(Boolean) : []);
+
+  // Sort equipments so 'Extension Conveyor' appears first if present
+  const sortedEquips = [...peralatanList].sort((a, b) => {
+    if (a.toLowerCase().includes('extension conveyor')) return -1;
+    if (b.toLowerCase().includes('extension conveyor')) return 1;
+    return 0;
+  });
+
+  const getEquipDisplayName = (eq: string) => {
+    const trimmed = eq.trim();
+    const upper = trimmed.toUpperCase();
+    if (upper === 'X-RAY' || upper === 'XRAY') {
+      if (entry.xrayModel && entry.xrayModel !== 'Semua X-Ray') return entry.xrayModel;
+      const validModels = getValidXRayModels(entry.lokasi1 || '', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
+      if (validModels.length > 0) return validModels[0];
+      return 'X-Ray';
+    }
+    if (upper === 'WTMD') {
+      if (entry.wtmdModel && entry.wtmdModel !== 'Semua WTMD') return entry.wtmdModel;
+      const validModels = getValidModels(entry.lokasi1 || '', 'WTMD', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
+      if (validModels.length > 0) return validModels[0];
+      return 'WTMD';
+    }
+    if (upper === 'HHMD') {
+      if (entry.hhmdModel && entry.hhmdModel !== 'Semua HHMD') return entry.hhmdModel;
+      const validModels = getValidModels(entry.lokasi1 || '', 'HHMD', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
+      if (validModels.length > 0) return validModels[0];
+      return 'HHMD';
+    }
+    if (upper === 'BODY SCANNER') {
+      if (entry.bsModel && entry.bsModel !== 'Semua Body Scanner') return entry.bsModel;
+      const validModels = getValidModels(entry.lokasi1 || '', 'Body Scanner', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
+      if (validModels.length > 0) return validModels[0];
+      return 'Body Scanner';
+    }
+    if (upper === 'ETD') {
+      if (entry.etdModel && entry.etdModel !== 'Semua ETD') return entry.etdModel;
+      const validModels = getValidModels(entry.lokasi1 || '', 'ETD', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
+      if (validModels.length > 0) return validModels[0];
+      return 'ETD';
+    }
+    return eq;
+  };
+
+  const equipListFormatted = sortedEquips.map(getEquipDisplayName);
+
+  const formatItemsString = (items: string[]) => {
+    if (items.length === 0) return '';
+    if (items.length === 1) return items[0];
+    return `${items.slice(0, -1).join(', ')} & ${items[items.length - 1]}`;
+  };
+
+  const equipString = formatItemsString(equipListFormatted) || '-';
+
+  // Helper detections using substring/includes
+  const hasExtensionConveyor = sortedEquips.some(eq => eq.toLowerCase().includes('extension conveyor'));
+  const hasXRay = sortedEquips.some(eq => eq.toLowerCase().includes('x-ray') || eq.toLowerCase().includes('xray'));
+  const hasWtmd = sortedEquips.some(eq => eq.toLowerCase().includes('wtmd'));
+  const hasHhmd = sortedEquips.some(eq => eq.toLowerCase().includes('hhmd'));
+  const hasBs = sortedEquips.some(eq => eq.toLowerCase().includes('body scanner'));
+  const hasEtd = sortedEquips.some(eq => eq.toLowerCase().includes('etd'));
+
+  const calibratedEquipNames = sortedEquips
+    .filter(eq => !eq.toLowerCase().includes('extension conveyor'))
+    .map(getEquipDisplayName);
+
+  const kegiatanLines: string[] = [];
+  kegiatanLines.push(`- Pembersihan ${equipString}`);
+  if (hasExtensionConveyor) {
+    kegiatanLines.push('- Pemberian Pelumas pada Extension Conveyor');
+  }
+  if (calibratedEquipNames.length > 0) {
+    kegiatanLines.push(`- Kalibrasi ${formatItemsString(calibratedEquipNames)}`);
+  }
+
+  const catatanBlocks: string[] = [];
+
+  if (hasExtensionConveyor) {
+    catatanBlocks.push(`Extension Conveyor\n- Gearbox Motor : ${entry.ecGearbox || 'Normal'}\n- Tension Roller : ${entry.ecTension || 'Normal'}\n- Conveyor Belt : ${entry.ecBelt || 'Normal'}`);
+  }
+
+  if (hasXRay) {
+    const rawXRay = sortedEquips.find(eq => eq.toLowerCase().includes('x-ray') || eq.toLowerCase().includes('xray')) || 'X-Ray';
+    const xrayName = (rawXRay.toLowerCase() === 'x-ray' || rawXRay.toLowerCase() === 'xray')
+      ? getEquipDisplayName('X-Ray')
+      : rawXRay;
+    const fmtUnit = (val: string, unit: string) => {
+      if (!val) return '...';
+      const trimmed = String(val).trim();
+      return /[a-zA-Z]$/.test(trimmed) ? trimmed : `${trimmed} ${unit}`;
+    };
+    const kvStr = `${fmtUnit(entry.xrayKvV || '140', 'kV')} / ${fmtUnit(entry.xrayKvH || '140', 'kV')}`;
+    const maStr = `${fmtUnit(entry.xrayMaV || '0.7', 'mA')} / ${fmtUnit(entry.xrayMaH || '0.7', 'mA')}`;
+    const onStr = `${fmtUnit(entry.xrayOnV || 'Normal', 'h')} / ${fmtUnit(entry.xrayOnH || 'Normal', 'h')}`;
+    catatanBlocks.push(`${xrayName}\n- kV Vertikal/Horizontal : ${kvStr}\n- mA Vertikal/Horizontal : ${maStr}\n- Ontime Vertikal/Horizontal : ${onStr}\n- Archive : ${entry.xrayArchive || '+- 1 bulan'}`);
+  }
+  
+  if (hasWtmd) {
+    const rawWtmd = sortedEquips.find(eq => eq.toLowerCase().includes('wtmd')) || 'WTMD';
+    const wtmdName = rawWtmd.toUpperCase() === 'WTMD'
+      ? getEquipDisplayName('WTMD')
+      : rawWtmd;
+    catatanBlocks.push(`${wtmdName}\n- Z1 : ${entry.wtmdZ1 || 'Normal'} - Z2 : ${entry.wtmdZ2 || 'Normal'} - Z3 : ${entry.wtmdZ3 || 'Normal'} - Z4 : ${entry.wtmdZ4 || 'Normal'}\n- LC : ${entry.wtmdLc || 'Normal'} - LS : ${entry.wtmdLs || 'Normal'} - UC : ${entry.wtmdUc || 'Normal'} - SE : ${entry.wtmdSe || 'Normal'} - DS : ${entry.wtmdDs || 'Normal'}`);
+  }
+
+  if (hasBs) {
+    const rawBs = sortedEquips.find(eq => eq.toLowerCase().includes('body scanner')) || 'Body Scanner';
+    const bsName = rawBs.toLowerCase() === 'body scanner'
+      ? getEquipDisplayName('Body Scanner')
+      : rawBs;
+    catatanBlocks.push(`${bsName}\n- Test Tampilan Suspect Item : ${entry.bsSuspect || 'Normal'}\n- Test Monitor : ${entry.bsMonitor || 'Normal'}\n- Test Fungsi Scanning : ${entry.bsScanning || 'Normal'}\n- Test Fungsi Kalibrasi : ${entry.bsCalibration || 'Normal'}`);
+  }
+
+  if (hasEtd) {
+    const rawEtd = sortedEquips.find(eq => eq.toLowerCase().includes('etd')) || 'ETD';
+    const etdName = rawEtd.toUpperCase() === 'ETD'
+      ? getEquipDisplayName('ETD')
+      : rawEtd;
+    catatanBlocks.push(`${etdName}\n- Sampling Test TNT : ${entry.etdTnt || 'Alarm'}\n- Sampling Test PETN : ${entry.etdPetn || 'Alarm'}\n- Sampling Test RDX : ${entry.etdRdx || 'Alarm'}`);
+  }
+
+  const kegiatan = kegiatanLines.join('\n');
+  const catatan = catatanBlocks.join('\n\n');
+  const locString = (entry.lokasi1 || '') + (entry.lokasi2 && entry.lokasi2 !== '-' ? ` ${entry.lokasi2}` : '');
+  const lokasiStr = locString.trim() || '...';
+
+  return {
+    lokasiStr,
+    equipString,
+    kegiatan,
+    catatan,
+    fullText: `Kegiatan :\n${kegiatan}${catatan ? `\n   \nCatatan :\n${catatan}` : ''}`
+  };
+};
+
+export const getDefaultKalibrasiUraian = (peralatan: string, lokasi?: string): string => {
+  const equips = peralatan ? peralatan.split(/[,&]/).map(s => s.trim()).filter(Boolean) : [];
+  const { lokasi1, lokasi2 } = parseLokasiDanTitik(lokasi || '');
+  const fakeEntry: any = {
+    peralatan: equips.length > 0 ? equips : ['Peralatan'],
+    lokasi1,
+    lokasi2,
+    acLokasi: [lokasi || 'Access Control'],
+    acEmlock: 'Berfungsi',
+    acIntercom: 'Berfungsi',
+    acFingerprint: 'Berfungsi',
+    acCctv: 'Berfungsi',
+    acPengontrolan: 'Berfungsi',
+    acRecordCctv: '+- 1 bulan',
+    ecGearbox: 'Normal',
+    ecTension: 'Normal',
+    ecBelt: 'Normal',
+    bsSuspect: 'Normal',
+    bsMonitor: 'Normal',
+    bsScanning: 'Normal',
+    bsCalibration: 'Normal',
+    etdTnt: 'Alarm',
+    etdPetn: 'Alarm',
+    etdRdx: 'Alarm',
+    xrayKvV: '140',
+    xrayKvH: '140',
+    xrayMaV: '0.7',
+    xrayMaH: '0.7',
+    xrayOnV: 'Normal',
+    xrayOnH: 'Normal',
+    xrayArchive: '+- 1 bulan',
+    wtmdZ1: 'Normal',
+    wtmdZ2: 'Normal',
+    wtmdZ3: 'Normal',
+    wtmdZ4: 'Normal',
+    wtmdLc: 'Normal',
+    wtmdLs: 'Normal',
+    wtmdUc: 'Normal',
+    wtmdSe: 'Normal',
+    wtmdDs: 'Normal'
+  };
+  return formatKalibrasiEntryKegiatanDanCatatan(fakeEntry).fullText;
+};
+
 export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any[]) => {
   if (kalibrasiEntries.length === 0 || kalibrasiEntries.every(e => e.peralatan.length === 0)) {
     return "Silakan tambah peralatan pada lokasi untuk melihat preview laporan...";
@@ -374,130 +584,8 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
 
   kalibrasiEntries.forEach((entry) => {
     if (entry.peralatan.length === 0) return; 
-
-    if (entry.peralatan.includes('Access Control')) {
-      const locs = entry.acLokasi || [];
-      let lokasiAC = '...';
-      if (locs.length === 1) {
-        lokasiAC = locs[0];
-      } else if (locs.length > 1) {
-        const lastLoc = locs[locs.length - 1];
-        const otherLocs = locs.slice(0, -1).join(', ');
-        lokasiAC = `${otherLocs} & ${lastLoc}`;
-      }
-
-      msg += `\n\nPeralatan : Access Control\nLokasi : ${lokasiAC}\n\nKegiatan :\n- Pembersihan Emlock, Switch, Intercom, Fingerprint & CCTV\n- Pengecekan Fungsi Emlock, Intercom, Fingerprint, CCTV, Pengontrolan Kunci Pintu, Record CCTV\n   \nCatatan :\n- Fungsi Emlock : ${entry.acEmlock || '...'}\n- Fungsi Intercom : ${entry.acIntercom || '...'}\n- Fungsi Fingerprint: ${entry.acFingerprint || '...'}\n- Fungsi CCTV : ${entry.acCctv || '...'}\n- Fungsi Pengontrolan Kunci Pintu : ${entry.acPengontrolan || '...'}\n- Record CCTV : ${entry.acRecordCctv || '...'}`;
-      return;
-    }
-
-    // Sort equipments so 'Extension Conveyor' appears first if present
-    const sortedEquips = [...entry.peralatan].sort((a, b) => {
-      if (a === 'Extension Conveyor') return -1;
-      if (b === 'Extension Conveyor') return 1;
-      return 0;
-    });
-
-    const getEquipDisplayName = (eq: string) => {
-      if (eq === 'X-Ray') {
-        if (entry.xrayModel && entry.xrayModel !== 'Semua X-Ray') return entry.xrayModel;
-        const validModels = getValidXRayModels(entry.lokasi1, entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
-        if (validModels.length === 1) return validModels[0];
-        return 'X-Ray';
-      }
-      if (eq === 'WTMD') {
-        if (entry.wtmdModel && entry.wtmdModel !== 'Semua WTMD') return entry.wtmdModel;
-        const validModels = getValidModels(entry.lokasi1, 'WTMD', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
-        if (validModels.length === 1) return validModels[0];
-        return 'WTMD';
-      }
-      if (eq === 'HHMD') {
-        if (entry.hhmdModel && entry.hhmdModel !== 'Semua HHMD') return entry.hhmdModel;
-        const validModels = getValidModels(entry.lokasi1, 'HHMD', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
-        if (validModels.length === 1) return validModels[0];
-        return 'HHMD';
-      }
-      if (eq === 'Body Scanner') {
-        if (entry.bsModel && entry.bsModel !== 'Semua Body Scanner') return entry.bsModel;
-        const validModels = getValidModels(entry.lokasi1, 'Body Scanner', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
-        if (validModels.length === 1) return validModels[0];
-        return 'Body Scanner';
-      }
-      if (eq === 'ETD') {
-        if (entry.etdModel && entry.etdModel !== 'Semua ETD') return entry.etdModel;
-        const validModels = getValidModels(entry.lokasi1, 'ETD', entry.lokasi2).filter((m: string) => !m.startsWith('Semua '));
-        if (validModels.length === 1) return validModels[0];
-        return 'ETD';
-      }
-      return eq;
-    };
-
-    const equipListFormatted = sortedEquips.map(getEquipDisplayName);
-
-    const locString = entry.lokasi1 + (entry.lokasi2 && entry.lokasi2 !== '-' ? ` ${entry.lokasi2}` : '');
-    const lokasiStr = locString || '...';
-    
-    const formatItemsString = (items: string[]) => {
-      if (items.length === 0) return '';
-      if (items.length === 1) return items[0];
-      return `${items.slice(0, -1).join(', ')} & ${items[items.length - 1]}`;
-    };
-
-    const equipString = formatItemsString(equipListFormatted) || '-';
-
-    // Kegiatan lines
-    const hasExtensionConveyor = sortedEquips.includes('Extension Conveyor');
-    const calibratedEquipNames = sortedEquips
-      .filter(eq => eq !== 'Extension Conveyor')
-      .map(getEquipDisplayName);
-
-    const kegiatanLines: string[] = [];
-    kegiatanLines.push(`- Pembersihan ${equipString}`);
-    if (hasExtensionConveyor) {
-      kegiatanLines.push('- Pemberian Pelumas pada Extension Conveyor');
-    }
-    if (calibratedEquipNames.length > 0) {
-      kegiatanLines.push(`- Kalibrasi ${formatItemsString(calibratedEquipNames)}`);
-    }
-
-    msg += `\n\nPeralatan : ${equipString}\nLokasi : ${lokasiStr}\n\nKegiatan :\n${kegiatanLines.join('\n')}\n   \nCatatan :`;
-
-    const catatanBlocks: string[] = [];
-
-    if (hasExtensionConveyor) {
-      catatanBlocks.push(`Extension Conveyor\n- Gearbox Motor : ${entry.ecGearbox || 'Normal'}\n- Tension Roller : ${entry.ecTension || 'Normal'}\n- Conveyor Belt : ${entry.ecBelt || 'Normal'}`);
-    }
-
-    if (sortedEquips.includes('X-Ray')) {
-      const xrayName = getEquipDisplayName('X-Ray');
-      const fmtUnit = (val: string, unit: string) => {
-        if (!val) return '...';
-        const trimmed = String(val).trim();
-        return /[a-zA-Z]$/.test(trimmed) ? trimmed : `${trimmed} ${unit}`;
-      };
-      const kvStr = `${fmtUnit(entry.xrayKvV, 'kV')} / ${fmtUnit(entry.xrayKvH, 'kV')}`;
-      const maStr = `${fmtUnit(entry.xrayMaV, 'mA')} / ${fmtUnit(entry.xrayMaH, 'mA')}`;
-      const onStr = `${fmtUnit(entry.xrayOnV, 'h')} / ${fmtUnit(entry.xrayOnH, 'h')}`;
-      catatanBlocks.push(`${xrayName}\n- kV Vertikal/Horizontal : ${kvStr}\n- mA Vertikal/Horizontal : ${maStr}\n- Ontime Vertikal/Horizontal : ${onStr}\n- Archive : ${entry.xrayArchive || '+- 1 bulan'}`);
-    }
-    
-    if (sortedEquips.includes('WTMD')) {
-      const wtmdName = getEquipDisplayName('WTMD');
-      catatanBlocks.push(`${wtmdName}\n- Z1 : ${entry.wtmdZ1 || '...'} - Z2 : ${entry.wtmdZ2 || '...'} - Z3 : ${entry.wtmdZ3 || '...'} - Z4 : ${entry.wtmdZ4 || '...'}\n- LC : ${entry.wtmdLc || '...'} - LS : ${entry.wtmdLs || '...'} - UC : ${entry.wtmdUc || '...'} - SE : ${entry.wtmdSe || '...'} - DS : ${entry.wtmdDs || '...'}`);
-    }
-
-    if (sortedEquips.includes('Body Scanner')) {
-      const bsName = getEquipDisplayName('Body Scanner');
-      catatanBlocks.push(`${bsName}\n- Test Tampilan Suspect Item : ${entry.bsSuspect || 'Normal'}\n- Test Monitor : ${entry.bsMonitor || 'Normal'}\n- Test Fungsi Scanning : ${entry.bsScanning || 'Normal'}\n- Test Fungsi Kalibrasi : ${entry.bsCalibration || 'Normal'}`);
-    }
-
-    if (sortedEquips.includes('ETD')) {
-      const etdName = getEquipDisplayName('ETD');
-      catatanBlocks.push(`${etdName}\n- Sampling Test TNT : ${entry.etdTnt || 'Alarm'}\n- Sampling Test PETN : ${entry.etdPetn || 'Alarm'}\n- Sampling Test RDX : ${entry.etdRdx || 'Alarm'}`);
-    }
-
-    if (catatanBlocks.length > 0) {
-      msg += `\n${catatanBlocks.join('\n\n')}`;
-    }
+    const { equipString, lokasiStr, fullText } = formatKalibrasiEntryKegiatanDanCatatan(entry);
+    msg += `\n\nPeralatan : ${equipString}\nLokasi : ${lokasiStr}\n\n${fullText}`;
   });
 
   return msg;

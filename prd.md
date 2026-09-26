@@ -5,7 +5,7 @@
 
 ## 1. Visi & Ringkasan Produk
 
-Aplikasi **SSES T2 Normal Operasi** adalah aplikasi web *mobile-first* yang dirancang khusus untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini berfungsi sebagai pusat otomatisasi pelaporan operasional harian, pemantauan peralatan keamanan bandara, manajemen jadwal shift, pembuatan Berita Acara Serah Terima Barang dengan tanda tangan digital, pelacakan TIP (*Threat Image Projection*) performance, serta integrasi data real-time dengan **Supabase** dan **Google Sheets API**.
+Aplikasi **SSES T2 Normal Operasi** adalah aplikasi web *mobile-first* yang dirancang khusus untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini berfungsi sebagai pusat otomatisasi pelaporan operasional harian, pemantauan peralatan keamanan bandara, manajemen jadwal shift, pembuatan Berita Acara Serah Terima Barang dengan tanda tangan digital, pelacakan TIP (*Threat Image Projection*) performance, serta integrasi data real-time dengan **Supabase** dan CDN penyimpanan foto **Cloudinary**.
 
 Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berformat standar hanya dalam hitungan detik dan mendistribusikannya secara instan melalui **WhatsApp (Web Share API)**.
 
@@ -17,8 +17,8 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
 |---|---|
 | **Teknisi API (Airport Power & Infrastructure)** | Personel yang bertugas melakukan pengecekan, perbaikan, kalibrasi, serah terima barang, dan penyusunan laporan harian unit API T2. |
 | **Teknisi OM / IAS (Operation & Maintenance)** | Personel teknisi dari vendor/mitra kerja IAS yang melakukan pemeliharaan, pengoperasian peralatan keamanan, dan serah terima barang. |
-| **Team Leader / Supervisor SSES T2** | Mengawasi laporan shift (*Shift Report*), briefing, verifikasi gangguan (*Initial Report*), validasi tanda tangan BA Serah Terima, dan rekapitulasi performa bulanan. |
-| **Admin Sistem SSES T2** | Mengelola master data lokasi, peralatan, unit peralatan (SN/status), stok sparepart, penempatan relasional, upload jadwal shift Excel, konfigurasi checklist, serta integrasi Google Sheets. |
+| **Team Leader / Supervisor SSES T2** | Mengawasi laporan shift (*Shift Handover Report*), briefing, verifikasi gangguan (*Initial Report*), validasi tanda tangan BA Serah Terima, dan rekapitulasi performa bulanan. |
+| **Admin Sistem SSES T2** | Mengelola master data lokasi, peralatan, unit peralatan (SN/status), stok sparepart, penempatan relasional, upload jadwal shift Excel, konfigurasi checklist, serta konfigurasi Cloudinary CDN. |
 
 ---
 
@@ -76,6 +76,7 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * Parameter pengujian dinamis sesuai standar penerbangan (STP test piece untuk X-Ray, test strip ETD, WTMD detection zones, HHMD, Body Scanner, Access Control).
   * Pengujian & parameter khusus **Extension Conveyor** (Forward/Reverse speed, Emergency Stop, Roller Condition, Belt Tracking, Motor Drive).
   * Multi-lokasi pencatatan kalibrasi harian/mingguan.
+  * Terintegrasi upload foto dokumentasi dual-tier (Cloudinary + Supabase Storage fallback) dengan penyimpanan URL HTTPS permanen ke database `laporan_operasional`.
 
 ### 3.8. Tab Kegiatan
 * **Fungsi**: Generator laporan kegiatan harian rutin personel di lapangan (non-perbaikan).
@@ -90,13 +91,17 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * Multi-item barang dengan kuantitas, satuan, kondisi barang, dan input daftar Serial Number (SN) dinamis.
   * **Digital Signature Canvas**: Pad tanda tangan digital interaktif untuk Pihak I, Pihak II, dan Supervisor yang bertugas dinas.
   * Lampiran dokumentasi foto serah terima.
+  * **Format Cetak Standar**: Format cetak default dokumen adalah **A4 Portrait** resmi dengan tanda tangan digital dan tabel daftar barang.
   * Ekspor pesan WhatsApp dan unduh format PDF resmi non-blocking via `pdfService.ts`.
 
 ### 3.10. Tab Shift Report
 * **Fungsi**: Generator rekapitulasi laporan pergantian shift (*Shift Handover Report*) dan pemantauan kelaikan peralatan.
 * **Fitur Utama**:
+  * **Format Cetak Standar A4 Landscape**: Format cetak default dokumen (dialog print browser & ekspor PDF) adalah **A4 Landscape** yang sesuai dengan format lembar kerja Excel SSES T2.
+  * **Dedicated Final Sheet (Lembar Khusus Rekapitulasi & Serviceability)**: Tabel rekapitulasi checklist kesiapan fasilitas dan diagram batang serviceability selalu berada di **satu lembar tersendiri di halaman terakhir** tanpa tercampur konten kegiatan sebelumnya dan tanpa menghasilkan lembar kosong di akhir dokumen.
+  * **Full-Width Serviceability Table**: Tabel checklist kesiapan fasilitas membentang penuh (`w-full`) secara bersih tanpa footer catatan yang mengaburkan data.
   * **Interactive Serviceability Diagram**: Visualisasi denah matriks kelaikan peralatan keamanan di sub-terminal D, E, dan F Terminal 2 dengan koordinat sinkron.
-  * **In-Modal Photo Upload & Viewer**: Modal CRUD untuk menambahkan atau memperbarui entri kegiatan dengan lampiran foto langsung yang diunggah ke Cloudinary dan ditampilkan pada kartu laporan.
+  * **In-Modal Photo Upload & Viewer**: Modal CRUD untuk menambahkan atau memperbarui entri kegiatan dengan lampiran foto langsung yang diunggah ke Cloudinary/Supabase dan ditampilkan pada kartu laporan.
   * **Editable Total & Off Counts**: Fleksibilitas penyesuaian jumlah unit operasi vs rusak secara langsung.
   * **Kalkulasi Kesiapan Real-time**: Indikator persentase kelaikan dinamis per kategori peralatan (X-Ray, WTMD, HHMD, Body Scanner, ETD, Access Control, CCTV).
   * **Sinkronisasi Database Cloud**: Riwayat kegiatan dan rekapitulasi tersimpan otomatis ke `laporan_operasional` (dengan constraint anti-base64) dan `laporan_checklist` (dengan atomic upsert).
@@ -139,14 +144,16 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
 2. **Editor Anotasi Foto & Kolase (`PhotoTextEditorModal.tsx` & `LiveCollagePreview.tsx`)**:
    * Pengeditan foto berbasis HTML5 Canvas & Konva.js.
    * Pembuatan kolase foto otomatis (1x1, 2x1, 2x2, grid) untuk efisiensi lampiran laporan di WhatsApp/Cloudinary.
-3. **Cloud Photo Storage (Cloudinary CDN - `cloudinaryService.ts`)**:
+3. **Cloud Photo Storage Dual-Tier (`cloudinaryService.ts`)**:
    * Kompresi otomatis berbasis Canvas (JPEG 80%, maks. 1280px, ~150–250 KB).
-   * Upload langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms).
+   * Upload primer langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms).
+   * **Supabase Storage Fallback**: Fallback otomatis ke bucket Supabase `dokumentasi` jika kredensial Cloudinary belum diisi atau terjadi kegagalan upload.
    * Zero-Base64 enforcement: database dilindungi oleh check constraint `chk_foto_urls_no_base64`.
 4. **Canvas Signature Pad (`SignaturePad.tsx`)**:
    * Tanda tangan digital interaktif berbasis touch event & mouse event HTML5 Canvas dengan fitur clear dan preview.
-5. **Ekspor Dokumentasi Teroptimasi (`pdfService.ts`)**:
+5. **Ekspor Dokumentasi & Cetak Teroptimasi (`pdfService.ts` & Native `@page`)**:
    * Ekspor laporan ke PDF (`html2pdf.js`) non-blocking, Excel (`xlsx`), atau gambar PNG (`html2canvas`).
+   * **Dual Print Orientations**: Tab Shift Report otomatis memilih format cetak **A4 Landscape** dengan pemisahan lembar serviceability yang rapi, sedangkan Tab BA Serah Terima otomatis memilih format cetak **A4 Portrait** resmi.
 
 ---
 

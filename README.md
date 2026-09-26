@@ -1,6 +1,6 @@
 # SSES T2 - Generator Laporan Operasional
 
-Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **12 fitur tab** terintegrasi, dukungan tanda tangan digital, anotasi foto, serta sinkronisasi cloud real-time ke **Supabase** dan **Google Sheets**.
+Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **12 fitur tab** terintegrasi, dukungan tanda tangan digital, anotasi foto, serta sinkronisasi cloud real-time ke **Supabase** dan CDN penyimpanan foto **Cloudinary**.
 
 ---
 
@@ -25,10 +25,10 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 | **Checklist** | Checklist status operasi peralatan keamanan dengan toggle status & kustomisasi via Admin. |
 | **Initial Report** | Generator laporan awal indikasi gangguan/kerusakan cepat. Dilengkapi **Shortcut Cerdas Mitigasi & Dampak** (otomatis menyesuaikan jenis peralatan: X-Ray, Access Control, ETD, WTMD, HHMD, dll. dan lokasi: PSCP, HBSCP, SSCP, Conveyor, Custom, Lift), serta lampiran kolase foto dengan anotasi teks Konva. |
 | **Perbaikan** | Generator laporan perbaikan/verifikasi peralatan. Auto-detect sumber laporan (Custom / Avsec) berdasarkan lokasi titik, relasi jenis & tipe peralatan, serta teknisi bertugas. |
-| **Kalibrasi** | Generator laporan PM & kalibrasi multi-lokasi dengan parameter pengujian dinamis (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control, serta Extension Conveyor). |
+| **Kalibrasi** | Generator laporan PM & kalibrasi multi-lokasi dengan parameter pengujian dinamis (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control, serta Extension Conveyor), terintegrasi upload foto dual-tier cloud storage (Cloudinary + Supabase Storage fallback). |
 | **Kegiatan** | Generator laporan kegiatan harian personel di lapangan. |
-| **BA Serah Terima** | Generator Berita Acara (BA) Serah Terima Barang & Material. Dilengkapi **Digital Signature Canvas (Pad Tanda Tangan)** untuk Pihak 1, Pihak 2, dan Supervisor yang bertugas dinas, multi-item serial number, lampiran foto, serta ekspor format WA & PDF teroptimasi (`pdfService.ts`). |
-| **Shift Report** | Rekapitulasi laporan pergantian shift (*Shift Handover Report*). Dilengkapi **Interactive Serviceability Diagram** dengan sinkronisasi koordinat denah Terminal 2 (sub-terminal D, E, F), hitungan total & off peralatan yang dapat diedit, persentase kelaikan dinamis, fitur CRUD entri log dengan **lampiran foto langsung (in-modal upload/edit)**, dan persistensi otomatis ke database (`laporan_operasional`, `laporan_checklist`). |
+| **BA Serah Terima** | Generator Berita Acara (BA) Serah Terima Barang & Material. Dilengkapi **Digital Signature Canvas (Pad Tanda Tangan)** untuk Pihak 1, Pihak 2, dan Supervisor yang bertugas dinas, multi-item serial number, lampiran foto, format cetak default **A4 Portrait**, serta ekspor format WA & PDF teroptimasi (`pdfService.ts`). |
+| **Shift Report** | Rekapitulasi laporan pergantian shift (*Shift Handover Report*). Dilengkapi **Interactive Serviceability Diagram** dengan sinkronisasi koordinat denah Terminal 2 (sub-terminal D, E, F), hitungan total & off peralatan yang dapat diedit, persentase kelaikan dinamis, format cetak default **A4 Landscape**, lembar terpisah khusus untuk checklist & diagram serviceability (`.serviceability-page-sheet`), fitur CRUD entri log dengan **lampiran foto langsung (in-modal upload/edit)**, dan persistensi otomatis ke database (`laporan_operasional`, `laporan_checklist`). |
 | **TIP** | Tracker TIP (*Threat Image Projection*) Performance bulanan/tahunan dengan visualisasi skor dan ekspor gambar. Data tersimpan ke Supabase Cloud. |
 | **Data** | Panel admin (login required) untuk mengelola master data, penempatan relasional aset, unit peralatan per lokasi, sparepart, konfigurasi Cloudinary CDN, upload jadwal Excel, dan konfigurasi personel (termasuk NIK). |
 
@@ -45,13 +45,13 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 | **Icons** | Lucide React | `0.576.0` |
 | **State Management** | Zustand (App, Auth, & Master Data Stores) | `5.0.14` |
 | **Backend / Cloud DB** | Supabase (PostgreSQL, Auth, Realtime) | `@supabase/supabase-js 2.108.2` |
-| **Cloud Storage** | Cloudinary CDN | REST API (Unsigned Preset) |
+| **Cloud Storage** | Dual-Tier: Cloudinary CDN + Supabase Storage fallback (`dokumentasi`) | REST API (Unsigned Preset & Supabase Storage) |
 | **Dev Server / SSL** | Vite 7 + `@vitejs/plugin-basic-ssl` (HTTPS untuk Web Share & Camera API) | `7.3.3` |
-| **PDF Generation** | `html2pdf.js` + `html2canvas` | `0.14.0` / `1.4.1` |
+| **PDF Generation & Native Print** | `html2pdf.js` + `html2canvas` + Native Browser Print (`@page` A4 Landscape & Portrait) | `0.14.0` / `1.4.1` |
 | **Spreadsheet Import** | SheetJS (`xlsx`) | `0.18.5` |
 | **Canvas / Photo Annotation** | Konva + React Konva (`PhotoTextEditorModal.tsx`) | `10.3.0` / `19.2.5` |
 | **Digital Signature** | HTML5 Canvas Signature Pad (`SignaturePad.tsx`) | Native Canvas |
-| **Testing** | Node.js Test Runner | `node --test` |
+| **Testing** | Node.js Test Runner (11 unit tests) | `node --test` |
 | **Deployment** | Netlify | - |
 
 ---
@@ -96,7 +96,7 @@ src/
 │   │   └── constants.ts           # Key konstanta aplikasi & localStorage
 │   ├── services/
 │   │   ├── checklistSyncService.ts # Sinkronisasi status checklist ke Supabase
-│   │   ├── cloudinaryService.ts   # Upload foto ke Cloudinary via Unsigned Upload Preset
+│   │   ├── cloudinaryService.ts   # Upload foto ke Cloudinary (dengan fallback otomatis ke Supabase Storage)
 │   │   ├── operationalReportService.ts # Layanan persistensi log kegiatan & checklist summary Supabase
 │   │   ├── pdfService.ts          # Layanan ekspor PDF non-blocking via dynamic import
 │   │   └── shareService.ts        # Web Share API + fallback clipboard & sanitasi share

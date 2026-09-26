@@ -1,3 +1,5 @@
+import { supabase } from '../supabaseClient';
+
 export interface UploadResult {
   status: 'success' | 'error';
   url?: string;
@@ -186,7 +188,57 @@ export const testCloudinaryConnection = async (
 };
 
 /**
+ * Fallback penyimpanan foto ke bucket Supabase Storage 'dokumentasi'
+ */
+async function uploadToSupabaseStorageFallback(
+  input: File | Blob | string,
+  fileName?: string
+): Promise<UploadResult> {
+  try {
+    const cleanName = (fileName || `foto_${Date.now()}.jpg`).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `uploads/${Date.now()}_${cleanName}`;
+
+    const { base64, mimeType } = await compressImage(input);
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+
+    const { data, error } = await supabase.storage
+      .from('dokumentasi')
+      .upload(storagePath, blob, {
+        contentType: mimeType,
+        upsert: true
+      });
+
+    if (error) {
+      console.error('Supabase Storage upload error:', error);
+      return { status: 'error', message: error.message };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('dokumentasi')
+      .getPublicUrl(storagePath);
+
+    return {
+      status: 'success',
+      url: publicUrl,
+      viewUrl: publicUrl,
+      fileId: data?.path || storagePath,
+      fileName: cleanName
+    };
+  } catch (err: any) {
+    console.error('Supabase Storage catch error:', err);
+    return { status: 'error', message: err?.message || 'Gagal upload foto ke Supabase Storage' };
+  }
+}
+
+/**
  * Upload Foto ke Cloudinary via Unsigned Upload Preset.
+ * Jika Cloud Name belum dikonfigurasi atau gagal, otomatis fallback ke Supabase Storage.
  * Cepat (~300-600ms), CDN Global bawaan, tanpa cold start.
  */
 export const uploadPhotoToCloudinary = async (
@@ -195,11 +247,9 @@ export const uploadPhotoToCloudinary = async (
 ): Promise<UploadResult> => {
   const { cloudName, uploadPreset } = getCloudinaryConfig();
 
+  // Jika Cloudinary belum dikonfigurasi, gunakan Supabase Storage 'dokumentasi'
   if (!cloudName || !uploadPreset) {
-    return {
-      status: 'error',
-      message: 'Cloud Name atau Upload Preset Cloudinary belum diisi. Buka Tab Data → Cloudinary untuk menyimpannya.'
-    };
+    return uploadToSupabaseStorageFallback(input, fileName);
   }
 
   try {
@@ -228,10 +278,11 @@ export const uploadPhotoToCloudinary = async (
       };
     }
 
-    const errorMsg = data?.error?.message || `Gagal mengunggah foto (HTTP ${res.status})`;
-    return { status: 'error', message: errorMsg };
+    console.warn('Cloudinary upload gagal, beralih ke Supabase Storage fallback:', data);
+    return uploadToSupabaseStorageFallback(input, fileName);
   } catch (err: any) {
-    return { status: 'error', message: `Kesalahan jaringan Cloudinary: ${err?.message || 'CORS / Jaringan'}` };
+    console.warn('Cloudinary error, beralih ke Supabase Storage fallback:', err);
+    return uploadToSupabaseStorageFallback(input, fileName);
   }
 };
 

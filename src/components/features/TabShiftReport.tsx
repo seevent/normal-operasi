@@ -19,10 +19,14 @@ import {
   isTimeWithinShiftBoundary
 } from '../../lib/services/operationalReportService';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
+import { getDefaultKalibrasiUraian } from '../../lib/utils/waGenerator';
+import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
+import { useMasterDataStore } from '../../store/useMasterDataStore';
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
 export const TabShiftReport: React.FC = () => {
+  const penempatanData = useMasterDataStore(state => state.penempatanData);
   const [date, setDate] = useState<string>(() => getReportDefaultDateAndShift().date);
   
   const [shift, setShift] = useState<'PS' | 'M' | 'ALL'>(() => getReportDefaultDateAndShift().shift);
@@ -308,6 +312,7 @@ export const TabShiftReport: React.FC = () => {
 
       if (modalMode === 'add') {
         const finalFotoUrls = uploadedUrl ? [uploadedUrl] : [];
+        const newKategori = crudForm.jenis === 'Perbaikan' ? 'CORRECTIVE' : (crudForm.jenis === 'Storing' ? 'STORING' : (crudForm.jenis === 'Kalibrasi' ? 'PREVENTIVE' : 'KEGIATAN'));
         // Simpan ke Supabase
         const dbRes = await saveOperationalLog({
           tanggal: date,
@@ -316,7 +321,7 @@ export const TabShiftReport: React.FC = () => {
           waktu: crudForm.waktu,
           lokasi: crudForm.lokasi || '-',
           peralatan: crudForm.peralatan || '-',
-          kategori_maintenance: crudForm.jenis === 'Perbaikan' ? 'CORRECTIVE' : (crudForm.jenis === 'Storing' ? 'STORING' : 'KEGIATAN'),
+          kategori_maintenance: newKategori,
           uraian: crudForm.uraian || '-',
           tindak_lanjut: crudForm.tindakLanjut || '-',
           status: crudForm.status || 'Normal Operasi',
@@ -330,6 +335,7 @@ export const TabShiftReport: React.FC = () => {
           Waktu: crudForm.waktu,
           Peralatan: crudForm.peralatan || '-',
           Lokasi: crudForm.lokasi || '-',
+          kategori_maintenance: newKategori,
           Uraian: crudForm.uraian || '-',
           TindakLanjut: crudForm.tindakLanjut || '-',
           Status: crudForm.status || 'Normal Operasi',
@@ -342,6 +348,7 @@ export const TabShiftReport: React.FC = () => {
         const targetItem = reports.find(r => r.rowIndex === editingRowIndex);
         const finalFotoUrls = uploadedUrl ? [uploadedUrl] : (targetItem?.fotoUrls || (targetItem?.imageUrl ? [targetItem.imageUrl] : []));
         const finalImageUrl = uploadedUrl || targetItem?.imageUrl || null;
+        const newKategori = crudForm.jenis === 'Perbaikan' ? 'CORRECTIVE' : (crudForm.jenis === 'Storing' ? 'STORING' : (crudForm.jenis === 'Kalibrasi' ? 'PREVENTIVE' : 'KEGIATAN'));
 
         if (targetItem?.id) {
           await supabase.from('laporan_operasional').update({
@@ -349,6 +356,7 @@ export const TabShiftReport: React.FC = () => {
             waktu: crudForm.waktu,
             peralatan: crudForm.peralatan,
             lokasi: crudForm.lokasi,
+            kategori_maintenance: newKategori,
             uraian: crudForm.uraian,
             tindak_lanjut: crudForm.tindakLanjut,
             status: crudForm.status,
@@ -362,6 +370,7 @@ export const TabShiftReport: React.FC = () => {
           Waktu: crudForm.waktu,
           Peralatan: crudForm.peralatan || '-',
           Lokasi: crudForm.lokasi || '-',
+          kategori_maintenance: newKategori,
           Uraian: crudForm.uraian || '-',
           TindakLanjut: crudForm.tindakLanjut || '-',
           Status: crudForm.status || 'Normal Operasi',
@@ -496,7 +505,10 @@ export const TabShiftReport: React.FC = () => {
           image: { type: 'jpeg' as const, quality: 0.95 },
           html2canvas: { scale: 1.5, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          pagebreak: { 
+            mode: ['css'],
+            before: '.serviceability-page-sheet'
+          }
         };
 
         const pdfBlob = await generatePdfBlob(element, opt);
@@ -523,30 +535,257 @@ export const TabShiftReport: React.FC = () => {
     }
   };
 
+  const isPreventive = (r: any) => {
+    return r.Jenis === 'Kalibrasi' || r.kategori_maintenance === 'PREVENTIVE' || r.Jenis === 'Preventive';
+  };
+
+  const isStoring = (r: any) => {
+    return r.Jenis === 'Storing' || r.kategori_maintenance === 'STORING' || r.Uraian?.toLowerCase().includes('storing peralatan');
+  };
+
   const isCorrective = (r: any) => {
+    if (isPreventive(r) || isStoring(r)) return false;
     if (r.kategori_maintenance) return r.kategori_maintenance === 'CORRECTIVE';
     if (r.Uraian?.toLowerCase().includes('permasalahan') || r.TindakLanjut?.toLowerCase().includes('perbaikan')) return true;
     if (r.Peralatan?.toLowerCase().includes('kegiatan') || r.Uraian?.toLowerCase().includes('storing') || r.Uraian?.toLowerCase().includes('running test')) return false;
     return true; 
   };
 
+  const renderTindakLanjutBullets = (text: string) => {
+    if (!text || text === '-') return <span className="ml-1">-</span>;
+    if (text.includes('•')) {
+      const items = text.split('•').map(s => s.trim()).filter(Boolean);
+      if (items.length > 0) {
+        return (
+          <div className="space-y-0.5 mt-0.5">
+            {items.map((item, idx) => (
+              <div key={idx} className="flex items-start gap-1">
+                <span className="shrink-0 select-none">•</span>
+                <span className="whitespace-pre-line leading-tight">{item}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+    }
+    return <span className="ml-1 whitespace-pre-line">{text}</span>;
+  };
+
   const formatUraian = (r: any) => {
     if (isCorrective(r)) {
       return (
-        <div className="text-left text-[9px]">
-          <span className="font-bold">Permasalahan :</span> {r.Uraian}<br/>
-          <span className="font-bold">Tindak lanjut :</span> {r.TindakLanjut}
+        <div className="text-left text-[9px] leading-tight">
+          <div>
+            <span className="font-bold">Permasalahan :</span>{' '}
+            <span className="whitespace-pre-line">{r.Uraian}</span>
+          </div>
+          <div className="mt-1">
+            <span className="font-bold">Tindak lanjut :</span>
+            {renderTindakLanjutBullets(r.TindakLanjut)}
+          </div>
         </div>
       );
-    } else {
-      return <div className="text-center font-bold text-[9px]">{r.TindakLanjut || r.Uraian || 'Normal Operasi'}</div>;
     }
+
+    if (isStoring(r)) {
+      return (
+        <div className="text-center font-bold text-[9px] w-full">
+          Storing Peralatan
+        </div>
+      );
+    }
+
+    if (isPreventive(r)) {
+      let rawText = (r.Uraian && r.Uraian.includes('Kegiatan :')) 
+        ? r.Uraian 
+        : getDefaultKalibrasiUraian(r.Peralatan, r.Lokasi);
+
+      if (!rawText.includes('Catatan :')) {
+        const defaultUraian = getDefaultKalibrasiUraian(r.Peralatan, r.Lokasi);
+        const catatanIndex = defaultUraian.indexOf('Catatan :');
+        if (catatanIndex !== -1) {
+          rawText = `${rawText.trim()}\n   \n${defaultUraian.slice(catatanIndex)}`;
+        }
+      }
+
+      const kegiatanIdx = rawText.indexOf('Kegiatan :');
+      const cleanText = kegiatanIdx !== -1 ? rawText.slice(kegiatanIdx) : rawText;
+
+      const parts = cleanText.split(/(Kegiatan\s*:|Catatan\s*:)/g).filter(Boolean);
+      return (
+        <div className="text-left text-[9px] leading-tight">
+          {parts.map((part: string, i: number) => {
+            const trimmed = part.trim();
+            if (/^Kegiatan\s*:/i.test(trimmed)) {
+              return <div key={i} className="font-bold text-black mt-0.5">Kegiatan :</div>;
+            }
+            if (/^Catatan\s*:/i.test(trimmed)) {
+              return <div key={i} className="font-bold text-black mt-1">Catatan :</div>;
+            }
+            return <div key={i} className="whitespace-pre-line text-slate-800">{trimmed}</div>;
+          })}
+        </div>
+      );
+    }
+
+    return <div className="text-center font-bold text-[9px]">{r.TindakLanjut || r.Uraian || 'Normal Operasi'}</div>;
   };
 
   const getTime = (waktuStr: string) => {
     if (!waktuStr) return '-';
     return waktuStr;
   };
+
+  const formatHasil = (r: any) => {
+    if (isCorrective(r)) {
+      const statusLower = (r.Status || '').toLowerCase();
+      if (statusLower.includes('selesai') || statusLower.includes('normal')) {
+        return 'Normal Operasi';
+      }
+      return 'On Progress';
+    }
+    return r.Status === 'Normal' ? 'Normal Operasi' : (r.Status || 'Normal Operasi');
+  };
+
+  const formatLokasiPrint = (lokasi?: string) => {
+    if (!lokasi || lokasi === '-') return '-';
+    return lokasi.split(',').map(seg => {
+      const trimmed = seg.trim();
+      // Untuk lokasi yang mengandung kata "PSCP" (dan bukan HBSCP), pertahankan kata "No."
+      if (/\bPSCP\b/i.test(trimmed)) {
+        if (!/\bNo\.?\b/i.test(trimmed)) {
+          return trimmed.replace(/(PSCP\s+[A-Za-z0-9_-]+)\s+(\d+(?:\.\d+)?)/i, '$1 No.$2');
+        }
+        return trimmed;
+      }
+      // Untuk lokasi selain PSCP (misal HBSCP, Rampout, Aviobridge), hilangkan kata "No." tapi tetap sertakan angkanya
+      return trimmed.replace(/\s*\bNo\.?\s*(?=\d)/gi, ' ').trim();
+    }).join(', ');
+  };
+
+  // Menghitung range waktu kegiatan storing (dari waktu paling awal s.d. waktu paling akhir)
+  const getCombinedTimeRange = (items: any[], currentShift?: string) => {
+    const times: { raw: string; minutes: number }[] = [];
+    
+    items.forEach(item => {
+      if (!item.Waktu || item.Waktu === '-') return;
+      const matches = item.Waktu.match(/\b\d{1,2}[:.]\d{2}\b/g);
+      if (matches) {
+        matches.forEach((t: string) => {
+          const cleanTime = t.replace('.', ':');
+          const [hStr, mStr] = cleanTime.split(':');
+          const h = parseInt(hStr, 10);
+          const m = parseInt(mStr, 10);
+          let adjustedH = h;
+          if (currentShift === 'M' && h < 12) {
+            adjustedH += 24;
+          }
+          times.push({
+            raw: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
+            minutes: adjustedH * 60 + m
+          });
+        });
+      }
+    });
+
+    if (times.length === 0) return '-';
+    times.sort((a, b) => a.minutes - b.minutes);
+    const earliest = times[0].raw;
+    const latest = times[times.length - 1].raw;
+    return earliest === latest ? earliest : `${earliest} - ${latest}`;
+  };
+
+  // Helper memecah lokasi kalibrasi yang jamak (jika lebih dari satu lokasi dibikin baris baru)
+  const splitKalibrasiLocations = (lokasiStr: string): string[] => {
+    if (!lokasiStr || lokasiStr === '-') return ['-'];
+    if (lokasiStr.includes(',')) {
+      return lokasiStr.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (lokasiStr.includes(' & ') && !lokasiStr.toUpperCase().includes('AVIO & BL')) {
+      const parts = lokasiStr.split(' & ').map(s => s.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        const matchPrefix = parts[0].match(/^(.*?)(\s+\bNo\.?\s*\d+|\s+\d+)/i);
+        const prefix = matchPrefix ? matchPrefix[1].trim() : '';
+        return parts.map((p, idx) => {
+          if (idx > 0 && prefix && !p.toLowerCase().includes(prefix.toLowerCase())) {
+            return `${prefix} ${p}`.trim();
+          }
+          return p;
+        });
+      }
+    }
+    return [lokasiStr.trim()];
+  };
+
+  // Menggabungkan seluruh kegiatan storing menjadi 1 baris untuk tabel cetak / PDF
+  // dan memecah preventive maintenance yang memiliki multi-lokasi menjadi baris baru
+  const printReports = React.useMemo(() => {
+    const storingItems = reports.filter(isStoring);
+    const firstStoringIndex = reports.findIndex(isStoring);
+    const timeRange = storingItems.length > 0 ? getCombinedTimeRange(storingItems, shift) : '-';
+
+    // Kumpulkan seluruh foto unik dari semua baris storing
+    const allPhotos: string[] = [];
+    storingItems.forEach(item => {
+      if (Array.isArray(item.fotoUrls) && item.fotoUrls.length > 0) {
+        item.fotoUrls.forEach((url: string) => {
+          if (url && !allPhotos.includes(url)) allPhotos.push(url);
+        });
+      } else if (item.imageUrl && !allPhotos.includes(item.imageUrl)) {
+        allPhotos.push(item.imageUrl);
+      }
+    });
+
+    const mergedStoringReport = storingItems.length > 0 ? {
+      rowIndex: 'merged-storing',
+      id: 'merged-storing',
+      shift: shift,
+      Jenis: 'Storing',
+      Waktu: timeRange,
+      Lokasi: 'Terminal 2 D,E,F & Umroh',
+      Peralatan: 'All Faskampen',
+      kategori_maintenance: 'STORING',
+      Uraian: 'Storing Peralatan',
+      TindakLanjut: 'Storing Peralatan',
+      Status: 'Normal Operasi',
+      imageUrl: allPhotos[0] || null,
+      fotoUrls: allPhotos
+    } : null;
+
+    const result: any[] = [];
+    reports.forEach((item, idx) => {
+      if (isStoring(item)) {
+        if (idx === firstStoringIndex && mergedStoringReport) {
+          result.push(mergedStoringReport);
+        }
+      } else if (isPreventive(item)) {
+        const subLocs = splitKalibrasiLocations(item.Lokasi);
+        if (subLocs.length > 1) {
+          subLocs.forEach((loc, sIdx) => {
+            const formattedEquip = formatPreventivePeralatan(item.Peralatan, loc);
+            result.push({
+              ...item,
+              rowIndex: `${item.rowIndex || idx}-loc-${sIdx}`,
+              Lokasi: loc,
+              Peralatan: formattedEquip
+            });
+          });
+        } else {
+          const loc = subLocs[0] || item.Lokasi;
+          const formattedEquip = formatPreventivePeralatan(item.Peralatan, loc);
+          result.push({
+            ...item,
+            Lokasi: loc,
+            Peralatan: formattedEquip
+          });
+        }
+      } else {
+        result.push(item);
+      }
+    });
+
+    return result;
+  }, [reports, shift, penempatanData]);
 
   return (
     <div className="flex flex-col h-full bg-slate-50 p-4 sm:p-6 rounded-2xl">
@@ -999,7 +1238,17 @@ export const TabShiftReport: React.FC = () => {
 
       {/* CSS KHUSUS UNTUK PRINT NATIVE BROWSER (WINDOW.PRINT) */}
       <style>{`
+        @page {
+          size: landscape;
+          size: A4 landscape;
+          margin: 5mm;
+        }
         @media print {
+          @page {
+            size: landscape;
+            size: A4 landscape;
+            margin: 5mm;
+          }
           body * {
             visibility: hidden !important;
           }
@@ -1015,14 +1264,20 @@ export const TabShiftReport: React.FC = () => {
             z-index: 99999 !important;
             display: block !important;
           }
-          @page {
-            size: landscape A4;
-            margin: 5mm;
+          #printable-shift-report > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
           }
-          .html2pdf__page-break {
+          .serviceability-page-sheet {
             page-break-before: always !important;
             break-before: page !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
             display: block !important;
+            clear: both !important;
           }
         }
       `}</style>
@@ -1119,19 +1374,47 @@ export const TabShiftReport: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {reports.map((report, idx) => (
+              {printReports.map((report, idx) => (
                 <tr key={idx} className="text-center bg-white">
                   <td className="border-[2px] border-black p-1 font-bold">{idx + 1}</td>
-                  <td className="border-[2px] border-black p-1 font-semibold text-left px-1.5">{report.Lokasi || '-'}</td>
+                  <td className="border-[2px] border-black p-1 font-semibold text-left px-1.5">{formatLokasiPrint(report.Lokasi)}</td>
                   <td className="border-[2px] border-black p-1 font-semibold text-left px-1.5">{report.Peralatan}</td>
                   <td className="border-[2px] border-black p-1 font-bold">{isCorrective(report) ? 'CORRECTIVE MAINTENANCE' : '-'}</td>
-                  <td className="border-[2px] border-black p-1 font-bold">{report.Jenis === 'Kalibrasi' ? 'PREVENTIVE MAINTENANCE' : '-'}</td>
-                  <td className="border-[2px] border-black p-1 font-bold">{isCorrective(report) ? '-' : (report.Jenis === 'Storing' ? 'STORING' : 'KEGIATAN')}</td>
-                  <td className="border-[2px] border-black p-1 text-left align-top">{formatUraian(report)}</td>
+                  <td className="border-[2px] border-black p-1 font-bold">{isPreventive(report) ? 'PREVENTIVE MAINTENANCE' : '-'}</td>
+                  <td className="border-[2px] border-black p-1 font-bold">{isCorrective(report) || isPreventive(report) ? '-' : 'KEGIATAN'}</td>
+                  <td 
+                    style={isStoring(report) ? { verticalAlign: 'middle', textAlign: 'center' } : { verticalAlign: 'top', textAlign: 'left' }}
+                    className={`border-[2px] border-black p-1 ${isStoring(report) ? 'align-middle text-center' : 'text-left align-top'}`}
+                  >
+                    {formatUraian(report)}
+                  </td>
                   <td className="border-[2px] border-black p-1 font-bold">{getTime(report.Waktu)}</td>
-                  <td className="border-[2px] border-black p-1 font-bold">{report.Status === 'Normal' ? 'Normal' : report.Status}</td>
+                  <td className="border-[2px] border-black p-1 font-bold">{formatHasil(report)}</td>
                   <td className="border-[2px] border-black p-1">
-                    {report.imageUrl ? (
+                    {report.fotoUrls && report.fotoUrls.length > 0 ? (
+                      <div className={`grid ${report.fotoUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-0.5`}>
+                        {report.fotoUrls.map((url: string, pIdx: number) => (
+                          <img 
+                            key={pIdx}
+                            src={url} 
+                            alt="Dok" 
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous" 
+                            className={`w-full ${report.fotoUrls.length === 1 ? 'h-12' : 'h-10'} object-cover rounded border border-gray-300`}
+                            onError={(e) => { 
+                              const target = e.target as HTMLImageElement;
+                              const match = url?.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                              if (match && !target.dataset.tried) {
+                                target.dataset.tried = 'true';
+                                target.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`;
+                              } else {
+                                target.style.display = 'none';
+                              }
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : report.imageUrl ? (
                       <img 
                         src={report.imageUrl} 
                         alt="Dok" 
@@ -1153,7 +1436,7 @@ export const TabShiftReport: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {reports.length === 0 && (
+              {printReports.length === 0 && (
                 <tr>
                   <td colSpan={10} className="border-[2px] border-black p-4 text-center font-bold italic text-gray-500">
                     Tidak ada laporan perbaikan/kegiatan pada shift ini.
@@ -1167,19 +1450,17 @@ export const TabShiftReport: React.FC = () => {
           {/* LEMBAR TERAKHIR TERSENDIRI: TABEL & DIAGRAM SERVICEABILITY PERALATAN      */}
           {/* ========================================================================= */}
           <div 
-            className="html2pdf__page-break" 
+            className="serviceability-page-sheet pt-1" 
             style={{ 
               pageBreakBefore: 'always', 
               breakBefore: 'page',
-              height: 0,
-              margin: 0,
-              padding: 0
+              pageBreakInside: 'avoid',
+              breakInside: 'avoid',
+              width: '100%'
             }} 
-          />
-
-          <div className="pt-2">
+          >
             {/* Header Kop Surat Lembar Serviceability */}
-            <div className="border-[3px] border-black flex items-stretch mb-3">
+            <div className="border-[3px] border-black flex items-stretch mb-2">
               <div className="w-[15%] border-r-[3px] border-black flex items-center justify-center p-2">
                 <div className="text-[12px] font-bold text-blue-800 text-center leading-tight">
                   INJOURNEY<br/>AIRPORTS
@@ -1198,54 +1479,39 @@ export const TabShiftReport: React.FC = () => {
             </div>
 
             {/* TABEL 2: KESIAPAN FASILITAS (SERVICEABILITY CHECKLIST) */}
-            <div className="flex justify-between items-start gap-4 mb-4">
-              <div className="w-[64%]">
-                <table className="w-full border-collapse border-[2px] border-black text-[9px]">
-                  <thead>
-                    <tr className="bg-gray-200 font-bold text-center">
-                      <th className="border-[2px] border-black p-1 w-[6%]">No</th>
-                      <th className="border-[2px] border-black p-1 w-[32%]">Peralatan</th>
-                      <th className="border-[2px] border-black p-1 w-[12%]">%</th>
-                      <th className="border-[2px] border-black p-1 w-[12%]">Jumlah</th>
-                      <th className="border-[2px] border-black p-1 w-[12%]">Rusak</th>
-                      <th className="border-[2px] border-black p-1 w-[13%]">Rusak %</th>
-                      <th className="border-[2px] border-black p-1 w-[13%]">Total</th>
+            <div className="mb-2">
+              <table className="w-full border-collapse border-[2px] border-black text-[9px]">
+                <thead>
+                  <tr className="bg-gray-200 font-bold text-center">
+                    <th className="border-[2px] border-black py-0.5 px-1 w-[6%]">No</th>
+                    <th className="border-[2px] border-black py-0.5 px-1.5 w-[32%]">Peralatan</th>
+                    <th className="border-[2px] border-black py-0.5 px-1 w-[12%]">%</th>
+                    <th className="border-[2px] border-black py-0.5 px-1 w-[12%]">Jumlah</th>
+                    <th className="border-[2px] border-black py-0.5 px-1 w-[12%]">Rusak</th>
+                    <th className="border-[2px] border-black py-0.5 px-1 w-[13%]">Rusak %</th>
+                    <th className="border-[2px] border-black py-0.5 px-1 w-[13%]">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {checklistSummary.map((item) => (
+                    <tr key={item.no} className="text-center font-medium">
+                      <td className="border-[2px] border-black py-0.5 px-1 font-bold">{item.no}</td>
+                      <td className="border-[2px] border-black py-0.5 px-1.5 text-left font-bold">{item.nama}</td>
+                      <td className="border-[2px] border-black py-0.5 px-1 font-bold">{Math.round(item.persenOperasi * 100)}%</td>
+                      <td className="border-[2px] border-black py-0.5 px-1">{item.operasi}</td>
+                      <td className="border-[2px] border-black py-0.5 px-1">{item.rusak}</td>
+                      <td className="border-[2px] border-black py-0.5 px-1">{Math.round(item.persenRusak * 100)}%</td>
+                      <td className="border-[2px] border-black py-0.5 px-1 font-bold">{item.total}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {checklistSummary.map((item) => (
-                      <tr key={item.no} className="text-center font-medium">
-                        <td className="border-[2px] border-black p-1 font-bold">{item.no}</td>
-                        <td className="border-[2px] border-black p-1 text-left font-bold px-2">{item.nama}</td>
-                        <td className="border-[2px] border-black p-1 font-bold">{Math.round(item.persenOperasi * 100)}%</td>
-                        <td className="border-[2px] border-black p-1">{item.operasi}</td>
-                        <td className="border-[2px] border-black p-1">{item.rusak}</td>
-                        <td className="border-[2px] border-black p-1">{Math.round(item.persenRusak * 100)}%</td>
-                        <td className="border-[2px] border-black p-1 font-bold">{item.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="w-[36%] pl-4 flex flex-col justify-between text-[9px] text-gray-700 italic border-l border-gray-300">
-                <div>
-                  <p className="font-bold not-italic text-black mb-1">Catatan Laporan:</p>
-                  <p>• Kepada yang bertugas menulis laporan, mohon dicek kembali data, tanggal, dan tabel pada laporan.</p>
-                  <p className="mt-1">• Terimakasih atas kerjasamanya.</p>
-                </div>
-
-                <div className="mt-5 pt-3 border-t border-black text-center not-italic font-bold text-black">
-                  <p>Safety & Security Electronic Services (SSES)</p>
-                  <p className="text-[8px] font-normal">Bandara Internasional Soekarno-Hatta Terminal 2</p>
-                </div>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* DIAGRAM BATANG SERVICEABILITY PADA LAPORAN PDF */}
-            <div className="border-[2px] border-black p-3 bg-white">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-300">
-                <span className="font-bold text-[11px] text-black uppercase tracking-wide">
+            <div className="border-[2px] border-black p-2.5 bg-white">
+              <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-300">
+                <span className="font-bold text-[10px] text-black uppercase tracking-wide">
                   Diagram Serviceability Peralatan
                 </span>
                 <div className="flex items-center gap-4 text-[9px] font-bold">
@@ -1261,8 +1527,8 @@ export const TabShiftReport: React.FC = () => {
               </div>
 
               {/* Area Grafik Batang */}
-              <div className="pl-9 pr-3 pt-6">
-                <div className="relative h-44 border-b-2 border-black bg-gray-50/40">
+              <div className="pl-9 pr-3 pt-3">
+                <div className="relative h-32 border-b-2 border-black bg-gray-50/40">
                   {/* Garis Grid Persentase */}
                   {[100, 75, 50, 25, 0].map((pct) => (
                     <div

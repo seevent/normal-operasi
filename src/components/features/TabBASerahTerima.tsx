@@ -807,6 +807,22 @@ export const TabBASerahTerima: React.FC = () => {
           </button>
         </div>
 
+        {/* CSS KHUSUS PRINT NATIVE BROWSER (WINDOW.PRINT) UNTUK BA SERAH TERIMA */}
+        <style>{`
+          @page {
+            size: portrait;
+            size: A4 portrait;
+            margin: 12mm 15mm;
+          }
+          @media print {
+            @page {
+              size: portrait;
+              size: A4 portrait;
+              margin: 12mm 15mm;
+            }
+          }
+        `}</style>
+
         <div ref={printableBaRef} className="space-y-8 print:space-y-0">
           <div className="bg-white p-8 rounded-xl border border-slate-300 shadow-md text-slate-900 font-sans space-y-6 print:shadow-none print:border-none print:p-0 print:m-0 print:rounded-none print:space-y-4 print:text-black">
           <div className="text-center border-b-2 border-slate-900 print:border-black pb-3 print:pb-2">

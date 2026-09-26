@@ -32,3 +32,21 @@ test('shareService: fallbackShare opens WhatsApp immediately without blocking al
   // Must not contain hardcoded Berita Acara alert in generic share service
   assert.doesNotMatch(content, /Dokumen PDF Berita Acara telah berhasil diunduh/);
 });
+
+test('Print Orientation: TabShiftReport defaults to Landscape while TabBASerahTerima defaults to Portrait', () => {
+  const shiftReportContent = readProjectFile('src/components/features/TabShiftReport.tsx');
+  const baContent = readProjectFile('src/components/features/TabBASerahTerima.tsx');
+  const stylesContent = readProjectFile('src/styles.css');
+
+  // TabShiftReport must set landscape print orientation
+  assert.match(shiftReportContent, /size:\s*landscape;/);
+  assert.match(shiftReportContent, /size:\s*A4 landscape;/);
+
+  // TabBASerahTerima must set portrait print orientation
+  assert.match(baContent, /size:\s*portrait;/);
+  assert.match(baContent, /size:\s*A4 portrait;/);
+
+  // Global styles.css must not force global portrait @page
+  assert.doesNotMatch(stylesContent, /@page\s*\{\s*size:\s*A4 portrait;/);
+});
+

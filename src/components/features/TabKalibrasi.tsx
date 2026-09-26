@@ -3,12 +3,13 @@ import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileTe
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
-import { generateWA_Kalibrasi } from '../../lib/utils/waGenerator';
+import { generateWA_Kalibrasi, formatKalibrasiEntryKegiatanDanCatatan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { PhotoTextEditorModal } from '../shared/PhotoTextEditorModal';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 
 export const TabKalibrasi: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -556,8 +557,26 @@ export const TabKalibrasi: React.FC = () => {
       }
     }
 
-    // Simpan log kegiatan kalibrasi ke Supabase di background secara non-blocking
+    // Jalankan upload foto & simpan ke Supabase di background secara non-blocking
+    // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka dengan media
     (async () => {
+      const uploadedPhotoUrls: string[] = [];
+      const imageFiles = customFilesArray.filter(f => !f.type.startsWith('video/'));
+      if (imageFiles.length > 0) {
+        for (const file of imageFiles) {
+          try {
+            const res = await uploadPhotoToCloudinary(file, `Kalibrasi_${Date.now()}.jpg`);
+            if (res && res.status === 'success' && res.url) {
+              uploadedPhotoUrls.push(res.url);
+            } else if (res && res.status === 'error') {
+              console.error("Upload foto kalibrasi gagal:", res.message);
+            }
+          } catch (e) {
+            console.error("Gagal upload foto kalibrasi:", e);
+          }
+        }
+      }
+
       try {
         const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
         const waktuRange = `${kalibrasiGlobal.waktuMulai || ''} - ${kalibrasiGlobal.waktuSelesai || ''}`;
@@ -569,6 +588,8 @@ export const TabKalibrasi: React.FC = () => {
             ? (entry.acLokasi?.join(', ') || 'Access Control')
             : `${entry.lokasi1 || ''} ${entry.lokasi2 && entry.lokasi2 !== '-' ? 'No.' + entry.lokasi2 : ''}`.trim();
 
+          const { fullText } = formatKalibrasiEntryKegiatanDanCatatan(entry);
+
           await saveOperationalLog({
             tanggal: kalibrasiGlobal.tanggal || opDate,
             shift: opShift,
@@ -577,11 +598,11 @@ export const TabKalibrasi: React.FC = () => {
             lokasi: locStr || 'Terminal 2',
             peralatan: alatStr,
             kategori_maintenance: 'PREVENTIVE',
-            uraian: `Preventive Maintenance & Kalibrasi Peralatan: ${alatStr}`,
+            uraian: fullText,
             tindak_lanjut: 'Peralatan telah dikalibrasi & normal operasi',
             status: 'Normal Operasi',
             teknisi: '-',
-            foto_urls: []
+            foto_urls: uploadedPhotoUrls
           });
         }
       } catch (err) {

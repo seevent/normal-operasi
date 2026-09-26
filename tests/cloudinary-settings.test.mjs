@@ -25,6 +25,7 @@ test('Operational tabs call uploadPhotoToCloudinary', () => {
   const perbaikan = readProjectFile('src/components/features/TabPerbaikan.tsx');
   const storing = readProjectFile('src/components/features/TabStoring.tsx');
   const kegiatan = readProjectFile('src/components/features/TabKegiatan.tsx');
+  const kalibrasi = readProjectFile('src/components/features/TabKalibrasi.tsx');
   const shiftReport = readProjectFile('src/components/features/TabShiftReport.tsx');
 
   assert.match(perbaikan, /import \{ uploadPhotoToCloudinary \} from '\.\.\/\.\.\/lib\/services\/cloudinaryService'/);
@@ -35,6 +36,9 @@ test('Operational tabs call uploadPhotoToCloudinary', () => {
 
   assert.match(kegiatan, /import \{ uploadPhotoToCloudinary \} from '\.\.\/\.\.\/lib\/services\/cloudinaryService'/);
   assert.match(kegiatan, /await uploadPhotoToCloudinary\(/);
+
+  assert.match(kalibrasi, /import \{ uploadPhotoToCloudinary \} from '\.\.\/\.\.\/lib\/services\/cloudinaryService'/);
+  assert.match(kalibrasi, /await uploadPhotoToCloudinary\(/);
 
   assert.match(shiftReport, /import \{ uploadPhotoToCloudinary \} from '\.\.\/\.\.\/lib\/services\/cloudinaryService'/);
   assert.match(shiftReport, /await uploadPhotoToCloudinary\(/);

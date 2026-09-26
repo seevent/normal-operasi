@@ -1,18 +1,36 @@
 // src/lib/utils/locationRules.ts
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 
+export const parseLokasiDanTitik = (lokasiStr?: string): { lokasi1: string; lokasi2: string } => {
+  if (!lokasiStr || lokasiStr === '-') return { lokasi1: '', lokasi2: '' };
+  const trimmed = lokasiStr.trim();
+  const noMatch = trimmed.match(/^(.*?)\s*\bNo\.?\s*([0-9A-Za-z.-]+)$/i);
+  if (noMatch) {
+    return { lokasi1: noMatch[1].trim(), lokasi2: noMatch[2].trim() };
+  }
+  const numMatch = trimmed.match(/^(.*?)[\s]+([0-9]+(?:\.[0-9]+)?)$/);
+  if (numMatch) {
+    return { lokasi1: numMatch[1].trim(), lokasi2: numMatch[2].trim() };
+  }
+  return { lokasi1: trimmed, lokasi2: '' };
+};
+
 export const getValidModels = (lokasi: string, jenisPeralatan: string, titik?: string) => {
   const defaultOption = `Semua ${jenisPeralatan}`;
   const models = [defaultOption];
   if (!lokasi) return models;
+
+  const normalizeLoc = (s: string) => s.toUpperCase().replace(/\bUMROH\b/g, 'UMRAH').trim();
+  const targetLoc = normalizeLoc(lokasi);
 
   try {
     const penempatanData = useMasterDataStore.getState().penempatanData || [];
     const extractedModels: Set<string> = new Set();
 
     penempatanData.forEach((p: any) => {
+      const pLoc = normalizeLoc(p.lokasi?.nama || '');
       if (
-        p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase() &&
+        pLoc === targetLoc &&
         p.tipe_peralatan?.jenis_peralatan?.nama?.toUpperCase() === jenisPeralatan.toUpperCase()
       ) {
         if (titik && titik !== '' && titik !== '-') {
@@ -38,6 +56,51 @@ export const getValidModels = (lokasi: string, jenisPeralatan: string, titik?: s
 
 export const getValidXRayModels = (lokasi: string, titik?: string) => {
   return getValidModels(lokasi, 'X-Ray', titik);
+};
+
+export const formatPreventivePeralatan = (peralatanStr: string, lokasiStr?: string): string => {
+  if (!peralatanStr || peralatanStr === '-') return '-';
+  const { lokasi1, lokasi2 } = parseLokasiDanTitik(lokasiStr || '');
+  const rawList = peralatanStr.split(/[,&]/).map(s => s.trim()).filter(Boolean);
+  if (rawList.length === 0) return peralatanStr;
+
+  const sorted = [...rawList].sort((a, b) => {
+    if (a.toLowerCase().includes('extension conveyor')) return -1;
+    if (b.toLowerCase().includes('extension conveyor')) return 1;
+    return 0;
+  });
+
+  const getEquipName = (eq: string) => {
+    const trimmed = eq.trim();
+    const upper = trimmed.toUpperCase();
+    if (upper === 'X-RAY' || upper === 'XRAY') {
+      const valid = getValidXRayModels(lokasi1, lokasi2).filter(m => !m.startsWith('Semua '));
+      return valid.length > 0 ? valid[0] : 'X-Ray';
+    }
+    if (upper === 'WTMD') {
+      const valid = getValidModels(lokasi1, 'WTMD', lokasi2).filter(m => !m.startsWith('Semua '));
+      return valid.length > 0 ? valid[0] : 'WTMD';
+    }
+    if (upper === 'HHMD') {
+      const valid = getValidModels(lokasi1, 'HHMD', lokasi2).filter(m => !m.startsWith('Semua '));
+      return valid.length > 0 ? valid[0] : 'HHMD';
+    }
+    if (upper === 'BODY SCANNER') {
+      const valid = getValidModels(lokasi1, 'Body Scanner', lokasi2).filter(m => !m.startsWith('Semua '));
+      return valid.length > 0 ? valid[0] : 'Body Scanner';
+    }
+    if (upper === 'ETD') {
+      const valid = getValidModels(lokasi1, 'ETD', lokasi2).filter(m => !m.startsWith('Semua '));
+      return valid.length > 0 ? valid[0] : 'ETD';
+    }
+    return trimmed;
+  };
+
+  const formatted = sorted.map(getEquipName);
+  const unique = Array.from(new Set(formatted));
+
+  if (unique.length === 1) return unique[0];
+  return `${unique.slice(0, -1).join(', ')} & ${unique[unique.length - 1]}`;
 };
 
 export const getGeneralLokasiOptions = (peralatanType: string) => {

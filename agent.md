@@ -43,11 +43,18 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
   * Pukul `22:00 - 23:59`: Tanggal hari ini, Shift M.
 * **Persistensi Data**: Selalu gunakan fungsi `saveOperationalLog` dan `saveChecklistSummary` dari `operationalReportService.ts` agar kegiatan dari setiap tab tersinkronisasi ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
 
-### 2.7. Integrasi Cloud Storage (Cloudinary) & Instant Web Share (`cloudinaryService.ts`, `operationalReportService.ts`, `pdfService.ts`)
-* **Cloudinary Upload**: Sistem mengunggah foto ke Cloudinary via Unsigned Upload Preset (kecepatan tinggi ~300-600ms, tanpa cold start, didukung Global CDN).
+### 2.7. Integrasi Cloud Storage Dual-Tier & Instant Web Share (`cloudinaryService.ts`, `operationalReportService.ts`, `pdfService.ts`)
+* **Cloudinary Upload (Primary)**: Sistem mengunggah foto ke Cloudinary via Unsigned Upload Preset (kecepatan tinggi ~300-600ms, tanpa cold start, didukung Global CDN).
+* **Supabase Storage Fallback**: Jika kredensial Cloudinary belum diatur di `.env` / Admin atau jaringan Cloudinary gagal, `cloudinaryService.ts` secara otomatis mengalihkan penyimpanan ke Supabase Storage bucket `dokumentasi` dan mengembalikan URL HTTPS permanen.
+* **Seluruh Tab Operasional Terhubung**: Seluruh formulir yang memuat foto (Initial Report, Perbaikan, Kalibrasi, BA Serah Terima, dan Shift Report) wajib memanggil `uploadPhotoToCloudinary` sebelum menyimpan log kegiatan ke Supabase.
 * **Zero Base64 in DB**: Dilarang keras menyimpan string Base64 (`data:image/...`) ke dalam PostgreSQL Supabase karena akan memicu pelanggaran constraint `chk_foto_urls_no_base64` dan membuat kuota database penuh. Selalu gunakan URL HTTPS publik yang dikembalikan dari `uploadPhotoToCloudinary`.
 * **Instant Web Share**: Browser modern mewajibkan user gesture aktif untuk `navigator.share`. Panggil `navigator.share` secara sinkron/instan saat tombol ditekan, dan jalankan kompresi foto, upload cloud, serta penulisan Supabase secara asinkron di latar belakang dengan perlindungan deduplikasi `recentOperationalLogs`.
-* **Ekspor Non-blocking PDF**: Ekspor PDF Berita Acara atau rekapitulasi harus menggunakan `pdfService.ts` dengan dynamic import agar proses konversi DOM/Canvas tidak memblokir (*freeze*) antarmuka aplikasi.
+
+### 2.8. Aturan Cetak (Print Layout) & CSS `@page`
+* **Format Cetak Tab Shift Report**: Wajib menggunakan format **A4 Landscape** (`@page { size: landscape; size: A4 landscape; margin: 5mm; }`). Lebar kontainer `#printable-shift-report` harus diatur ke `100%` agar mengisi lembar landscape secara penuh.
+* **Lembar Khusus Serviceability (Dedicated Final Page)**: Tabel checklist kesiapan fasilitas dan diagram batang serviceability wajib berada di lembar tersendiri di akhir dokumen (`.serviceability-page-sheet`). Total tinggi vertikal kontainer harus dijaga padat (~520px) agar tidak meluber melewati batas tinggi A4 Landscape (~766px), dan hindari penambahan class `.html2pdf__page-break` pada kontainer agar tidak memicu padding lembaran kosong ekstra di akhir dokumen.
+* **Format Cetak Tab BA Serah Terima**: Menggunakan format resmi **A4 Portrait** (`@page { size: portrait; size: A4 portrait; margin: 12mm 15mm; }`).
+* **Isolasi Aturan `@page`**: Dilarang menempatkan aturan `@page { size: ...; }` di berkas global `src/styles.css` karena akan menimpa orientasi cetak seluruh tab lain. Selalu letakkan aturan `@page` secara terisolasi di dalam komponen masing-masing tab yang bersangkutan.
 
 ---
 
@@ -75,7 +82,7 @@ Sebelum Agent menyatakan bahwa suatu perbaikan atau fitur telah selesai, lakukan
    ```bash
    node --test
    ```
-   Pastikan seluruh test suite di direktori `tests/` lulus tanpa kegagalan assertion.
+   Pastikan seluruh test suite di direktori `tests/` (11 unit tests) lulus tanpa kegagalan assertion.
 
 2. **Build Verification**:
    ```bash

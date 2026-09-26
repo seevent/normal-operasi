@@ -244,7 +244,7 @@ Menyimpan catatan kegiatan operasional harian teknisi (Perbaikan, Storing, Kegia
 | `tindak_lanjut` | `TEXT` | NULL | Tindakan penanganan teknis / mitigasi. |
 | `status` | `VARCHAR(50)` | DEFAULT `'Normal Operasi'` | Status akhir peralatan / kegiatan. |
 | `teknisi` | `VARCHAR(150)` | NULL | Nama teknisi penanggung jawab dinas. |
-| `foto_urls` | `JSONB` / `TEXT[]` | **CHECK (`chk_foto_urls_no_base64`)** | Array tautan URL foto HTTPS (Cloudinary CDN). Check constraint memastikan string Base64 (`data:image`) ditolak. |
+| `foto_urls` | `JSONB` / `TEXT[]` | **CHECK (`chk_foto_urls_no_base64`)** | Array tautan URL foto HTTPS (Cloudinary Global CDN / Supabase Storage fallback). Check constraint memastikan string Base64 (`data:image`) ditolak. |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Timestamp pembuatan record. |
 
 > **Constraint Khusus**:
