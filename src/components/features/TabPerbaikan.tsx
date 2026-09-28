@@ -1,12 +1,12 @@
-import React, { useState, useRef } from 'react';
-import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, Wrench, Camera, Move, Trash2, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, Wrench, Camera, Move, Trash2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
 import { generateWA_Perbaikan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
-import { toTitleCase, formatNamaPersonel } from '../../lib/data/masterData';
+import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
+import { usePhotoGroups } from '../../lib/hooks/usePhotoGroups';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
@@ -15,10 +15,8 @@ import { saveOperationalLog, getOperationalShiftAndDate, fetchOnDutyPersonnel } 
 
 export const TabPerbaikan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
-  const { jenisPeralatanData, lokasiMasterData, personelData, penempatanData } = useMasterDataStore();
+  const { penempatanData } = useMasterDataStore();
   const [showErrors, setShowErrors] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const isSubmittingRef = useRef(false);
 
   const [formData, setFormData] = useState(() => {
     const { date: defaultDate } = getOperationalShiftAndDate();
@@ -99,24 +97,16 @@ export const TabPerbaikan: React.FC = () => {
   };
   
   const [isVerifikasiETD, setIsVerifikasiETD] = useState(false);
-  const [photoGroups, setPhotoGroups] = useState<any[]>([
-    { id: Date.now(), photos: [] as any[], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }
-  ]);
-
-  const photoGroupsRef = React.useRef(photoGroups);
-  photoGroupsRef.current = photoGroups;
-
-  React.useEffect(() => {
-    return () => {
-      photoGroupsRef.current.forEach(group => {
-        group.photos.forEach((p: any) => {
-          if (p.preview && p.preview.startsWith('blob:')) {
-            URL.revokeObjectURL(p.preview);
-          }
-        });
-      });
-    };
-  }, []);
+  const {
+    photoGroups,
+    setPhotoGroups,
+    handlePhotoUpload,
+    removePhoto,
+    updatePhotoZoom,
+    handlePhotoDrop,
+    addPhotoGroup,
+    removePhotoGroup,
+  } = usePhotoGroups();
 
   const permasalahanRef = React.useRef<HTMLTextAreaElement>(null);
   const tindakLanjutRef = React.useRef<HTMLTextAreaElement>(null);
@@ -353,81 +343,6 @@ export const TabPerbaikan: React.FC = () => {
   };
 
   // === Photo Handlers ===
-  const handlePhotoUpload = async (groupId: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
-      const newPhotos = compressedResults.map(res => ({
-        id: Date.now() + Math.random(),
-        file: res.file,
-        preview: res.preview,
-        zoom: 1
-      }));
-      setPhotoGroups(prev => prev.map(g => g.id === groupId ? { ...g, photos: [...g.photos, ...newPhotos] } : g));
-    }
-  };
-
-  const removePhoto = (groupId: number, photoIndex: number) => {
-    setPhotoGroups(prev => prev.map(group => {
-      if (group.id === groupId) {
-        const newPhotos = [...group.photos];
-        URL.revokeObjectURL(newPhotos[photoIndex].preview);
-        newPhotos.splice(photoIndex, 1);
-        return { ...group, photos: newPhotos };
-      }
-      return group;
-    }));
-  };
-
-  const updatePhotoZoom = (groupId: number, photoIndex: number, delta: number) => {
-    setPhotoGroups(prev => prev.map(group => {
-      if (group.id === groupId) {
-        const newPhotos = [...group.photos];
-        const currentZoom = newPhotos[photoIndex].zoom || 1;
-        newPhotos[photoIndex] = {
-          ...newPhotos[photoIndex],
-          zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
-        };
-        return { ...group, photos: newPhotos };
-      }
-      return group;
-    }));
-  };
-
-  const handlePhotoDrop = (e: React.DragEvent | any, groupId: number, targetIndex: number) => {
-    e.preventDefault();
-    const sourceIndexStr = e.dataTransfer?.getData('text/plain');
-    if (!sourceIndexStr) return;
-    
-    const sourceIndex = parseInt(sourceIndexStr, 10);
-    if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
-    
-    setPhotoGroups(prev => prev.map(group => {
-      if (group.id === groupId) {
-        const newPhotos = [...group.photos];
-        const [movedPhoto] = newPhotos.splice(sourceIndex, 1);
-        newPhotos.splice(targetIndex, 0, movedPhoto);
-        return { ...group, photos: newPhotos };
-      }
-      return group;
-    }));
-  };
-
-  const addPhotoGroup = () => {
-    setPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }]);
-  };
-
-  const removePhotoGroup = (groupId: number) => {
-    if (photoGroups.length <= 1) return;
-    setPhotoGroups(prev => {
-      const groupToRemove = prev.find(g => g.id === groupId);
-      if (groupToRemove) {
-        groupToRemove.photos.forEach((p: any) => URL.revokeObjectURL(p.preview));
-      }
-      return prev.filter(g => g.id !== groupId);
-    });
-  };
-
   const renderPhotoSection = () => (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="bg-blue-50/50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">

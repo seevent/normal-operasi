@@ -6,11 +6,18 @@ import { PhotoUploader } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
 import { generateWA_InitialReport } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
+import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
+import { usePhotoGroups } from '../../lib/hooks/usePhotoGroups';
 import { supabase } from '../../lib/supabaseClient';
-import { toTitleCase, formatNamaPersonel } from '../../lib/data/masterData';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { fetchOnDutyPersonnel } from '../../lib/services/operationalReportService';
+import {
+  getApplicableMitigasiList,
+  getApplicableDampakList,
+  getApplicablePermasalahanList,
+  appendNumberedItem,
+  appendBulletItem,
+} from '../../lib/utils/initialReportShortcuts';
 
 export const TabInitialReport: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -109,25 +116,16 @@ export const TabInitialReport: React.FC = () => {
     setSelectedTeknisi(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
   };
 
-  const [photos, setPhotos] = useState<any[]>([]); // fallback/deprecated state kept if needed or replaced
-  const [photoGroups, setPhotoGroups] = useState<any[]>([
-    { id: Date.now(), photos: [] as any[], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }
-  ]);
-
-  const photoGroupsRef = React.useRef(photoGroups);
-  photoGroupsRef.current = photoGroups;
-
-  React.useEffect(() => {
-    return () => {
-      photoGroupsRef.current.forEach(group => {
-        group.photos.forEach((p: any) => {
-          if (p.preview && p.preview.startsWith('blob:')) {
-            URL.revokeObjectURL(p.preview);
-          }
-        });
-      });
-    };
-  }, []);
+  const {
+    photoGroups,
+    setPhotoGroups,
+    handlePhotoUpload,
+    removePhoto,
+    updatePhotoZoom,
+    handlePhotoDrop,
+    addPhotoGroup,
+    removePhotoGroup,
+  } = usePhotoGroups();
 
   const permasalahanRef = React.useRef<HTMLTextAreaElement>(null);
   const uraianRef = React.useRef<HTMLTextAreaElement>(null);
@@ -181,37 +179,7 @@ export const TabInitialReport: React.FC = () => {
     setFormData(newFormData);
   };
 
-  const handleJamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, ''); // Hanya angka
-    setFormData(prev => {
-      const jam = val;
-      const menit = prev.menitPengerjaan;
-      const jamNum = parseInt(jam, 10) || 0;
-      const menitNum = parseInt(menit, 10) || 0;
-      let lama = '-';
-      if (jamNum > 0 && menitNum > 0) lama = `${jamNum} Jam ${menitNum} Menit`;
-      else if (jamNum > 0) lama = `${jamNum} Jam`;
-      else if (menitNum > 0) lama = `${menitNum} Menit`;
-      return { ...prev, jamPengerjaan: jam, lamaPengerjaan: lama };
-    });
-  };
-
-  const handleMenitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, ''); // Hanya angka
-    setFormData(prev => {
-      const jam = prev.jamPengerjaan;
-      const menit = val;
-      const jamNum = parseInt(jam, 10) || 0;
-      const menitNum = parseInt(menit, 10) || 0;
-      let lama = '-';
-      if (jamNum > 0 && menitNum > 0) lama = `${jamNum} Jam ${menitNum} Menit`;
-      else if (jamNum > 0) lama = `${jamNum} Jam`;
-      else if (menitNum > 0) lama = `${menitNum} Menit`;
-      return { ...prev, menitPengerjaan: menit, lamaPengerjaan: lama };
-    });
-  };
-
-  const handleLokasiEntryChange = (index: number, field: 'lokasi1' | 'lokasi2' | 'isManualToggle', value: string) => {
+  const handleLokasiEntryChange =(index: number, field: 'lokasi1' | 'lokasi2' | 'isManualToggle', value: string) => {
     if (field === 'isManualToggle') {
       setFormData(prev => {
         const newList = [...(prev.lokasiList || [{ lokasi1: prev.lokasi1 || '', lokasi2: prev.lokasi2 || '' }])];
@@ -335,7 +303,7 @@ export const TabInitialReport: React.FC = () => {
     }
   };
 
-  const getSelectedJenisPeralatan = (): string => {
+  const getSelectedJenisPeralatan = React.useCallback((): string => {
     if (!formData.peralatan) return '';
     if (tipeToJenisMap[formData.peralatan]) {
       return tipeToJenisMap[formData.peralatan];
@@ -359,9 +327,9 @@ export const TabInitialReport: React.FC = () => {
     if (lower.includes('autogate')) return 'Autogate';
     if (lower.includes('cctv')) return 'CCTV';
     return formData.peralatan;
-  };
+  }, [formData.peralatan, tipeToJenisMap]);
 
-  const getSelectedVarianPeralatan = (): string => {
+  const getSelectedVarianPeralatan = React.useCallback((): string => {
     if (!formData.peralatan) return '';
     if (tipeToVarianMap[formData.peralatan]) {
       return tipeToVarianMap[formData.peralatan];
@@ -373,495 +341,44 @@ export const TabInitialReport: React.FC = () => {
       }
     }
     return '';
-  };
+  }, [formData.peralatan, tipeToVarianMap]);
 
-  const getApplicableMitigasiList = React.useCallback((): string[] => {
-    const jenis = getSelectedJenisPeralatan();
-    const jenisNorm = jenis.trim().toLowerCase();
-    const isXRay = jenisNorm === 'x-ray';
-    const isAccessControl = jenisNorm.includes('access control');
-    const isMirroringXRay = jenisNorm.includes('mirroring');
-    const isExtensionConveyor = jenisNorm.includes('extension conveyor') || jenisNorm.includes('conveyor') || jenisNorm.includes('convayer');
-    const isAtrs = jenisNorm.includes('atrs');
-    const isBodyScanner = jenisNorm.includes('body scanner');
-    const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
-    const isEtd = jenisNorm === 'etd' || jenisNorm.includes('etd');
-    const isPetd = isEtd && formData.peralatan.toUpperCase().includes('PETD');
+  const shortcutContext = React.useMemo(
+    () => ({
+      peralatan: formData.peralatan,
+      jenis: getSelectedJenisPeralatan(),
+      varian: getSelectedVarianPeralatan(),
+      lokasiList: formData.lokasiList,
+      lokasi1: formData.lokasi1,
+    }),
+    [formData.peralatan, formData.lokasiList, formData.lokasi1, getSelectedJenisPeralatan, getSelectedVarianPeralatan]
+  );
 
-    const pengecekanText = jenis 
-      ? `Melakukan pengecekan peralatan ${jenis}.` 
-      : 'Melakukan pengecekan peralatan.';
-
-    const isConveyorLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      const s = locStr.trim().toLowerCase();
-      return s.includes('conveyor') || s.includes('convayer') || s.includes('belt');
-    };
-
-    const isCustomLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      const s = locStr.trim().toLowerCase();
-      return s.includes('redline') || s.includes('arrival hall f') || s.includes('arrival f') || s.includes('monitoring custom') || (s.includes('ruang monitoring') && s.includes('custom')) || s.includes('custom');
-    };
-
-    const isHbscpLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      return locStr.trim().toLowerCase().includes('hbscp');
-    };
-
-    const isPscpLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      return locStr.trim().toLowerCase().includes('pscp');
-    };
-
-    const isDataNetworkLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      const s = locStr.trim().toLowerCase();
-      const isUmrah = s.includes('umrah') || s.includes('umroh');
-      const isArrivalF = s.includes('arrival f') || s.includes('arrival hall f');
-      const isAviobridgeF = s.includes('aviobridge f') || s.includes('avio f');
-      const isRampoutF = s.includes('rampout f');
-      const isBLF = s.includes('bl f') || s.includes('bl-f') || s.includes('bl/f') || s.includes('avio & bl f');
-      return isUmrah || isArrivalF || isAviobridgeF || isRampoutF || isBLF;
-    };
-
-    const isLiftLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      return locStr.trim().toLowerCase().includes('lift');
-    };
-
-    const isServerLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      return locStr.trim().toLowerCase().includes('server');
-    };
-
-    const isMonitoringLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      return locStr.trim().toLowerCase().includes('monitoring');
-    };
-
-    const list = formData.lokasiList && formData.lokasiList.length > 0 
-      ? formData.lokasiList 
-      : [{ lokasi1: formData.lokasi1 }];
-      
-    const hasConveyorLoc = list.some(item => isConveyorLocationString(item.lokasi1));
-    const hasCustomLoc = list.some(item => isCustomLocationString(item.lokasi1));
-    const hasHbscpLoc = list.some(item => isHbscpLocationString(item.lokasi1));
-    const hasPscpLoc = list.some(item => isPscpLocationString(item.lokasi1));
-    const hasDataNetworkLoc = list.some(item => isDataNetworkLocationString(item.lokasi1));
-    const hasLiftLoc = list.some(item => isLiftLocationString(item.lokasi1));
-    const hasServerLoc = list.some(item => isServerLocationString(item.lokasi1));
-    const hasMonitoringLoc = list.some(item => isMonitoringLocationString(item.lokasi1));
-
-    let koordinasiPihak = 'Koordinasi dengan pihak Avsec.';
-    if (isMirroringXRay) {
-      koordinasiPihak = 'Koordinasi dengan pihak Custom.';
-    } else if (hasConveyorLoc && isExtensionConveyor) {
-      koordinasiPihak = 'Koordinasi dengan Ground Handling.';
-    } else if (hasConveyorLoc || hasCustomLoc) {
-      koordinasiPihak = 'Koordinasi dengan pihak Custom.';
-    }
-
-    const items: string[] = [
-      'Koordinasi dengan TOCC.',
-      pengecekanText,
-      koordinasiPihak
-    ];
-
-    const addItem = (item: string) => {
-      if (!items.includes(item)) {
-        items.push(item);
-      }
-    };
-
-    if (hasHbscpLoc && isXRay) {
-      addItem('Koordinasi dengan Teknik Mekanik untuk pemindahan jalur pemeriksaan bagasi jika diperlukan.');
-    }
-
-    if (hasPscpLoc && isXRay) {
-      addItem('Pindahkan jalur pemeriksaan pada line yang kosong.');
-    }
-
-    if (isAccessControl) {
-      if (hasDataNetworkLoc) {
-        addItem('Koordinasi dengan Unit Data Network.');
-      }
-      if (!hasLiftLoc) {
-        addItem('Pecahkan Emergency Breakglass jika diperlukan.');
-      }
-      if (hasLiftLoc) {
-        addItem('Koordinasi dengan Teknik Mekanik.');
-      } else if (!hasServerLoc && !hasMonitoringLoc) {
-        addItem('Melakukan pengecekan pintu.');
-        addItem('Koordinasi dengan Teknik Sipil.');
-      }
-    }
-
-    if (isAccessControl || isMirroringXRay) {
-      addItem('Melakukan pengecekan jaringan.');
-    }
-
-    if (isXRay || isAccessControl || isExtensionConveyor || isAtrs || isBodyScanner || isWtmd || (isEtd && !isPetd)) {
-      addItem('Melakukan pengecekan power listrik.');
-      addItem('Koordinasi dengan Teknik Listrik.');
-    }
-
-    return items;
-  }, [formData.peralatan, formData.lokasiList, formData.lokasi1, tipeToJenisMap]);
-
-  const mitigasiShortcuts = getApplicableMitigasiList();
+  const mitigasiShortcuts = React.useMemo(() => getApplicableMitigasiList(shortcutContext), [shortcutContext]);
+  const dampakShortcuts = React.useMemo(() => getApplicableDampakList(shortcutContext), [shortcutContext]);
+  const permasalahanShortcuts = React.useMemo(
+    () => getApplicablePermasalahanList(shortcutContext),
+    [shortcutContext]
+  );
 
   const handleAddMitigasiItem = (itemText: string) => {
     setFormData(prev => {
-      const raw = prev.tindakanMitigasi ? prev.tindakanMitigasi.trim() : '';
-      if (!raw || raw === '1.' || raw === '1. ') {
-        return { ...prev, tindakanMitigasi: `1. ${itemText}` };
-      }
-      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-      const alreadyExists = lines.some(l => l.replace(/^\d+\.\s*/, '').toLowerCase() === itemText.toLowerCase());
-      if (alreadyExists) {
-        return prev;
-      }
-      const nextNum = lines.length + 1;
-      return { ...prev, tindakanMitigasi: `${raw}\n${nextNum}. ${itemText}` };
+      const next = appendNumberedItem(prev.tindakanMitigasi, itemText);
+      return next === null ? prev : { ...prev, tindakanMitigasi: next };
     });
   };
-
-  const getApplicableDampakList = React.useCallback((): string[] => {
-    const jenis = getSelectedJenisPeralatan();
-    const jenisNorm = jenis.trim().toLowerCase();
-    const isXRay = jenisNorm === 'x-ray';
-    const isMirroringXRay = jenisNorm.includes('mirroring');
-    const isEtd = jenisNorm === 'etd' || jenisNorm.includes('etd');
-    const isAccessControl = jenisNorm.includes('access control');
-    const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
-    const isHhmd = jenisNorm === 'hhmd' || jenisNorm.includes('hhmd');
-    const isAtrs = jenisNorm.includes('atrs');
-    const isBodyScanner = jenisNorm.includes('body scanner');
-
-    const varian = (getSelectedVarianPeralatan() || '').toLowerCase();
-    const isCabin = varian.includes('cabin') || formData.peralatan.toLowerCase().includes('cabin');
-    const isBagasi = varian.includes('bagasi') || formData.peralatan.toLowerCase().includes('bagasi');
-
-    const list = formData.lokasiList && formData.lokasiList.length > 0 
-      ? formData.lokasiList 
-      : [{ lokasi1: formData.lokasi1 }];
-      
-    const hasPscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('pscp'));
-    const hasHbscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('hbscp'));
-    const hasSscpLoc = list.some(item => (item.lokasi1 || '').toLowerCase().includes('sscp'));
-    const hasRedlineOrConveyorLoc = list.some(item => {
-      const s = (item.lokasi1 || '').toLowerCase();
-      return s.includes('redline') || s.includes('conveyor belt') || (s.includes('conveyor') && s.includes('belt'));
-    });
-
-    const items: string[] = [];
-
-    const addItem = (item: string) => {
-      if (!items.includes(item)) {
-        items.push(item);
-      }
-    };
-
-    if (isMirroringXRay) {
-      addItem('Custom tidak dapat memonitoring pemeriksaan barang di area HBS Internasional.');
-    }
-
-    if (isHhmd) {
-      addItem('Proses pemeriksaan orang terganggu.');
-    }
-
-    if (isWtmd) {
-      addItem('Proses pemeriksaan orang terganggu.');
-      addItem('Terjadi penumpukan antrian pemeriksaan orang.');
-    }
-
-    if (isBodyScanner) {
-      addItem('Proses pemeriksaan orang terganggu.');
-      addItem('Terjadi penumpukan antrian pemeriksaan orang.');
-    }
-
-    if (isAtrs) {
-      addItem('Proses pemeriksaan barang pax terganggu.');
-      addItem('Terjadi penumpukan antrian pemeriksaan barang.');
-    }
-
-    if (isXRay && hasPscpLoc) {
-      addItem('Terjadi resiko penumpukan jumlah antrian pax.');
-    }
-
-    if (isXRay && hasHbscpLoc) {
-      addItem('Terjadi resiko penumpukan jumlah bagasi.');
-    }
-
-    if (isXRay && isBagasi && hasHbscpLoc) {
-      addItem('Proses pemeriksaan bagasi pax terganggu.');
-    }
-
-    if (isXRay && isCabin) {
-      if (hasSscpLoc) {
-        addItem('Proses pemeriksaan barang terganggu.');
-      } else {
-        addItem('Proses pemeriksaan barang pax terganggu.');
-      }
-    }
-
-    if (isXRay && isBagasi && hasRedlineOrConveyorLoc) {
-      addItem('Proses pemeriksaan barang oleh Custom di area Kedatangan Internasional terganggu.');
-    }
-
-    if (isEtd) {
-      addItem('Barang yang mengandung senyawa Explosive tidak dapat terdeteksi.');
-      addItem('Pelaksanaan random check terganggu.');
-    }
-
-    if (isAccessControl) {
-      addItem('Resiko pintu Access dilewati oleh orang yang tidak berhak.');
-      addItem('Akses keluar masuk pintu Access menjadi terganggu.');
-      addItem('Perijinan keluar masuk pintu Access menjadi terganggu.');
-    }
-
-    if (isWtmd || isHhmd) {
-      addItem('Barang yang mengandung bahan metal tidak dapat terdeteksi.');
-    }
-
-    return items;
-  }, [formData.peralatan, formData.lokasiList, formData.lokasi1, tipeToJenisMap, tipeToVarianMap]);
-
-  const dampakShortcuts = getApplicableDampakList();
 
   const handleAddDampakItem = (itemText: string) => {
     setFormData(prev => {
-      const raw = prev.dampak ? prev.dampak.trim() : '';
-      if (!raw || raw === '1.' || raw === '1. ') {
-        return { ...prev, dampak: `1. ${itemText}` };
-      }
-      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-      const alreadyExists = lines.some(l => l.replace(/^\d+\.\s*/, '').toLowerCase() === itemText.toLowerCase());
-      if (alreadyExists) {
-        return prev;
-      }
-      const nextNum = lines.length + 1;
-      return { ...prev, dampak: `${raw}\n${nextNum}. ${itemText}` };
+      const next = appendNumberedItem(prev.dampak, itemText);
+      return next === null ? prev : { ...prev, dampak: next };
     });
   };
-
-  const getApplicablePermasalahanList = React.useCallback((): string[] => {
-    const jenis = getSelectedJenisPeralatan();
-    const jenisNorm = jenis.trim().toLowerCase();
-    const isXRay = jenisNorm === 'x-ray' || jenisNorm.includes('x-ray') || jenisNorm.includes('xray');
-    const isRapiscan = (formData.peralatan || '').toLowerCase().includes('rapiscan');
-    const isNuctech = (formData.peralatan || '').toLowerCase().includes('nuctech');
-    const isAccessControl = jenisNorm.includes('access control');
-    const isBodyScanner = jenisNorm.includes('body scanner');
-    const isMirroringXRay = jenisNorm.includes('mirroring');
-    const isWtmd = jenisNorm === 'wtmd' || jenisNorm.includes('wtmd');
-    const isEtd = jenisNorm === 'etd' || jenisNorm.includes('etd');
-    const isHhmd = jenisNorm === 'hhmd' || jenisNorm.includes('hhmd');
-    const isAtrs = jenisNorm === 'atrs' || jenisNorm.includes('atrs');
-    const isExtensionConveyor = jenisNorm.includes('extension conveyor') || jenisNorm.includes('conveyor') || jenisNorm.includes('convayer');
-
-    const items: string[] = [];
-
-    if (isXRay && isRapiscan) {
-      items.push(
-        'Muncul notif Inverter Fault.',
-        'Muncul notif X-Ray Subsystem Fault.',
-        'User akun terblokir.',
-        'Control Panel tidak dapat dioperasikan.',
-        'X-Ray off.',
-        'Tampilan gambar hasil scan blur/tidak jelas.',
-        'Tampilan gambar hasil scan blok hitam.',
-        'Terdapat tetesan oli di bawah mesin X-Ray.',
-        'X-Ray hang.',
-        'Tampilan monitor berwarna kuning.'
-      );
-    }
-
-    if (isXRay && isNuctech) {
-      items.push(
-        'Muncul notif Missing Data Aquisition.',
-        'Muncul notif X-Ray Generator Fault.',
-        'X-Ray off.',
-        'Tampilan gambar hasil scan blur/tidak jelas.',
-        'Tampilan gambar hasil scan blok hitam.',
-        'Terdapat tetesan oli di bawah mesin X-Ray.',
-        'X-Ray hang.',
-        'Tampilan monitor berwarna kuning.'
-      );
-    }
-
-    if (isWtmd) {
-      items.push(
-        'WTMD off.',
-        'WTMD mengalami interferensi.',
-        'WTMD berbunyi terus menerus tanpa adanya orang yang melewati.',
-        'WTMD tidak dapat mendeteksi test piece kalibrasi.'
-      );
-    }
-
-    if (isMirroringXRay) {
-      items.push(
-        'Tampilan mirroring monitor X-Ray tidak muncul.',
-        'Monitor mirroring off.'
-      );
-    }
-
-    if (isBodyScanner) {
-      items.push(
-        'Body Scanner off.',
-        'Touchscreen pada monitor operator tidak berfungsi.'
-      );
-    }
-
-    if (isAccessControl) {
-      items.push(
-        'Pintu Access tidak bisa terkunci.',
-        'Pintu Access tidak bisa dibuka oleh Operator Avsec.',
-        'CCTV Access freeze.',
-        'Mikrofon tidak mengeluarkan suara/suara kecil.',
-        'Breakglass pecah.',
-        'Access Control off.'
-      );
-    }
-
-    if (isEtd) {
-      items.push(
-        'Muncul Notif Verification Required.',
-        'Muncul Notif Calibration Required.',
-        'Muncul Notif Calibration Failed.',
-        'Muncul Notif Verification Failed.',
-        'Muncul Notif High Humidity.',
-        'Muncul Notif Cleaning in progress.',
-        'Muncul Notif Regeneration in progress.',
-        'ETD off.'
-      );
-    }
-
-    if (isHhmd) {
-      items.push(
-        'HHMD off.',
-        'Tombol HHMD mengalami kerusakan.',
-        'Baterai HHMD tidak bisa diisi ulang.',
-        'Charger baterai HHMD mengalami kerusakan.'
-      );
-    }
-
-    if (isAtrs) {
-      items.push(
-        'ATRS off.',
-        'ATRS tidak dapat dijalankan.',
-        'Baki ATRS tersangkut.',
-        'Dispenser baki berhenti/tersangkut.',
-        'Tampilan mirroring mengalami error.',
-        'Tampilan deteksi barang pada baki mengalami error.'
-      );
-    }
-
-    if (isExtensionConveyor) {
-      items.push(
-        'Extension Conveyor off.',
-        'Extension Conveyor mengeluarkan suara berisik ketika dijalankan.',
-        'Conveyor belt terlalu mepet ke samping.',
-        'Conveyor belt sobek/rusak.',
-        'Extension Conveyor tidak dapat dijalankan.',
-        'Conveyor belt kendor.'
-      );
-    }
-
-    return items;
-  }, [formData.peralatan, tipeToJenisMap]);
-
-  const permasalahanShortcuts = getApplicablePermasalahanList();
 
   const handleAddPermasalahanItem = (itemText: string) => {
     setFormData(prev => {
-      const raw = (prev.permasalahan || '').trim();
-      if (!raw || raw === '•') {
-        return { ...prev, permasalahan: `• ${itemText}` };
-      }
-      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-      const cleanLines = lines.filter(l => l !== '•');
-      const alreadyExists = cleanLines.some(l => l.replace(/^•\s*/, '').toLowerCase() === itemText.toLowerCase());
-      if (alreadyExists) {
-        return prev;
-      }
-      return { ...prev, permasalahan: `${cleanLines.join('\n')}\n• ${itemText}` };
-    });
-  };
-
-  const handlePhotoUpload = async (groupId: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
-      const newPhotos = compressedResults.map(res => ({
-        id: Date.now() + Math.random(),
-        file: res.file,
-        preview: res.preview,
-        zoom: 1
-      }));
-      setPhotoGroups(prev => prev.map(g => g.id === groupId ? { ...g, photos: [...g.photos, ...newPhotos] } : g));
-    }
-  };
-
-  const removePhoto = (groupId: number, photoIndex: number) => {
-    setPhotoGroups(prev => prev.map(group => {
-      if (group.id === groupId) {
-        const newPhotos = [...group.photos];
-        URL.revokeObjectURL(newPhotos[photoIndex].preview);
-        newPhotos.splice(photoIndex, 1);
-        return { ...group, photos: newPhotos };
-      }
-      return group;
-    }));
-  };
-
-  const updatePhotoZoom = (groupId: number, photoIndex: number, delta: number) => {
-    setPhotoGroups(prev => prev.map(group => {
-      if (group.id === groupId) {
-        const newPhotos = [...group.photos];
-        const currentZoom = newPhotos[photoIndex].zoom || 1;
-        newPhotos[photoIndex] = {
-          ...newPhotos[photoIndex],
-          zoom: Math.max(0.5, Math.min(3, currentZoom + delta))
-        };
-        return { ...group, photos: newPhotos };
-      }
-      return group;
-    }));
-  };
-
-  const handlePhotoDrop = (e: React.DragEvent | any, groupId: number, targetIndex: number) => {
-    e.preventDefault();
-    const sourceIndexStr = e.dataTransfer?.getData('text/plain');
-    if (!sourceIndexStr) return;
-    
-    const sourceIndex = parseInt(sourceIndexStr, 10);
-    if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
-    
-    setPhotoGroups(prev => prev.map(group => {
-      if (group.id === groupId) {
-        const newPhotos = [...group.photos];
-        const [movedPhoto] = newPhotos.splice(sourceIndex, 1);
-        newPhotos.splice(targetIndex, 0, movedPhoto);
-        return { ...group, photos: newPhotos };
-      }
-      return group;
-    }));
-  };
-
-  const addPhotoGroup = () => {
-    setPhotoGroups(prev => [...prev, { id: Date.now(), photos: [], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }]);
-  };
-
-  const removePhotoGroup = (groupId: number) => {
-    if (photoGroups.length <= 1) return;
-    setPhotoGroups(prev => {
-      const groupToRemove = prev.find(g => g.id === groupId);
-      if (groupToRemove) {
-        groupToRemove.photos.forEach((p: any) => URL.revokeObjectURL(p.preview));
-      }
-      return prev.filter(g => g.id !== groupId);
+      const next = appendBulletItem(prev.permasalahan, itemText);
+      return next === null ? prev : { ...prev, permasalahan: next };
     });
   };
 

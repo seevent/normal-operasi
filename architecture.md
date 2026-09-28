@@ -268,4 +268,10 @@ Form State (React)
      - Standardisasi format nama personel dengan prefix jabatan (`format-nama-personel.test.mjs`).
      - Alur tombol Share WA laporan shift & non-blocking fallback WhatsApp (`share-report.test.mjs`).
      - Default orientasi cetak: Tab Shift Report A4 Landscape vs Tab BA Serah Terima A4 Portrait serta pencegahan override global di `styles.css`.
+5. **Status Keamanan Dependensi (`npm audit`)**:
+   * **`xlsx` (SheetJS) `0.18.5` — risiko diterima secara sadar.** Versi ini membawa dua advisory `high`: Prototype Pollution ([GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6), diperbaiki di 0.19.3) dan ReDoS ([GHSA-5pgg-2g8v-p4x9](https://github.com/advisories/GHSA-5pgg-2g8v-p4x9), diperbaiki di 0.20.2). **Tidak ada perbaikan di registry npm** karena SheetJS berhenti mempublikasikan ke npm sejak 0.18.5 dan memindahkan rilis ke CDN resmi mereka.
+     * *Konteks mitigasi*: parsing Excel hanya dijalankan **di sisi browser** (tidak pernah di server), dan satu-satunya jalur unggah berkas (`ScheduleUploader.tsx`, `PmScheduleUploader.tsx`) berada di dalam Tab **Data** yang memerlukan login admin. Sehingga eksploitasi mensyaratkan admin terautentikasi mengunggah berkas `.xlsx` yang sengaja dirancang jahat, dengan dampak terbatas pada tab browser admin itu sendiri.
+     * *Jalur perbaikan bila risiko ini nanti dinilai tidak lagi dapat diterima*: pasang rilis resmi `0.20.x` dari CDN SheetJS (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`), atau gunakan mirror npm yang terpelihara (`@e965/xlsx`) dengan konsekuensi menambah ketergantungan pada republisher pihak ketiga.
+   * **`extract-zip` & `sharp` — hanya perkakas pengembangan.** Keduanya masuk sebagai dependensi transitif dari `@netlify/vite-plugin-tanstack-start` → `@netlify/dev` (emulator Netlify lokal). Keduanya **tidak ikut ke dalam bundel produksi** yang dikirim ke browser, sehingga tidak menambah permukaan serangan aplikasi yang ter-deploy.
+   * Menjalankan `npm audit --omit=dev` adalah cara memeriksa kerentanan yang benar-benar terkirim ke pengguna, karena `npm audit` polos ikut menghitung perkakas build dan dev.
 

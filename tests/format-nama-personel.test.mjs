@@ -19,15 +19,24 @@ test('formatNamaPersonel: matches initial report format for title prefixes and r
   assert.equal(formatNamaPersonel(''), '');
 });
 
-test('TabPerbaikan & TabInitialReport: both import and use formatNamaPersonel from masterData', () => {
+test('Format nama personel terpusat di fetchOnDutyPersonnel, bukan diulang per tab', () => {
   const perbaikanContent = readProjectFile('src/components/features/TabPerbaikan.tsx');
   const initialReportContent = readProjectFile('src/components/features/TabInitialReport.tsx');
   const masterDataContent = readProjectFile('src/lib/data/masterData.ts');
+  const reportService = readProjectFile('src/lib/services/operationalReportService.ts');
 
   assert.match(masterDataContent, /export function formatNamaPersonel/);
-  assert.match(perbaikanContent, /import \{[^}]*formatNamaPersonel[^}]*\} from '\.\.\/\.\.\/lib\/data\/masterData'/);
-  assert.match(initialReportContent, /import \{[^}]*formatNamaPersonel[^}]*\} from '\.\.\/\.\.\/lib\/data\/masterData'/);
 
-  // TabPerbaikan should no longer have custom initial formatting like secondWord + thirdInitial
+  // Pemformatan dilakukan sekali di layanan pusat, sehingga tab menerima nama
+  // yang sudah rapi dan tidak perlu mengimpor helper-nya sendiri.
+  assert.match(reportService, /import \{[^}]*formatNamaPersonel[^}]*\} from '\.\.\/data\/masterData/);
+  assert.match(reportService, /name: formatNamaPersonel\(toTitleCase\(/);
+
+  // Kedua tab wajib mengambil daftar teknisi lewat jalur terpusat tersebut.
+  assert.match(perbaikanContent, /fetchOnDutyPersonnel/);
+  assert.match(initialReportContent, /fetchOnDutyPersonnel/);
+
+  // Tidak boleh ada lagi pemformatan inisial ad-hoc seperti secondWord + thirdInitial
   assert.doesNotMatch(perbaikanContent, /thirdInitial/);
+  assert.doesNotMatch(initialReportContent, /thirdInitial/);
 });
