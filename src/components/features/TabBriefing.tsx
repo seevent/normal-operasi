@@ -126,7 +126,7 @@ export const TabBriefing: React.FC = () => {
     e.preventDefault();
     
     let generatedCollageFile: File | null = null;
-    let finalFilesToShare: File[] = [];
+    const finalFilesToShare: File[] = [];
 
     if (photos.length > 0) {
       const imagePhotos = photos.filter(p => !p.file?.type?.startsWith('video/'));

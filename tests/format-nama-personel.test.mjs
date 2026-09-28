@@ -1,24 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { formatNamaPersonel } from '../src/lib/data/masterData.ts';
 
 const readProjectFile = (relativePath) =>
   readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8');
-
-function formatNamaPersonel(fullName) {
-  if (!fullName) return '';
-  const words = fullName.trim().split(/\s+/);
-  if (words.length === 0) return '';
-  if (words.length === 1) return words[0];
-  
-  const firstWord = words[0].toLowerCase();
-  const titlePrefixes = ['m.', 'muh.', 'muhammad', 'moch.', 'mochammad', 'abdul'];
-  
-  if (titlePrefixes.includes(firstWord)) {
-    return words[1];
-  }
-  return words[0];
-}
 
 test('formatNamaPersonel: matches initial report format for title prefixes and regular names', () => {
   assert.equal(formatNamaPersonel('Muh. Syukri'), 'Syukri');

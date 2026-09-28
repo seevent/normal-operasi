@@ -5,9 +5,10 @@ import {
   Wrench, FileSpreadsheet, Loader2, CheckCircle, AlertTriangle, 
   Trash2, Clock, Layers, Sparkles, Check, SlidersHorizontal, X
 } from 'lucide-react';
-import { 
-  parseSheetPm, enrichRecordsWithSupabaseIds, MONTH_NAMES_ID, JadwalPmRecord 
+import {
+  parseSheetPm, enrichRecordsWithSupabaseIds, MONTH_NAMES_ID, JadwalPmRecord
 } from '../../lib/utils/pmScheduleParser';
+import { getErrorMessage } from '../../lib/utils/errorUtils';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 
 export const PmScheduleUploader: React.FC = () => {
@@ -157,11 +158,11 @@ export const PmScheduleUploader: React.FC = () => {
       });
 
       await fetchHistory();
-    } catch (err: any) {
+    } catch (err) {
       console.error('PM upload error:', err);
       setUploadStatus({
         type: 'error',
-        message: err.message || 'Terjadi kesalahan saat memproses Excel PM.',
+        message: getErrorMessage(err, 'Terjadi kesalahan saat memproses Excel PM.'),
         summary: null
       });
     } finally {

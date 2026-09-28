@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export interface UploadResult {
   status: 'success' | 'error';
@@ -251,8 +252,8 @@ export const testCloudinaryConnection = async (
 
     const errMsg = data?.error?.message || `HTTP ${res.status}`;
     return { success: false, message: `Cloudinary menolak: ${errMsg}` };
-  } catch (err: any) {
-    return { success: false, message: `Gagal menghubungi Cloudinary: ${err?.message || 'CORS / Jaringan'}` };
+  } catch (err) {
+    return { success: false, message: `Gagal menghubungi Cloudinary: ${getErrorMessage(err, 'CORS / Jaringan')}` };
   }
 };
 
@@ -299,9 +300,9 @@ async function uploadToSupabaseStorageFallback(
       fileId: data?.path || storagePath,
       fileName: cleanName
     };
-  } catch (err: any) {
+  } catch (err) {
     console.error('Supabase Storage catch error:', err);
-    return { status: 'error', message: err?.message || 'Gagal upload foto ke Supabase Storage' };
+    return { status: 'error', message: getErrorMessage(err, 'Gagal upload foto ke Supabase Storage') };
   }
 }
 
@@ -356,7 +357,7 @@ export const uploadPhotoToCloudinary = async (
 
     console.warn('Cloudinary upload gagal, beralih ke Supabase Storage fallback:', data);
     return uploadToSupabaseStorageFallback(input, fileName);
-  } catch (err: any) {
+  } catch (err) {
     console.warn('Cloudinary error, beralih ke Supabase Storage fallback:', err);
     return uploadToSupabaseStorageFallback(input, fileName);
   }

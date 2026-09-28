@@ -11,7 +11,7 @@ import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { SignaturePad } from '../shared/SignaturePad';
 import { toTitleCase } from '../../lib/data/masterData';
 import { supabase } from '../../lib/supabaseClient';
-import { fetchOnDutyPersonnel } from '../../lib/services/operationalReportService';
+import { fetchOnDutyPersonnel, calculateOperationalShift } from '../../lib/services/operationalReportService';
 import { BADocumentPrint } from './ba-serah-terima/BADocumentPrint';
 
 export interface BarangItem {
@@ -70,22 +70,8 @@ export const TabBASerahTerima: React.FC = () => {
       try {
         const targetDateInput = baData.tanggal || dateStr;
         const targetTimeInput = baData.waktu || timeStr;
-        const parts = targetDateInput.split('-').map(Number);
-        let hour = parseInt((targetTimeInput || '').split(':')[0], 10);
-        if (isNaN(hour)) hour = new Date().getHours();
-
-        const logicalDate = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
-        const isPagi = hour >= 8 && hour < 20;
-        if (hour < 8) {
-          logicalDate.setDate(logicalDate.getDate() - 1);
-        }
-
-        const y = logicalDate.getFullYear();
-        const m = String(logicalDate.getMonth() + 1).padStart(2, '0');
-        const d = String(logicalDate.getDate()).padStart(2, '0');
-        const targetDate = `${y}-${m}-${d}`;
-        const targetShiftCode = isPagi ? 'PS' : 'M';
-        setActiveShiftLabel(isPagi ? 'Shift Pagi/Siang' : 'Shift Malam');
+        const { targetDate, targetShiftCode, shiftLabel } = calculateOperationalShift(targetDateInput, targetTimeInput);
+        setActiveShiftLabel(shiftLabel);
 
         const list = await fetchOnDutyPersonnel(targetDate, targetShiftCode);
         if (list.length > 0) {

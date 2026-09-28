@@ -1,7 +1,7 @@
 // src/lib/services/operationalReportService.ts
 
-import { supabase } from '../supabaseClient';
-import { formatNamaPersonel, toTitleCase } from '../data/masterData';
+import { supabase } from '../supabaseClient.ts';
+import { formatNamaPersonel, toTitleCase } from '../data/masterData.ts';
 
 export interface OperationalLog {
   id?: string;
@@ -141,6 +141,33 @@ export const getOperationalShiftAndDate = (d: Date = new Date()): { date: string
   } else {
     return { date: getLocalDateString(d), shift: 'M' };
   }
+};
+
+/**
+ * Menentukan tanggal & dinas logis dari input tanggal+waktu bebas (misal form BA Serah Terima):
+ * - 00:00 - 07:59 WIB: Shift Malam, tanggal logis = hari sebelumnya dari tanggal input.
+ * - 08:00 - 19:59 WIB: Shift Pagi/Siang, tanggal logis = tanggal input.
+ * - 20:00 - 23:59 WIB: Shift Malam, tanggal logis = tanggal input.
+ */
+export const calculateOperationalShift = (
+  targetDateInput: string,
+  targetTimeInput: string
+): { targetDate: string; targetShiftCode: 'PS' | 'M'; shiftLabel: string } => {
+  const parts = targetDateInput.split('-').map(Number);
+  let hour = parseInt((targetTimeInput || '').split(':')[0], 10);
+  if (isNaN(hour)) hour = new Date().getHours();
+
+  const logicalDate = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+  const isPagi = hour >= 8 && hour < 20;
+  if (hour < 8) {
+    logicalDate.setDate(logicalDate.getDate() - 1);
+  }
+
+  const targetDate = getLocalDateString(logicalDate);
+  const targetShiftCode: 'PS' | 'M' = isPagi ? 'PS' : 'M';
+  const shiftLabel = isPagi ? 'Shift Pagi/Siang' : 'Shift Malam';
+
+  return { targetDate, targetShiftCode, shiftLabel };
 };
 
 export interface OnDutyPersonel {

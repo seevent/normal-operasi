@@ -1,14 +1,15 @@
 {
-  "name": "calculator",
+  "name": "sses-t2-normal-operasi",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000 --host",
-    "build": "vite build"
+    "build": "vite build",
+    "test": "node --test",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
-    "@tailwindcss/vite": "4.2.2",
     "@tanstack/react-router": "1.168.22",
     "@tanstack/react-start": "1.167.41",
     "@tanstack/router-plugin": "1.167.22",
@@ -17,12 +18,12 @@
     "lucide-react": "0.576.0",
     "react": "19.2.5",
     "react-dom": "19.2.5",
-    "tailwindcss": "4.2.2",
     "vite-tsconfig-paths": "6.1.1",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@netlify/vite-plugin-tanstack-start": "1.3.14",
     "@tailwindcss/vite": "4.2.2",
     "@types/node": "22.19.19",
@@ -30,10 +31,14 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "5.2.0",
-    "lucide-react": "0.576.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^17.0.0",
     "rimraf": "6.1.3",
     "tailwindcss": "4.2.2",
     "typescript": "5.9.3",
+    "typescript-eslint": "^8.46.4",
     "vite": "7.3.3"
   }
 }

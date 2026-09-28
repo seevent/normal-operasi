@@ -315,7 +315,6 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
       if (error) {
         console.warn('Gagal memuat data Supabase penempatan.', error.message);
       } else if (data && data.length > 0) {
-        console.log('✅ Berhasil terhubung ke Supabase! Menemukan', data.length, 'data penempatan.');
         set({ penempatanData: data });
       }
 
@@ -368,8 +367,6 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
       }
 
       if (finalPersonelData.length > 0) {
-        console.log('✅ Berhasil mengambil data personel dari Supabase:', finalPersonelData.length);
-        
         // Memisahkan berdasarkan unit kerja dan format ke struktur state
         const apiT2Raw = finalPersonelData
           .filter((p: any) => p.unit_kerja?.nama === 'API T2')
@@ -390,7 +387,6 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
         .select('key, value');
 
       if (!configsError && configsData) {
-        console.log('✅ Berhasil memuat master configs dari Supabase:', configsData.length);
         configsData.forEach(config => {
           switch(config.key) {
             case 'cloudinary_config':

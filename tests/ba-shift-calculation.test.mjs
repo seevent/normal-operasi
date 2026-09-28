@@ -1,26 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
-function calculateOperationalShift(targetDateInput, targetTimeInput) {
-  const parts = targetDateInput.split('-').map(Number);
-  let hour = parseInt((targetTimeInput || '').split(':')[0], 10);
-  if (isNaN(hour)) hour = 12;
-
-  const logicalDate = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
-  const isPagi = hour >= 8 && hour < 20;
-  if (hour < 8) {
-    logicalDate.setDate(logicalDate.getDate() - 1);
-  }
-
-  const y = logicalDate.getFullYear();
-  const m = String(logicalDate.getMonth() + 1).padStart(2, '0');
-  const d = String(logicalDate.getDate()).padStart(2, '0');
-  const targetDate = `${y}-${m}-${d}`;
-  const targetShiftCode = isPagi ? 'PS' : 'M';
-  const shiftLabel = isPagi ? 'Shift Pagi/Siang' : 'Shift Malam';
-
-  return { targetDate, targetShiftCode, shiftLabel };
-}
+import { calculateOperationalShift } from '../src/lib/services/operationalReportService.ts';
 
 test('BA Serah Terima: operational shift boundary logic', () => {
   // Dini hari: 23 Sept 00:28 WIB -> Shift Malam 22 Sept

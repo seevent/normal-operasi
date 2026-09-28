@@ -237,7 +237,7 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
   checklistDataMaster.forEach((block) => {
     if (block.type === 'location') {
       result += `${block.title}\n`;
-      let summaryCounts: any = {};
+      const summaryCounts: any = {};
 
       block.categories.forEach((cat: any) => {
         result += `${cat.title}\n`;
@@ -277,7 +277,7 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
       }
 
     } else if (block.type === 'group') {
-      let summaryCounts: any = {};
+      const summaryCounts: any = {};
       
       block.locations.forEach((loc: any) => {
         result += `${loc.title}\n`;

@@ -1,4 +1,5 @@
 // src/lib/services/shareService.ts
+import { isAbortError } from '../utils/errorUtils';
 
 export const triggerFileDownload = (file: File) => {
   const url = URL.createObjectURL(file);
@@ -74,9 +75,9 @@ export const shareToWhatsApp = async (
       setTimeout(() => setIsCopied(false), 2500);
       return;
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Share dibatalkan atau gagal', err);
-    if (err.name === 'AbortError') return;
+    if (isAbortError(err)) return;
   }
 
   await fallbackShare(message, finalFiles, setIsCopied);

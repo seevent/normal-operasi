@@ -6,6 +6,7 @@ import {
   Cpu, Tag, ShieldCheck, Calendar, Building2, AlertCircle, 
   CheckCircle2, Clock, Box, AlertTriangle, Layers, Zap
 } from 'lucide-react';
+import { getErrorMessage } from '../../lib/utils/errorUtils';
 
 export const UnitPeralatanManager: React.FC = () => {
   const { initializeSupabaseData } = useMasterDataStore();
@@ -159,9 +160,9 @@ export const UnitPeralatanManager: React.FC = () => {
       initializeSupabaseData();
       setIsFormOpen(false);
       resetForm();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error saving unit:', err);
-      setErrorMsg(err.message || 'Terjadi kesalahan saat menyimpan data unit.');
+      setErrorMsg(getErrorMessage(err, 'Terjadi kesalahan saat menyimpan data unit.'));
     } finally {
       setSaving(false);
     }
@@ -182,9 +183,9 @@ export const UnitPeralatanManager: React.FC = () => {
         await loadData();
         initializeSupabaseData();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed delete unit:', err);
-      alert('Gagal menghapus unit: ' + (err.message || 'Unknown error'));
+      alert('Gagal menghapus unit: ' + getErrorMessage(err, 'Unknown error'));
     }
   };
 

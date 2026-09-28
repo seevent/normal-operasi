@@ -195,7 +195,7 @@ export const TabPerbaikan: React.FC = () => {
         }
       }
     }
-    let newFormData = { ...formData, [name]: value };
+    const newFormData = { ...formData, [name]: value };
 
     if (name === 'peralatan') {
       newFormData.lokasi1 = '';
@@ -521,7 +521,7 @@ export const TabPerbaikan: React.FC = () => {
       return;
     }
 
-    let customFilesArray: File[] = [];
+    const customFilesArray: File[] = [];
 
     // Process photos for each group
     for (let i = 0; i < photoGroups.length; i++) {

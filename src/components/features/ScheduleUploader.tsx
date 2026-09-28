@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { Calendar, FileSpreadsheet, Loader2, CheckCircle, AlertTriangle, Trash2, Clock } from 'lucide-react';
 import { PmScheduleUploader } from './PmScheduleUploader';
+import { getErrorMessage } from '../../lib/utils/errorUtils';
 
 export const ScheduleUploader: React.FC = () => {
   const store = useMasterDataStore();
@@ -149,8 +150,8 @@ export const ScheduleUploader: React.FC = () => {
       setUploadStatus({type: 'success', message: `Berhasil mengunggah jadwal untuk ${shiftsToInsert.length} shift.`});
       await fetchHistory();
       
-    } catch (err: any) {
-      setUploadStatus({type: 'error', message: err.message || 'Terjadi kesalahan saat memproses Excel.'});
+    } catch (err) {
+      setUploadStatus({type: 'error', message: getErrorMessage(err, 'Terjadi kesalahan saat memproses Excel.')});
     } finally {
       setIsUploading(false);
       e.target.value = '';

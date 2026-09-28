@@ -5,6 +5,7 @@ import { MapPin, Cpu, Hash, Trash2, Plus, Loader2, AlertCircle, LayoutGrid, Data
 import { AssetMasterLokasi } from './AssetMasterLokasi';
 import { AssetMasterPeralatan } from './AssetMasterPeralatan';
 import { UnitPeralatanManager } from './UnitPeralatanManager';
+import { getErrorMessage } from '../../lib/utils/errorUtils';
 
 const MILIK_OPTIONS = ['API', 'Bea Cukai', 'Sewa', 'Lainnya'];
 const STATUS_OPTIONS = [
@@ -175,9 +176,9 @@ export const AssetManager: React.FC = () => {
       await loadBaseData();
       initializeSupabaseData(); // Sinkronisasi global
       
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Terjadi kesalahan saat menyimpan data.');
+      setErrorMsg(getErrorMessage(err, 'Terjadi kesalahan saat menyimpan data.'));
     } finally {
       setSaving(false);
     }
@@ -256,9 +257,9 @@ export const AssetManager: React.FC = () => {
       setEditingPlacement(null);
       await loadBaseData();
       initializeSupabaseData();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Gagal mengupdate penempatan', err);
-      setEditPlacementError(err.message || 'Gagal menyimpan perubahan penempatan.');
+      setEditPlacementError(getErrorMessage(err, 'Gagal menyimpan perubahan penempatan.'));
     } finally {
       setSavingPlacement(false);
     }
@@ -310,9 +311,9 @@ export const AssetManager: React.FC = () => {
       setEditingUnit(null);
       await loadBaseData();
       initializeSupabaseData();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Gagal mengupdate data unit', err);
-      setEditUnitError(err.message || 'Gagal menyimpan perubahan unit.');
+      setEditUnitError(getErrorMessage(err, 'Gagal menyimpan perubahan unit.'));
     } finally {
       setSavingUnit(false);
     }

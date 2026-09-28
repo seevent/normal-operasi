@@ -8,6 +8,7 @@ import { AssetManager } from './AssetManager';
 import { SparepartManager } from './SparepartManager';
 import { CloudinarySettingsPanel } from './CloudinarySettingsPanel';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
+import { getErrorMessage } from '../../lib/utils/errorUtils';
 import { toTitleCase } from '../../lib/data/masterData';
 
 export const TabData: React.FC = () => {
@@ -166,9 +167,9 @@ const LocalDataEditor: React.FC = () => {
       if (activeSubTab !== 'kalibrasi_equip') {
         alert('Data berhasil disimpan ke sistem & database!');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error saving data:', err);
-      alert('Terjadi kesalahan saat menyimpan: ' + (err?.message || err));
+      alert('Terjadi kesalahan saat menyimpan: ' + getErrorMessage(err));
     } finally {
       setIsSavingDb(false);
     }

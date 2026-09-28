@@ -420,7 +420,7 @@ export const TabKalibrasi: React.FC = () => {
       return;
     }
     
-    let customFilesArray: File[] = [];
+    const customFilesArray: File[] = [];
     
     // Process photos for each group
     for (let i = 0; i < kalibrasiPhotoGroups.length; i++) {

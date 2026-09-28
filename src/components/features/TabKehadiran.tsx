@@ -7,6 +7,7 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
 import { formatPmRencanaKegiatan, filterActivePm } from '../../lib/utils/pmScheduleParser';
+import { getErrorMessage } from '../../lib/utils/errorUtils';
 
 export const TabKehadiran: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -308,9 +309,9 @@ export const TabKehadiran: React.FC = () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to save attendance', err);
-      alert(err.message || 'Gagal menyimpan absensi ke database!');
+      alert(getErrorMessage(err, 'Gagal menyimpan absensi ke database!'));
     } finally {
       setIsSaving(false);
     }
