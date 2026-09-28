@@ -50,3 +50,14 @@ test('Print Orientation: TabShiftReport defaults to Landscape while TabBASerahTe
   assert.doesNotMatch(stylesContent, /@page\s*\{\s*size:\s*A4 portrait;/);
 });
 
+test('TabShiftReport: formatHasil returns "Normal" instead of "Normal Operasi" in print table', () => {
+  const content = readProjectFile('src/components/features/TabShiftReport.tsx');
+
+  // formatHasil must not return hardcoded 'Normal Operasi'
+  assert.doesNotMatch(content, /return 'Normal Operasi'/);
+
+  // formatHasil implementation check
+  assert.match(content, /const formatHasil =/);
+  assert.match(content, /return \(!s \|\| s\.includes\('normal'\)\) \? 'Normal' : r\.Status/);
+});
+

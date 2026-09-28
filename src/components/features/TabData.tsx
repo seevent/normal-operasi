@@ -7,6 +7,8 @@ import { ChecklistDataEditor } from './ChecklistDataEditor';
 import { AssetManager } from './AssetManager';
 import { SparepartManager } from './SparepartManager';
 import { CloudinarySettingsPanel } from './CloudinarySettingsPanel';
+import { useMasterDataStore } from '../../store/useMasterDataStore';
+import { toTitleCase } from '../../lib/data/masterData';
 
 export const TabData: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -125,117 +127,8 @@ const AdminLogin: React.FC = () => {
 };
 
 // ==========================================
-// 3. KOMPONEN GENERIC CRUD TABLE
+// 2. EDITOR DATA LOKAL (PERSONEL, TIP, STORING)
 // ==========================================
-export const GenericCrudTable: React.FC<{ tableName: string }> = ({ tableName }) => {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newItemName, setNewItemName] = useState('');
-
-  // Sederhanakan render: saat ini kita support 2 tabel sederhana (jenis & lokasi) untuk demo CRUD 1 kolom.
-  // Tabel relasional (Tipe, Titik, Penempatan) butuh UI Select Box yang lebih kompleks, kita batasi dulu di sini.
-  const isSimpleTable = tableName === 'jenis_peralatan' || tableName === 'lokasi';
-
-  const fetchData = async () => {
-    setLoading(true);
-    const { data: result, error } = await supabase.from(tableName).select('*').order('id', { ascending: true });
-    if (!error && result) {
-      setData(result);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [tableName]);
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Hapus data ini? Data yang terhubung juga mungkin terhapus!')) return;
-    await supabase.from(tableName).delete().eq('id', id);
-    fetchData();
-  };
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItemName.trim()) return;
-    await supabase.from(tableName).insert([{ nama: newItemName }]);
-    setNewItemName('');
-    fetchData();
-  };
-
-  if (loading) {
-    return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
-  }
-
-  if (!isSimpleTable) {
-    return (
-      <div className="p-12 text-center">
-        <Database className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-slate-700">Tabel Relasional Kompleks</h3>
-        <p className="text-slate-500 mt-2 max-w-md mx-auto">
-          Tabel <b>{tableName}</b> membutuhkan formulir khusus dengan *dropdown* relasi antar tabel (Foreign Keys). 
-          Untuk saat ini, silakan kelola tabel ini langsung melalui <b>Dashboard Supabase</b> Anda.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="p-5 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-4 justify-between items-center">
-        <form onSubmit={handleAdd} className="flex w-full sm:w-auto gap-2">
-          <input 
-            type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)}
-            placeholder="Tambah nama baru..." 
-            className="flex-1 sm:w-64 px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-          />
-          <button type="submit" className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-2 transition-colors">
-            <Plus className="w-5 h-5" /> <span className="hidden sm:inline">Tambah</span>
-          </button>
-        </form>
-        <button onClick={fetchData} className="p-2.5 text-slate-500 hover:bg-slate-200 rounded-xl transition-colors">
-          <RefreshCw className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-100 text-slate-600 text-sm">
-              <th className="p-4 font-bold border-b border-slate-200">Nama / Nilai</th>
-              <th className="p-4 font-bold border-b border-slate-200 w-24 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0 ? (
-              <tr>
-                <td colSpan={2} className="p-8 text-center text-slate-500 italic">Belum ada data.</td>
-              </tr>
-            ) : (
-              data.map((row, i) => (
-                <tr key={row.id} className={`border-b border-slate-100 hover:bg-blue-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                  <td className="p-4 font-medium text-slate-800">{row.nama}</td>
-                  <td className="p-4 text-center">
-                    <button onClick={() => handleDelete(row.id)} className="p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// 4. EDITOR DATA LOKAL (PERSONEL, TIP, STORING)
-// ==========================================
-import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { toTitleCase } from '../../lib/data/masterData';
-
 const LocalDataEditor: React.FC = () => {
   const store = useMasterDataStore();
   const [activeSubTab, setActiveSubTab] = useState('upload_jadwal');

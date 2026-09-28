@@ -1,6 +1,7 @@
 // src/lib/services/operationalReportService.ts
 
 import { supabase } from '../supabaseClient';
+import { formatNamaPersonel, toTitleCase } from '../data/masterData';
 
 export interface OperationalLog {
   id?: string;
@@ -139,6 +140,52 @@ export const getOperationalShiftAndDate = (d: Date = new Date()): { date: string
     return { date: getLocalDateString(d), shift: 'PS' };
   } else {
     return { date: getLocalDateString(d), shift: 'M' };
+  }
+};
+
+export interface OnDutyPersonel {
+  id: string;
+  name: string;
+  unit: string;
+  jabatan?: string;
+}
+
+/**
+ * Mengambil daftar personel dinas yang aktif / hadir dari tabel jadwal_shift
+ */
+export const fetchOnDutyPersonnel = async (
+  targetDate?: string,
+  targetShift?: 'PS' | 'M'
+): Promise<OnDutyPersonel[]> => {
+  try {
+    const { date: defaultDate, shift: defaultShift } = getOperationalShiftAndDate();
+    const queryDate = targetDate || defaultDate;
+    const queryShift = targetShift || defaultShift;
+
+    const { data } = await supabase
+      .from('jadwal_shift')
+      .select('id, shift, status_kehadiran, personel:personel_id(id, nama, jabatan, unit_kerja(nama))')
+      .eq('tanggal', queryDate)
+      .neq('shift', 'D');
+
+    if (!data) return [];
+
+    return data
+      .filter((d: any) => {
+        const s = (d.shift || '').toUpperCase();
+        const status = (d.status_kehadiran || '').toLowerCase();
+        return s === queryShift && status !== 'sakit' && status !== 'cuti' && status !== 'libur';
+      })
+      .map((d: any) => ({
+        id: String(d.id),
+        name: formatNamaPersonel(toTitleCase(d.personel?.nama || '')),
+        unit: d.personel?.unit_kerja?.nama || 'API T2',
+        jabatan: d.personel?.jabatan || ''
+      }))
+      .filter(p => Boolean(p.name));
+  } catch (err) {
+    console.error('Error in fetchOnDutyPersonnel:', err);
+    return [];
   }
 };
 

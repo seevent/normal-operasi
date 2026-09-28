@@ -20,9 +20,6 @@ const config = defineConfig({
   server: {
     https: true,
   },
-  ssr: {
-    noExternal: ['konva', 'react-konva', 'use-image'],
-  },
 })
 
 export default config

@@ -23,14 +23,6 @@ export const DEFAULT_PM_DISPLAY_SETTINGS: PmDisplaySettings = {
   }
 };
 
-const loadMasterData = (_key: string, defaultData: any) => {
-  return defaultData;
-};
-
-const saveMasterDataToLocal = (_key: string, _data: any) => {
-  // Disabled by user request
-};
-
 const saveConfigToSupabase = async (key: string, data: any) => {
   try {
     const { error } = await supabase
@@ -61,19 +53,6 @@ interface MasterDataState {
   tipRightCol: any[];
   setTipRightCol: (data: any[]) => void;
   
-  masterModalOpen: string | null;
-  setMasterModalOpen: (type: string | null) => void;
-  masterModalData: any[];
-  setMasterModalData: (data: any[]) => void;
-  
-  openMasterModal: (type: string, currentData: any[]) => void;
-  closeMasterModal: () => void;
-  saveCurrentMasterModal: () => void;
-  resetCurrentMasterModal: () => void;
-  handleModalDataChange: (index: number, field: string | undefined, value: any) => void;
-  addModalDataRow: () => void;
-  removeModalDataRow: (index: number) => void;
-  
   penempatanData: any[];
   setPenempatanData: (data: any[]) => void;
   unitPeralatanData: any[];
@@ -96,16 +75,14 @@ interface MasterDataState {
 }
 
 export const useMasterDataStore = create<MasterDataState>((set, get) => ({
-  dataApiT2: loadMasterData('master_api_t2', sortPersonelByJabatan(DEFAULT_DATA_API_T2)),
+  dataApiT2: sortPersonelByJabatan(DEFAULT_DATA_API_T2),
   setDataApiT2: (data) => {
     const sorted = sortPersonelByJabatan(data);
-    saveMasterDataToLocal('master_api_t2', sorted);
     set({ dataApiT2: sorted });
   },
-  dataOmIasT2: loadMasterData('master_om_ias_t2', sortPersonelByJabatan(DEFAULT_DATA_OM_IAS_T2)),
+  dataOmIasT2: sortPersonelByJabatan(DEFAULT_DATA_OM_IAS_T2),
   setDataOmIasT2: (data) => {
     const sorted = sortPersonelByJabatan(data);
-    saveMasterDataToLocal('master_om_ias_t2', sorted);
     set({ dataOmIasT2: sorted });
   },
   savePersonelToSupabase: async (data, unitName) => {
@@ -183,39 +160,33 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
       console.error('Failed savePersonelToSupabase:', err);
     }
   },
-  storingEquipments: loadMasterData('master_storing_equip', DEFAULT_STORING_EQUIPMENTS),
+  storingEquipments: DEFAULT_STORING_EQUIPMENTS,
   setStoringEquipments: (data) => {
-    saveMasterDataToLocal('master_storing_equip', data);
     saveConfigToSupabase('master_storing_equip', data);
     set({ storingEquipments: data });
   },
-  storingLocAc: loadMasterData('master_storing_loc_ac', DEFAULT_STORING_LOC_AC),
+  storingLocAc: DEFAULT_STORING_LOC_AC,
   setStoringLocAc: (data) => {
-    saveMasterDataToLocal('master_storing_loc_ac', data);
     saveConfigToSupabase('master_storing_loc_ac', data);
     set({ storingLocAc: data });
   },
-  storingLocDefault: loadMasterData('master_storing_loc_default', DEFAULT_STORING_LOC_DEFAULT),
+  storingLocDefault: DEFAULT_STORING_LOC_DEFAULT,
   setStoringLocDefault: (data) => {
-    saveMasterDataToLocal('master_storing_loc_default', data);
     saveConfigToSupabase('master_storing_loc_default', data);
     set({ storingLocDefault: data });
   },
-  checklistDataMaster: loadMasterData('master_checklist', DEFAULT_CHECKLIST_DATA),
+  checklistDataMaster: DEFAULT_CHECKLIST_DATA,
   setChecklistDataMaster: (data) => {
-    saveMasterDataToLocal('master_checklist', data);
     saveConfigToSupabase('master_checklist', data);
     set({ checklistDataMaster: data });
   },
-  tipLeftCol: loadMasterData('master_tip_left', DEFAULT_TIP_LEFT_COL),
+  tipLeftCol: DEFAULT_TIP_LEFT_COL,
   setTipLeftCol: (data) => {
-    saveMasterDataToLocal('master_tip_left', data);
     saveConfigToSupabase('master_tip_left', data);
     set({ tipLeftCol: data });
   },
-  tipRightCol: loadMasterData('master_tip_right', DEFAULT_TIP_RIGHT_COL),
+  tipRightCol: DEFAULT_TIP_RIGHT_COL,
   setTipRightCol: (data) => {
-    saveMasterDataToLocal('master_tip_right', data);
     saveConfigToSupabase('master_tip_right', data);
     set({ tipRightCol: data });
   },
@@ -239,85 +210,6 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
     } catch (err) {
       console.error(err);
     }
-  },
-
-  masterModalOpen: null,
-  setMasterModalOpen: (type) => set({ masterModalOpen: type }),
-  masterModalData: [],
-  setMasterModalData: (data) => set({ masterModalData: data }),
-
-  openMasterModal: (type, currentData) => {
-    set({
-      masterModalOpen: type,
-      masterModalData: JSON.parse(JSON.stringify(currentData)),
-    });
-  },
-
-  closeMasterModal: () => {
-    set({
-      masterModalOpen: null,
-      masterModalData: [],
-    });
-  },
-
-  saveCurrentMasterModal: () => {
-    const { masterModalOpen, masterModalData, closeMasterModal } = get();
-    switch (masterModalOpen) {
-      case 'api_t2': get().setDataApiT2(masterModalData); break;
-      case 'om_ias_t2': get().setDataOmIasT2(masterModalData); break;
-      case 'storing_equip': get().setStoringEquipments(masterModalData); break;
-      case 'storing_loc_ac': get().setStoringLocAc(masterModalData); break;
-      case 'storing_loc_default': get().setStoringLocDefault(masterModalData); break;
-      case 'tip_left': get().setTipLeftCol(masterModalData); break;
-      case 'tip_right': get().setTipRightCol(masterModalData); break;
-    }
-    closeMasterModal();
-  },
-
-  resetCurrentMasterModal: () => {
-    if (!window.confirm('Anda yakin ingin mereset data ini ke default bawaan sistem? Data kustom akan hilang.')) return;
-    const { masterModalOpen } = get();
-    switch (masterModalOpen) {
-      case 'api_t2': set({ masterModalData: DEFAULT_DATA_API_T2 }); break;
-      case 'om_ias_t2': set({ masterModalData: DEFAULT_DATA_OM_IAS_T2 }); break;
-      case 'storing_equip': set({ masterModalData: DEFAULT_STORING_EQUIPMENTS }); break;
-      case 'storing_loc_ac': set({ masterModalData: DEFAULT_STORING_LOC_AC }); break;
-      case 'storing_loc_default': set({ masterModalData: DEFAULT_STORING_LOC_DEFAULT }); break;
-      case 'tip_left': set({ masterModalData: DEFAULT_TIP_LEFT_COL }); break;
-      case 'tip_right': set({ masterModalData: DEFAULT_TIP_RIGHT_COL }); break;
-    }
-  },
-
-  handleModalDataChange: (index, field, value) => {
-    const { masterModalData, masterModalOpen } = get();
-    const newData = [...masterModalData];
-    if (field) {
-      // Auto-format name field to Title Case for API T2 and OM IAS T2
-      if (field === 'name' && (masterModalOpen === 'api_t2' || masterModalOpen === 'om_ias_t2')) {
-        newData[index][field] = toTitleCase(value);
-      } else {
-        newData[index][field] = value;
-      }
-    } else {
-      newData[index] = value;
-    }
-    set({ masterModalData: newData });
-  },
-
-  addModalDataRow: () => {
-    const { masterModalOpen, masterModalData } = get();
-    let newItem: any;
-    if (masterModalOpen === 'api_t2' || masterModalOpen === 'om_ias_t2') newItem = { name: '', phone: '', jabatan: '', nik: '' };
-    else if (masterModalOpen === 'storing_equip' || masterModalOpen === 'storing_loc_ac' || masterModalOpen === 'storing_loc_default' || masterModalOpen === 'kalibrasi_equip') newItem = '';
-    else if (masterModalOpen === 'tip_left' || masterModalOpen === 'tip_right') newItem = { id: `new_${Date.now()}`, name: '', items: [] };
-    set({ masterModalData: [...masterModalData, newItem] });
-  },
-
-  removeModalDataRow: (index: number) => {
-    const { masterModalData } = get();
-    const newData = [...masterModalData];
-    newData.splice(index, 1);
-    set({ masterModalData: newData });
   },
 
   sparepartsData: [],
@@ -500,7 +392,6 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
       if (!configsError && configsData) {
         console.log('✅ Berhasil memuat master configs dari Supabase:', configsData.length);
         configsData.forEach(config => {
-          saveMasterDataToLocal(config.key, config.value);
           switch(config.key) {
             case 'cloudinary_config':
               if (config.value?.cloudName && config.value?.uploadPreset) {
