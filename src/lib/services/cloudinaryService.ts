@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import { getErrorMessage } from '../utils/errorUtils';
+import { sayPet } from '../../store/useAppStore';
 
 export interface UploadResult {
   status: 'success' | 'error';
@@ -286,6 +287,7 @@ async function uploadToSupabaseStorageFallback(
 
     if (error) {
       console.error('Supabase Storage upload error:', error);
+      sayPet('Foto gagal diunggah ke penyimpanan cadangan. Periksa koneksi, lalu kirim ulang laporannya.', 'error');
       return { status: 'error', message: error.message };
     }
 
@@ -302,6 +304,7 @@ async function uploadToSupabaseStorageFallback(
     };
   } catch (err) {
     console.error('Supabase Storage catch error:', err);
+    sayPet('Foto gagal diunggah ke penyimpanan cadangan. Periksa koneksi, lalu kirim ulang laporannya.', 'error');
     return { status: 'error', message: getErrorMessage(err, 'Gagal upload foto ke Supabase Storage') };
   }
 }
@@ -356,9 +359,11 @@ export const uploadPhotoToCloudinary = async (
     }
 
     console.warn('Cloudinary upload gagal, beralih ke Supabase Storage fallback:', data);
+    sayPet('Cloudinary menolak unggahan — foto dialihkan ke penyimpanan cadangan.', 'warning');
     return uploadToSupabaseStorageFallback(input, fileName);
   } catch (err) {
     console.warn('Cloudinary error, beralih ke Supabase Storage fallback:', err);
+    sayPet('Cloudinary tidak merespons — foto dialihkan ke penyimpanan cadangan.', 'warning');
     return uploadToSupabaseStorageFallback(input, fileName);
   }
 };

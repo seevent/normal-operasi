@@ -2,6 +2,7 @@
 
 import { supabase } from '../supabaseClient.ts';
 import { formatNamaPersonel, toTitleCase } from '../data/masterData.ts';
+import { sayPet } from '../../store/useAppStore.ts';
 
 export interface OperationalLog {
   id?: string;
@@ -81,12 +82,17 @@ export const saveOperationalLog = async (log: OperationalLog) => {
 
     if (error) {
       console.error('Error saveOperationalLog Supabase:', error);
+      // Penyimpanan berjalan di latar belakang setelah share, jadi tanpa kabar
+      // ini kegagalannya tidak akan pernah terlihat oleh petugas.
+      sayPet('Laporan sudah dibagikan, tetapi gagal tersimpan ke database. Mohon kirim ulang saat koneksi membaik.', 'error');
       return { success: false, error };
     }
 
+    sayPet('Laporan tersimpan ke database. Aman, Sir!', 'success');
     return { success: true, data };
   } catch (err) {
     console.error('Catch saveOperationalLog:', err);
+    sayPet('Laporan sudah dibagikan, tetapi gagal tersimpan ke database. Mohon kirim ulang saat koneksi membaik.', 'error');
     return { success: false, error: err };
   }
 };

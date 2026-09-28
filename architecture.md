@@ -61,7 +61,7 @@ src/
 ├── components/
 │   ├── App.tsx                     # Root Layout: Header status, Tab Navigation (12 tab), Floating Share, & AntigravityPet
 │   ├── features/                   # Komponen Fitur (12 Tab Modul, Admin CRUD, Mascot)
-│   │   ├── AntigravityPet.tsx      # Floating Chibi Iron Man mascot dengan zero-g physics & dialog operasional
+│   │   ├── AntigravityPet.tsx      # Maskot Chibi Iron Man: pelapor status operasional (konsumen `useAppStore.petMessage`)
 │   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) di Tab Data
 │   │   ├── TabKehadiran.tsx        # Laporan kehadiran shift (API & OM IAS)
 │   │   ├── TabBriefing.tsx         # Laporan kegiatan briefing & sparepart
@@ -126,8 +126,11 @@ classDiagram
     class useAppStore {
         +activeTab: string
         +isCopied: boolean
+        +petMessage: PetMessage | null
         +setActiveTab(tab: string)
         +setIsCopied(status: boolean)
+        +sayPet(text, tone, durationMs)
+        +clearPetMessage()
     }
     
     class useAuthStore {
@@ -152,7 +155,7 @@ classDiagram
     }
 ```
 
-1. **`useAppStore`**: Mengelola state transient UI seperti tab aktif (`activeTab`), notifikasi penyalinan teks (`isCopied`), dan modal state.
+1. **`useAppStore`**: Mengelola state transient UI seperti tab aktif (`activeTab`), notifikasi penyalinan teks (`isCopied`), dan modal state. Store ini juga menjadi **kanal tunggal notifikasi maskot** (`petMessage` + `sayPet()`): service layer dan tab cukup memanggil `sayPet(pesan, nada)`, sementara `AntigravityPet.tsx` hanya membaca state tersebut. Pemisahan ini menjaga maskot tetap ramping — ia tidak perlu mengimpor satu per satu modul yang melaporkan sesuatu. Nada pesan (`info`, `success`, `warning`, `error`, `cheer`) menentukan warna balon dan durasi tampil; khusus `error` balon menetap sampai ditutup manual agar kegagalan tidak lewat tanpa terbaca.
 2. **`useAuthStore`**: Mengelola sesi login Admin untuk mengakses tab **Data** dan mengubah master data.
 3. **`useMasterDataStore`**: Mengelola data operasional relasional. Melakukan *sync* otomatis dari Supabase saat aplikasi diinisialisasi, dan menyediakan fallback ke `localStorage` jika terjadi gangguan jaringan.
 

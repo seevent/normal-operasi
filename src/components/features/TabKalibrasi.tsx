@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, AlertCircle, RefreshCw } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, sayPet } from '../../store/useAppStore';
+import { buildMissingFieldsMessage } from '../../lib/data/petMessages';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
 import { generateWA_Kalibrasi, formatKalibrasiEntryKegiatanDanCatatan } from '../../lib/utils/waGenerator';
@@ -415,7 +416,11 @@ export const TabKalibrasi: React.FC = () => {
 
     if (hasEmptyGlobalTime || hasEmptyEntryParams) {
       setShowErrors(true);
-      alert("Harap lengkapi semua data wajib: Waktu pelaksanaan kalibrasi, pemilihan peralatan, dan parameter kalibrasi!");
+      const missingMessage = buildMissingFieldsMessage([
+        hasEmptyGlobalTime ? 'waktu pelaksanaan kalibrasi' : '',
+        hasEmptyEntryParams ? 'pemilihan peralatan & parameter kalibrasi' : '',
+      ]);
+      if (missingMessage) sayPet(missingMessage, 'warning');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       unlock();
       return;

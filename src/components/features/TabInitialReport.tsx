@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Cpu, FileText, MapPin, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, FileWarning, Camera, Move, Trash2 } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, sayPet } from '../../store/useAppStore';
+import { buildMissingFieldsMessage } from '../../lib/data/petMessages';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
@@ -471,6 +472,18 @@ export const TabInitialReport: React.FC = () => {
 
     if (hasEmptyPeralatan || hasEmptyLokasi || hasEmptyTanggal || hasEmptyWaktu || hasEmptyTeknisi || hasEmptyPermasalahan || hasEmptyUraian || hasEmptyDampak || hasEmptyMitigasi) {
       setShowErrors(true);
+      const missingMessage = buildMissingFieldsMessage([
+        hasEmptyPeralatan ? 'peralatan' : '',
+        hasEmptyLokasi ? 'lokasi' : '',
+        hasEmptyTanggal ? 'tanggal' : '',
+        hasEmptyWaktu ? 'waktu mulai' : '',
+        hasEmptyTeknisi ? 'teknisi bertugas' : '',
+        hasEmptyPermasalahan ? 'permasalahan' : '',
+        hasEmptyUraian ? 'uraian' : '',
+        hasEmptyDampak ? 'dampak' : '',
+        hasEmptyMitigasi ? 'tindakan mitigasi' : '',
+      ]);
+      if (missingMessage) sayPet(missingMessage, 'warning');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

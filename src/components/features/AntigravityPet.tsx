@@ -1,23 +1,28 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, X, Sparkles, ChevronUp } from 'lucide-react';
+import { MessageSquare, X, Sparkles, ChevronUp, AlertTriangle, CheckCircle2, PartyPopper } from 'lucide-react';
+import { useAppStore, PetTone } from '../../store/useAppStore';
+import { getIdleQuote } from '../../lib/data/petMessages';
 
-const PET_QUOTES = [
-  "I am Iron Man! Versi sachet tapi Arc Reactor tetap menyala!",
-  "J.A.R.V.I.S: Semua sistem operasional SSES T2 dalam kondisi optimal, Sir.",
-  "Alat aman, form terisi, hati tenang. Semangat dinas hari ini!",
-  "Arc Reactor 100%! Jangan lupa istirahat sejenak & minum air putih ya.",
-  "Aku cinta kalian 3000%! Tetap teliti dalam setiap pengecekan.",
-  "X-Ray, WTMD, ETD... kalau ada kendala teknis, hadapi dengan kepala dingin!",
-  "Laporan sudah dicek kembali? Detail kecil mencegah kendala besar.",
-  "Ssst... armor ini anti-stres dan anti-overthinking!"
-];
+/** Gaya balon dialog & ikon judul per nada pesan. */
+const TONE_STYLES: Record<PetTone, { border: string; label: string; labelColor: string; Icon: React.ElementType; iconColor: string }> = {
+  info: { border: 'border-amber-500/40', label: 'CHIBI IRON MAN', labelColor: 'text-amber-400', Icon: Sparkles, iconColor: 'text-cyan-400' },
+  success: { border: 'border-emerald-500/50', label: 'J.A.R.V.I.S', labelColor: 'text-emerald-400', Icon: CheckCircle2, iconColor: 'text-emerald-400' },
+  warning: { border: 'border-amber-400/70', label: 'J.A.R.V.I.S', labelColor: 'text-amber-300', Icon: AlertTriangle, iconColor: 'text-amber-300' },
+  error: { border: 'border-red-500/70', label: 'J.A.R.V.I.S', labelColor: 'text-red-400', Icon: AlertTriangle, iconColor: 'text-red-400' },
+  cheer: { border: 'border-cyan-400/60', label: 'CHIBI IRON MAN', labelColor: 'text-cyan-300', Icon: PartyPopper, iconColor: 'text-cyan-300' },
+};
 
 export const AntigravityPet: React.FC = () => {
+  const petMessage = useAppStore((s) => s.petMessage);
+  const clearPetMessage = useAppStore((s) => s.clearPetMessage);
+
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [dialogText, setDialogText] = useState<string | null>(null);
+  const [dialogTone, setDialogTone] = useState<PetTone>('info');
   const [isHovered, setIsHovered] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   const dragStartRef = useRef<{
     pointerX: number;
@@ -49,19 +54,58 @@ export const AntigravityPet: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Sembunyikan maskot selama ada isian yang sedang difokuskan, agar tidak
+  // menutupi field saat keyboard ponsel muncul.
+  useEffect(() => {
+    const isFormField = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
+      if (!el || !el.tagName) return false;
+      return ['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName);
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      if (isFormField(e.target)) setIsTyping(true);
+    };
+    const handleFocusOut = (e: FocusEvent) => {
+      if (isFormField(e.target)) setIsTyping(false);
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
+
   const showRandomDialog = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    
-    setDialogText((prev) => {
-      const available = PET_QUOTES.filter((q) => q !== prev);
-      const randomQuote = available[Math.floor(Math.random() * available.length)];
-      return randomQuote;
-    });
+
+    setDialogTone('info');
+    setDialogText((prev) => getIdleQuote(prev));
 
     timerRef.current = setTimeout(() => {
       setDialogText(null);
     }, 4500);
   }, []);
+
+  // Kabar operasional dari service / tab selalu menggantikan kalimat santai.
+  useEffect(() => {
+    if (!petMessage) return;
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setDialogText(petMessage.text);
+    setDialogTone(petMessage.tone);
+    // Kabar penting memanggil maskot kembali kalau sedang disembunyikan.
+    setIsMinimized(false);
+
+    if (petMessage.durationMs > 0) {
+      timerRef.current = setTimeout(() => {
+        setDialogText(null);
+        clearPetMessage();
+      }, petMessage.durationMs);
+    }
+  }, [petMessage, clearPetMessage]);
 
   // Handler Pointer Drag
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -118,6 +162,7 @@ export const AntigravityPet: React.FC = () => {
     if (!dragStartRef.current.hasMoved) {
       if (dialogText) {
         setDialogText(null);
+        clearPetMessage();
         if (timerRef.current) clearTimeout(timerRef.current);
       } else {
         showRandomDialog();
@@ -150,13 +195,22 @@ export const AntigravityPet: React.FC = () => {
 
   if (!position) return null;
 
+  // Balon lebih lebar daripada maskot, jadi sisinya mengikuti posisi maskot
+  // supaya teksnya tidak terpotong di tepi layar.
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+  const bubbleSide: 'left' | 'center' | 'right' =
+    position.x > viewportWidth * 0.6 ? 'right' : position.x < viewportWidth * 0.25 ? 'left' : 'center';
+
   return (
     <div
       ref={petRef}
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
       }}
-      className="fixed top-0 left-0 z-50 select-none touch-none cursor-grab active:cursor-grabbing transition-transform duration-75"
+      className={`fixed top-0 left-0 z-50 select-none touch-none cursor-grab active:cursor-grabbing transition-opacity duration-200 ${
+        isTyping ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
+      aria-hidden={isTyping}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -166,18 +220,22 @@ export const AntigravityPet: React.FC = () => {
     >
       {/* Speech Bubble / Balon Dialog */}
       {dialogText && (
-        <div 
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 sm:w-64 p-3 bg-slate-900/95 text-slate-100 text-xs rounded-xl shadow-2xl border border-amber-500/40 backdrop-blur-md animate-in fade-in zoom-in-90 duration-200"
+        <div
+          className={`absolute bottom-full mb-2 w-56 sm:w-64 p-3 bg-slate-900/95 text-slate-100 text-xs rounded-xl shadow-2xl border backdrop-blur-md animate-in fade-in zoom-in-90 duration-200 ${TONE_STYLES[dialogTone].border} ${bubbleSide === 'right' ? 'right-0' : bubbleSide === 'left' ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}
+          role={dialogTone === 'error' || dialogTone === 'warning' ? 'alert' : 'status'}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-1.5 mb-1">
-            <span className="font-bold text-[10px] text-amber-400 tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-cyan-400" />
-              CHIBI IRON MAN
+            <span className={`font-bold text-[10px] tracking-wider flex items-center gap-1 ${TONE_STYLES[dialogTone].labelColor}`}>
+              {React.createElement(TONE_STYLES[dialogTone].Icon, {
+                className: `w-3 h-3 ${TONE_STYLES[dialogTone].iconColor}`,
+              })}
+              {TONE_STYLES[dialogTone].label}
             </span>
             <button
               onClick={() => {
                 setDialogText(null);
+                clearPetMessage();
                 if (timerRef.current) clearTimeout(timerRef.current);
               }}
               className="text-slate-400 hover:text-white p-0.5 rounded transition-colors"
@@ -187,8 +245,12 @@ export const AntigravityPet: React.FC = () => {
             </button>
           </div>
           <p className="leading-relaxed text-slate-200 font-medium">{dialogText}</p>
-          {/* Panah Balon Bawah */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-solid border-t-slate-900/95 border-t-8 border-x-transparent border-x-8 border-b-0 drop-shadow-sm" />
+          {/* Panah Balon Bawah — mengikuti sisi balon agar tetap menunjuk ke maskot */}
+          <div
+            className={`absolute top-full border-solid border-t-slate-900/95 border-t-8 border-x-transparent border-x-8 border-b-0 drop-shadow-sm ${
+              bubbleSide === 'right' ? 'right-8' : bubbleSide === 'left' ? 'left-8' : 'left-1/2 -translate-x-1/2'
+            }`}
+          />
         </div>
       )}
 

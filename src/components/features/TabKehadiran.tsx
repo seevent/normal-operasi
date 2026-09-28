@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, User, Calendar, ClipboardList, Plus, X, Share2, CheckCircle, FileText, Loader2 } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, sayPet } from '../../store/useAppStore';
+import { getShiftCheer } from '../../lib/data/petMessages';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { generateWA_Kehadiran } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
@@ -309,6 +310,10 @@ export const TabKehadiran: React.FC = () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
       });
+
+      // Laporan kehadiran menandai dimulainya sebuah shift, jadi maskot
+      // menyambut tim yang baru masuk dinas.
+      sayPet(getShiftCheer(attendanceData.shift), 'cheer');
     } catch (err) {
       console.error('Failed to save attendance', err);
       alert(getErrorMessage(err, 'Gagal menyimpan absensi ke database!'));

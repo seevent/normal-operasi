@@ -63,7 +63,7 @@ src/
 ├── components/
 │   ├── App.tsx                    # Root layout: Header, Navigation 12 tab (pagination & touch swipe), Floating WA share, & AntigravityPet
 │   ├── features/                  # Komponen per-fitur (12 Tab Modul, Admin CRUD, Mascot)
-│   │   ├── AntigravityPet.tsx     # Floating Chibi Iron Man mascot dengan zero-g physics & operational tips
+│   │   ├── AntigravityPet.tsx     # Maskot Chibi Iron Man: pelapor status operasional & validasi (baca useAppStore.petMessage)
 │   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) & sync foto
 │   │   ├── TabKehadiran.tsx       # Tab laporan kehadiran shift
 │   │   ├── TabBriefing.tsx        # Tab laporan briefing operasional
@@ -164,6 +164,11 @@ Deploy otomatis terkonfigurasi ke **Netlify** via `netlify.toml`.
 - **Interactive Serviceability Diagram & Persistensi Cloud**: Tab Shift Report menampilkan visual matriks kelaikan peralatan per sub-terminal (D, E, F), koordinat diagram yang sinkron, kalkulasi persentase kelaikan dinamis, fitur CRUD log dengan lampiran foto langsung, dan integrasi penyimpanan data log ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
 - **Cloud Photo Storage (Cloudinary Global CDN)**: Unggah foto dokumentasi terkompresi (~150–250 KB via Canvas) langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms). Skema PostgreSQL diperkuat dengan constraint `chk_foto_urls_no_base64` sehingga database tetap ramping dan bebas dari string Base64.
 - **Tanda Tangan Digital & Ekspor PDF Teroptimasi**: Tab BA Serah Terima memungkinkan pembuatan tanda tangan langsung pada layar sentuh ponsel dan konversi PDF resmi non-blocking via `pdfService.ts`.
-- **AntigravityPet Mascot (Chibi Iron Man)**: Maskot interaktif terapung di layar dengan animasi zero-g thruster yang memberikan tips operasional dan status sistem.
+- **AntigravityPet Mascot (Chibi Iron Man) sebagai Pelapor Operasional**: Maskot terapung dengan animasi zero-g thruster yang berperan sebagai satu-satunya kanal notifikasi maskot (`useAppStore.sayPet`). Maskot melaporkan hal-hal yang sebelumnya tidak terlihat oleh petugas:
+  - **Status sinkronisasi latar belakang**: karena pengiriman laporan memakai pola *share dulu, simpan belakangan*, kegagalan penyimpanan ke Supabase dulu hanya berakhir di console. Kini maskot mengabarkannya (nada `error`, balon menetap sampai ditutup), begitu pula keberhasilannya.
+  - **Peralihan penyimpanan foto**: saat Cloudinary gagal dan sistem diam-diam beralih ke Supabase Storage, maskot memberi tahu (nada `warning`).
+  - **Field yang belum lengkap**: menggantikan kalimat acak, maskot menyebutkan field mana saja yang masih kosong saat laporan gagal divalidasi (Initial Report, Perbaikan, Kalibrasi).
+  - **Penyemangat awal shift**: setiap laporan **Kehadiran** dibagikan — penanda sebuah shift dimulai — maskot menyambut tim dengan penyemangat yang disesuaikan Shift Pagi/Siang atau Shift Malam.
+  - **Tidak menghalangi isian**: maskot otomatis menyingkir selama `input`/`select`/`textarea` sedang difokuskan, agar tidak menutupi form saat keyboard ponsel muncul.
 - **Relasi Lokasi Relasional**: Pilihan lokasi pada Tab Perbaikan, Initial Report, Storing, dan Kalibrasi otomatis memfilter titik penempatan berdasarkan jenis peralatan yang dipilih.
 - **Direct WhatsApp Web Share**: Semua format laporan siap dikirim langsung ke WhatsApp grup operasional melalui **Web Share API** (dengan fallback clipboard & URL link). Sinkronisasi background non-blocking menjaga user gesture tetap aktif saat membagikan laporan.
