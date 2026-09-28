@@ -14,10 +14,16 @@ export interface CloudinaryConfig {
   uploadPreset: string;
 }
 
+let cachedCloudinaryConfig: CloudinaryConfig | null = null;
+
 /**
- * Mendapatkan konfigurasi Cloudinary dari LocalStorage atau Environment variables
+ * Mendapatkan konfigurasi Cloudinary dari Memori, LocalStorage, atau Environment variables
  */
 export const getCloudinaryConfig = (): CloudinaryConfig => {
+  if (cachedCloudinaryConfig?.cloudName && cachedCloudinaryConfig?.uploadPreset) {
+    return cachedCloudinaryConfig;
+  }
+
   let cloudName = '';
   let uploadPreset = '';
 
@@ -33,25 +39,88 @@ export const getCloudinaryConfig = (): CloudinaryConfig => {
     uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET?.trim() || '';
   }
 
+  if (cloudName && uploadPreset) {
+    cachedCloudinaryConfig = { cloudName, uploadPreset };
+  }
+
   return { cloudName, uploadPreset };
 };
 
 /**
- * Menyimpan konfigurasi Cloudinary ke LocalStorage
+ * Mengambil konfigurasi Cloudinary dari Supabase master_configs (Global Single Source of Truth)
+ * Dapat diakses oleh siapapun (login maupun guest/tamu).
  */
-export const setCloudinaryConfig = (cloudName: string, uploadPreset: string): void => {
-  if (typeof window === 'undefined') return;
+export const fetchCloudinaryConfig = async (): Promise<CloudinaryConfig> => {
+  try {
+    const { data, error } = await supabase
+      .from('master_configs')
+      .select('value')
+      .eq('key', 'cloudinary_config')
+      .maybeSingle();
 
-  if (cloudName.trim()) {
-    localStorage.setItem('sses_cloudinary_cloud_name', cloudName.trim());
-  } else {
-    localStorage.removeItem('sses_cloudinary_cloud_name');
+    if (!error && data?.value?.cloudName && data?.value?.uploadPreset) {
+      const cfg: CloudinaryConfig = {
+        cloudName: String(data.value.cloudName).trim(),
+        uploadPreset: String(data.value.uploadPreset).trim()
+      };
+      cachedCloudinaryConfig = cfg;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sses_cloudinary_cloud_name', cfg.cloudName);
+        localStorage.setItem('sses_cloudinary_upload_preset', cfg.uploadPreset);
+      }
+      return cfg;
+    }
+
+    // Auto-migrate: Jika Supabase belum punya tapi lokal/env punya konfigurasi, simpan ke Supabase
+    const localCfg = getCloudinaryConfig();
+    if (localCfg.cloudName && localCfg.uploadPreset) {
+      await setCloudinaryConfig(localCfg.cloudName, localCfg.uploadPreset, true);
+      return localCfg;
+    }
+  } catch (err) {
+    console.warn('Gagal memuat konfigurasi Cloudinary dari Supabase:', err);
   }
 
-  if (uploadPreset.trim()) {
-    localStorage.setItem('sses_cloudinary_upload_preset', uploadPreset.trim());
-  } else {
-    localStorage.removeItem('sses_cloudinary_upload_preset');
+  return getCloudinaryConfig();
+};
+
+/**
+ * Menyimpan konfigurasi Cloudinary ke LocalStorage dan Supabase master_configs
+ */
+export const setCloudinaryConfig = async (
+  cloudName: string,
+  uploadPreset: string,
+  syncToSupabase = true
+): Promise<void> => {
+  const cleanCloud = cloudName.trim();
+  const cleanPreset = uploadPreset.trim();
+
+  cachedCloudinaryConfig = { cloudName: cleanCloud, uploadPreset: cleanPreset };
+
+  if (typeof window !== 'undefined') {
+    if (cleanCloud) {
+      localStorage.setItem('sses_cloudinary_cloud_name', cleanCloud);
+    } else {
+      localStorage.removeItem('sses_cloudinary_cloud_name');
+    }
+
+    if (cleanPreset) {
+      localStorage.setItem('sses_cloudinary_upload_preset', cleanPreset);
+    } else {
+      localStorage.removeItem('sses_cloudinary_upload_preset');
+    }
+  }
+
+  if (syncToSupabase && (cleanCloud || cleanPreset)) {
+    try {
+      await supabase.from('master_configs').upsert({
+        key: 'cloudinary_config',
+        value: { cloudName: cleanCloud, uploadPreset: cleanPreset },
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+    } catch (err) {
+      console.warn('Gagal menyimpan konfigurasi Cloudinary ke Supabase:', err);
+    }
   }
 };
 
@@ -245,7 +314,14 @@ export const uploadPhotoToCloudinary = async (
   input: File | Blob | string,
   fileName?: string
 ): Promise<UploadResult> => {
-  const { cloudName, uploadPreset } = getCloudinaryConfig();
+  let { cloudName, uploadPreset } = getCloudinaryConfig();
+
+  // Jika belum ada di memori/localStorage, coba muat dari cloud database Supabase
+  if (!cloudName || !uploadPreset) {
+    const fetched = await fetchCloudinaryConfig();
+    cloudName = fetched.cloudName;
+    uploadPreset = fetched.uploadPreset;
+  }
 
   // Jika Cloudinary belum dikonfigurasi, gunakan Supabase Storage 'dokumentasi'
   if (!cloudName || !uploadPreset) {

@@ -5,6 +5,23 @@ import {
   DEFAULT_TIP_LEFT_COL, DEFAULT_TIP_RIGHT_COL, toTitleCase, sortPersonelByJabatan
 } from '../lib/data/masterData';
 import { supabase } from '../lib/supabaseClient';
+import { setCloudinaryConfig, getCloudinaryConfig } from '../lib/services/cloudinaryService';
+import { PmDisplaySettings } from '../lib/utils/pmScheduleParser';
+
+export const DEFAULT_PM_DISPLAY_SETTINGS: PmDisplaySettings = {
+  categories: {
+    'PM Mingguan': true,
+    'PM Bulanan': true,
+  },
+  types: {
+    'X-Ray': true,
+    'WTMD': true,
+    'Body Scanner': true,
+    'ETD': true,
+    'Extension Conveyor': true,
+    'Access Control': true,
+  }
+};
 
 const loadMasterData = (_key: string, defaultData: any) => {
   return defaultData;
@@ -69,6 +86,11 @@ interface MasterDataState {
   briefingSparepartIds: string[];
   fetchSparepartsData: () => Promise<void>;
   toggleBriefingSparepart: (id: string, checked: boolean) => Promise<void>;
+
+  pmDisplaySettings: PmDisplaySettings;
+  setPmDisplaySettings: (data: PmDisplaySettings) => void;
+  togglePmCategorySetting: (cat: string, enabled: boolean) => Promise<void>;
+  togglePmTypeSetting: (type: string, enabled: boolean) => Promise<void>;
 
   initializeSupabaseData: () => Promise<void>;
 }
@@ -357,6 +379,30 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
     await saveConfigToSupabase('briefing_spareparts', next);
   },
 
+  pmDisplaySettings: DEFAULT_PM_DISPLAY_SETTINGS,
+  setPmDisplaySettings: (data) => {
+    set({ pmDisplaySettings: data });
+    saveConfigToSupabase('pm_display_settings', data);
+  },
+  togglePmCategorySetting: async (cat, enabled) => {
+    const current = get().pmDisplaySettings;
+    const next: PmDisplaySettings = {
+      ...current,
+      categories: { ...(current.categories || {}), [cat]: enabled }
+    };
+    set({ pmDisplaySettings: next });
+    await saveConfigToSupabase('pm_display_settings', next);
+  },
+  togglePmTypeSetting: async (type, enabled) => {
+    const current = get().pmDisplaySettings;
+    const next: PmDisplaySettings = {
+      ...current,
+      types: { ...(current.types || {}), [type]: enabled }
+    };
+    set({ pmDisplaySettings: next });
+    await saveConfigToSupabase('pm_display_settings', next);
+  },
+
   initializeSupabaseData: async () => {
     try {
       if (get().fetchSparepartsData) {
@@ -456,6 +502,11 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
         configsData.forEach(config => {
           saveMasterDataToLocal(config.key, config.value);
           switch(config.key) {
+            case 'cloudinary_config':
+              if (config.value?.cloudName && config.value?.uploadPreset) {
+                setCloudinaryConfig(config.value.cloudName, config.value.uploadPreset, false);
+              }
+              break;
             case 'master_checklist': set({ checklistDataMaster: config.value }); break;
             case 'master_storing_equip': set({ storingEquipments: config.value }); break;
             case 'master_storing_loc_ac': set({ storingLocAc: config.value }); break;
@@ -463,8 +514,27 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
             case 'master_tip_left': set({ tipLeftCol: config.value }); break;
             case 'master_tip_right': set({ tipRightCol: config.value }); break;
             case 'briefing_spareparts': set({ briefingSparepartIds: config.value }); break;
+            case 'pm_display_settings':
+              if (config.value) {
+                set({
+                  pmDisplaySettings: {
+                    categories: { ...DEFAULT_PM_DISPLAY_SETTINGS.categories, ...(config.value.categories || {}) },
+                    types: { ...DEFAULT_PM_DISPLAY_SETTINGS.types, ...(config.value.types || {}) }
+                  }
+                });
+              }
+              break;
           }
         });
+
+        // Auto-seed ke Supabase jika database belum memiliki key cloudinary_config tapi lokal memiliki
+        const hasCloudinary = configsData.some(c => c.key === 'cloudinary_config');
+        if (!hasCloudinary) {
+          const local = getCloudinaryConfig();
+          if (local.cloudName && local.uploadPreset) {
+            saveConfigToSupabase('cloudinary_config', local);
+          }
+        }
       }
 
     } catch (err) {

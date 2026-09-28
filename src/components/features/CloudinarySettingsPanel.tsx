@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
-import { Check, CheckCircle, Cloud, Settings, RefreshCw, AlertCircle, ExternalLink, HelpCircle, ShieldCheck } from 'lucide-react';
-import { getCloudinaryConfig, setCloudinaryConfig, testCloudinaryConnection } from '../../lib/services/cloudinaryService';
+import React, { useState, useEffect } from 'react';
+import { Check, CheckCircle, Cloud, Settings, RefreshCw, AlertCircle, ExternalLink, HelpCircle, ShieldCheck, Globe } from 'lucide-react';
+import { getCloudinaryConfig, setCloudinaryConfig, testCloudinaryConnection, fetchCloudinaryConfig } from '../../lib/services/cloudinaryService';
 
 export const CloudinarySettingsPanel: React.FC = () => {
   const [config, setConfig] = useState(() => getCloudinaryConfig());
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    fetchCloudinaryConfig().then((cfg) => {
+      if (cfg.cloudName || cfg.uploadPreset) {
+        setConfig(cfg);
+      }
+    });
+  }, []);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setCloudinaryConfig(config.cloudName, config.uploadPreset);
+    setSaving(true);
+    await setCloudinaryConfig(config.cloudName, config.uploadPreset, true);
+    setSaving(false);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2000);
   };
@@ -42,6 +53,14 @@ export const CloudinarySettingsPanel: React.FC = () => {
           <span className="text-[11px] bg-white/20 px-2.5 py-1 rounded-full text-white font-medium flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" /> 25 GB Gratis / Bulan
           </span>
+        </div>
+
+        {/* Global Sync Notice */}
+        <div className="mx-6 mt-5 bg-sky-50 border border-sky-200/80 rounded-xl p-3.5 flex items-start gap-3 text-xs text-sky-900">
+          <Globe className="w-4 h-4 mt-0.5 text-sky-600 shrink-0" />
+          <div className="leading-relaxed">
+            <span className="font-bold">Konfigurasi Berlaku untuk Semua Pengguna:</span> Pengaturan ini disimpan langsung ke cloud database Supabase. Setiap orang yang membuka aplikasi ini di perangkat manapun (baik dalam kondisi login maupun tanpa login/tamu) akan otomatis tersambung ke Cloudinary ini.
+          </div>
         </div>
 
         {/* Form */}
@@ -90,12 +109,18 @@ export const CloudinarySettingsPanel: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
               type="submit"
-              className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer"
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {saved ? (
+              {saving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Menyimpan ke Cloud...</span>
+                </>
+              ) : saved ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-300" />
-                  <span>Tersimpan!</span>
+                  <span>Tersimpan Global!</span>
                 </>
               ) : (
                 <>

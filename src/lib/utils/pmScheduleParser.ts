@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient.ts';
 
 export interface JadwalPmRecord {
   tanggal: string; // YYYY-MM-DD
@@ -217,13 +217,13 @@ export function parseSheetPm(ws: XLSX.WorkSheet, bulan: number, tahun: number): 
 
         if (rgb === 'FFFF00' || rgb === 'FFFFFF00') {
           kategoriPm = 'PM Mingguan';
-          shift = 'ALL';
+          shift = 'PS'; // Kuning = PM Mingguan Shift PS (tidak tampil pada shift M)
         } else if (rgb === 'FF0000' || rgb === 'FFFF0000') {
           kategoriPm = 'Kalibrasi & PM Bulanan (PS)';
-          shift = 'PS';
+          shift = 'PS'; // Merah = PM Bulanan Shift PS (tidak tampil pada shift M)
         } else if (rgb === '0070C0' || rgb === 'FF0070C0' || rgb === '4472C4' || theme === 4) {
           kategoriPm = 'Kalibrasi & PM Bulanan (M)';
-          shift = 'M';
+          shift = 'M'; // Biru = PM Bulanan Shift M (tidak tampil pada shift PS)
         }
       }
 
@@ -232,7 +232,7 @@ export function parseSheetPm(ws: XLSX.WorkSheet, bulan: number, tahun: number): 
         const textVal = String(cell.v).trim().toLowerCase();
         if (textVal.includes('mingguan')) {
           kategoriPm = 'PM Mingguan';
-          shift = 'ALL';
+          shift = 'PS';
         } else if (textVal.includes('ps') || textVal.includes('bulanan ps')) {
           kategoriPm = 'Kalibrasi & PM Bulanan (PS)';
           shift = 'PS';
@@ -315,36 +315,97 @@ export async function enrichRecordsWithSupabaseIds(records: JadwalPmRecord[]): P
   }
 }
 
-// Format daftar PM ke bentuk teks rencana kegiatan harian
-export function formatPmRencanaKegiatan(activePm: Array<{ lokasi: string; titik?: string; tipe: string }>): string {
+export interface PmDisplaySettings {
+  categories?: Record<string, boolean>;
+  types?: Record<string, boolean>;
+}
+
+/**
+ * Filter daftar jadwal PM berdasarkan Shift (warna) dan Pengaturan Tampilan Jenis PM
+ * - Biru (Bulanan M): Hanya untuk shift M, tidak tampil pada shift PS
+ * - Merah (Bulanan PS) & Kuning (Mingguan): Hanya untuk shift PS, tidak tampil pada shift M
+ * - Sesuai settingan per jenis PM / kategori yang diatur di Tab Data
+ */
+export function filterActivePm(
+  pmData: any[],
+  targetShiftCode: string,
+  displaySettings?: PmDisplaySettings
+): any[] {
+  return (pmData || []).filter((d: any) => {
+    // 1. Filter pengaturan per jenis / kategori PM jika ada
+    if (displaySettings) {
+      const isMingguan = d.kategori_pm && d.kategori_pm.toLowerCase().includes('mingguan');
+      const catAllowed = isMingguan
+        ? displaySettings.categories?.['PM Mingguan'] !== false
+        : displaySettings.categories?.['PM Bulanan'] !== false;
+      if (!catAllowed) return false;
+
+      if (d.jenis && displaySettings.types && displaySettings.types[d.jenis] === false) {
+        return false;
+      }
+    }
+
+    // 2. Filter Shift & Warna:
+    // Biru (Bulanan M) -> untuk shift M, tidak tampil pada shift PS
+    // Merah (Bulanan PS) & Kuning (Mingguan) -> untuk shift PS, tidak tampil pada shift M
+    const isShiftM = d.shift === 'M' || (d.kategori_pm && d.kategori_pm.includes('(M)'));
+    return targetShiftCode === 'PS' ? !isShiftM : isShiftM;
+  });
+}
+
+// Format daftar PM ke bentuk teks rencana kegiatan harian dengan pengelompokan Mingguan dan Bulanan
+export function formatPmRencanaKegiatan(activePm: Array<{ lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string }>): string {
   if (!activePm || activePm.length === 0) return '';
 
-  const locMap = new Map<string, string[]>();
+  const mingguanItems: typeof activePm = [];
+  const bulananItems: typeof activePm = [];
+
   activePm.forEach(item => {
-    const locDisplay = item.titik && item.titik !== '-' 
-      ? `${item.lokasi} ${item.titik}` 
-      : item.lokasi;
-    if (!locMap.has(locDisplay)) {
-      locMap.set(locDisplay, []);
-    }
-    const list = locMap.get(locDisplay)!;
-    if (!list.includes(item.tipe)) {
-      list.push(item.tipe);
-    }
-  });
-
-  const lines: string[] = [];
-  locMap.forEach((types, locDisplay) => {
-    let typesFormatted = '';
-    if (types.length === 1) {
-      typesFormatted = types[0];
-    } else if (types.length === 2) {
-      typesFormatted = `${types[0]} & ${types[1]}`;
+    const isMingguan = item.kategori_pm && item.kategori_pm.toLowerCase().includes('mingguan');
+    if (isMingguan) {
+      mingguanItems.push(item);
     } else {
-      typesFormatted = `${types.slice(0, -1).join(', ')}, & ${types[types.length - 1]}`;
+      bulananItems.push(item);
     }
-    lines.push(`${typesFormatted} di ${locDisplay}`);
   });
 
-  return `Preventive Maintenance & Kalibrasi Peralatan :\n` + lines.join('\n');
+  const formatGroup = (header: string, items: typeof activePm): string[] => {
+    if (items.length === 0) return [];
+
+    const locMap = new Map<string, string[]>();
+    items.forEach(item => {
+      const locDisplay = item.titik && item.titik !== '-' 
+        ? `${item.lokasi} ${item.titik}` 
+        : item.lokasi;
+      if (!locMap.has(locDisplay)) {
+        locMap.set(locDisplay, []);
+      }
+      const list = locMap.get(locDisplay)!;
+      if (!list.includes(item.tipe)) {
+        list.push(item.tipe);
+      }
+    });
+
+    const lines: string[] = [header];
+    locMap.forEach((types, locDisplay) => {
+      lines.push(` ${locDisplay}:`);
+      types.forEach(type => {
+        lines.push(` - ${type}`);
+      });
+    });
+
+    return lines;
+  };
+
+  const sections: string[] = [];
+
+  if (mingguanItems.length > 0) {
+    sections.push(formatGroup(' Jadwal Mingguan:', mingguanItems).join('\n'));
+  }
+
+  if (bulananItems.length > 0) {
+    sections.push(formatGroup(' Jadwal Bulanan:', bulananItems).join('\n'));
+  }
+
+  return sections.join('\n\n');
 }

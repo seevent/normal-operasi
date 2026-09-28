@@ -6,11 +6,11 @@ import { generateWA_Kehadiran } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
-import { formatPmRencanaKegiatan } from '../../lib/utils/pmScheduleParser';
+import { formatPmRencanaKegiatan, filterActivePm } from '../../lib/utils/pmScheduleParser';
 
 export const TabKehadiran: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
-  const { dataApiT2, dataOmIasT2 } = useMasterDataStore();
+  const { dataApiT2, dataOmIasT2, pmDisplaySettings } = useMasterDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadedSchedules, setLoadedSchedules] = useState<{ id: number; personel_id: number }[]>([]);
@@ -25,8 +25,8 @@ export const TabKehadiran: React.FC = () => {
     const isPagi = timeInMinutes >= 450 && timeInMinutes < 1170;
     const shiftValue = isPagi ? 'Pagi, 08.00 - 20.00 WIB' : 'Malam, 20.00 - 08.00 WIB';
     const kegiatan = isPagi 
-      ? '- Monitoring Ops\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Perangkat' 
-      : '- Monitoring Ops\n- Storing Peralatan';
+      ? '1. Monitoring Operasional\n2. Storing Peralatan\n3. Preventive Maintenance & Kalibrasi Peralatan' 
+      : '1. Monitoring Operasional\n2. Storing Peralatan';
     
     const logicalDateObj = new Date(now.getTime());
     if (timeInMinutes < 450) {
@@ -145,23 +145,21 @@ export const TabKehadiran: React.FC = () => {
 
       // Fetch Jadwal PM untuk tanggal & shift terpilih
       const isPagi = targetShiftCode === 'PS';
-      const baseKegiatan = `- Monitoring Ops\n- Storing Peralatan`;
+      const baseKegiatan = '1. Monitoring Operasional\n2. Storing Peralatan';
 
       const { data: pmData } = await supabase
         .from('jadwal_pm')
         .select('lokasi, titik, jenis, tipe, kategori_pm, shift')
         .eq('tanggal', attendanceData.tanggal);
 
-      const activePm = (pmData || []).filter((d: any) =>
-        !d.shift || d.shift === 'ALL' || d.shift === targetShiftCode
-      );
+      const activePm = filterActivePm(pmData || [], targetShiftCode, pmDisplaySettings);
 
       let newKegiatan: string;
       if (activePm.length > 0) {
         const pmBlock = formatPmRencanaKegiatan(activePm);
-        newKegiatan = `${baseKegiatan}\n- ${pmBlock}`;
+        newKegiatan = `${baseKegiatan}\n3. Preventive Maintenance & Kalibrasi Peralatan\n\n${pmBlock}`;
       } else {
-        newKegiatan = isPagi ? `${baseKegiatan}\n- Preventive Maintenance & Kalibrasi Perangkat` : baseKegiatan;
+        newKegiatan = isPagi ? `${baseKegiatan}\n3. Preventive Maintenance & Kalibrasi Peralatan` : baseKegiatan;
       }
 
       setAttendanceData(prev => ({
@@ -175,7 +173,7 @@ export const TabKehadiran: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [attendanceData.tanggal, attendanceData.shift]);
+  }, [attendanceData.tanggal, attendanceData.shift, pmDisplaySettings]);
 
   useEffect(() => {
     fetchJadwal();
@@ -429,36 +427,39 @@ export const TabKehadiran: React.FC = () => {
                 <button 
                   type="button" 
                   onClick={async () => {
-                    const baseKegiatan = '- Monitoring Ops\n- Storing Peralatan';
+                    const baseKegiatan = '1. Monitoring Operasional\n2. Storing Peralatan';
                     if (hasPM) {
                       let newText = attendanceData.rencanaKegiatan;
-                      const pmIndex = newText.indexOf('Preventive Maintenance');
+                      const pmIndex = newText.indexOf('3. Preventive Maintenance');
                       if (pmIndex !== -1) {
                         const lineStart = newText.lastIndexOf('\n', pmIndex);
                         newText = (lineStart !== -1 ? newText.substring(0, lineStart) : '').trim();
+                      } else {
+                        const pmAltIndex = newText.indexOf('Preventive Maintenance');
+                        if (pmAltIndex !== -1) {
+                          const lineStart = newText.lastIndexOf('\n', pmAltIndex);
+                          newText = (lineStart !== -1 ? newText.substring(0, lineStart) : '').trim();
+                        }
                       }
                       setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newText || baseKegiatan }));
                     } else {
-                      const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
+                      const targetShiftCode = attendanceData.shift.includes('Pagi') || attendanceData.shift.includes('PS') ? 'PS' : 'M';
                       const { data: pmData } = await supabase
                         .from('jadwal_pm')
                         .select('lokasi, titik, jenis, tipe, kategori_pm, shift')
                         .eq('tanggal', attendanceData.tanggal);
 
-                      const activePm = (pmData || []).filter((d: any) =>
-                        !d.shift || d.shift === 'ALL' || d.shift === targetShiftCode
-                      );
+                      const activePm = filterActivePm(pmData || [], targetShiftCode, pmDisplaySettings);
 
-                      let pmBlock = '';
+                      const current = attendanceData.rencanaKegiatan.trim() || baseKegiatan;
+                      let newKegiatan: string;
                       if (activePm.length > 0) {
-                        pmBlock = formatPmRencanaKegiatan(activePm);
+                        const pmBlock = formatPmRencanaKegiatan(activePm);
+                        newKegiatan = `${current}\n3. Preventive Maintenance & Kalibrasi Peralatan\n\n${pmBlock}`;
                       } else {
-                        pmBlock = 'Preventive Maintenance & Kalibrasi Perangkat';
+                        newKegiatan = `${current}\n3. Preventive Maintenance & Kalibrasi Peralatan`;
                       }
-
-                      const current = attendanceData.rencanaKegiatan.trim();
-                      const newText = current ? `${current}\n- ${pmBlock}` : `- ${pmBlock}`;
-                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newText }));
+                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newKegiatan }));
                     }
                   }}
                   className="mt-2 flex items-center gap-1.5 text-sm font-medium transition-colors"

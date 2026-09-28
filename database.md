@@ -221,7 +221,7 @@ Menyimpan konfigurasi fleksibel dan data agregat dalam format JSONB.
 | Nama Kolom | Tipe Data | Kunci | Keterangan |
 |---|---|---|---|
 | `id` | `UUID` | **PK** | Identifier unik konfigurasi. |
-| `config_key` | `VARCHAR(100)` | **UNIQUE** | Kunci identifikasi unik (misal: `checklist_config`, `storing_config`, `tip_performance_data`). |
+| `config_key` | `VARCHAR(100)` | **UNIQUE** | Kunci identifikasi unik (misal: `checklist_config`, `storing_config`, `tip_performance_data`, `cloudinary_config`). |
 | `config_value` | `JSONB` | **NOT NULL** | Payload JSON sesuai jenis `config_key`. |
 | `updated_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembaruan konfigurasi terakhir. |
 

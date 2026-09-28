@@ -58,3 +58,16 @@ test('TabShiftReport: displays Tersimpan di Cloudinary and Buka di Cloudinary in
   assert.doesNotMatch(shiftReport, /Tersimpan di Google Drive/);
   assert.doesNotMatch(shiftReport, /Buka di Google Drive/);
 });
+
+test('Cloudinary config is synchronized globally via Supabase master_configs for all users', () => {
+  const serviceContent = readProjectFile('src/lib/services/cloudinaryService.ts');
+  const storeContent = readProjectFile('src/store/useMasterDataStore.ts');
+  const settingsPanel = readProjectFile('src/components/features/CloudinarySettingsPanel.tsx');
+
+  assert.match(serviceContent, /export const fetchCloudinaryConfig/);
+  assert.match(serviceContent, /master_configs/);
+  assert.match(serviceContent, /cloudinary_config/);
+  assert.match(storeContent, /cloudinary_config/);
+  assert.match(settingsPanel, /fetchCloudinaryConfig/);
+});
+
