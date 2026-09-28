@@ -3,6 +3,15 @@ import { MessageSquare, X, Sparkles, ChevronUp, AlertTriangle, CheckCircle2, Par
 import { useAppStore, PetTone } from '../../store/useAppStore';
 import { getIdleQuote } from '../../lib/data/petMessages';
 
+/**
+ * Ukuran tampil maskot. Gambar sumber berukuran 260x485 (rasio 1 : 1,865),
+ * jadi tingginya dihitung dari lebar agar tidak gepeng.
+ */
+const PET_WIDTH = 72;
+const PET_HEIGHT = Math.round(PET_WIDTH * 1.865);
+/** Ruang ekstra di bawah maskot untuk semburan thruster. */
+const PET_FLAME_SPACE = Math.round(PET_HEIGHT * 0.3);
+
 /** Gaya balon dialog & ikon judul per nada pesan. */
 const TONE_STYLES: Record<PetTone, { border: string; label: string; labelColor: string; Icon: React.ElementType; iconColor: string }> = {
   info: { border: 'border-amber-500/40', label: 'CHIBI IRON MAN', labelColor: 'text-amber-400', Icon: Sparkles, iconColor: 'text-cyan-400' },
@@ -37,15 +46,15 @@ export const AntigravityPet: React.FC = () => {
 
   // Inisialisasi posisi default di pojok kanan bawah
   useEffect(() => {
-    const initX = Math.max(16, window.innerWidth - 130);
-    const initY = Math.max(16, window.innerHeight - 175);
+    const initX = Math.max(16, window.innerWidth - PET_WIDTH - 16);
+    const initY = Math.max(16, window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE - 16);
     setPosition({ x: initX, y: initY });
 
     const handleResize = () => {
       setPosition((prev) => {
         if (!prev) return null;
-        const clampedX = Math.min(Math.max(16, prev.x), window.innerWidth - 120);
-        const clampedY = Math.min(Math.max(16, prev.y), window.innerHeight - 150);
+        const clampedX = Math.min(Math.max(16, prev.x), window.innerWidth - PET_WIDTH - 8);
+        const clampedY = Math.min(Math.max(16, prev.y), window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE);
         return { x: clampedX, y: clampedY };
       });
     };
@@ -114,8 +123,8 @@ export const AntigravityPet: React.FC = () => {
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDragging(true);
     
-    const currentX = position?.x ?? (window.innerWidth - 130);
-    const currentY = position?.y ?? (window.innerHeight - 175);
+    const currentX = position?.x ?? (window.innerWidth - PET_WIDTH - 16);
+    const currentY = position?.y ?? (window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE - 16);
 
     dragStartRef.current = {
       pointerX: e.clientX,
@@ -138,11 +147,11 @@ export const AntigravityPet: React.FC = () => {
 
     const newX = Math.min(
       Math.max(12, dragStartRef.current.origX + deltaX),
-      window.innerWidth - 115
+      window.innerWidth - PET_WIDTH - 8
     );
     const newY = Math.min(
       Math.max(12, dragStartRef.current.origY + deltaY),
-      window.innerHeight - 145
+      window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE
     );
 
     setPosition({ x: newX, y: newY });
@@ -278,155 +287,54 @@ export const AntigravityPet: React.FC = () => {
       </div>
 
       {/* Karakter Chibi Iron Man Melayang */}
-      <div className={`relative ${isDragging ? '' : 'animate-antigravity-float'}`}>
+      <div
+        className={`relative ${isDragging ? '' : 'animate-antigravity-float'}`}
+        style={{ width: PET_WIDTH, height: PET_HEIGHT }}
+      >
+        {/* Semburan thruster roket di bawah kedua boot */}
         <svg
-          width="90"
-          height="115"
-          viewBox="0 0 100 130"
+          className="absolute left-0 w-full pointer-events-none animate-thruster-flame"
+          style={{ top: '98%', height: PET_HEIGHT * 0.2 }}
+          viewBox="0 0 100 40"
+          preserveAspectRatio="none"
           fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)] transition-transform duration-200 hover:scale-105"
+          aria-hidden="true"
         >
           <defs>
-            {/* Gradien Armor Merah */}
-            <linearGradient id="armorRed" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ef4444" />
-              <stop offset="50%" stopColor="#dc2626" />
-              <stop offset="100%" stopColor="#991b1b" />
-            </linearGradient>
-
-            {/* Gradien Emas Faceplate */}
-            <linearGradient id="goldPlate" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="40%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#d97706" />
-            </linearGradient>
-
-            {/* Arc & Eye Glow Filter */}
-            <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2.5" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-
-            {/* Thruster Flame Gradient */}
-            <linearGradient id="thrusterFire" x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient id="petThruster" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="35%" stopColor="#38bdf8" />
-              <stop offset="85%" stopColor="#0284c7" />
-              <stop offset="100%" stopColor="transparent" />
+              <stop offset="22%" stopColor="#bae6fd" />
+              <stop offset="55%" stopColor="#38bdf8" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#0284c7" stopOpacity="0" />
             </linearGradient>
           </defs>
-
-          {/* Semburan Api Thruster Kaki (Zero-G Propulsion) */}
-          <g className="animate-thruster-flame">
-            {/* Api Kaki Kiri */}
-            <polygon points="34,115 39,115 36.5,129" fill="url(#thrusterFire)" />
-            {/* Api Kaki Kanan */}
-            <polygon points="61,115 66,115 63.5,129" fill="url(#thrusterFire)" />
-          </g>
-
-          {/* ===================== TUBUH MINI ===================== */}
-          {/* Lengan Kiri */}
-          <path d="M 28 82 L 20 94 A 4 4 0 0 0 25 99 L 32 88 Z" fill="url(#armorRed)" stroke="#7f1d1d" strokeWidth="1.2" />
-          <circle cx="23" cy="97" r="2.2" fill="#38bdf8" filter="url(#cyanGlow)" />
-
-          {/* Lengan Kanan */}
-          <path d="M 72 82 L 80 94 A 4 4 0 0 1 75 99 L 68 88 Z" fill="url(#armorRed)" stroke="#7f1d1d" strokeWidth="1.2" />
-          <circle cx="77" cy="97" r="2.2" fill="#38bdf8" filter="url(#cyanGlow)" />
-
-          {/* Kaki Kiri Mini */}
-          <rect x="32" y="98" width="9" height="17" rx="3" fill="url(#armorRed)" stroke="#7f1d1d" strokeWidth="1" />
-          <rect x="33" y="103" width="7" height="4" rx="1" fill="url(#goldPlate)" />
-          {/* Sepatu Boot Kiri */}
-          <path d="M 31 113 L 41 113 L 41 116 L 31 116 Z" fill="#991b1b" />
-
-          {/* Kaki Kanan Mini */}
-          <rect x="59" y="98" width="9" height="17" rx="3" fill="url(#armorRed)" stroke="#7f1d1d" strokeWidth="1" />
-          <rect x="60" y="103" width="7" height="4" rx="1" fill="url(#goldPlate)" />
-          {/* Sepatu Boot Kanan */}
-          <path d="M 59 113 L 69 113 L 69 116 L 59 116 Z" fill="#991b1b" />
-
-          {/* Torso / Badan Utama */}
-          <path
-            d="M 32 78 L 68 78 L 65 100 L 35 100 Z"
-            fill="url(#armorRed)"
-            stroke="#7f1d1d"
-            strokeWidth="1.5"
-          />
-
-          {/* Pelat Pinggang Emas */}
-          <path d="M 36 94 L 64 94 L 62 100 L 38 100 Z" fill="url(#goldPlate)" />
-
-          {/* Shoulder Pads Emas */}
-          <ellipse cx="32" cy="80" rx="6" ry="3.5" fill="url(#goldPlate)" />
-          <ellipse cx="68" cy="80" rx="6" ry="3.5" fill="url(#goldPlate)" />
-
-          {/* Arc Reactor Dada */}
-          <g className="animate-arc-pulse">
-            <circle cx="50" cy="86" r="6" fill="#0f172a" stroke="#fbbf24" strokeWidth="1" />
-            <circle cx="50" cy="86" r="4.2" fill="#e0f2fe" filter="url(#cyanGlow)" />
-            <circle cx="50" cy="86" r="2" fill="#ffffff" />
-          </g>
-
-          {/* ===================== KEPALA BOBBLEHEAD BESAR ===================== */}
-          {/* Telinga Pod Kiri & Kanan */}
-          <rect x="14" y="38" width="6" height="15" rx="3" fill="url(#goldPlate)" stroke="#78350f" strokeWidth="1" />
-          <rect x="80" y="38" width="6" height="15" rx="3" fill="url(#goldPlate)" stroke="#78350f" strokeWidth="1" />
-
-          {/* Helm Tempur Utama (Merah Bulat Chibi) */}
-          <rect
-            x="18"
-            y="12"
-            width="64"
-            height="62"
-            rx="24"
-            fill="url(#armorRed)"
-            stroke="#7f1d1d"
-            strokeWidth="2"
-          />
-
-          {/* Garis Aksen Dahi Helm */}
-          <path d="M 34 16 L 50 20 L 66 16" stroke="#991b1b" strokeWidth="2" strokeLinecap="round" />
-
-          {/* Faceplate Emas Ikonik Iron Man */}
-          <path
-            d="
-              M 27 28 
-              C 35 25, 65 25, 73 28 
-              C 77 35, 77 56, 73 66 
-              C 67 73, 56 74, 50 74 
-              C 44 74, 33 73, 27 66 
-              C 23 56, 23 35, 27 28 Z
-            "
-            fill="url(#goldPlate)"
-            stroke="#92400e"
-            strokeWidth="1.8"
-          />
-
-          {/* Lekukan Pipi & Dahi Faceplate */}
-          <path
-            d="M 33 27 L 41 38 L 59 38 L 67 27"
-            fill="none"
-            stroke="#b45309"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-
-          {/* Mata Celah Kiri Menyala Cyan */}
-          <g filter="url(#cyanGlow)">
-            <polygon points="34,44 45,46 44,50 35,48" fill="#e0f2fe" />
-            <polygon points="34,44 45,46 44,50 35,48" stroke="#38bdf8" strokeWidth="1" />
-          </g>
-
-          {/* Mata Celah Kanan Menyala Cyan */}
-          <g filter="url(#cyanGlow)">
-            <polygon points="66,44 55,46 56,50 65,48" fill="#e0f2fe" />
-            <polygon points="66,44 55,46 56,50 65,48" stroke="#38bdf8" strokeWidth="1" />
-          </g>
-
-          {/* Mulut / Ventilasi Dagu Helm */}
-          <line x1="44" y1="67" x2="56" y2="67" stroke="#78350f" strokeWidth="2" strokeLinecap="round" />
+          {/* Posisi x mengikuti titik tengah masing-masing boot pada gambar */}
+          <path d="M 27 0 H 41 C 40 12, 37 26, 34 40 C 31 26, 28 12, 27 0 Z" fill="url(#petThruster)" />
+          <path d="M 58 0 H 72 C 71 12, 68 26, 65 40 C 62 26, 59 12, 58 0 Z" fill="url(#petThruster)" />
         </svg>
+
+        <img
+          src="/pet-iron-man.webp"
+          alt="Maskot Chibi Iron Man"
+          width={PET_WIDTH}
+          height={PET_HEIGHT}
+          draggable={false}
+          className="relative block w-full h-full drop-shadow-[0_10px_14px_rgba(0,0,0,0.45)]"
+        />
+
+        {/* Denyut Arc Reactor, ditumpangkan tepat di atas reaktor pada gambar */}
+        <span
+          aria-hidden="true"
+          className="absolute rounded-full animate-arc-pulse pointer-events-none"
+          style={{
+            left: '50%',
+            top: '55%',
+            width: PET_WIDTH * 0.2,
+            height: PET_WIDTH * 0.2,
+            transform: 'translate(-50%, -50%)',
+            background: 'radial-gradient(circle, rgba(224,242,254,0.95) 0%, rgba(56,189,248,0.55) 45%, rgba(56,189,248,0) 72%)',
+          }}
+        />
       </div>
     </div>
   );
