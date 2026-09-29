@@ -5,11 +5,10 @@ import { Lock, Mail, KeyRound, AlertCircle, Loader2, LogOut, Database, Trash2, R
 import { ScheduleUploader } from './ScheduleUploader';
 import { ChecklistDataEditor } from './ChecklistDataEditor';
 import { AssetManager } from './AssetManager';
+import { PersonelManager } from './personel/PersonelManager';
 import { SparepartManager } from './SparepartManager';
 import { CloudinarySettingsPanel } from './CloudinarySettingsPanel';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { getErrorMessage } from '../../lib/utils/errorUtils';
-import { toTitleCase } from '../../lib/data/masterData';
 
 export const TabData: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -128,74 +127,19 @@ const AdminLogin: React.FC = () => {
 };
 
 // ==========================================
-// 2. EDITOR DATA LOKAL (PERSONEL, TIP, STORING)
+// 2. EDITOR DATA LOKAL (SUB-TAB PENGATURAN DATA)
 // ==========================================
 const LocalDataEditor: React.FC = () => {
   const store = useMasterDataStore();
   const [activeSubTab, setActiveSubTab] = useState('upload_jadwal');
-  const [localData, setLocalData] = useState<any[]>([]);
   const subTabNavRef = useRef<HTMLDivElement>(null);
 
-  // Ada sembilan sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
+  // Ada delapan sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
   useEffect(() => {
     subTabNavRef.current
       ?.querySelector<HTMLElement>('[aria-current="true"]')
       ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
   }, [activeSubTab]);
-
-  // Load data based on sub tab
-  useEffect(() => {
-    switch (activeSubTab) {
-      case 'api_t2': setLocalData([...store.dataApiT2]); break;
-      case 'om_ias_t2': setLocalData([...store.dataOmIasT2]); break;
-      case 'storing_equip': setLocalData([...store.storingEquipments]); break;
-      case 'tip_left': setLocalData([...store.tipLeftCol]); break;
-    }
-  }, [activeSubTab]);
-
-  const [isSavingDb, setIsSavingDb] = useState(false);
-
-  const handleSave = async () => {
-    setIsSavingDb(true);
-    try {
-      switch (activeSubTab) {
-        case 'api_t2':
-          store.setDataApiT2(localData);
-          await store.savePersonelToSupabase(localData, 'API T2');
-          setLocalData([...useMasterDataStore.getState().dataApiT2]);
-          break;
-        case 'om_ias_t2':
-          store.setDataOmIasT2(localData);
-          await store.savePersonelToSupabase(localData, 'OM/IAS T2');
-          setLocalData([...useMasterDataStore.getState().dataOmIasT2]);
-          break;
-        case 'storing_equip': store.setStoringEquipments(localData); break;
-        case 'tip_left': store.setTipLeftCol(localData); break;
-      }
-      if (activeSubTab !== 'kalibrasi_equip') {
-        alert('Data berhasil disimpan ke sistem & database!');
-      }
-    } catch (err) {
-      console.error('Error saving data:', err);
-      alert('Terjadi kesalahan saat menyimpan: ' + getErrorMessage(err));
-    } finally {
-      setIsSavingDb(false);
-    }
-  };
-
-  const handleTextChange = (index: number, field: string | undefined, value: string) => {
-    const newData = [...localData];
-    if (field) {
-      if (field === 'name') {
-        newData[index][field] = toTitleCase(value);
-      } else {
-        newData[index][field] = value;
-      }
-    } else {
-      newData[index] = value;
-    }
-    setLocalData(newData);
-  };
 
   return (
     <div className="flex flex-col h-full">
@@ -204,8 +148,7 @@ const LocalDataEditor: React.FC = () => {
           { id: 'upload_jadwal', label: 'Upload Jadwal Excel' },
           { id: 'sparepart_list', label: 'Sparepart List' },
           { id: 'manajemen_aset', label: 'Manajemen Aset (Lokasi & Mesin)' },
-          { id: 'api_t2', label: 'Personel API T2' },
-          { id: 'om_ias_t2', label: 'Personel OM/IAS' },
+          { id: 'personel', label: 'Personel' },
           { id: 'checklist_config', label: 'Checklist Config' },
           { id: 'kalibrasi_equip', label: 'Config Peralatan Kalibrasi' },
           { id: 'tip_data_manager', label: 'Data TIP Tersimpan' },
@@ -266,105 +209,9 @@ const LocalDataEditor: React.FC = () => {
       ) : (activeSubTab === 'cloudinary' || activeSubTab === 'google_drive') ? (
         <CloudinarySettingsPanel />
       ) : (
-        <div className="p-6 flex-1 space-y-4">
-          {localData.map((item, index) => (
-            <div key={index} className="flex gap-2 sm:gap-3 items-start sm:items-center">
-              <div className="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
-                {(activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') ? (
-                  <>
-                    <select
-                      className="sm:w-1/4 w-full p-2 border rounded-lg text-sm bg-white shrink-0"
-                      value={item.jabatan || ''}
-                      onChange={e => handleTextChange(index, 'jabatan', e.target.value)}
-                    >
-                      <option value="">-- Pilih Jabatan --</option>
-                      {activeSubTab === 'api_t2' ? (
-                        <>
-                          <option value="Supervisor">Supervisor</option>
-                          <option value="Engineer">Engineer</option>
-                          <option value="Technician">Technician</option>
-                          {item.jabatan && !['Supervisor', 'Engineer', 'Technician'].includes(item.jabatan) && (
-                            <option value={item.jabatan}>{item.jabatan}</option>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <option value="Supervisor">Supervisor</option>
-                          <option value="Teknisi">Teknisi</option>
-                          <option value="Pembantu Teknisi">Pembantu Teknisi</option>
-                          {item.jabatan && !['Supervisor', 'Teknisi', 'Pembantu Teknisi'].includes(item.jabatan) && (
-                            <option value={item.jabatan}>{item.jabatan}</option>
-                          )}
-                        </>
-                      )}
-                    </select>
-                    <input className="sm:w-36 w-full p-2 border rounded-lg text-sm bg-white shrink-0" placeholder="NIK" value={item.nik || ''} onChange={e => handleTextChange(index, 'nik', e.target.value)} />
-                    <input className="flex-1 min-w-[140px] w-full p-2 border rounded-lg text-sm bg-white" placeholder="Nama Personel" value={item.name || ''} onChange={e => handleTextChange(index, 'name', e.target.value)} />
-                    <input className="sm:w-36 w-full p-2 border rounded-lg text-sm bg-white shrink-0" placeholder="No. WA" value={item.phone || ''} onChange={e => handleTextChange(index, 'phone', e.target.value)} />
-                  </>
-                ) : (
-                  <input className="flex-1 w-full p-2 border rounded-lg" value={item} onChange={e => handleTextChange(index, undefined, e.target.value)} />
-                )}
-              </div>
-              <div className="flex gap-1 items-center mt-1 sm:mt-0 shrink-0">
-                {(activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (index === 0) return;
-                        const d = [...localData];
-                        const temp = d[index - 1];
-                        d[index - 1] = d[index];
-                        d[index] = temp;
-                        setLocalData(d);
-                      }}
-                      disabled={index === 0}
-                      className="p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-lg font-bold text-sm"
-                      title="Naikkan Urutan"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (index === localData.length - 1) return;
-                        const d = [...localData];
-                        const temp = d[index + 1];
-                        d[index + 1] = d[index];
-                        d[index] = temp;
-                        setLocalData(d);
-                      }}
-                      disabled={index === localData.length - 1}
-                      className="p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-lg font-bold text-sm"
-                      title="Turunkan Urutan"
-                    >
-                      ▼
-                    </button>
-                  </>
-                )}
-                <button type="button" onClick={() => { const d = [...localData]; d.splice(index, 1); setLocalData(d); }} className="p-2 text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-lg" title="Hapus">
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        
-        <button onClick={() => {
-          const d = [...localData];
-          if (activeSubTab === 'api_t2' || activeSubTab === 'om_ias_t2') d.push({ name: '', phone: '', jabatan: '', nik: '' });
-          else d.push('');
-          setLocalData(d);
-        }} className="w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 font-bold rounded-lg hover:bg-blue-50">
-          + Tambah Baris
-        </button>
-
-        <div className="pt-4 border-t border-slate-200 flex justify-end">
-          <button onClick={handleSave} disabled={isSavingDb} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition-colors flex items-center gap-2">
-            {isSavingDb ? 'Menyimpan...' : 'Simpan Perubahan'}
-          </button>
+        <div className="p-2.5 sm:p-5 md:p-6 bg-slate-50 min-h-[500px]">
+          <PersonelManager />
         </div>
-      </div>
       )}
     </div>
   );
