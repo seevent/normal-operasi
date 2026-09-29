@@ -22,6 +22,7 @@ import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { getDefaultKalibrasiUraian, generateWA_ShiftReport } from '../../lib/utils/waGenerator';
 import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
+import { useAppStore } from '../../store/useAppStore';
 import { ShiftReportPrintDocument } from './shift-report/ShiftReportPrintDocument';
 import { ShiftReportCrudModal } from './shift-report/ShiftReportCrudModal';
 import { ServiceabilityDiagram } from './shift-report/ServiceabilityDiagram';
@@ -31,6 +32,7 @@ const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 
 
 export const TabShiftReport: React.FC = () => {
   const penempatanData = useMasterDataStore(state => state.penempatanData);
+  const setIsCopied = useAppStore(state => state.setIsCopied);
   const [date, setDate] = useState<string>(() => getReportDefaultDateAndShift().date);
   
   const [shift, setShift] = useState<'PS' | 'M' | 'ALL'>(() => getReportDefaultDateAndShift().shift);
