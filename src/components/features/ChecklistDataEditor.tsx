@@ -1,343 +1,305 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Loader2,
+  RefreshCw,
+  Save,
+  Search,
+  Settings,
+  Undo2,
+  X,
+} from 'lucide-react';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { Trash2, Plus, Save, ChevronDown, ChevronRight, Settings, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
+import { sayPet, useAppStore } from '../../store/useAppStore';
 import { DEFAULT_CHECKLIST_DATA } from '../../lib/data/masterData';
+import {
+  ChecklistBlock,
+  ChecklistBlockType,
+  assignIds,
+  blockMatches,
+  collectAllIds,
+  collectMatchIds,
+  countMissingSummaryKeys,
+  isChecklistDirty,
+  moveItem,
+  newBlock,
+  normalizeQuery,
+  removeAt,
+  stripIds,
+  sumStats,
+} from '../../lib/utils/checklistEditor';
+import { BlockCard } from './checklist-editor/BlockCard';
+import { ChecklistEditorProvider, nodeDomId } from './checklist-editor/EditorContext';
+import { AddButton, EmptyHint } from './checklist-editor/ui';
+
+const toolButton =
+  'inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 rounded-lg text-sm font-semibold transition-colors';
 
 export const ChecklistDataEditor: React.FC = () => {
   const store = useMasterDataStore();
-  const [data, setData] = useState<any[]>([]);
+  const saved = store.checklistDataMaster as ChecklistBlock[];
 
+  const [data, setData] = useState<ChecklistBlock[]>(() => assignIds(saved));
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
+  const [query, setQuery] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const saveBarRef = useRef<HTMLDivElement>(null);
+  const setBottomInset = useAppStore((s) => s.setBottomInset);
+
+  const savedJson = useMemo(() => JSON.stringify(saved ?? []), [saved]);
+  const dirty = useMemo(() => isChecklistDirty(data, saved), [data, saved]);
+  const needsSave = dirty || syncFailed;
+
+  // Bilah simpan menempel di dasar layar; beri tahu maskot agar bergeser ke atasnya.
   useEffect(() => {
-    // Clone the data to avoid direct mutation
-    setData(JSON.parse(JSON.stringify(store.checklistDataMaster)));
-  }, [store.checklistDataMaster]);
+    setBottomInset(needsSave ? (saveBarRef.current?.offsetHeight ?? 72) + 8 : 0);
+    return () => setBottomInset(0);
+  }, [needsSave, setBottomInset]);
 
-  const handleSave = () => {
-    store.setChecklistDataMaster(data);
-    alert('Konfigurasi Checklist berhasil disimpan ke Supabase!');
-  };
+  // Muat ulang dari store hanya bila pengguna tidak sedang punya perubahan yang
+  // belum disimpan; kalau tidak, hasil ketikannya akan tertimpa diam-diam.
+  const previousSavedJson = useRef(savedJson);
+  useEffect(() => {
+    const previous = previousSavedJson.current;
+    previousSavedJson.current = savedJson;
+    if (previous === savedJson) return;
 
-  const handleAddBlock = (type: string) => {
-    const newData = [...data];
-    if (type === 'location') {
-      newData.push({ type: 'location', title: 'Lokasi Baru', summary: '', categories: [] });
-    } else if (type === 'group') {
-      newData.push({ type: 'group', summary: 'Grup Baru', locations: [] });
-    } else if (type === 'access_control') {
-      newData.push({ type: 'access_control', title: 'Access Control Baru', summary: '', terminals: [] });
-    }
-    setData(newData);
-  };
+    const currentJson = JSON.stringify(stripIds(dataRef.current));
+    const wasClean = currentJson === previous;
+    const alreadyMatches = currentJson === savedJson; // baru saja disimpan dari editor ini
+    if (wasClean && !alreadyMatches) setData(assignIds(saved));
+  }, [savedJson, saved]);
 
-  const handleDeleteBlock = (idx: number) => {
-    if (window.confirm('Hapus blok ini?')) {
-      const newData = [...data];
-      newData.splice(idx, 1);
-      setData(newData);
-    }
-  };
+  // Saat mencari, buka otomatis node yang cocok agar hasilnya langsung terlihat.
+  const q = normalizeQuery(query);
+  useEffect(() => {
+    if (!q) return;
+    const matches = collectMatchIds(dataRef.current, q);
+    setOpenIds((prev) => new Set([...prev, ...matches]));
+  }, [q]);
 
-  const handleMoveBlock = (idx: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && idx > 0) {
-      const newData = [...data];
-      [newData[idx - 1], newData[idx]] = [newData[idx], newData[idx - 1]];
-      setData(newData);
-    } else if (direction === 'down' && idx < data.length - 1) {
-      const newData = [...data];
-      [newData[idx], newData[idx + 1]] = [newData[idx + 1], newData[idx]];
-      setData(newData);
-    }
-  };
+  const isOpen = useCallback((id: string) => openIds.has(id), [openIds]);
+  const toggle = useCallback((id: string) => {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const reveal = useCallback((id: string) => {
+    setOpenIds((prev) => new Set(prev).add(id));
+    window.setTimeout(() => {
+      document.getElementById(nodeDomId(id))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  }, []);
 
-  const updateBlock = (idx: number, field: string, value: any) => {
-    const newData = [...data];
-    newData[idx][field] = value;
-    setData(newData);
-  };
+  const contextValue = useMemo(() => ({ isOpen, toggle, reveal, canReorder: !q }), [isOpen, toggle, reveal, q]);
 
-  return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
-        <div className="w-full sm:w-auto">
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Settings className="w-6 h-6 text-blue-600 shrink-0" /> Editor Konfigurasi Checklist
-          </h2>
-          <p className="text-slate-500 text-sm mt-1">Edit struktur checklist untuk WhatsApp. Perubahan akan langsung disimpan ke Supabase.</p>
-        </div>
-        <div className="flex flex-wrap w-full sm:w-auto gap-2">
-          <button onClick={() => {
-            if (window.confirm('Reset checklist ke default bawaan sistem? Data saat ini di cloud akan tertimpa setelah Anda menekan Simpan ke Cloud.')) {
-              setData(JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_DATA)));
-            }
-          }} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 text-sm sm:text-base font-bold rounded-xl transition-all shadow-sm border border-rose-200">
-            <RefreshCw className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" /> Reset
-          </button>
-          <button onClick={handleSave} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-3 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-bold rounded-xl transition-all shadow-md">
-            <Save className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" /> Simpan
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {data.map((block, bIdx) => (
-          <BlockEditor 
-            key={bIdx} 
-            block={block} 
-            onUpdate={(field, val) => updateBlock(bIdx, field, val)} 
-            onDelete={() => handleDeleteBlock(bIdx)} 
-            onMoveUp={() => handleMoveBlock(bIdx, 'up')}
-            onMoveDown={() => handleMoveBlock(bIdx, 'down')}
-            isFirst={bIdx === 0}
-            isLast={bIdx === data.length - 1}
-          />
-        ))}
-      </div>
-
-      <div className="mt-8 pt-6 border-t border-slate-200 flex flex-wrap gap-4">
-        <button type="button" onClick={() => handleAddBlock('location')} className="flex-1 min-w-[200px] py-3 border-2 border-dashed border-blue-300 text-blue-600 font-bold rounded-xl hover:bg-blue-50 flex items-center justify-center gap-2 transition-colors">
-          <Plus className="w-5 h-5" /> Tambah Blok Lokasi
-        </button>
-        <button type="button" onClick={() => handleAddBlock('group')} className="flex-1 min-w-[200px] py-3 border-2 border-dashed border-purple-300 text-purple-600 font-bold rounded-xl hover:bg-purple-50 flex items-center justify-center gap-2 transition-colors">
-          <Plus className="w-5 h-5" /> Tambah Blok Grup
-        </button>
-        <button type="button" onClick={() => handleAddBlock('access_control')} className="flex-1 min-w-[200px] py-3 border-2 border-dashed border-emerald-300 text-emerald-600 font-bold rounded-xl hover:bg-emerald-50 flex items-center justify-center gap-2 transition-colors">
-          <Plus className="w-5 h-5" /> Tambah Blok Access Control
-        </button>
-      </div>
-    </div>
+  const visible = useMemo(
+    () => data.map((block, index) => ({ block, index })).filter(({ block }) => blockMatches(block, q)),
+    [data, q]
   );
-};
+  const stats = useMemo(() => sumStats(data), [data]);
+  const missingKeys = useMemo(() => data.reduce((n, b) => n + countMissingSummaryKeys(b), 0), [data]);
 
-// ==========================================
-// SUB COMPONENTS
-// ==========================================
+  const handleSave = async () => {
+    setSaving(true);
+    const ok = await store.setChecklistDataMaster(stripIds(data));
+    setSaving(false);
+    setSyncFailed(!ok);
+    if (ok) {
+      setSavedAt(new Date());
+      sayPet('Scan selesai, konfigurasi checklist tersimpan ke database. Clear!', 'success');
+    } else {
+      sayPet(
+        'Konfigurasi checklist gagal tersimpan ke database. Perubahan baru ada di perangkat ini, tekan Simpan lagi saat koneksi membaik.',
+        'error'
+      );
+    }
+  };
 
-const BlockEditor = ({ block, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: { 
-  block: any, onUpdate: (f: string, v: any) => void, onDelete: () => void, 
-  onMoveUp: () => void, onMoveDown: () => void, isFirst: boolean, isLast: boolean 
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const handleDiscard = () => {
+    if (!window.confirm('Buang semua perubahan yang belum disimpan dan kembali ke versi tersimpan?')) return;
+    setData(assignIds(saved));
+    setSyncFailed(false);
+  };
+
+  const handleReset = () => {
+    if (
+      window.confirm(
+        'Reset checklist ke default bawaan sistem? Perubahan baru tersimpan ke cloud setelah Anda menekan Simpan.'
+      )
+    ) {
+      setData(assignIds(DEFAULT_CHECKLIST_DATA as ChecklistBlock[]));
+    }
+  };
+
+  const handleAddBlock = (type: ChecklistBlockType) => {
+    const created = newBlock(type);
+    setData((prev) => [...prev, created]);
+    if (created._id) reveal(created._id);
+  };
+
+  const statusPill = syncFailed ? (
+    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-100 rounded-full px-2.5 py-1">
+      <AlertTriangle className="w-3.5 h-3.5" /> Belum tersimpan ke cloud
+    </span>
+  ) : dirty ? (
+    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-100 rounded-full px-2.5 py-1">
+      <span className="w-2 h-2 rounded-full bg-amber-500" /> Belum disimpan
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100 rounded-full px-2.5 py-1">
+      <CheckCircle2 className="w-3.5 h-3.5" /> Tersimpan
+      {savedAt && <span className="font-medium">{savedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>}
+    </span>
+  );
 
   return (
-    <div className={`border rounded-xl overflow-hidden shadow-sm transition-all ${isOpen ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-300'}`}>
-      <div className={`flex items-center justify-between p-4 cursor-pointer select-none transition-colors ${isOpen ? 'bg-blue-50' : 'bg-slate-100 hover:bg-slate-200'}`} onClick={() => setIsOpen(!isOpen)}>
-        <div className="flex items-center gap-3">
-          {isOpen ? <ChevronDown className="w-5 h-5 text-slate-500" /> : <ChevronRight className="w-5 h-5 text-slate-500" />}
-          <span className="font-bold text-slate-800">
-            {block.type.toUpperCase()}: {block.title || block.summary || 'Baru'}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={(e) => { e.stopPropagation(); onMoveUp(); }} disabled={isFirst} className={`p-2 rounded-lg transition-colors ${isFirst ? 'text-slate-300' : 'text-slate-500 hover:bg-slate-200'}`}>
-            <ArrowUp className="w-5 h-5" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onMoveDown(); }} disabled={isLast} className={`p-2 rounded-lg transition-colors ${isLast ? 'text-slate-300' : 'text-slate-500 hover:bg-slate-200'}`}>
-            <ArrowDown className="w-5 h-5" />
-          </button>
-          <div className="w-px h-6 bg-slate-300 mx-1"></div>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors">
-            <Trash2 className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {isOpen && (
-        <div className="p-5 bg-white space-y-5 border-t border-slate-200">
-          {block.type !== 'group' && (
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">Nama/Judul Utama</label>
-              <input className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={block.title || ''} onChange={e => onUpdate('title', e.target.value)} />
-            </div>
-          )}
-          
+    <ChecklistEditorProvider value={contextValue}>
+      <div className="space-y-3">
+        <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-5 space-y-3">
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">Teks Summary (WA)</label>
-            <input className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={block.summary || ''} onChange={e => onUpdate('summary', e.target.value)} />
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+                <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 shrink-0" /> Konfigurasi Checklist
+              </h2>
+              {statusPill}
+            </div>
+            <p className="text-sm text-slate-500 mt-1.5">
+              Atur struktur checklist untuk pesan WhatsApp. Perubahan baru tersimpan setelah menekan <b>Simpan</b>.
+            </p>
           </div>
 
-          {/* Categories for Location */}
-          {block.type === 'location' && (
-            <CategoryList 
-              categories={block.categories || []} 
-              onChange={cats => onUpdate('categories', cats)} 
+          <div className="flex flex-wrap gap-1.5 text-xs font-semibold text-slate-600">
+            <span className="bg-slate-100 rounded-full px-2.5 py-1">{stats.blocks} blok</span>
+            <span className="bg-slate-100 rounded-full px-2.5 py-1">{stats.categories} kategori</span>
+            <span className="bg-slate-100 rounded-full px-2.5 py-1">{stats.items} alat</span>
+          </div>
+
+          {missingKeys > 0 && (
+            <div className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>
+                <b>{missingKeys} kategori</b> belum punya Summary Key. Baris rekapnya akan tertulis "undefined" di pesan
+                WhatsApp.
+              </span>
+            </div>
+          )}
+
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari blok, kategori, alat"
+              className="w-full min-w-0 pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
-          )}
-
-          {/* Locations for Group */}
-          {block.type === 'group' && (
-            <div className="space-y-4">
-              <label className="block text-sm font-bold text-slate-700">Daftar Lokasi di Grup Ini</label>
-              {(block.locations || []).map((loc: any, lIdx: number) => (
-                <div key={lIdx} className="p-4 border border-slate-200 rounded-xl bg-slate-50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <input placeholder="Nama Lokasi (ex: SSCP E)" className="flex-1 p-2 border border-slate-300 rounded-lg font-bold" value={loc.title || ''} onChange={e => {
-                      const newLocs = [...(block.locations || [])];
-                      newLocs[lIdx].title = e.target.value;
-                      onUpdate('locations', newLocs);
-                    }} />
-                    <button onClick={() => {
-                      if (lIdx > 0) {
-                        const newLocs = [...(block.locations || [])];
-                        [newLocs[lIdx - 1], newLocs[lIdx]] = [newLocs[lIdx], newLocs[lIdx - 1]];
-                        onUpdate('locations', newLocs);
-                      }
-                    }} disabled={lIdx === 0} className={`p-2 rounded-lg transition-colors ${lIdx === 0 ? 'text-slate-300' : 'text-slate-500 hover:bg-slate-200'}`}>
-                      <ArrowUp className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => {
-                      if (lIdx < (block.locations?.length || 0) - 1) {
-                        const newLocs = [...(block.locations || [])];
-                        [newLocs[lIdx], newLocs[lIdx + 1]] = [newLocs[lIdx + 1], newLocs[lIdx]];
-                        onUpdate('locations', newLocs);
-                      }
-                    }} disabled={lIdx === (block.locations?.length || 0) - 1} className={`p-2 rounded-lg transition-colors ${lIdx === (block.locations?.length || 0) - 1 ? 'text-slate-300' : 'text-slate-500 hover:bg-slate-200'}`}>
-                      <ArrowDown className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => {
-                      const newLocs = [...(block.locations || [])];
-                      newLocs.splice(lIdx, 1);
-                      onUpdate('locations', newLocs);
-                    }} className="p-2 text-rose-500 bg-rose-100 rounded-lg">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <CategoryList categories={loc.categories || []} onChange={cats => {
-                    const newLocs = [...(block.locations || [])];
-                    newLocs[lIdx].categories = cats;
-                    onUpdate('locations', newLocs);
-                  }} />
-                </div>
-              ))}
-              <button onClick={() => onUpdate('locations', [...(block.locations || []), { title: 'Lokasi Baru', categories: [] }])} className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100">
-                + Tambah Lokasi
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label="Hapus pencarian"
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
               </button>
-            </div>
-          )}
-
-          {/* Terminals for Access Control */}
-          {block.type === 'access_control' && (
-            <div className="space-y-4">
-              <label className="block text-sm font-bold text-slate-700">Daftar Terminal</label>
-              {(block.terminals || []).map((term: any, tIdx: number) => (
-                <div key={tIdx} className="p-4 border border-slate-200 rounded-xl bg-slate-50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <input placeholder="Nama Terminal (Opsional, ex: TERMINAL D)" className="flex-1 p-2 border border-slate-300 rounded-lg font-bold" value={term.title || ''} onChange={e => {
-                      const newTerms = [...(block.terminals || [])];
-                      newTerms[tIdx].title = e.target.value;
-                      onUpdate('terminals', newTerms);
-                    }} />
-                    <button onClick={() => {
-                      if (tIdx > 0) {
-                        const newTerms = [...(block.terminals || [])];
-                        [newTerms[tIdx - 1], newTerms[tIdx]] = [newTerms[tIdx], newTerms[tIdx - 1]];
-                        onUpdate('terminals', newTerms);
-                      }
-                    }} disabled={tIdx === 0} className={`p-2 rounded-lg transition-colors ${tIdx === 0 ? 'text-slate-300' : 'text-slate-500 hover:bg-slate-200'}`}>
-                      <ArrowUp className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => {
-                      if (tIdx < (block.terminals?.length || 0) - 1) {
-                        const newTerms = [...(block.terminals || [])];
-                        [newTerms[tIdx], newTerms[tIdx + 1]] = [newTerms[tIdx + 1], newTerms[tIdx]];
-                        onUpdate('terminals', newTerms);
-                      }
-                    }} disabled={tIdx === (block.terminals?.length || 0) - 1} className={`p-2 rounded-lg transition-colors ${tIdx === (block.terminals?.length || 0) - 1 ? 'text-slate-300' : 'text-slate-500 hover:bg-slate-200'}`}>
-                      <ArrowDown className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => {
-                      const newTerms = [...(block.terminals || [])];
-                      newTerms.splice(tIdx, 1);
-                      onUpdate('terminals', newTerms);
-                    }} className="p-2 text-rose-500 bg-rose-100 rounded-lg">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <CategoryList categories={term.categories || []} onChange={cats => {
-                    const newTerms = [...(block.terminals || [])];
-                    newTerms[tIdx].categories = cats;
-                    onUpdate('terminals', newTerms);
-                  }} />
-                </div>
-              ))}
-              <button onClick={() => onUpdate('terminals', [...(block.terminals || []), { title: 'Terminal Baru', categories: [] }])} className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100">
-                + Tambah Terminal
-              </button>
-            </div>
-          )}
-
-        </div>
-      )}
-    </div>
-  );
-};
-
-const CategoryList = ({ categories, onChange }: { categories: any[], onChange: (c: any[]) => void }) => {
-  const updateCat = (idx: number, field: string, val: any) => {
-    const newCats = [...categories];
-    newCats[idx][field] = val;
-    onChange(newCats);
-  };
-
-  return (
-    <div className="space-y-4">
-      <label className="block text-sm font-bold text-slate-700">Daftar Kategori & Peralatan</label>
-      {categories.map((cat, cIdx) => (
-        <div key={cIdx} className="border border-indigo-100 rounded-xl p-4 bg-indigo-50/30 flex gap-4 items-start">
-          <div className="flex-1 space-y-3">
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <input placeholder="Nama Kategori (ex: A. X-RAY)" className="w-full p-2 border border-slate-300 rounded-lg text-sm font-bold" value={cat.title || ''} onChange={e => updateCat(cIdx, 'title', e.target.value)} />
-              </div>
-              <div className="flex-1">
-                <input placeholder="Summary Key (opsional, ex: X-RAY)" className="w-full p-2 border border-slate-300 rounded-lg text-sm" value={cat.summaryKey || ''} onChange={e => updateCat(cIdx, 'summaryKey', e.target.value)} />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Daftar Alat (1 Baris = 1 Alat)</label>
-              <textarea 
-                className="w-full p-3 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none whitespace-pre" 
-                rows={4}
-                value={(cat.items || []).join('\n')}
-                onChange={e => {
-                  const items = e.target.value.split('\n').filter(s => s.trim() !== '');
-                  updateCat(cIdx, 'items', items);
-                }}
-              />
-            </div>
+            )}
           </div>
-          <div className="flex flex-col gap-1">
-            <button onClick={() => {
-              if (cIdx > 0) {
-                const newCats = [...categories];
-                [newCats[cIdx - 1], newCats[cIdx]] = [newCats[cIdx], newCats[cIdx - 1]];
-                onChange(newCats);
-              }
-            }} disabled={cIdx === 0} className={`p-2 rounded-lg transition-colors ${cIdx === 0 ? 'text-indigo-200' : 'text-indigo-500 hover:bg-indigo-100'}`}>
-              <ArrowUp className="w-5 h-5" />
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenIds(new Set(collectAllIds(data)))}
+              className={`${toolButton} bg-slate-100 text-slate-700 hover:bg-slate-200`}
+            >
+              <ChevronsUpDown className="w-4 h-4" /> Buka semua
             </button>
-            <button onClick={() => {
-              if (cIdx < categories.length - 1) {
-                const newCats = [...categories];
-                [newCats[cIdx], newCats[cIdx + 1]] = [newCats[cIdx + 1], newCats[cIdx]];
-                onChange(newCats);
-              }
-            }} disabled={cIdx === categories.length - 1} className={`p-2 rounded-lg transition-colors ${cIdx === categories.length - 1 ? 'text-indigo-200' : 'text-indigo-500 hover:bg-indigo-100'}`}>
-              <ArrowDown className="w-5 h-5" />
-            </button>
-            <button onClick={() => {
-              const newCats = [...categories];
-              newCats.splice(cIdx, 1);
-              onChange(newCats);
-            }} className="p-2 text-rose-500 hover:bg-rose-100 rounded-lg mt-1 transition-colors">
-              <Trash2 className="w-5 h-5" />
+            <button type="button" onClick={() => setOpenIds(new Set())} className={`${toolButton} bg-slate-100 text-slate-700 hover:bg-slate-200`}>
+              <ChevronsDownUp className="w-4 h-4" /> Tutup semua
             </button>
           </div>
         </div>
-      ))}
-      <button onClick={() => onChange([...categories, { title: '', items: [] }])} className="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors">
-        + Tambah Kategori
-      </button>
-    </div>
+
+        {q && (
+          <p className="text-sm text-slate-500 px-1">
+            Menampilkan <b>{visible.length}</b> dari {data.length} blok untuk "{query.trim()}".
+            {visible.length > 0 && ' Urutan tidak bisa diubah selama pencarian.'}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          {visible.map(({ block, index }) => (
+            <BlockCard
+              key={block._id ?? index}
+              block={block}
+              index={index}
+              total={data.length}
+              onChange={(next) => setData((prev) => prev.map((b, i) => (i === index ? next : b)))}
+              onMove={(direction) => setData((prev) => moveItem(prev, index, direction))}
+              onRemove={() => setData((prev) => removeAt(prev, index))}
+            />
+          ))}
+          {visible.length === 0 && <EmptyHint>{q ? 'Tidak ada yang cocok dengan pencarian.' : 'Belum ada blok checklist.'}</EmptyHint>}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+          <AddButton onClick={() => handleAddBlock('location')} tone="blue">
+            Blok Lokasi
+          </AddButton>
+          <AddButton onClick={() => handleAddBlock('group')} tone="purple">
+            Blok Grup
+          </AddButton>
+          <AddButton onClick={() => handleAddBlock('access_control')} tone="emerald">
+            Blok Access Control
+          </AddButton>
+        </div>
+
+        <div className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" /> Kembalikan ke bawaan sistem
+          </button>
+        </div>
+
+        {needsSave && (
+          <div ref={saveBarRef} className="sticky bottom-0 z-40 -mx-2 sm:mx-0 bg-white/95 backdrop-blur border-t sm:border sm:rounded-2xl border-slate-200 shadow-[0_-6px_16px_rgba(15,23,42,0.08)] p-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              aria-label={syncFailed ? 'Coba simpan lagi' : 'Simpan perubahan'}
+              className="flex-1 inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white font-bold whitespace-nowrap transition-colors"
+            >
+              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              {saving ? 'Menyimpan...' : syncFailed ? 'Simpan ulang' : 'Simpan'}
+            </button>
+            {dirty && (
+              <button
+                type="button"
+                onClick={handleDiscard}
+                disabled={saving}
+                className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
+              >
+                <Undo2 className="w-4 h-4" /> Batalkan
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </ChecklistEditorProvider>
   );
 };
-

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabaseClient';
-import { Lock, Mail, KeyRound, AlertCircle, Loader2, LogOut, Database, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Lock, Mail, KeyRound, AlertCircle, Loader2, LogOut, Database, Trash2, RefreshCw } from 'lucide-react';
 import { ScheduleUploader } from './ScheduleUploader';
 import { ChecklistDataEditor } from './ChecklistDataEditor';
 import { AssetManager } from './AssetManager';
@@ -15,7 +15,7 @@ export const TabData: React.FC = () => {
   const { user, logout } = useAuthStore();
   
   return (
-    <div className="p-6 animate-in fade-in duration-300">
+    <div className="p-2.5 sm:p-6 animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center border-b border-slate-300 pb-3 mb-6">
         <div>
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -35,7 +35,7 @@ export const TabData: React.FC = () => {
       {!user ? (
         <AdminLogin />
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-clip min-h-[400px]">
           <LocalDataEditor />
         </div>
       )}
@@ -134,6 +134,14 @@ const LocalDataEditor: React.FC = () => {
   const store = useMasterDataStore();
   const [activeSubTab, setActiveSubTab] = useState('upload_jadwal');
   const [localData, setLocalData] = useState<any[]>([]);
+  const subTabNavRef = useRef<HTMLDivElement>(null);
+
+  // Ada sembilan sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
+  useEffect(() => {
+    subTabNavRef.current
+      ?.querySelector<HTMLElement>('[aria-current="true"]')
+      ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [activeSubTab]);
 
   // Load data based on sub tab
   useEffect(() => {
@@ -191,7 +199,7 @@ const LocalDataEditor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-slate-800 text-white p-2 flex gap-1 overflow-x-auto hide-scrollbar">
+      <div ref={subTabNavRef} className="bg-slate-800 text-white p-2 flex gap-1 overflow-x-auto hide-scrollbar">
         {[
           { id: 'upload_jadwal', label: 'Upload Jadwal Excel' },
           { id: 'sparepart_list', label: 'Sparepart List' },
@@ -203,7 +211,7 @@ const LocalDataEditor: React.FC = () => {
           { id: 'tip_data_manager', label: 'Data TIP Tersimpan' },
           { id: 'cloudinary', label: 'Cloudinary CDN' }
         ].map(t => (
-          <button key={t.id} onClick={() => setActiveSubTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeSubTab === t.id ? 'bg-blue-600' : 'hover:bg-slate-700 text-slate-300'}`}>
+          <button key={t.id} aria-current={activeSubTab === t.id ? 'true' : undefined} onClick={() => setActiveSubTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeSubTab === t.id ? 'bg-blue-600' : 'hover:bg-slate-700 text-slate-300'}`}>
             {t.label}
           </button>
         ))}
@@ -222,7 +230,7 @@ const LocalDataEditor: React.FC = () => {
           <AssetManager />
         </div>
       ) : activeSubTab === 'checklist_config' ? (
-        <div className="p-3 sm:p-5 md:p-6">
+        <div className="p-2 sm:p-5 md:p-6 bg-slate-50 min-h-[500px]">
           <ChecklistDataEditor />
         </div>
       ) : activeSubTab === 'kalibrasi_equip' ? (

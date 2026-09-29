@@ -23,14 +23,20 @@ export const DEFAULT_PM_DISPLAY_SETTINGS: PmDisplaySettings = {
   }
 };
 
-const saveConfigToSupabase = async (key: string, data: any) => {
+/** Mengembalikan `true` bila tulis ke Supabase berhasil. Pemanggil yang tidak peduli boleh mengabaikannya. */
+const saveConfigToSupabase = async (key: string, data: any): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('master_configs')
       .upsert({ key, value: data, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-    if (error) console.error(`Error saving ${key} to Supabase:`, error);
+    if (error) {
+      console.error(`Error saving ${key} to Supabase:`, error);
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error(`Error saving ${key} to Supabase:`, err);
+    return false;
   }
 };
 
@@ -47,7 +53,8 @@ interface MasterDataState {
   storingLocDefault: string[];
   setStoringLocDefault: (data: string[]) => void;
   checklistDataMaster: any[];
-  setChecklistDataMaster: (data: any[]) => void;
+  /** Menyimpan lokal lebih dulu, lalu ke cloud. Hasilnya `false` bila penyimpanan cloud gagal. */
+  setChecklistDataMaster: (data: any[]) => Promise<boolean>;
   tipLeftCol: any[];
   setTipLeftCol: (data: any[]) => void;
   tipRightCol: any[];
@@ -176,9 +183,9 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
     set({ storingLocDefault: data });
   },
   checklistDataMaster: DEFAULT_CHECKLIST_DATA,
-  setChecklistDataMaster: (data) => {
-    saveConfigToSupabase('master_checklist', data);
+  setChecklistDataMaster: async (data) => {
     set({ checklistDataMaster: data });
+    return saveConfigToSupabase('master_checklist', data);
   },
   tipLeftCol: DEFAULT_TIP_LEFT_COL,
   setTipLeftCol: (data) => {

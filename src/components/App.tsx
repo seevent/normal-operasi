@@ -240,7 +240,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 py-3 px-2 sm:py-6 sm:px-4 lg:py-8 lg:px-6 flex items-start sm:items-center justify-center font-sans relative print:min-h-0 print:bg-white print:p-0 print:m-0 print:block">
 
-      <div className={`w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 print:max-w-none print:w-full print:border-none print:shadow-none print:rounded-none print:overflow-visible transition-all duration-300 ${activeTab === 'data' || activeTab === 'ba_serah_terima' ? 'max-w-6xl xl:max-w-7xl' : 'max-w-2xl'}`}>
+      <div className={`w-full bg-white rounded-2xl shadow-xl overflow-clip border border-slate-200 print:max-w-none print:w-full print:border-none print:shadow-none print:rounded-none print:overflow-visible transition-all duration-300 ${activeTab === 'data' || activeTab === 'ba_serah_terima' ? 'max-w-6xl xl:max-w-7xl' : 'max-w-2xl'}`}>
         
         {/* === HEADER BERSAMA === */}
         {(() => {

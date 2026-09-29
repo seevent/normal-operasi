@@ -12,6 +12,9 @@ const PET_HEIGHT = Math.round(PET_WIDTH * 0.627);
 /** Ruang ekstra di bawah maskot agar gerak melayang tidak terpotong tepi layar. */
 const PET_FLOAT_SPACE = 12;
 
+/** Batas bawah posisi maskot; `inset` adalah area dasar layar yang sedang dipakai elemen lain. */
+const maxPetY = (inset: number) => window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE - inset;
+
 /** Gaya balon dialog & ikon judul per nada pesan. */
 const TONE_STYLES: Record<PetTone, { border: string; label: string; labelColor: string; Icon: React.ElementType; iconColor: string }> = {
   info: { border: 'border-amber-500/40', label: 'SI X-RAY', labelColor: 'text-amber-400', Icon: ScanLine, iconColor: 'text-cyan-400' },
@@ -24,6 +27,7 @@ const TONE_STYLES: Record<PetTone, { border: string; label: string; labelColor: 
 export const AntigravityPet: React.FC = () => {
   const petMessage = useAppStore((s) => s.petMessage);
   const clearPetMessage = useAppStore((s) => s.clearPetMessage);
+  const bottomInset = useAppStore((s) => s.bottomInset);
 
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -42,19 +46,24 @@ export const AntigravityPet: React.FC = () => {
   }>({ pointerX: 0, pointerY: 0, origX: 0, origY: 0, hasMoved: false });
 
   const petRef = useRef<HTMLDivElement>(null);
+  // Posisi vertikal pilihan pengguna, terlepas dari geseran sementara akibat bilah di dasar layar.
+  const preferredYRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Inisialisasi posisi default di pojok kanan bawah
   useEffect(() => {
     const initX = Math.max(16, window.innerWidth - PET_WIDTH - 16);
     const initY = Math.max(16, window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE - 16);
-    setPosition({ x: initX, y: initY });
+    preferredYRef.current = initY;
+    setPosition({ x: initX, y: Math.min(initY, maxPetY(useAppStore.getState().bottomInset)) });
 
     const handleResize = () => {
+      const inset = useAppStore.getState().bottomInset;
+      preferredYRef.current = Math.min(Math.max(16, preferredYRef.current ?? initY), maxPetY(0));
       setPosition((prev) => {
         if (!prev) return null;
         const clampedX = Math.min(Math.max(16, prev.x), window.innerWidth - PET_WIDTH - 8);
-        const clampedY = Math.min(Math.max(16, prev.y), window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE);
+        const clampedY = Math.min(Math.max(16, prev.y), maxPetY(inset));
         return { x: clampedX, y: clampedY };
       });
     };
@@ -62,6 +71,15 @@ export const AntigravityPet: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Menyingkir dari bilah di dasar layar (mis. bilah simpan), lalu kembali ke posisi pilihan pengguna.
+  useEffect(() => {
+    setPosition((prev) => {
+      if (!prev) return prev;
+      const wanted = preferredYRef.current ?? prev.y;
+      return { ...prev, y: Math.max(16, Math.min(wanted, maxPetY(bottomInset))) };
+    });
+  }, [bottomInset]);
 
   // Sembunyikan maskot selama ada isian yang sedang difokuskan, agar tidak
   // menutupi field saat keyboard ponsel muncul.
@@ -151,7 +169,7 @@ export const AntigravityPet: React.FC = () => {
     );
     const newY = Math.min(
       Math.max(12, dragStartRef.current.origY + deltaY),
-      window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE
+      maxPetY(bottomInset)
     );
 
     setPosition({ x: newX, y: newY });
@@ -166,6 +184,9 @@ export const AntigravityPet: React.FC = () => {
     } catch {
       // safe fallback
     }
+
+    // Setelah digeser, posisi barunya menjadi pilihan pengguna
+    if (dragStartRef.current.hasMoved && position) preferredYRef.current = position.y;
 
     // Jika tidak digeser (hanya klik), munculkan quote
     if (!dragStartRef.current.hasMoved) {

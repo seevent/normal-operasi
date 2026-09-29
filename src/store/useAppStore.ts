@@ -38,6 +38,14 @@ interface AppState {
   petMessage: PetMessage | null;
   sayPet: (text: string, tone?: PetTone, durationMs?: number) => void;
   clearPetMessage: () => void;
+
+  /**
+   * Tinggi (px) area di dasar layar yang sedang dipakai elemen lain, misalnya bilah
+   * simpan yang menempel. Maskot bergeser ke atasnya agar tidak menelan ketukan pada
+   * tombol di bawahnya, lalu kembali ke posisi pilihan pengguna setelah area itu bebas.
+   */
+  bottomInset: number;
+  setBottomInset: (px: number) => void;
 }
 
 let petMessageCounter = 0;
@@ -59,6 +67,9 @@ export const useAppStore = create<AppState>((set) => ({
       },
     }),
   clearPetMessage: () => set({ petMessage: null }),
+
+  bottomInset: 0,
+  setBottomInset: (px) => set({ bottomInset: Math.max(0, Math.round(px)) }),
 }));
 
 /**
