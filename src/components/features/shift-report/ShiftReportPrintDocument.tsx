@@ -1,6 +1,21 @@
 // src/components/features/shift-report/ShiftReportPrintDocument.tsx
 import React, { forwardRef } from 'react';
 import { ChecklistSummaryItem } from '../../../lib/services/operationalReportService';
+// `?inline` menanam logo sebagai data URI. Ekspor PDF mengunduh ulang setiap
+// <img> bersumber URL dan menyembunyikannya bila gagal dalam 2 detik, sehingga
+// logo bisa hilang diam-diam dari PDF di jaringan lambat. Sumber data: dilewati.
+import injourneyLogo from '../../../assets/logo-injourney-airports.webp?inline';
+
+const InjourneyLogo: React.FC = () => (
+  <img
+    src={injourneyLogo}
+    alt="Injourney Airports"
+    width={520}
+    height={163}
+    draggable={false}
+    className="w-full h-auto object-contain"
+  />
+);
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -44,9 +59,7 @@ export const ShiftReportPrintDocument = forwardRef<HTMLDivElement, ShiftReportPr
       {/* Header Kop Surat */}
       <div className="border-[3px] border-black flex items-stretch">
         <div className="w-[15%] border-r-[3px] border-black flex items-center justify-center p-2">
-          <div className="text-[12px] font-bold text-blue-800 text-center leading-tight">
-            INJOURNEY<br/>AIRPORTS
-          </div>
+          <InjourneyLogo />
         </div>
         <div className="w-[50%] border-r-[3px] border-black p-2 flex flex-col items-center justify-center text-center">
           <h1 className="font-extrabold text-[13px]">PT ANGKASA PURA INDONESIA</h1>
@@ -207,9 +220,7 @@ export const ShiftReportPrintDocument = forwardRef<HTMLDivElement, ShiftReportPr
         {/* Header Kop Surat Lembar Serviceability */}
         <div className="border-[3px] border-black flex items-stretch mb-2">
           <div className="w-[15%] border-r-[3px] border-black flex items-center justify-center p-2">
-            <div className="text-[12px] font-bold text-blue-800 text-center leading-tight">
-              INJOURNEY<br/>AIRPORTS
-            </div>
+            <InjourneyLogo />
           </div>
           <div className="w-[50%] border-r-[3px] border-black p-2 flex flex-col items-center justify-center text-center">
             <h1 className="font-extrabold text-[12px]">PT ANGKASA PURA INDONESIA</h1>
