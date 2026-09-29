@@ -9,6 +9,7 @@ import { generateWA_InitialReport } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { usePhotoGroups } from '../../lib/hooks/usePhotoGroups';
+import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
 import { supabase } from '../../lib/supabaseClient';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { fetchOnDutyPersonnel } from '../../lib/services/operationalReportService';
@@ -128,26 +129,10 @@ export const TabInitialReport: React.FC = () => {
     removePhotoGroup,
   } = usePhotoGroups();
 
-  const permasalahanRef = React.useRef<HTMLTextAreaElement>(null);
-  const uraianRef = React.useRef<HTMLTextAreaElement>(null);
-  const dampakRef = React.useRef<HTMLTextAreaElement>(null);
-  const mitigasiRef = React.useRef<HTMLTextAreaElement>(null);
-  const tindakanRef = React.useRef<HTMLTextAreaElement>(null);
-  const hasilRef = React.useRef<HTMLTextAreaElement>(null);
-
-  const autoResize = (ref: React.RefObject<HTMLTextAreaElement | null>, minHeight: number) => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${Math.max(minHeight, ref.current.scrollHeight)}px`;
-    }
-  };
-
-  React.useEffect(() => autoResize(permasalahanRef, 80), [formData.permasalahan]);
-  React.useEffect(() => autoResize(uraianRef, 100), [formData.uraian]);
-  React.useEffect(() => autoResize(dampakRef, 80), [formData.dampak]);
-  React.useEffect(() => autoResize(mitigasiRef, 80), [formData.tindakanMitigasi]);
-  React.useEffect(() => autoResize(tindakanRef, 100), [formData.tindakan]);
-  React.useEffect(() => autoResize(hasilRef, 100), [formData.hasilTindakan]);
+  const permasalahanRef = useAutoResizeTextarea(formData.permasalahan);
+  const uraianRef = useAutoResizeTextarea(formData.uraian);
+  const dampakRef = useAutoResizeTextarea(formData.dampak);
+  const mitigasiRef = useAutoResizeTextarea(formData.tindakanMitigasi);
 
   const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

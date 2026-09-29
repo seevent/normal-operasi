@@ -34,3 +34,26 @@ test('Hook menghitung border dan menghitung ulang saat lebar layar berubah', () 
   assert.match(hook, /addEventListener\('resize'/);
   assert.match(hook, /removeEventListener\('resize'/);
 });
+
+test('Initial Report dan Perbaikan memakai hook bersama, bukan salinan manual', () => {
+  const initial = read('src/components/features/TabInitialReport.tsx');
+  const perbaikan = read('src/components/features/TabPerbaikan.tsx');
+
+  for (const [nama, src] of [['TabInitialReport', initial], ['TabPerbaikan', perbaikan]]) {
+    assert.match(src, /from '\.\.\/\.\.\/lib\/hooks\/useAutoResizeTextarea'/, `${nama} harus memakai hook`);
+    // Salinan manual membaca scrollHeight tanpa border dan tidak menghitung ulang saat layar diputar.
+    assert.doesNotMatch(src, /scrollHeight/, `${nama} tidak boleh mengukur tinggi sendiri lagi`);
+    assert.doesNotMatch(src, /const autoResize\b/, `${nama} tidak boleh punya autoResize lokal`);
+  }
+
+  // Semua textarea yang dipasangi hook harus menerima ref-nya.
+  for (const ref of ['permasalahanRef', 'uraianRef', 'dampakRef', 'mitigasiRef']) {
+    assert.match(initial, new RegExp(`ref=\\{${ref}\\}`));
+  }
+  for (const ref of ['permasalahanRef', 'tindakLanjutRef']) {
+    assert.match(perbaikan, new RegExp(`ref=\\{${ref}\\}`));
+  }
+
+  // Dua ref ini pernah dideklarasikan tetapi tidak pernah terpasang ke elemen mana pun.
+  assert.doesNotMatch(initial, /tindakanRef|hasilRef/);
+});

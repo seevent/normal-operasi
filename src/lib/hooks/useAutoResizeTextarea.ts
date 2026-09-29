@@ -8,7 +8,7 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
  * Membuat <textarea> tumbuh dan menyusut mengikuti isinya, tanpa scrollbar
  * internal. Pasang `ref` yang dikembalikan pada textarea.
  *
- * Tinggi awal saat kosong mengikuti atribut `rows` pada textarea, yang berlaku
+ * Tinggi saat kosong mengikuti atribut `rows` pada textarea, yang berlaku
  * sebagai tinggi minimum. Beri `overflow-hidden` pada textarea agar scrollbar
  * tidak sempat berkedip selama tinggi dihitung ulang.
  *

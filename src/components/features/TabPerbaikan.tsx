@@ -8,6 +8,7 @@ import { generateWA_Perbaikan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { usePhotoGroups } from '../../lib/hooks/usePhotoGroups';
+import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
@@ -109,22 +110,8 @@ export const TabPerbaikan: React.FC = () => {
     removePhotoGroup,
   } = usePhotoGroups();
 
-  const permasalahanRef = React.useRef<HTMLTextAreaElement>(null);
-  const tindakLanjutRef = React.useRef<HTMLTextAreaElement>(null);
-
-  React.useEffect(() => {
-    if (permasalahanRef.current) {
-      permasalahanRef.current.style.height = 'auto';
-      permasalahanRef.current.style.height = `${Math.max(80, permasalahanRef.current.scrollHeight)}px`;
-    }
-  }, [formData.permasalahan]);
-
-  React.useEffect(() => {
-    if (tindakLanjutRef.current) {
-      tindakLanjutRef.current.style.height = 'auto';
-      tindakLanjutRef.current.style.height = `${Math.max(140, tindakLanjutRef.current.scrollHeight)}px`;
-    }
-  }, [formData.tindakLanjut]);
+  const permasalahanRef = useAutoResizeTextarea(formData.permasalahan);
+  const tindakLanjutRef = useAutoResizeTextarea(formData.tindakLanjut);
 
   // Otomatisasi sumberLaporan (Custom vs Avsec) berdasarkan lokasi yang dipilih
   React.useEffect(() => {
