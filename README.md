@@ -63,7 +63,7 @@ src/
 ├── components/
 │   ├── App.tsx                    # Root layout: Header, Navigation 12 tab (pagination & touch swipe), Floating WA share, & AntigravityPet
 │   ├── features/                  # Komponen per-fitur (12 Tab Modul, Admin CRUD, Mascot)
-│   │   ├── AntigravityPet.tsx     # Maskot Chibi Iron Man: pelapor status operasional & validasi (baca useAppStore.petMessage)
+│   │   ├── AntigravityPet.tsx     # Maskot mesin X-Ray: pelapor status operasional & validasi (baca useAppStore.petMessage)
 │   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) & sync foto
 │   │   ├── TabKehadiran.tsx       # Tab laporan kehadiran shift
 │   │   ├── TabBriefing.tsx        # Tab laporan briefing operasional
@@ -164,7 +164,7 @@ Deploy otomatis terkonfigurasi ke **Netlify** via `netlify.toml`.
 - **Interactive Serviceability Diagram & Persistensi Cloud**: Tab Shift Report menampilkan visual matriks kelaikan peralatan per sub-terminal (D, E, F), koordinat diagram yang sinkron, kalkulasi persentase kelaikan dinamis, fitur CRUD log dengan lampiran foto langsung, dan integrasi penyimpanan data log ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
 - **Cloud Photo Storage (Cloudinary Global CDN)**: Unggah foto dokumentasi terkompresi (~150–250 KB via Canvas) langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms). Skema PostgreSQL diperkuat dengan constraint `chk_foto_urls_no_base64` sehingga database tetap ramping dan bebas dari string Base64.
 - **Tanda Tangan Digital & Ekspor PDF Teroptimasi**: Tab BA Serah Terima memungkinkan pembuatan tanda tangan langsung pada layar sentuh ponsel dan konversi PDF resmi non-blocking via `pdfService.ts`.
-- **AntigravityPet Mascot (Chibi Iron Man) sebagai Pelapor Operasional**: Maskot terapung dengan animasi zero-g thruster yang berperan sebagai satu-satunya kanal notifikasi maskot (`useAppStore.sayPet`). Maskot melaporkan hal-hal yang sebelumnya tidak terlihat oleh petugas:
+- **AntigravityPet Mascot (mesin X-Ray pemindai bagasi) sebagai Pelapor Operasional**: Maskot berupa mesin X-Ray ramah yang melayang dengan animasi zero-g dan glow hangat. Ia berbicara sebagai pemindai bagasi ("Bip bip! Hasil scan: ...") dan berperan sebagai satu-satunya kanal notifikasi maskot (`useAppStore.sayPet`). Maskot melaporkan hal-hal yang sebelumnya tidak terlihat oleh petugas:
   - **Status sinkronisasi latar belakang**: karena pengiriman laporan memakai pola *share dulu, simpan belakangan*, kegagalan penyimpanan ke Supabase dulu hanya berakhir di console. Kini maskot mengabarkannya (nada `error`, balon menetap sampai ditutup), begitu pula keberhasilannya.
   - **Peralihan penyimpanan foto**: saat Cloudinary gagal dan sistem diam-diam beralih ke Supabase Storage, maskot memberi tahu (nada `warning`).
   - **Field yang belum lengkap**: menggantikan kalimat acak, maskot menyebutkan field mana saja yang masih kosong saat laporan gagal divalidasi (Initial Report, Perbaikan, Kalibrasi).

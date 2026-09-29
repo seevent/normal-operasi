@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, X, Sparkles, ChevronUp, AlertTriangle, CheckCircle2, PartyPopper } from 'lucide-react';
+import { MessageSquare, X, ScanLine, ChevronUp, AlertTriangle, CheckCircle2, PartyPopper } from 'lucide-react';
 import { useAppStore, PetTone } from '../../store/useAppStore';
 import { getIdleQuote } from '../../lib/data/petMessages';
 
 /**
- * Ukuran tampil maskot. Gambar sumber berukuran 260x485 (rasio 1 : 1,865),
- * jadi tingginya dihitung dari lebar agar tidak gepeng.
+ * Ukuran tampil maskot. Gambar sumber berukuran 280x176 (rasio tinggi/lebar
+ * 0,627), jadi tingginya dihitung dari lebar agar tidak gepeng.
  */
-const PET_WIDTH = 72;
-const PET_HEIGHT = Math.round(PET_WIDTH * 1.865);
-/** Ruang ekstra di bawah maskot untuk semburan thruster. */
-const PET_FLAME_SPACE = Math.round(PET_HEIGHT * 0.3);
+const PET_WIDTH = 120;
+const PET_HEIGHT = Math.round(PET_WIDTH * 0.627);
+/** Ruang ekstra di bawah maskot agar gerak melayang tidak terpotong tepi layar. */
+const PET_FLOAT_SPACE = 12;
 
 /** Gaya balon dialog & ikon judul per nada pesan. */
 const TONE_STYLES: Record<PetTone, { border: string; label: string; labelColor: string; Icon: React.ElementType; iconColor: string }> = {
-  info: { border: 'border-amber-500/40', label: 'CHIBI IRON MAN', labelColor: 'text-amber-400', Icon: Sparkles, iconColor: 'text-cyan-400' },
-  success: { border: 'border-emerald-500/50', label: 'J.A.R.V.I.S', labelColor: 'text-emerald-400', Icon: CheckCircle2, iconColor: 'text-emerald-400' },
-  warning: { border: 'border-amber-400/70', label: 'J.A.R.V.I.S', labelColor: 'text-amber-300', Icon: AlertTriangle, iconColor: 'text-amber-300' },
-  error: { border: 'border-red-500/70', label: 'J.A.R.V.I.S', labelColor: 'text-red-400', Icon: AlertTriangle, iconColor: 'text-red-400' },
-  cheer: { border: 'border-cyan-400/60', label: 'CHIBI IRON MAN', labelColor: 'text-cyan-300', Icon: PartyPopper, iconColor: 'text-cyan-300' },
+  info: { border: 'border-amber-500/40', label: 'SI X-RAY', labelColor: 'text-amber-400', Icon: ScanLine, iconColor: 'text-cyan-400' },
+  success: { border: 'border-emerald-500/50', label: 'SCAN CLEAR', labelColor: 'text-emerald-400', Icon: CheckCircle2, iconColor: 'text-emerald-400' },
+  warning: { border: 'border-amber-400/70', label: 'PERLU DICEK', labelColor: 'text-amber-300', Icon: AlertTriangle, iconColor: 'text-amber-300' },
+  error: { border: 'border-red-500/70', label: 'ALARM', labelColor: 'text-red-400', Icon: AlertTriangle, iconColor: 'text-red-400' },
+  cheer: { border: 'border-cyan-400/60', label: 'SI X-RAY', labelColor: 'text-cyan-300', Icon: PartyPopper, iconColor: 'text-cyan-300' },
 };
 
 export const AntigravityPet: React.FC = () => {
@@ -47,14 +47,14 @@ export const AntigravityPet: React.FC = () => {
   // Inisialisasi posisi default di pojok kanan bawah
   useEffect(() => {
     const initX = Math.max(16, window.innerWidth - PET_WIDTH - 16);
-    const initY = Math.max(16, window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE - 16);
+    const initY = Math.max(16, window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE - 16);
     setPosition({ x: initX, y: initY });
 
     const handleResize = () => {
       setPosition((prev) => {
         if (!prev) return null;
         const clampedX = Math.min(Math.max(16, prev.x), window.innerWidth - PET_WIDTH - 8);
-        const clampedY = Math.min(Math.max(16, prev.y), window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE);
+        const clampedY = Math.min(Math.max(16, prev.y), window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE);
         return { x: clampedX, y: clampedY };
       });
     };
@@ -124,7 +124,7 @@ export const AntigravityPet: React.FC = () => {
     setIsDragging(true);
     
     const currentX = position?.x ?? (window.innerWidth - PET_WIDTH - 16);
-    const currentY = position?.y ?? (window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE - 16);
+    const currentY = position?.y ?? (window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE - 16);
 
     dragStartRef.current = {
       pointerX: e.clientX,
@@ -151,7 +151,7 @@ export const AntigravityPet: React.FC = () => {
     );
     const newY = Math.min(
       Math.max(12, dragStartRef.current.origY + deltaY),
-      window.innerHeight - PET_HEIGHT - PET_FLAME_SPACE
+      window.innerHeight - PET_HEIGHT - PET_FLOAT_SPACE
     );
 
     setPosition({ x: newX, y: newY });
@@ -187,13 +187,18 @@ export const AntigravityPet: React.FC = () => {
           setIsMinimized(false);
           showRandomDialog();
         }}
-        title="Panggil Antigravity Pet (Chibi Iron Man)"
+        title="Panggil maskot X-Ray"
       >
         <div className="relative group flex items-center justify-center w-11 h-11 bg-slate-900/90 border border-amber-500/50 rounded-full shadow-lg shadow-amber-500/20 backdrop-blur-md">
-          {/* Mini Arc Reactor Icon */}
-          <div className="w-5 h-5 rounded-full border-2 border-cyan-400 flex items-center justify-center animate-arc-pulse bg-cyan-950/60">
-            <div className="w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_8px_#38bdf8]" />
-          </div>
+          <img
+            src="/pet-xray.webp"
+            alt=""
+            aria-hidden="true"
+            width={30}
+            height={19}
+            draggable={false}
+            className="w-[30px] h-auto"
+          />
           <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border border-white flex items-center justify-center">
             <ChevronUp className="w-2 h-2 text-white" />
           </div>
@@ -265,7 +270,7 @@ export const AntigravityPet: React.FC = () => {
 
       {/* Mini Controls saat di-hover */}
       <div 
-        className={`absolute -top-3 right-0 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-full px-1.5 py-0.5 transition-opacity duration-200 ${
+        className={`absolute -top-3 right-0 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-full px-1.5 py-0.5 transition-opacity duration-200 ${
           isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -286,54 +291,32 @@ export const AntigravityPet: React.FC = () => {
         </button>
       </div>
 
-      {/* Karakter Chibi Iron Man Melayang */}
+      {/* Karakter mesin X-Ray melayang */}
       <div
         className={`relative ${isDragging ? '' : 'animate-antigravity-float'}`}
         style={{ width: PET_WIDTH, height: PET_HEIGHT }}
       >
-        {/* Semburan thruster roket di bawah kedua boot */}
-        <svg
-          className="absolute left-0 w-full pointer-events-none animate-thruster-flame"
-          style={{ top: '98%', height: PET_HEIGHT * 0.2 }}
-          viewBox="0 0 100 40"
-          preserveAspectRatio="none"
-          fill="none"
+        {/* Glow hangat di belakang karakter, meniru cahaya pada gambar aslinya */}
+        <span
           aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="petThruster" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="22%" stopColor="#bae6fd" />
-              <stop offset="55%" stopColor="#38bdf8" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#0284c7" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          {/* Posisi x mengikuti titik tengah masing-masing boot pada gambar */}
-          <path d="M 27 0 H 41 C 40 12, 37 26, 34 40 C 31 26, 28 12, 27 0 Z" fill="url(#petThruster)" />
-          <path d="M 58 0 H 72 C 71 12, 68 26, 65 40 C 62 26, 59 12, 58 0 Z" fill="url(#petThruster)" />
-        </svg>
+          className="absolute rounded-full pointer-events-none animate-pet-glow"
+          style={{
+            left: '50%',
+            top: '50%',
+            width: PET_WIDTH * 1.15,
+            height: PET_WIDTH * 1.15,
+            transform: 'translate(-50%, -50%)',
+            background: 'radial-gradient(circle, rgba(251,191,36,0.55) 0%, rgba(251,191,36,0.22) 40%, rgba(251,191,36,0) 68%)',
+          }}
+        />
 
         <img
-          src="/pet-iron-man.webp"
-          alt="Maskot Chibi Iron Man"
+          src="/pet-xray.webp"
+          alt="Maskot mesin X-Ray"
           width={PET_WIDTH}
           height={PET_HEIGHT}
           draggable={false}
-          className="relative block w-full h-full drop-shadow-[0_10px_14px_rgba(0,0,0,0.45)]"
-        />
-
-        {/* Denyut Arc Reactor, ditumpangkan tepat di atas reaktor pada gambar */}
-        <span
-          aria-hidden="true"
-          className="absolute rounded-full animate-arc-pulse pointer-events-none"
-          style={{
-            left: '50%',
-            top: '55%',
-            width: PET_WIDTH * 0.2,
-            height: PET_WIDTH * 0.2,
-            transform: 'translate(-50%, -50%)',
-            background: 'radial-gradient(circle, rgba(224,242,254,0.95) 0%, rgba(56,189,248,0.55) 45%, rgba(56,189,248,0) 72%)',
-          }}
+          className="relative block w-full h-full drop-shadow-[0_8px_10px_rgba(0,0,0,0.4)]"
         />
       </div>
     </div>

@@ -61,7 +61,7 @@ src/
 ├── components/
 │   ├── App.tsx                     # Root Layout: Header status, Tab Navigation (12 tab), Floating Share, & AntigravityPet
 │   ├── features/                   # Komponen Fitur (12 Tab Modul, Admin CRUD, Mascot)
-│   │   ├── AntigravityPet.tsx      # Maskot Chibi Iron Man: pelapor status operasional (konsumen `useAppStore.petMessage`)
+│   │   ├── AntigravityPet.tsx      # Maskot mesin X-Ray: pelapor status operasional (konsumen `useAppStore.petMessage`)
 │   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) di Tab Data
 │   │   ├── TabKehadiran.tsx        # Laporan kehadiran shift (API & OM IAS)
 │   │   ├── TabBriefing.tsx         # Laporan kegiatan briefing & sparepart
@@ -112,7 +112,7 @@ src/
 │   └── index.tsx                   # Route "/" -> render App component
 ├── router.tsx                      # Inisialisasi TanStack Router
 ├── routeTree.gen.ts                # Auto-generated route tree
-└── styles.css                      # Tailwind CSS v4 imports, zero-g & thruster keyframe animations
+└── styles.css                      # Tailwind CSS v4 imports, zero-g float & glow keyframe animations
 ```
 
 ---

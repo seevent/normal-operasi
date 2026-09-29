@@ -128,11 +128,13 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * **Personel Editor**: Manajemen data personel teknisi termasuk NIK dan unit kerja.
 
 ### 3.13. Maskot Asisten (AntigravityPet)
-* **Fungsi**: Widget asisten mengambang interaktif berbasis karakter Chibi Iron Man di layout utama aplikasi.
+* **Fungsi**: Widget asisten mengambang interaktif berbasis karakter mesin X-Ray pemindai bagasi di layout utama aplikasi, yang berperan sebagai pelapor kabar operasional.
 * **Fitur Utama**:
-  * Fisika melayang (zero-gravity float) & animasi partikel thruster.
-  * Dialog tips operasional, pengingat keselamatan, dan status kesiapan bandara.
-  * Respons interaktif terhadap ketukan/sentuhan pengguna.
+  * Gerak melayang (zero-gravity float) dengan glow hangat di belakang karakter; dapat digeser dan di-minimize.
+  * Melaporkan kabar operasional yang sebelumnya tidak terlihat: hasil sinkronisasi laporan ke database, peralihan penyimpanan foto ke cadangan, dan field yang belum terisi saat validasi.
+  * Penyemangat khusus di awal shift, muncul setelah laporan Kehadiran dibagikan, disesuaikan Shift Pagi/Siang atau Malam.
+  * Otomatis menyingkir saat isian form difokuskan agar tidak menutupi kolom input.
+  * Respons interaktif terhadap ketukan/sentuhan pengguna berupa kalimat santai bertema pemindaian bagasi.
 
 ---
 

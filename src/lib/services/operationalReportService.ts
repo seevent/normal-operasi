@@ -88,7 +88,7 @@ export const saveOperationalLog = async (log: OperationalLog) => {
       return { success: false, error };
     }
 
-    sayPet('Laporan tersimpan ke database. Aman, Sir!', 'success');
+    sayPet('Scan selesai, laporan tersimpan ke database. Clear!', 'success');
     return { success: true, data };
   } catch (err) {
     console.error('Catch saveOperationalLog:', err);

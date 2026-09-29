@@ -1,5 +1,9 @@
 /**
- * Kumpulan kalimat maskot Chibi Iron Man.
+ * Kumpulan kalimat maskot mesin X-Ray.
+ *
+ * Persona: mesin X-Ray bagasi yang ramah dan bekerja bersama tim SSES T2.
+ * Ia memindai bagasi penumpang, jadi bahasanya berputar di sekitar scan,
+ * konveyor, dan hasil pemeriksaan.
  *
  * Dipisah dari komponen agar isinya mudah disunting tanpa menyentuh logika UI,
  * dan agar pemilihan kalimat bisa diuji.
@@ -7,27 +11,28 @@
 
 /** Kalimat santai saat maskot diketuk dan tidak ada kabar operasional apa pun. */
 export const PET_IDLE_QUOTES = [
-  'I am Iron Man! Versi sachet tapi Arc Reactor tetap menyala!',
-  'Alat aman, form terisi, hati tenang. Semangat dinas hari ini!',
-  'Arc Reactor 100%! Jangan lupa istirahat sejenak & minum air putih ya.',
-  'Aku cinta kalian 3000%! Tetap teliti dalam setiap pengecekan.',
-  'X-Ray, WTMD, ETD... kalau ada kendala teknis, hadapi dengan kepala dingin!',
-  'Laporan sudah dicek kembali? Detail kecil mencegah kendala besar.',
-  'Ssst... armor ini anti-stres dan anti-overthinking!',
+  'Bip! Bagasi lewat satu per satu, laporan juga sebaiknya diisi satu per satu. Pelan tapi teliti!',
+  'Aku memindai isi tas, kamu memindai kondisi peralatan. Tim yang kompak!',
+  'Isi tas bisa kulihat tembus, tapi isi form tetap kamu yang harus teliti ya.',
+  'Jangan lupa minum air putih. Mesin saja butuh istirahat, apalagi manusia!',
+  'Konveyor lancar, kabel rapi, hati tenang. Semangat dinas hari ini!',
+  'Laporan sudah dicek kembali? Detail kecil sering bersembunyi, seperti barang di dasar tas.',
+  'Kalau ada kendala teknis, tarik napas dulu. Aku juga ngambek kalau konveyor macet!',
+  'Ssst... kalau ada bungkusan hadiah lewat, aku janji tidak akan membocorkan isinya.',
 ];
 
 /** Penyemangat khusus saat laporan kehadiran dikirim = shift baru dimulai. */
 export const PET_SHIFT_PAGI_CHEERS = [
-  'Shift Pagi dimulai! Arc Reactor penuh, semangat juga harus penuh. Selamat bertugas, tim!',
-  'Absensi terkirim. Matahari baru, semangat baru — jaga Terminal 2 dengan sepenuh hati!',
-  'Suit up! Shift Pagi resmi jalan. Semoga semua peralatan normal operasi sampai serah terima nanti.',
-  'Tim Pagi sudah siaga. Teliti di awal, tenang di akhir. Semangat, Sir!',
+  'Shift Pagi dimulai! Konveyor sudah menyala, semangat juga harus menyala. Selamat bertugas, tim!',
+  'Absensi terkirim. Pagi baru, bagasi baru, semangat baru. Jaga Terminal 2 sepenuh hati!',
+  'Siap scan! Shift Pagi resmi jalan. Semoga semua peralatan normal operasi sampai serah terima nanti.',
+  'Tim Pagi sudah siaga. Teliti di awal, tenang di akhir. Semangat!',
 ];
 
 export const PET_SHIFT_MALAM_CHEERS = [
-  'Shift Malam dimulai! Saat yang lain istirahat, kalian yang menjaga. Hormat saya, tim!',
-  'Absensi terkirim. Malam panjang, tapi Arc Reactor kita tidak pernah padam. Semangat bertugas!',
-  'Suit up untuk Shift Malam! Jaga stamina, jaga fokus, jaga Terminal 2. Kalian luar biasa.',
+  'Shift Malam dimulai! Saat yang lain istirahat, kalian yang menjaga. Hormat dariku, tim!',
+  'Absensi terkirim. Malam panjang, tapi lampu scan kita tidak pernah padam. Semangat bertugas!',
+  'Siap scan untuk Shift Malam! Jaga stamina, jaga fokus, jaga Terminal 2. Kalian luar biasa.',
   'Tim Malam sudah siaga. Tetap waspada dan saling jaga sampai pagi menjemput!',
 ];
 
@@ -67,7 +72,7 @@ export const getIdleQuote = (
 export const buildMissingFieldsMessage = (missing: string[]): string | null => {
   const items = missing.map((m) => m.trim()).filter(Boolean);
   if (items.length === 0) return null;
-  if (items.length === 1) return `Tunggu dulu — ${items[0]} belum diisi.`;
+  if (items.length === 1) return `Bip bip! Hasil scan: ${items[0]} belum diisi.`;
   const last = items[items.length - 1];
-  return `Tunggu dulu — ${items.slice(0, -1).join(', ')} dan ${last} belum diisi.`;
+  return `Bip bip! Hasil scan: ${items.slice(0, -1).join(', ')} dan ${last} belum diisi.`;
 };

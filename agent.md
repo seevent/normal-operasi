@@ -63,7 +63,7 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 | Path File | Fungsi Utama | Perhatian Khusus bagi Agent |
 |---|---|---|
 | [`src/components/App.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/App.tsx) | Navigation root, tab bar, & mascot | Menangani navigasi 12 tab, swipe touch, floating WA share, dan mount `AntigravityPet`. |
-| [`src/components/features/AntigravityPet.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/AntigravityPet.tsx) | Interactive mascot widget | Maskot Chibi Iron Man terapung (zero-g physics & operational tips). |
+| [`src/components/features/AntigravityPet.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/AntigravityPet.tsx) | Interactive mascot widget | Maskot mesin X-Ray terapung (zero-g float, glow, dan kabar operasional lewat `useAppStore.sayPet`). |
 | [`src/components/features/TabShiftReport.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/TabShiftReport.tsx) | Shift report & serviceability | Interactive Serviceability Diagram (Zone D, E, F), in-modal photo upload/attachment, dan sinkronisasi kelaikan peralatan. |
 | [`src/lib/services/operationalReportService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/operationalReportService.ts) | Layanan persistensi operasional | Menyimpan & memfilter log operasional shift (dengan deduplikasi) dan kelaikan peralatan ke Supabase. |
 | [`src/lib/services/cloudinaryService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/cloudinaryService.ts) | Layanan cloud upload Cloudinary | Mengunggah foto dokumentasi ke Cloudinary via Unsigned Upload Preset. |

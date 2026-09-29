@@ -53,18 +53,21 @@ test('getIdleQuote: maskot tidak lagi mengklaim status sistem secara palsu', () 
 });
 
 test('buildMissingFieldsMessage: merangkai satu, dua, dan banyak field', () => {
-  assert.equal(buildMissingFieldsMessage(['lokasi']), 'Tunggu dulu — lokasi belum diisi.');
-  assert.equal(buildMissingFieldsMessage(['lokasi', 'teknisi bertugas']), 'Tunggu dulu — lokasi dan teknisi bertugas belum diisi.');
+  assert.equal(buildMissingFieldsMessage(['lokasi']), 'Bip bip! Hasil scan: lokasi belum diisi.');
+  assert.equal(
+    buildMissingFieldsMessage(['lokasi', 'teknisi bertugas']),
+    'Bip bip! Hasil scan: lokasi dan teknisi bertugas belum diisi.'
+  );
   assert.equal(
     buildMissingFieldsMessage(['peralatan', 'lokasi', 'dampak']),
-    'Tunggu dulu — peralatan, lokasi dan dampak belum diisi.'
+    'Bip bip! Hasil scan: peralatan, lokasi dan dampak belum diisi.'
   );
 });
 
 test('buildMissingFieldsMessage: mengabaikan entri kosong dan mengembalikan null bila lengkap', () => {
   assert.equal(buildMissingFieldsMessage([]), null);
   assert.equal(buildMissingFieldsMessage(['', '   ']), null);
-  assert.equal(buildMissingFieldsMessage(['', 'lokasi', '']), 'Tunggu dulu — lokasi belum diisi.');
+  assert.equal(buildMissingFieldsMessage(['', 'lokasi', '']), 'Bip bip! Hasil scan: lokasi belum diisi.');
 });
 
 test('Kegagalan sync latar belakang dilaporkan lewat maskot, tidak hanya console', async () => {
@@ -96,4 +99,31 @@ test('Maskot menyingkir saat isian sedang difokuskan', async () => {
   assert.match(pet, /focusout/);
   assert.match(pet, /INPUT', 'SELECT', 'TEXTAREA/);
   assert.match(pet, /isTyping \? 'opacity-0 pointer-events-none'/);
+});
+
+test('Maskot adalah mesin X-Ray: tidak ada lagi sisa persona Iron Man', async () => {
+  const { readFileSync } = await import('node:fs');
+  const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+
+  const ironMan = /iron ?man|j\.?a\.?r\.?v\.?i\.?s|arc.?reactor|\barmor\b|\bSir\b|thruster/i;
+  const files = [
+    'src/lib/data/petMessages.ts',
+    'src/components/features/AntigravityPet.tsx',
+    'src/lib/services/operationalReportService.ts',
+    'src/lib/services/cloudinaryService.ts',
+    'src/styles.css',
+  ];
+  for (const file of files) {
+    assert.doesNotMatch(read(file), ironMan, `${file} masih memuat sisa persona Iron Man`);
+  }
+
+  // Karakter memakai artwork mesin X-Ray, bukan berkas lama
+  const pet = read('src/components/features/AntigravityPet.tsx');
+  assert.match(pet, /\/pet-xray\.webp/);
+  assert.doesNotMatch(pet, /pet-iron-man/);
+});
+
+test('Kalimat maskot berbicara sebagai mesin X-Ray pemindai bagasi', () => {
+  const all = [...PET_IDLE_QUOTES, ...PET_SHIFT_PAGI_CHEERS, ...PET_SHIFT_MALAM_CHEERS].join(' ').toLowerCase();
+  assert.match(all, /scan|bagasi|konveyor/);
 });

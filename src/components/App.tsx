@@ -449,7 +449,7 @@ export default function App() {
 
       </div>
 
-      {/* Floating Antigravity Pet (Chibi Iron Man) */}
+      {/* Floating Antigravity Pet (maskot mesin X-Ray) */}
       <AntigravityPet />
     </div>
   );
