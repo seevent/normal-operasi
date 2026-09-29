@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
 import { formatPmRencanaKegiatan, filterActivePm } from '../../lib/utils/pmScheduleParser';
 import { getErrorMessage } from '../../lib/utils/errorUtils';
+import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
 
 export const TabKehadiran: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -46,6 +47,8 @@ export const TabKehadiran: React.FC = () => {
       rencanaKegiatan: kegiatan
     };
   });
+
+  const rencanaKegiatanRef = useAutoResizeTextarea(attendanceData.rencanaKegiatan);
 
   const fetchJadwal = React.useCallback(async () => {
     setIsLoading(true);
@@ -426,7 +429,7 @@ export const TabKehadiran: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Rencana Kegiatan Harian</label>
-            <textarea name="rencanaKegiatan" required rows={4} value={attendanceData.rencanaKegiatan} onChange={(e) => handleDashChange(e, 'rencanaKegiatan')} onKeyDown={(e) => handleDashKeyDown(e, 'rencanaKegiatan')} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm leading-relaxed"></textarea>
+            <textarea ref={rencanaKegiatanRef} name="rencanaKegiatan" required rows={3} value={attendanceData.rencanaKegiatan} onChange={(e) => handleDashChange(e, 'rencanaKegiatan')} onKeyDown={(e) => handleDashKeyDown(e, 'rencanaKegiatan')} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed"></textarea>
             {(() => {
               const hasPM = attendanceData.rencanaKegiatan.includes("Preventive Maintenance");
               return (
