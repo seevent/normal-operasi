@@ -203,7 +203,7 @@ export const AntigravityPet: React.FC = () => {
   if (isMinimized) {
     return (
       <div 
-        className="fixed bottom-4 right-4 z-50 transition-transform duration-200 hover:scale-110 cursor-pointer"
+        className="fixed bottom-4 right-4 z-50 print:hidden transition-transform duration-200 hover:scale-110 cursor-pointer"
         onClick={() => {
           setIsMinimized(false);
           showRandomDialog();
@@ -242,7 +242,7 @@ export const AntigravityPet: React.FC = () => {
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
       }}
-      className={`fixed top-0 left-0 z-50 select-none touch-none cursor-grab active:cursor-grabbing transition-opacity duration-200 ${
+      className={`fixed top-0 left-0 z-50 print:hidden select-none touch-none cursor-grab active:cursor-grabbing transition-opacity duration-200 ${
         isTyping ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       aria-hidden={isTyping}

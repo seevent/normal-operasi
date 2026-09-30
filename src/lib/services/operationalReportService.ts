@@ -178,7 +178,10 @@ export const calculateOperationalShift = (
 
 export interface OnDutyPersonel {
   id: string;
+  /** Nama ringkas untuk laporan harian (Initial Report, Perbaikan). */
   name: string;
+  /** Nama lengkap, untuk dokumen resmi seperti BA Serah Terima. */
+  fullName?: string;
   unit: string;
   jabatan?: string;
 }
@@ -212,6 +215,7 @@ export const fetchOnDutyPersonnel = async (
       .map((d: any) => ({
         id: String(d.id),
         name: formatNamaPersonel(toTitleCase(d.personel?.nama || '')),
+        fullName: toTitleCase((d.personel?.nama || '').trim()),
         unit: d.personel?.unit_kerja?.nama || 'API T2',
         jabatan: d.personel?.jabatan || ''
       }))

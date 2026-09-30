@@ -38,6 +38,9 @@ const formatDateIndo = (d: string): string => {
   return d;
 };
 
+/** BA Serah Terima adalah dokumen resmi, jadi memakai nama lengkap, bukan nama ringkas laporan harian. */
+const personelFullName = (p: { name: string; fullName?: string }): string => p.fullName || p.name;
+
 export const TabBASerahTerima: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { dataApiT2, dataOmIasT2 } = useMasterDataStore();
@@ -161,7 +164,7 @@ export const TabBASerahTerima: React.FC = () => {
   };
 
   const handleSelectSsesPersonel = (name: string, isPenyerah: boolean) => {
-    const p = dinasPersonelList.find(item => item.name === name) ||
+    const p = dinasPersonelList.find(item => personelFullName(item) === name) ||
               dataApiT2.find(item => item.name === name) ||
               dataOmIasT2.find(item => item.name === name);
 
@@ -462,8 +465,8 @@ export const TabBASerahTerima: React.FC = () => {
                 >
                   <option value="">-- Pilih Personel Berdinas --</option>
                   {dinasPersonelList.map((p, idx) => (
-                    <option key={`dinas-snd-${idx}`} value={p.name}>
-                      {p.name} {p.jabatan ? `(${p.jabatan})` : ''}
+                    <option key={`dinas-snd-${idx}`} value={personelFullName(p)}>
+                      {personelFullName(p)} {p.jabatan ? `(${p.jabatan})` : ''}
                     </option>
                   ))}
                 </select>
@@ -543,8 +546,8 @@ export const TabBASerahTerima: React.FC = () => {
                 >
                   <option value="">-- Pilih Personel Berdinas --</option>
                   {dinasPersonelList.map((p, idx) => (
-                    <option key={`dinas-rcv-${idx}`} value={p.name}>
-                      {p.name} {p.jabatan ? `(${p.jabatan})` : ''}
+                    <option key={`dinas-rcv-${idx}`} value={personelFullName(p)}>
+                      {personelFullName(p)} {p.jabatan ? `(${p.jabatan})` : ''}
                     </option>
                   ))}
                 </select>
@@ -719,10 +722,9 @@ export const TabBASerahTerima: React.FC = () => {
 
         <LiveCollagePreview
           photos={photos}
-          onCollageChange={(file, url, annotation) => {
+          onCollageChange={(file, url) => {
             setAutoCollageFile(file);
             setAutoCollageUrl(url);
-            setCollageAnnotation(annotation);
           }}
         />
 
