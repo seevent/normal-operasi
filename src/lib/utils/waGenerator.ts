@@ -43,20 +43,7 @@ Terimakasih atas perhatiannya`;
 
 export { generateWA_Kehadiran } from './kehadiranMessage.ts';
 
-export const generateWA_Briefing = (briefingData: any, selectedSpareparts: any[] = []) => {
-  const formattedDate = formatTanggalIndo(briefingData.tanggal);
-  const judul = briefingData.jenis === 'Unit' ? '*Giat briefing unit SSES T2*' : '*Briefing MOT T2*';
-  let text = `${judul}\nHari/Tanggal : ${formattedDate}\nShift : ${briefingData.shift}\nLokasi : ${briefingData.lokasi}`;
-
-  if (briefingData.jenis === 'Unit' && selectedSpareparts && selectedSpareparts.length > 0) {
-    const sparepartsText = selectedSpareparts
-      .map(sp => `- ${sp.name} : ${sp.current_stock ?? 0} ${sp.unit || 'PCS'}`)
-      .join('\n');
-    text += `\n\n${sparepartsText}`;
-  }
-
-  return text;
-};
+export { generateWA_Briefing } from './briefingMessage.ts';
 
 export const formatACLokasiList = (locs: string[]): string => {
   if (!locs || locs.length === 0) return '-';
