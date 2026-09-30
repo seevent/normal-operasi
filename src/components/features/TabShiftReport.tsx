@@ -20,6 +20,11 @@ import {
 } from '../../lib/services/operationalReportService';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { getDefaultKalibrasiUraian, generateWA_ShiftReport } from '../../lib/utils/waGenerator';
+import {
+  isPreventiveReport as isPreventive,
+  isStoringReport as isStoring,
+  isCorrectiveReport as isCorrective
+} from '../../lib/utils/shiftReportMessage';
 import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -406,9 +411,11 @@ export const TabShiftReport: React.FC = () => {
   };
 
   // Format Pesan WhatsApp Executive Summary
-  const generateShiftWaSummary = () => {
-    return generateWA_ShiftReport(date, shift, apiPersonil, iasPersonil, checklistSummary, reports);
-  };
+  const waMessagePreview = React.useMemo(
+    () => generateWA_ShiftReport(date, shift, apiPersonil, iasPersonil, reports),
+    [date, shift, apiPersonil, iasPersonil, reports]
+  );
+  const generateShiftWaSummary = () => waMessagePreview;
 
   // Konversi semua gambar di dalam kontainer PDF menjadi Base64 Data URL dengan timeout aman agar bebas tainted canvas
   const prepareImagesForPdf = async (container: HTMLElement) => {
@@ -493,22 +500,6 @@ export const TabShiftReport: React.FC = () => {
     } finally {
       setSharingWa(false);
     }
-  };
-
-  const isPreventive = (r: any) => {
-    return r.Jenis === 'Kalibrasi' || r.kategori_maintenance === 'PREVENTIVE' || r.Jenis === 'Preventive';
-  };
-
-  const isStoring = (r: any) => {
-    return r.Jenis === 'Storing' || r.kategori_maintenance === 'STORING' || r.Uraian?.toLowerCase().includes('storing peralatan');
-  };
-
-  const isCorrective = (r: any) => {
-    if (isPreventive(r) || isStoring(r)) return false;
-    if (r.kategori_maintenance) return r.kategori_maintenance === 'CORRECTIVE';
-    if (r.Uraian?.toLowerCase().includes('permasalahan') || r.TindakLanjut?.toLowerCase().includes('perbaikan')) return true;
-    if (r.Peralatan?.toLowerCase().includes('kegiatan') || r.Uraian?.toLowerCase().includes('storing') || r.Uraian?.toLowerCase().includes('running test')) return false;
-    return true; 
   };
 
   const renderTindakLanjutBullets = (text: string) => {
@@ -1009,6 +1000,22 @@ export const TabShiftReport: React.FC = () => {
             ))}
           </div>
         )}
+      </div>
+
+      {/* PREVIEW PESAN WHATSAPP (REAL-TIME) */}
+      <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 print:hidden">
+        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-blue-600" /> Preview Laporan WhatsApp (Real-time)
+        </h3>
+        <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
+          <div
+            data-testid="wa-preview"
+            className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%] max-h-[600px] overflow-y-auto"
+          >
+            {waMessagePreview}
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">Pesan ini yang dikirim lewat tombol Share WA, bersama berkas PDF laporan.</p>
       </div>
 
       {/* CSS KHUSUS UNTUK PRINT NATIVE BROWSER (WINDOW.PRINT) */}

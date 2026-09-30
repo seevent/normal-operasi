@@ -2,6 +2,7 @@
 
 import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels, parseLokasiDanTitik } from './locationRules';
 import { sortPersonelByJabatan } from '../data/masterData';
+import { buildShiftReportMessage } from './shiftReportMessage';
 
 export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
@@ -693,58 +694,6 @@ export const generateWA_ShiftReport = (
   shift: string,
   apiPersonil: any[],
   iasPersonil: any[],
-  checklistSummary: any[],
   reports: any[]
-): string => {
-  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-  const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
-  const dt = new Date(date);
-  const formattedDate = `${dt.getDate()} ${months[dt.getMonth()].toUpperCase()} ${dt.getFullYear()}`;
-  const dayName = days[dt.getDay()];
-  const shiftLabel = shift === 'M' ? 'Malam (M)' : (shift === 'PS' ? 'Pagi (PS)' : 'Semua Shift (24 Jam)');
-
-  const apiNames = apiPersonil.map(p => p.personel?.nama).filter(Boolean).join(', ') || '-';
-  const iasNames = iasPersonil.map(p => p.personel?.nama).filter(Boolean).join(', ') || '-';
-
-  let summaryText = `*LAPORAN HARIAN SSES TERMINAL 2*\n`;
-  summaryText += `*Hari/Tanggal:* ${dayName}, ${formattedDate}\n`;
-  summaryText += `*Dinas:* Shift ${shiftLabel} (Area D, E, F, Umroh)\n\n`;
-
-  summaryText += `*👨‍✈️ Personel On Duty:*\n`;
-  summaryText += `- API T2: ${apiNames}\n`;
-  summaryText += `- OM/IAS: ${iasNames}\n\n`;
-
-  if (checklistSummary && checklistSummary.length > 0) {
-    summaryText += `*📊 Kesiapan Peralatan (Serviceability):*\n`;
-    checklistSummary.forEach(item => {
-      const icon = item.rusak > 0 ? '⚠️' : '✅';
-      const persen = Math.round(item.persenOperasi * 100);
-      summaryText += `- ${item.nama}: ${item.operasi}/${item.total} (${persen}%) ${icon}\n`;
-    });
-    summaryText += `\n`;
-  }
-
-  summaryText += `*🔧 Tindak Lanjut & Kegiatan:*\n`;
-  if (!reports || reports.length === 0) {
-    summaryText += `_Tidak ada catatan gangguan / kegiatan khusus pada shift ini._\n`;
-  } else {
-    reports.forEach((r, idx) => {
-      const title = r.Peralatan || r.Jenis || 'Pekerjaan';
-      const loc = r.Lokasi && r.Lokasi !== '-' ? ` [${r.Lokasi}]` : '';
-      const time = r.Waktu && r.Waktu !== '-' ? `(${r.Waktu}) ` : '';
-      let detail = '';
-      if (r.Uraian && r.Uraian !== '-') {
-        detail = `\n   Ket: ${r.Uraian}`;
-      }
-      if (r.TindakLanjut && r.TindakLanjut !== '-' && r.TindakLanjut !== 'Normal Operasi') {
-        detail += ` | TL: ${r.TindakLanjut}`;
-      }
-      summaryText += `${idx + 1}. ${time}${title}${loc} - ${r.Status || 'Normal Operasi'}${detail}\n`;
-    });
-  }
-
-  summaryText += `\n📄 _File PDF Laporan Resmi terlampir._`;
-  return summaryText;
-};
-
+): string => buildShiftReportMessage(date, shift, apiPersonil, iasPersonil, reports, getDefaultKalibrasiUraian);
 
