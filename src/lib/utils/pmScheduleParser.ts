@@ -353,7 +353,12 @@ export function filterActivePm(
   });
 }
 
-// Format daftar PM ke bentuk teks rencana kegiatan harian dengan pengelompokan Mingguan dan Bulanan
+export const RENCANA_KEGIATAN_DASAR = '- Monitoring Ops\n- Storing Peralatan';
+export const RENCANA_KEGIATAN_PM = '- Preventive Maintenance & Kalibrasi Peralatan';
+
+// Format daftar PM ke bentuk teks rencana kegiatan harian:
+// - Mingguan dikelompokkan per lokasi (📍Lokasi, lalu daftar peralatan)
+// - Bulanan dikelompokkan per tipe peralatan (tipe, lalu daftar 📍Lokasi)
 export function formatPmRencanaKegiatan(activePm: Array<{ lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string }>): string {
   if (!activePm || activePm.length === 0) return '';
 
@@ -369,43 +374,48 @@ export function formatPmRencanaKegiatan(activePm: Array<{ lokasi: string; titik?
     }
   });
 
-  const formatGroup = (header: string, items: typeof activePm): string[] => {
-    if (items.length === 0) return [];
+  const locDisplay = (item: typeof activePm[number]) =>
+    item.titik && item.titik !== '-' ? `${item.lokasi} ${item.titik}` : item.lokasi;
 
-    const locMap = new Map<string, string[]>();
+  const groupBy = (items: typeof activePm, keyOf: (item: typeof activePm[number]) => string, valueOf: (item: typeof activePm[number]) => string) => {
+    const groups = new Map<string, string[]>();
     items.forEach(item => {
-      const locDisplay = item.titik && item.titik !== '-' 
-        ? `${item.lokasi} ${item.titik}` 
-        : item.lokasi;
-      if (!locMap.has(locDisplay)) {
-        locMap.set(locDisplay, []);
-      }
-      const list = locMap.get(locDisplay)!;
-      if (!list.includes(item.tipe)) {
-        list.push(item.tipe);
-      }
+      const key = keyOf(item);
+      if (!groups.has(key)) groups.set(key, []);
+      const list = groups.get(key)!;
+      const value = valueOf(item);
+      if (!list.includes(value)) list.push(value);
     });
-
-    const lines: string[] = [header];
-    locMap.forEach((types, locDisplay) => {
-      lines.push(` ${locDisplay}:`);
-      types.forEach(type => {
-        lines.push(` - ${type}`);
-      });
-    });
-
-    return lines;
+    return groups;
   };
 
   const sections: string[] = [];
 
   if (mingguanItems.length > 0) {
-    sections.push(formatGroup(' Jadwal Mingguan:', mingguanItems).join('\n'));
+    const lines = ['*Jadwal Preventive Mingguan :*'];
+    groupBy(mingguanItems, locDisplay, item => item.tipe).forEach((types, loc) => {
+      lines.push(`📍${loc}`);
+      types.forEach(type => lines.push(`- ${type}`));
+    });
+    sections.push(lines.join('\n'));
   }
 
   if (bulananItems.length > 0) {
-    sections.push(formatGroup(' Jadwal Bulanan:', bulananItems).join('\n'));
+    const lines = ['*Jadwal Preventive Bulanan :*'];
+    groupBy(bulananItems, item => item.tipe, locDisplay).forEach((locs, type) => {
+      lines.push(`  ${type}`);
+      locs.forEach(loc => lines.push(`📍${loc}`));
+    });
+    sections.push(lines.join('\n'));
   }
 
   return sections.join('\n\n');
+}
+
+// Susun isi Rencana Kegiatan: kegiatan dasar, lalu (jika ada) baris PM dan blok jadwal PM
+export function buildRencanaKegiatan(base: string, activePm: Parameters<typeof formatPmRencanaKegiatan>[0], includePmLine: boolean): string {
+  if (activePm.length > 0) {
+    return `${base}\n${RENCANA_KEGIATAN_PM}\n\n${formatPmRencanaKegiatan(activePm)}`;
+  }
+  return includePmLine ? `${base}\n${RENCANA_KEGIATAN_PM}` : base;
 }

@@ -4,8 +4,11 @@ import test from 'node:test';
 import { 
   formatPmRencanaKegiatan, 
   filterActivePm,
-  parseSheetPm
+  parseSheetPm,
+  buildRencanaKegiatan,
+  RENCANA_KEGIATAN_DASAR
 } from '../src/lib/utils/pmScheduleParser.ts';
+import { generateWA_Kehadiran } from '../src/lib/utils/kehadiranMessage.ts';
 
 const readProjectFile = (relativePath) =>
   readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8');
@@ -74,31 +77,31 @@ test('Format PM Rencana Kegiatan: groups Mingguan and Bulanan with explicit head
   ];
 
   const formatted = formatPmRencanaKegiatan(mixedRecords);
-  assert.ok(formatted.includes(' Jadwal Mingguan:'));
-  assert.ok(formatted.includes(' Jadwal Bulanan:'));
-  assert.ok(formatted.includes(' PSCP D 1:'));
-  assert.ok(formatted.includes(' - WTMD CEIA'));
-  assert.ok(formatted.includes(' PSCP D 2:'));
-  assert.ok(formatted.includes(' - X-Ray Rapiscan 620DV'));
-  assert.ok(formatted.includes(' - ETD Leidos B220'));
+  assert.equal(formatted, [
+    '*Jadwal Preventive Mingguan :*',
+    '📍PSCP D 1',
+    '- WTMD CEIA',
+    '',
+    '*Jadwal Preventive Bulanan :*',
+    '  X-Ray Rapiscan 620DV',
+    '📍PSCP D 2',
+    '  ETD Leidos B220',
+    '📍PSCP D 2'
+  ].join('\n'));
 
   // Test only Mingguan
   const mingguanOnly = [
     { lokasi: 'PSCP D', titik: '1', jenis: 'WTMD', tipe: 'WTMD CEIA', kategori_pm: 'PM Mingguan' }
   ];
   const formattedMingguan = formatPmRencanaKegiatan(mingguanOnly);
-  assert.ok(formattedMingguan.includes(' Jadwal Mingguan:'));
-  assert.ok(!formattedMingguan.includes(' Jadwal Bulanan:'));
+  assert.ok(formattedMingguan.includes('*Jadwal Preventive Mingguan :*'));
+  assert.ok(!formattedMingguan.includes('*Jadwal Preventive Bulanan :*'));
 
   // Test only Bulanan
   const bulananOnly = [
     { lokasi: 'HBSCP', titik: '1.1', jenis: 'X-Ray', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'Kalibrasi & PM Bulanan (M)' }
   ];
-  const formattedBulanan = formatPmRencanaKegiatan(bulananOnly);
-  assert.ok(!formattedBulanan.includes(' Jadwal Mingguan:'));
-  assert.ok(formattedBulanan.includes(' Jadwal Bulanan:'));
-  assert.ok(formattedBulanan.includes(' HBSCP 1.1:'));
-  assert.ok(formattedBulanan.includes(' - X-Ray Rapiscan 628DV'));
+  assert.equal(formatPmRencanaKegiatan(bulananOnly), '*Jadwal Preventive Bulanan :*\n  X-Ray Rapiscan 628DV\n📍HBSCP 1.1');
 });
 
 test('PM Display Settings Filter: can disable specific categories or equipment types', () => {
@@ -140,53 +143,96 @@ test('TabKehadiran & PmScheduleUploader integration: uses pmDisplaySettings and 
   assert.match(store, /togglePmTypeSetting/);
 });
 
-test('Complete Rencana Kegiatan format matches user template', () => {
-  const sampleRecords = [
-    { lokasi: 'HBSCP', titik: '1.1', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'HBSCP', titik: '1.3', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'PSCP E', titik: '2', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'PSCP E', titik: '2', tipe: 'Body Scanner Leidos Provision 2', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'PSCP E', titik: '2', tipe: 'ETD Leidos B220', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'PSCP F', titik: '2', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'PSCP F', titik: '2', tipe: 'Body Scanner Leidos Provision 2', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'PSCP F', titik: '2', tipe: 'WTMD CEIA HI-PE/PZ Multizone', kategori_pm: 'PM Mingguan' },
-    { lokasi: 'Rampout D', titik: '2', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' },
-    { lokasi: 'Aviobridge D', titik: '1', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' },
-    { lokasi: 'Server Access', titik: '-', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' }
-  ];
+const sampleRecords = [
+  { lokasi: 'HBSCP', titik: '1.1', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'HBSCP', titik: '1.3', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'PSCP E', titik: '2', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'PSCP E', titik: '2', tipe: 'Body Scanner Leidos Provision 2', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'PSCP E', titik: '2', tipe: 'ETD Leidos B220', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'PSCP F', titik: '2', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'PSCP F', titik: '2', tipe: 'WTMD CEIA HI-PE/PZ Multizone', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'PSCP F', titik: '2', tipe: 'Body Scanner Leidos Provision 2', kategori_pm: 'PM Mingguan' },
+  { lokasi: 'Rampout D', titik: '2', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' },
+  { lokasi: 'Aviobridge D', titik: '1', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' },
+  { lokasi: 'Server Access', titik: '-', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' }
+];
 
-  const pmBlock = formatPmRencanaKegiatan(sampleRecords);
-  const baseKegiatan = '1. Monitoring Operasional\n2. Storing Peralatan';
-  const rencanaKegiatan = `${baseKegiatan}\n3. Preventive Maintenance & Kalibrasi Peralatan\n\n${pmBlock}`;
+test('Laporan Kehadiran WA matches user template', () => {
+  const message = generateWA_Kehadiran({
+    tanggal: '2026-09-28',
+    shift: 'Pagi, 08.00 - 20.00 WIB',
+    apiList: [
+      { name: 'Dimas Aria Wiratama', phone: '081296778575', status: 'Hadir', dbOrder: 1 },
+      { name: 'Dhea Febriani', phone: '087883390219', status: 'Hadir', dbOrder: 2 }
+    ],
+    omList: [
+      { name: 'Sayuti', phone: '083804054535', status: 'Hadir', dbOrder: 1 },
+      { name: 'Nora Agil Rumayani', phone: '08970320998', status: 'Hadir', dbOrder: 2 },
+      { name: 'Harmin Sanjayah', phone: '081803767148', status: 'Hadir', dbOrder: 3 },
+      { name: 'Abdul Rifan Sukarno', phone: '083111807154', status: 'Hadir', dbOrder: 4 }
+    ],
+    tlpRuangan: '- 021 550 5910',
+    rencanaKegiatan: buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, sampleRecords, true)
+  });
 
   const expected = [
-    '1. Monitoring Operasional',
-    '2. Storing Peralatan',
-    '3. Preventive Maintenance & Kalibrasi Peralatan',
+    'Semangat Pagii.....!!!',
     '',
-    ' Jadwal Mingguan:',
-    ' HBSCP 1.1:',
-    ' - X-Ray Rapiscan 628DV',
-    ' HBSCP 1.3:',
-    ' - X-Ray Rapiscan 628DV',
-    ' PSCP E 2:',
-    ' - X-Ray Rapiscan 620DV',
-    ' - Body Scanner Leidos Provision 2',
-    ' - ETD Leidos B220',
-    ' PSCP F 2:',
-    ' - X-Ray Rapiscan 620DV',
-    ' - Body Scanner Leidos Provision 2',
-    ' - WTMD CEIA HI-PE/PZ Multizone',
+    '*LAPORAN DINAS*',
+    '*T2 Safety & Security Electronic Services*',
     '',
-    ' Jadwal Bulanan:',
-    ' Rampout D 2:',
-    ' - Access Control',
-    ' Aviobridge D 1:',
-    ' - Access Control',
-    ' Server Access:',
-    ' - Access Control'
+    'Dinas    : Pagi, 08.00 - 20.00 WIB',
+    'Hari      : Senin, 28 September 2026',
+    '',
+    '*Personel API T2 :*',
+    '- Dimas Aria Wiratama - Hadir',
+    '     Tlp : 081296778575',
+    '- Dhea Febriani - Hadir',
+    '     Tlp : 087883390219',
+    '',
+    '*Personel OM IASS T2 :*',
+    '- Sayuti - Hadir',
+    '     Tlp : 083804054535',
+    '- Nora Agil Rumayani - Hadir',
+    '     Tlp : 08970320998',
+    '- Harmin Sanjayah - Hadir',
+    '     Tlp : 081803767148',
+    '- Abdul Rifan Sukarno - Hadir',
+    '     Tlp : 083111807154',
+    '',
+    'Tlp Ruangan :',
+    '- 021 550 5910',
+    '',
+    '*Rencana Kegiatan :*',
+    '- Monitoring Ops',
+    '- Storing Peralatan',
+    '- Preventive Maintenance & Kalibrasi Peralatan',
+    '',
+    '*Jadwal Preventive Mingguan :*',
+    '📍HBSCP 1.1',
+    '- X-Ray Rapiscan 628DV',
+    '📍HBSCP 1.3',
+    '- X-Ray Rapiscan 628DV',
+    '📍PSCP E 2',
+    '- X-Ray Rapiscan 620DV',
+    '- Body Scanner Leidos Provision 2',
+    '- ETD Leidos B220',
+    '📍PSCP F 2',
+    '- X-Ray Rapiscan 620DV',
+    '- WTMD CEIA HI-PE/PZ Multizone',
+    '- Body Scanner Leidos Provision 2',
+    '',
+    '*Jadwal Preventive Bulanan :*',
+    '  Access Control',
+    '📍Rampout D 2',
+    '📍Aviobridge D 1',
+    '📍Server Access'
   ].join('\n');
 
-  assert.equal(rencanaKegiatan, expected);
+  assert.equal(message, expected);
 });
 
+test('Rencana Kegiatan tanpa jadwal PM: shift Pagi tetap ada baris PM, shift Malam tidak', () => {
+  assert.equal(buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, [], true), '- Monitoring Ops\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Peralatan');
+  assert.equal(buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, [], false), '- Monitoring Ops\n- Storing Peralatan');
+});

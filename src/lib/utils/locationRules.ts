@@ -1,5 +1,6 @@
 // src/lib/utils/locationRules.ts
 import { useMasterDataStore } from '../../store/useMasterDataStore';
+export { formatTanggalIndo } from './dateFormat.ts';
 
 export const parseLokasiDanTitik = (lokasiStr?: string): { lokasi1: string; lokasi2: string } => {
   if (!lokasiStr || lokasiStr === '-') return { lokasi1: '', lokasi2: '' };
@@ -309,14 +310,6 @@ export const getStoringNomorOptions = (loc: string): string[] => {
   return [];
 };
 export const getAcNomorOptions = getStoringNomorOptions;
-
-export const formatTanggalIndo = (dateStr: string) => {
-  if (!dateStr) return '';
-  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-  const d = new Date(dateStr);
-  return `${days[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
-};
 
 export const getStoringSupervisorLocations = (
   peralatan: string[],

@@ -7,7 +7,7 @@ import { generateWA_Kehadiran } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
-import { formatPmRencanaKegiatan, filterActivePm } from '../../lib/utils/pmScheduleParser';
+import { filterActivePm, buildRencanaKegiatan, RENCANA_KEGIATAN_DASAR, RENCANA_KEGIATAN_PM } from '../../lib/utils/pmScheduleParser';
 import { getErrorMessage } from '../../lib/utils/errorUtils';
 import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
 
@@ -27,9 +27,7 @@ export const TabKehadiran: React.FC = () => {
     // Shift changes at 07:30 (450 mins) and 19:30 (1170 mins)
     const isPagi = timeInMinutes >= 450 && timeInMinutes < 1170;
     const shiftValue = isPagi ? 'Pagi, 08.00 - 20.00 WIB' : 'Malam, 20.00 - 08.00 WIB';
-    const kegiatan = isPagi 
-      ? '1. Monitoring Operasional\n2. Storing Peralatan\n3. Preventive Maintenance & Kalibrasi Peralatan' 
-      : '1. Monitoring Operasional\n2. Storing Peralatan';
+    const kegiatan = buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, [], isPagi);
     
     const logicalDateObj = new Date(now.getTime());
     if (timeInMinutes < 450) {
@@ -149,9 +147,6 @@ export const TabKehadiran: React.FC = () => {
       );
 
       // Fetch Jadwal PM untuk tanggal & shift terpilih
-      const isPagi = targetShiftCode === 'PS';
-      const baseKegiatan = '1. Monitoring Operasional\n2. Storing Peralatan';
-
       const { data: pmData } = await supabase
         .from('jadwal_pm')
         .select('lokasi, titik, jenis, tipe, kategori_pm, shift')
@@ -159,13 +154,7 @@ export const TabKehadiran: React.FC = () => {
 
       const activePm = filterActivePm(pmData || [], targetShiftCode, pmDisplaySettings);
 
-      let newKegiatan: string;
-      if (activePm.length > 0) {
-        const pmBlock = formatPmRencanaKegiatan(activePm);
-        newKegiatan = `${baseKegiatan}\n3. Preventive Maintenance & Kalibrasi Peralatan\n\n${pmBlock}`;
-      } else {
-        newKegiatan = isPagi ? `${baseKegiatan}\n3. Preventive Maintenance & Kalibrasi Peralatan` : baseKegiatan;
-      }
+      const newKegiatan = buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, activePm, targetShiftCode === 'PS');
 
       setAttendanceData(prev => ({
         ...prev,
@@ -252,7 +241,7 @@ export const TabKehadiran: React.FC = () => {
 
       const lineStart = val.lastIndexOf('\n', start - 1) + 1;
       const currentLine = val.substring(lineStart, start);
-      const prefix = currentLine.trim().startsWith('-') && !currentLine.includes('Preventive Maintenance') ? '\n- ' : '\n';
+      const prefix = currentLine.trim().startsWith('-') ? '\n- ' : '\n';
 
       const newVal = val.substring(0, start) + prefix + val.substring(end);
       setAttendanceData(prev => ({ ...prev, [field]: newVal }));
@@ -431,26 +420,17 @@ export const TabKehadiran: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Rencana Kegiatan Harian</label>
             <textarea ref={rencanaKegiatanRef} name="rencanaKegiatan" required rows={3} value={attendanceData.rencanaKegiatan} onChange={(e) => handleDashChange(e, 'rencanaKegiatan')} onKeyDown={(e) => handleDashKeyDown(e, 'rencanaKegiatan')} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed"></textarea>
             {(() => {
-              const hasPM = attendanceData.rencanaKegiatan.includes("Preventive Maintenance");
+              const hasPM = attendanceData.rencanaKegiatan.includes(RENCANA_KEGIATAN_PM);
               return (
                 <button 
                   type="button" 
                   onClick={async () => {
-                    const baseKegiatan = '1. Monitoring Operasional\n2. Storing Peralatan';
                     if (hasPM) {
-                      let newText = attendanceData.rencanaKegiatan;
-                      const pmIndex = newText.indexOf('3. Preventive Maintenance');
-                      if (pmIndex !== -1) {
-                        const lineStart = newText.lastIndexOf('\n', pmIndex);
-                        newText = (lineStart !== -1 ? newText.substring(0, lineStart) : '').trim();
-                      } else {
-                        const pmAltIndex = newText.indexOf('Preventive Maintenance');
-                        if (pmAltIndex !== -1) {
-                          const lineStart = newText.lastIndexOf('\n', pmAltIndex);
-                          newText = (lineStart !== -1 ? newText.substring(0, lineStart) : '').trim();
-                        }
-                      }
-                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newText || baseKegiatan }));
+                      // Buang baris PM beserta blok jadwal PM di bawahnya
+                      const text = attendanceData.rencanaKegiatan;
+                      const lineStart = text.lastIndexOf('\n', text.indexOf(RENCANA_KEGIATAN_PM));
+                      const newText = (lineStart !== -1 ? text.substring(0, lineStart) : '').trim();
+                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newText || RENCANA_KEGIATAN_DASAR }));
                     } else {
                       const targetShiftCode = attendanceData.shift.includes('Pagi') || attendanceData.shift.includes('PS') ? 'PS' : 'M';
                       const { data: pmData } = await supabase
@@ -460,14 +440,8 @@ export const TabKehadiran: React.FC = () => {
 
                       const activePm = filterActivePm(pmData || [], targetShiftCode, pmDisplaySettings);
 
-                      const current = attendanceData.rencanaKegiatan.trim() || baseKegiatan;
-                      let newKegiatan: string;
-                      if (activePm.length > 0) {
-                        const pmBlock = formatPmRencanaKegiatan(activePm);
-                        newKegiatan = `${current}\n3. Preventive Maintenance & Kalibrasi Peralatan\n\n${pmBlock}`;
-                      } else {
-                        newKegiatan = `${current}\n3. Preventive Maintenance & Kalibrasi Peralatan`;
-                      }
+                      const current = attendanceData.rencanaKegiatan.trim() || RENCANA_KEGIATAN_DASAR;
+                      const newKegiatan = buildRencanaKegiatan(current, activePm, true);
                       setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newKegiatan }));
                     }
                   }}

@@ -1,7 +1,6 @@
 // src/lib/utils/waGenerator.ts
 
 import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels, parseLokasiDanTitik } from './locationRules';
-import { sortPersonelByJabatan } from '../data/masterData';
 import { buildShiftReportMessage } from './shiftReportMessage';
 
 export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
@@ -42,37 +41,7 @@ Demikian laporan tindak lanjut kami sampaikan.
 Terimakasih atas perhatiannya`;
 };
 
-const formatPersonnelList = (list: any[]) => {
-  const activeList = list.filter(item => item.name !== '');
-  if (activeList.length === 0) return "- (Kosong)";
-  return activeList.map(item => `- ${item.name} - ${item.status}\n     Tlp : ${item.phone}`).join('\n');
-};
-
-export const generateWA_Kehadiran = (attendanceData: any) => {
-  const formattedDate = formatTanggalIndo(attendanceData.tanggal);
-  const greeting = 'Semangat Pagii.....!!!';
-
-  const sortedApiList = sortPersonelByJabatan(attendanceData.apiList || []);
-  const sortedOmList = sortPersonelByJabatan(attendanceData.omList || []);
-
-  return `${greeting}
-T2 Safety & Security Electronic Services
-
-Dinas     : ${attendanceData.shift}
-Hari      : ${formattedDate}
-
-Personel API T2 :
-${formatPersonnelList(sortedApiList)}
-
-Personel OM IAS T2 :
-${formatPersonnelList(sortedOmList)}
-
-Tlp Ruangan :
-${attendanceData.tlpRuangan}
-
-Rencana Kegiatan :
-${attendanceData.rencanaKegiatan}`;
-};
+export { generateWA_Kehadiran } from './kehadiranMessage.ts';
 
 export const generateWA_Briefing = (briefingData: any, selectedSpareparts: any[] = []) => {
   const formattedDate = formatTanggalIndo(briefingData.tanggal);
