@@ -12,6 +12,7 @@ import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canva
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { formatLokasi, normalizeLokasi } from '../../lib/utils/lokasiFormat';
 
 export const TabStoring: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -254,8 +255,8 @@ export const TabStoring: React.FC = () => {
       try {
         const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
         const locString = (storingData.acLokasi && storingData.acLokasi.length > 0)
-          ? storingData.acLokasi.join(', ')
-          : (storingData.lokasi ? `${storingData.lokasi} ${storingData.nomor || ''}`.trim() : 'Terminal 2');
+          ? normalizeLokasi(storingData.acLokasi.join(', '))
+          : (storingData.lokasi ? formatLokasi(storingData.lokasi, storingData.nomor) : 'Terminal 2');
 
         const waktuRange = `${storingData.waktuMulai || ''}${storingData.waktuSelesai ? ' - ' + storingData.waktuSelesai : ''}`;
 

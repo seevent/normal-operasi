@@ -12,6 +12,7 @@ import { PhotoUploader } from '../shared/PhotoUploader';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { KalibrasiParameterFields } from './kalibrasi/KalibrasiParameterFields';
+import { formatLokasi, normalizeLokasi } from '../../lib/utils/lokasiFormat';
 
 export const TabKalibrasi: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -479,8 +480,8 @@ export const TabKalibrasi: React.FC = () => {
           if (entry.peralatan.length === 0) continue;
           const alatStr = entry.peralatan.join(', ');
           const locStr = entry.peralatan.includes('Access Control')
-            ? (entry.acLokasi?.join(', ') || 'Access Control')
-            : `${entry.lokasi1 || ''} ${entry.lokasi2 && entry.lokasi2 !== '-' ? 'No.' + entry.lokasi2 : ''}`.trim();
+            ? (normalizeLokasi(entry.acLokasi?.join(', ')) || 'Access Control')
+            : formatLokasi(entry.lokasi1, entry.lokasi2);
 
           const { fullText } = formatKalibrasiEntryKegiatanDanCatatan(entry);
 

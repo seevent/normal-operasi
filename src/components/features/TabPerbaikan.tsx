@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate, fetchOnDutyPersonnel } from '../../lib/services/operationalReportService';
+import { formatLokasiRows } from '../../lib/utils/lokasiFormat';
 
 export const TabPerbaikan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -484,10 +485,7 @@ export const TabPerbaikan: React.FC = () => {
       try {
         const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
         const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
-        const lokasiFinal = activeLocs.map((loc: any) => {
-          if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
-          return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
-        }).join(', ');
+        const lokasiFinal = formatLokasiRows(activeLocs);
 
         const waktuRange = `${formData.waktuMulai || ''}${formData.waktuSelesai ? ' - ' + formData.waktuSelesai : ''}`;
 

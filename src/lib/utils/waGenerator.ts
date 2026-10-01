@@ -2,94 +2,15 @@
 
 import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels, parseLokasiDanTitik } from './locationRules';
 import { buildShiftReportMessage } from './shiftReportMessage';
+import { formatLokasi, formatLokasiRows, formatStoringLokasi } from './lokasiFormat.ts';
 import { formatXRayParams, formatWtmdParams, XRAY_ARCHIVE_DEFAULT } from './kalibrasiParams.ts';
 
+export { formatACLokasiList } from './lokasiFormat.ts';
 export { generateWA_Perbaikan } from './perbaikanMessage.ts';
 
 export { generateWA_Kehadiran } from './kehadiranMessage.ts';
 
 export { generateWA_Briefing } from './briefingMessage.ts';
-
-export const formatACLokasiList = (locs: string[]): string => {
-  if (!locs || locs.length === 0) return '-';
-  if (locs.length === 1) return locs[0];
-
-  interface FormattedChunk {
-    text: string;
-    minIndex: number;
-  }
-
-  const results: FormattedChunk[] = [];
-  const normalLocsWithIndex: { loc: string; idx: number }[] = [];
-
-  locs.forEach((loc, idx) => {
-    if (loc.toUpperCase().includes('PSCP') || loc.toUpperCase().includes('BEA CUKAI') || loc.toUpperCase().includes('BELT')) {
-      results.push({ text: loc.trim(), minIndex: idx });
-    } else {
-      normalLocsWithIndex.push({ loc: loc.trim(), idx });
-    }
-  });
-
-  // Step 1: Group normalLocs by prefix
-  const prefixGroups: Map<string, { suffix: string; idx: number }[]> = new Map();
-  normalLocsWithIndex.forEach(({ loc, idx }) => {
-    const parts = loc.split(' ');
-    if (parts.length >= 2) {
-      const prefix = parts.slice(0, -1).join(' ');
-      const suffix = parts[parts.length - 1];
-      if (!prefixGroups.has(prefix)) prefixGroups.set(prefix, []);
-      prefixGroups.get(prefix)!.push({ suffix, idx });
-    } else {
-      results.push({ text: loc, minIndex: idx });
-    }
-  });
-
-  const remainingForSuffixGroup: { prefix: string; suffix: string; idx: number }[] = [];
-
-  prefixGroups.forEach((items, prefix) => {
-    if (items.length === 1) {
-      remainingForSuffixGroup.push({ prefix, suffix: items[0].suffix, idx: items[0].idx });
-    } else {
-      const minIndex = Math.min(...items.map(i => i.idx));
-      const suffixes = items.map(i => i.suffix);
-      const lastSuffix = suffixes[suffixes.length - 1];
-      const otherSuffixes = suffixes.slice(0, -1).join(', ');
-      results.push({ text: `${prefix} ${otherSuffixes} & ${lastSuffix}`, minIndex });
-    }
-  });
-
-  // Step 2: Group remaining by suffix
-  const suffixGroups: Map<string, { prefix: string; idx: number }[]> = new Map();
-  remainingForSuffixGroup.forEach(({ prefix, suffix, idx }) => {
-    if (!suffixGroups.has(suffix)) suffixGroups.set(suffix, []);
-    suffixGroups.get(suffix)!.push({ prefix, idx });
-  });
-
-  suffixGroups.forEach((items, suffix) => {
-    const minIndex = Math.min(...items.map(i => i.idx));
-    if (items.length === 1) {
-      results.push({ text: `${items[0].prefix} ${suffix}`, minIndex });
-    } else {
-      const prefixes = items.map(i => i.prefix);
-      const lastPrefix = prefixes[prefixes.length - 1];
-      const otherPrefixes = prefixes.slice(0, -1).join(', ');
-      results.push({ text: `${otherPrefixes} & ${lastPrefix} ${suffix}`, minIndex });
-    }
-  });
-
-  results.sort((a, b) => a.minIndex - b.minIndex);
-  const formattedResults = results.map(r => r.text);
-
-  if (formattedResults.length <= 1) {
-    return formattedResults[0] || '-';
-  }
-  const last = formattedResults[formattedResults.length - 1];
-  if (last.includes('&') || formattedResults.some(r => r.includes('&'))) {
-    return formattedResults.join(', ');
-  }
-  const firstPart = formattedResults.slice(0, -1).join(', ');
-  return `${firstPart} & ${last}`;
-};
 
 export const generateWA_Storing = (storingData: any) => {
   const formattedDate = formatTanggalIndo(storingData.tanggal);
@@ -105,28 +26,7 @@ export const generateWA_Storing = (storingData: any) => {
     equipString = `${otherEquips} & ${lastEquip}`;
   }
 
-  let locString = '-';
-  const rawLocs = storingData.acLokasi || [];
-  if (rawLocs.length > 0) {
-    const nomors = storingData.acNomor || {};
-    const mappedLocs = rawLocs.map((loc: string) => {
-      const num = nomors[loc];
-      if (!num) return loc;
-      if (loc.trim().toUpperCase() === 'HBSCP' || loc.trim().toUpperCase().includes('BEA CUKAI') || loc.trim().toUpperCase().includes('BELT')) return `${loc} ${num}`;
-      return `${loc}${num}`;
-    });
-    locString = formatACLokasiList(mappedLocs);
-  } else if (storingData.lokasi) {
-    if (storingData.nomor) {
-      if (storingData.lokasi === 'Avio & BL D' || storingData.lokasi === 'Avio & BL E' || storingData.lokasi === 'Avio & BL F' || storingData.lokasi.includes('Rampout')) {
-        locString = `${storingData.lokasi}${storingData.nomor}`;
-      } else {
-        locString = `${storingData.lokasi} ${storingData.nomor}`;
-      }
-    } else {
-      locString = storingData.lokasi;
-    }
-  }
+  const locString = formatStoringLokasi(storingData.acLokasi, storingData.acNomor, storingData.lokasi, storingData.nomor);
   
   const supervisorLocs = getStoringSupervisorLocations(storingData.peralatan || [], storingData.acLokasi || [], storingData.acNomor || {});
   const supMap = storingData.supervisorAvsecMap || {};
@@ -421,7 +321,7 @@ export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
 
   const kegiatan = kegiatanLines.join('\n');
   const catatan = catatanBlocks.join('\n\n');
-  const locString = (entry.lokasi1 || '') + (entry.lokasi2 && entry.lokasi2 !== '-' ? ` ${entry.lokasi2}` : '');
+  const locString = formatLokasi(entry.lokasi1, entry.lokasi2);
   const lokasiStr = locString.trim() || '...';
 
   return {
@@ -517,10 +417,7 @@ export const generateWA_InitialReport = (formData: any) => {
     ? formData.lokasiList.filter((l: any) => l.lokasi1)
     : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
     
-  const lokasiFinal = locList.map((loc: any) => {
-    if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
-    return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
-  }).join(', ') || '-';
+  const lokasiFinal = formatLokasiRows(locList) || '-';
 
   const pukulStr = formData.waktuMulai ? `${formData.waktuMulai} WIB` : ' WIB';
   const teknisiStr = formData.teknisi || '-';

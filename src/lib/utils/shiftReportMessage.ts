@@ -3,6 +3,7 @@
 // Modul murni tanpa akses store/jaringan supaya bisa diuji langsung.
 
 import { toTitleCase } from '../data/masterData.ts';
+import { normalizeLokasi } from './lokasiFormat.ts';
 
 /** Membuat teks "Kegiatan/Catatan" bawaan untuk preventive maintenance (getDefaultKalibrasiUraian). */
 export type DefaultUraianFn = (peralatan: string, lokasi?: string) => string;
@@ -68,7 +69,7 @@ const formatPreventiveBody = (r: any, getDefaultUraian: DefaultUraianFn): string
 const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => {
   const status = cleanField(r.Status) || 'Normal Operasi';
   const peralatan = cleanField(r.Peralatan);
-  const lokasi = cleanField(r.Lokasi);
+  const lokasi = normalizeLokasi(cleanField(r.Lokasi));
   const lokasiPart = lokasi ? `Lokasi ${lokasi}` : '';
 
   if (isPreventiveReport(r)) {
