@@ -1010,7 +1010,7 @@ export const TabShiftReport: React.FC = () => {
         <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
           <div
             data-testid="wa-preview"
-            className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%] max-h-[600px] overflow-y-auto"
+            className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]"
           >
             {waMessagePreview}
           </div>

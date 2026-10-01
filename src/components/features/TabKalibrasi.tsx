@@ -810,7 +810,7 @@ export const TabKalibrasi: React.FC = () => {
           <FileText className="w-5 h-5 text-blue-600" /> Preview Laporan Kalibrasi (Real-time)
         </h3>
         <div className="bg-[#e5ddd5] p-4 sm:p-6 rounded-xl border border-slate-200 shadow-inner overflow-hidden relative">
-          <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%] max-h-[500px] overflow-y-auto">
+          <div className="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 font-mono whitespace-pre-wrap break-words inline-block min-w-full lg:min-w-[80%]">
             {generateWA_Kalibrasi(kalibrasiGlobal, kalibrasiEntries)}
           </div>
         </div>
