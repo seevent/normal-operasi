@@ -2,7 +2,7 @@
 // Pesan WhatsApp laporan harian (Closing briefing) dan klasifikasi baris laporan.
 // Modul murni tanpa akses store/jaringan supaya bisa diuji langsung.
 
-import { toTitleCase } from '../data/masterData.ts';
+import { toTitleCase, sortPersonelByJabatan } from '../data/masterData.ts';
 
 /** Membuat teks "Kegiatan/Catatan" bawaan untuk preventive maintenance (getDefaultKalibrasiUraian). */
 export type DefaultUraianFn = (peralatan: string, lokasi?: string) => string;
@@ -106,8 +106,15 @@ const buildKegiatanItems = (reports: any[], getDefaultUraian: DefaultUraianFn): 
   return items;
 };
 
+/**
+ * Urutkan baris jadwal_shift seperti di tab Kehadiran dan Data: jabatan lebih dulu,
+ * lalu `urutan` personel. Baris tanpa jabatan/urutan tetap pada urutan semula (sort stabil).
+ */
+export const sortPersonelRows = <T extends { personel?: any }>(rows: T[]): T[] =>
+  sortPersonelByJabatan(rows.map(row => ({ row, jabatan: row.personel?.jabatan, urutan: row.personel?.urutan }))).map(x => x.row);
+
 const personelNames = (rows: any[], shiftCode: string): string[] =>
-  rows
+  sortPersonelRows(rows)
     .filter(d => String(d.shift || '').toUpperCase() === shiftCode)
     .map(d => toTitleCase(String(d.personel?.nama || '').trim()))
     .filter(Boolean);
