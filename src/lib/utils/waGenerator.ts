@@ -491,7 +491,7 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
     e.peralatan.some((eq: string) => eq !== 'Extension Conveyor')
   );
   const judul = hasKalibrasi 
-    ? '*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*' 
+    ? '*LAPORAN PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*' 
     : '*PREVENTIVE MAINTENANCE SSES T2*';
 
   let msg = `${judul}\nHari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}`;
