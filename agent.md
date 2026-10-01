@@ -101,13 +101,13 @@ Dokumen ini berisi instruksi bagi **AI Coding Assistant** (Claude, Antigravity, 
 | `src/lib/utils/lokasiFormat.ts` · `locationRules.ts` | Format lokasi · relasi peralatan↔lokasi | |
 | `src/lib/utils/pmScheduleParser.ts` | Parse Excel jadwal PM + Rencana Kegiatan | |
 | `src/store/useMasterDataStore.ts` | Master data + konfigurasi Supabase | `master_configs` memakai kolom `key`/`value`. |
-| `tests/` | 32 berkas, 133 test | Jalankan `npm test`. |
+| `tests/` | 33 berkas, 141 test | Jalankan `npm test`. |
 
 ---
 
 ## 4. Checklist Verifikasi Sebelum Menyatakan Selesai
 
-1. **Test**: `npm test` (alias `node --test`) — seluruh 133 test harus lulus. Tambahkan test untuk perilaku baru (modul murni lebih mudah; test struktur komponen di repo membaca source dengan `readFileSync`).
+1. **Test**: `npm test` (alias `node --test`) — seluruh 141 test harus lulus. Tambahkan test untuk perilaku baru (modul murni lebih mudah; test struktur komponen di repo membaca source dengan `readFileSync`).
 2. **Build**: `npm run build` harus berhasil (CI juga menjalankannya).
 3. **Lint**: `npm run lint` harus tetap **bersih** (0 error, 0 peringatan) — CI memblokirnya. Jangan memakai `any`; pakai/tambah tipe di `src/lib/types.ts`. Bila `tsc --noEmit` dijalankan, jangan menambah error baru (kini 1, di `vite.config.ts`).
 4. **Mobile layout**: tidak ada overflow horizontal, tombol mudah ditekan, tidak ada auto-zoom iOS.

@@ -18,9 +18,7 @@ test('PersonelManager tetap memisahkan unit API dan OM/IAS dengan jabatan dan un
   assert.match(src, /unitName: 'OM\/IAS T2'/);
   assert.match(src, /\['Supervisor', 'Engineer', 'Technician'\]/);
   assert.match(src, /\['Supervisor', 'Teknisi', 'Pembantu Teknisi'\]/);
-  assert.match(src, /setDataApiT2/);
-  assert.match(src, /setDataOmIasT2/);
-  assert.match(src, /savePersonelToSupabase\(rows, unit\.unitName\)/);
+  assert.match(src, /savePersonelToSupabase\(rows, unit\.unitName, sources\[unit\.key\], confirmPersonelDelete\)/);
 });
 
 test('PersonelSection: key stabil, tidak menyimpan _k, dan melaporkan kegagalan simpan', () => {

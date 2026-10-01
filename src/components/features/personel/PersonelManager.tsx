@@ -31,6 +31,13 @@ const PERSONEL_UNITS: UnitConfig[] = [
   },
 ];
 
+/** Menghapus personel juga menghapus riwayat jadwal_shift-nya (ON DELETE CASCADE di database). */
+const confirmPersonelDelete = (names: string[], jadwalCount: number): boolean =>
+  window.confirm(
+    `Hapus ${names.join(', ')} dari database?` +
+      (jadwalCount > 0 ? `\n\nIni juga menghapus ${jadwalCount} baris riwayat jadwal shift mereka dan tidak bisa dibatalkan.` : '')
+  );
+
 /**
  * Satu tab untuk kedua unit personel. Tiap unit tetap terpisah: daftar, urutan, dan tombol
  * simpannya sendiri-sendiri, karena masing-masing disimpan ke unit kerja yang berbeda.
@@ -38,12 +45,9 @@ const PERSONEL_UNITS: UnitConfig[] = [
 export const PersonelManager: React.FC = () => {
   const dataApiT2 = useMasterDataStore((s) => s.dataApiT2);
   const dataOmIasT2 = useMasterDataStore((s) => s.dataOmIasT2);
-  const setDataApiT2 = useMasterDataStore((s) => s.setDataApiT2);
-  const setDataOmIasT2 = useMasterDataStore((s) => s.setDataOmIasT2);
   const savePersonelToSupabase = useMasterDataStore((s) => s.savePersonelToSupabase);
 
   const sources: Record<UnitConfig['key'], PersonelRecord[]> = { api: dataApiT2, ias: dataOmIasT2 };
-  const setters: Record<UnitConfig['key'], (d: PersonelRecord[]) => void> = { api: setDataApiT2, ias: setDataOmIasT2 };
   const latest = (key: UnitConfig['key']): PersonelRecord[] => {
     const s = useMasterDataStore.getState();
     return key === 'api' ? s.dataApiT2 : s.dataOmIasT2;
@@ -60,8 +64,9 @@ export const PersonelManager: React.FC = () => {
           jabatanOptions={unit.jabatan}
           source={sources[unit.key]}
           onSave={async (rows) => {
-            setters[unit.key](rows);
-            await savePersonelToSupabase(rows, unit.unitName);
+            // Store baru diganti setelah tersimpan (initializeSupabaseData), supaya kegagalan tidak
+            // membuat editor tampak "tersimpan" padahal database belum berubah.
+            await savePersonelToSupabase(rows, unit.unitName, sources[unit.key], confirmPersonelDelete);
             return latest(unit.key);
           }}
         />

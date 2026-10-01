@@ -1,7 +1,7 @@
 # System Architecture Document
 ## SSES T2 Generator Laporan Operasional
 
-> Terakhir diselaraskan dengan kode: **1 Oktober 2026** (133 unit test lulus, build berhasil).
+> Terakhir diselaraskan dengan kode: **1 Oktober 2026** (141 unit test lulus, build berhasil).
 
 ---
 
@@ -53,7 +53,7 @@ graph TD
 | **Ekspor gambar TIP** | `html-to-image` (CDN cdnjs, dimuat saat dibutuhkan) | `1.11.11` | Bukan dependensi npm; dimuat dinamis di `TabTip.tsx`. |
 | **Icon** | Lucide React | `0.576.0` | Ikon UI. |
 | **Lint** | ESLint 9, typescript-eslint, react-hooks, react-refresh | `9.39.x` | `npm run lint`. |
-| **Testing** | Node.js Test Runner | Node 22 | 32 berkas di `tests/`, 133 test. |
+| **Testing** | Node.js Test Runner | Node 22 | 33 berkas di `tests/`, 141 test. |
 | **CI** | GitHub Actions | - | `npm ci` → `npm run lint` → `npm test` → `npm run build` (semua memblokir). |
 | **Hosting** | Netlify | - | `publish = dist/client`. |
 
@@ -228,7 +228,7 @@ Skema lengkap dan terverifikasi ada di [`database.md`](database.md). Ringkas:
 1. **Environment Variables**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_CLOUDINARY_CLOUD_NAME`, `VITE_CLOUDINARY_UPLOAD_PRESET` (kedua Cloudinary opsional bila diatur lewat panel admin). `.env*` di-ignore git.
 2. **HTTPS lokal**: Web Share API dan Camera API membutuhkan secure context; Vite dikonfigurasi `server.https` + `basicSsl()`.
 3. **Mobile viewport**: `viewport-fit=cover`; font input min. 16px untuk mencegah auto-zoom iOS Safari.
-4. **Pengujian (`npm test`, 32 berkas / 133 test)** mencakup antara lain:
+4. **Pengujian (`npm test`, 33 berkas / 141 test)** mencakup antara lain:
    - Format WA per tab: `wa-briefing`, `wa-checklist-title`, `wa-kalibrasi-title`, `wa-perbaikan`, `wa-shift-report`, `wa-preview-height`.
    - Aturan bisnis: `ba-shift-calculation`, `on-duty-technicians`, `lokasi-format`, `kalibrasi-params`, `initial-report-shortcuts`, `pm-schedule-kehadiran`, `form-validation`, `format-nama-personel`.
    - Struktur/regresi komponen: `tab-*`, `checklist-editor-*`, `personel-manager`, `photo-uploader-consolidation`, `print-header-logo`, `set-is-copied-declared`, `share-report`, `shift-report-refactor`, `auto-resize-textarea`, `pet-messages`, `cloudinary-settings`.

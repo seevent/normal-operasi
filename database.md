@@ -152,7 +152,12 @@ View stok sparepart: `id`, `sku`, `name`, `stok_aktual`, `stok_bekas`, `stok_rus
 | `urutan` | int | Urutan manual untuk jabatan yang sama (diubah dengan tombol naik/turun di Data → Personel). |
 | `created_at` | timestamptz | |
 
-> **Temuan (belum diperbaiki):** `savePersonelToSupabase` (`useMasterDataStore.ts`) membaca/menulis kolom `unit_kerja_id`, padahal kolom di tabel ini bernama **`unit_id`**. Akibatnya, mengubah personel yang sudah ada (punya `id`) tetap berhasil, tetapi **menambah personel baru** dan **menghapus personel yang dibuang dari daftar** dari Data → Personel gagal diam-diam di sisi database. Memperbaikinya (3 kemunculan) juga mengaktifkan logika hapus, sehingga perlu diuji dengan hati-hati terhadap FK `jadwal_shift.personel_id`.
+> **Penyimpanan dari Data → Personel** (`savePersonelToSupabase` + `planPersonelSave` di `src/lib/utils/personelSave.ts`):
+> * Personel baru disimpan dengan `unit_id`; NIK wajib dan tidak boleh dobel (dicek sebelum menulis).
+> * Yang dihapus hanya personel yang tadinya tampil di editor lalu dibuang admin. Data bawaan tanpa `id` tidak pernah memicu penghapusan.
+> * Karena `jadwal_shift.personel_id` memakai **ON DELETE CASCADE**, aplikasi menghitung baris jadwal yang ikut terhapus dan meminta konfirmasi lebih dulu.
+> * Urutan: ubah → tambah → hapus; galat apa pun dilempar sehingga layar menampilkan "Gagal menyimpan".
+> * Sebelum 1 Oktober 2026 fungsi ini memakai kolom `unit_kerja_id` yang tidak ada, sehingga menambah/menghapus personel dari aplikasi tidak pernah sampai ke database.
 
 Urutan tampil personel: hirarki jabatan, lalu `urutan` (`sortPersonelByJabatan` di `masterData.ts`); dipakai sama di tab Kehadiran dan Report.
 

@@ -125,7 +125,7 @@ Login dengan **email + kata sandi** (Supabase Auth). Delapan sub-tab:
 * **HTTPS**: dev server HTTPS (`@vitejs/plugin-basic-ssl`) agar Web Share dan Camera API berfungsi di ponsel.
 * **Ketahanan**: bila Supabase tak terjangkau, aplikasi memakai data bawaan `masterData.ts` dan tidak crash; bila Cloudinary gagal, foto beralih ke Supabase Storage; kegagalan simpan latar belakang dikabarkan maskot. *Draf formulir tidak disimpan ke `localStorage`* — menutup tab sebelum membagikan berarti isian hilang.
 * **Keamanan akses**: tab Data memakai Supabase Auth. Tulis ke tabel operasional/konfigurasi saat ini masih terbuka untuk publik pada level RLS (lihat [database.md §6](database.md#6-catatan-keamanan-rls)); `xlsx 0.18.5` memiliki advisory yang diterima secara sadar (lihat architecture.md §9).
-* **Kualitas**: 133 unit test (`npm test`), `npm run lint` (0 error/0 peringatan), dan `npm run build` harus lulus sebelum merge; ketiganya memblokir CI. Tipe data bersama ada di `src/lib/types.ts`; kode baru tidak boleh memakai `any`.
+* **Kualitas**: 141 unit test (`npm test`), `npm run lint` (0 error/0 peringatan), dan `npm run build` harus lulus sebelum merge; ketiganya memblokir CI. Tipe data bersama ada di `src/lib/types.ts`; kode baru tidak boleh memakai `any`.
 
 ---
 
@@ -140,11 +140,11 @@ Selesai:
 * [x] Lint bersih: 2 error, 7 `exhaustive-deps`, variabel tak terpakai, dan 281 `any` diganti tipe domain; lint kini memblokir CI.
 * [x] Editor Checklist Config terstruktur; tab Personel tunggal.
 * [x] Validasi isian wajib seragam; standar penulisan lokasi; format WA baru (Kehadiran, Report, Kalibrasi, Perbaikan, Briefing, Storing); jadwal Preventive Mingguan/Bulanan.
+* [x] Perbaikan simpan personel dari Data → Personel (kolom `unit_id`, NIK wajib/unik, penghapusan terbatas + konfirmasi karena riwayat jadwal ikut terhapus).
 
 Belum dikerjakan / ide:
 * [ ] Memperketat RLS Supabase (tulis `master_configs`, `jadwal_*`, `spareparts`, `unit_peralatan` hanya untuk pengguna login).
 * [ ] Menambahkan `tsc --noEmit` ke CI (tersisa satu error tipe di `vite.config.ts`: `server.https: true`) dan memberi tipe pada klien Supabase (`Database` dari skema) agar cast `as unknown as` di batas data bisa dihapus.
-* [ ] Memperbaiki penyimpanan personel baru dari Data → Personel: `savePersonelToSupabase` memakai kolom `unit_kerja_id`, padahal kolom di database bernama `unit_id` (lihat database.md §3.10).
 * [ ] Menyimpan draf formulir sementara agar tahan terhadap tab tertutup.
 * [ ] Notifikasi push (PWA Service Worker) untuk jadwal shift.
 * [ ] Ekspor otomatis rekap bulanan ke PDF.

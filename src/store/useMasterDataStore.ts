@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import { setCloudinaryConfig, getCloudinaryConfig } from '../lib/services/cloudinaryService';
 import { PmDisplaySettings } from '../lib/utils/pmScheduleParser';
+import { planPersonelSave } from '../lib/utils/personelSave';
 import type { ChecklistBlock } from '../lib/utils/checklistEditor';
 import type { JenisPeralatan, Penempatan, Personel, PersonelDbRow, Sparepart, TipColumnItem, UnitPeralatan } from '../lib/types';
 
@@ -47,7 +48,16 @@ interface MasterDataState {
   setDataApiT2: (data: Personel[]) => void;
   dataOmIasT2: Personel[];
   setDataOmIasT2: (data: Personel[]) => void;
-  savePersonelToSupabase: (data: Personel[], unitName: string) => Promise<void>;
+  /**
+   * Menyimpan daftar personel satu unit. `previous` = daftar yang tampil di editor sebelum disunting;
+   * hanya personel dari daftar itu yang dibuang admin yang dihapus. Melempar galat bila gagal.
+   */
+  savePersonelToSupabase: (
+    data: Personel[],
+    unitName: string,
+    previous: Personel[],
+    confirmDelete: (names: string[], jadwalCount: number) => boolean,
+  ) => Promise<void>;
   storingEquipments: string[];
   setStoringEquipments: (data: string[]) => void;
   storingLocAc: string[];
@@ -94,80 +104,68 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
     const sorted = sortPersonelByJabatan(data);
     set({ dataOmIasT2: sorted });
   },
-  savePersonelToSupabase: async (data, unitName) => {
-    try {
-      let unitId: number | null = null;
-      const searchPattern = unitName === 'API T2' ? '%API%' : '%OM%';
-      const { data: uData } = await supabase
+  savePersonelToSupabase: async (data, unitName, previous, confirmDelete) => {
+    // Galat dilempar (bukan hanya dicatat) agar tab Data menampilkan "Gagal menyimpan".
+    const fail = (what: string, error: { message?: string } | null) => {
+      if (error) throw new Error(`${what}: ${error.message ?? 'galat tidak dikenal'}`);
+    };
+
+    const searchPattern = unitName === 'API T2' ? '%API%' : '%OM%';
+    const { data: uData, error: unitErr } = await supabase
+      .from('unit_kerja')
+      .select('id')
+      .ilike('nama', searchPattern)
+      .limit(1);
+    fail('Gagal membaca unit kerja', unitErr);
+    let unitId: string | undefined = uData?.[0]?.id;
+    if (!unitId) {
+      const { data: newUnit, error } = await supabase
         .from('unit_kerja')
+        .insert({ nama: unitName })
         .select('id')
-        .ilike('nama', searchPattern)
-        .limit(1);
-
-      if (uData && uData.length > 0) {
-        unitId = uData[0].id;
-      } else {
-        const { data: newUnit } = await supabase
-          .from('unit_kerja')
-          .insert({ nama: unitName })
-          .select('id')
-          .maybeSingle();
-        if (newUnit) unitId = newUnit.id;
-      }
-
-      if (unitId) {
-        const { data: existingInDb } = await supabase
-          .from('personel')
-          .select('id')
-          .eq('unit_kerja_id', unitId);
-
-        const dbIds = existingInDb ? existingInDb.map((p) => p.id) : [];
-        const localIds = data.map((p) => p.id).filter(Boolean);
-        const idsToDelete = dbIds.filter((id) => !localIds.includes(id));
-
-        if (idsToDelete.length > 0) {
-          const { error: deleteErr } = await supabase
-            .from('personel')
-            .delete()
-            .in('id', idsToDelete);
-          if (deleteErr) {
-            console.error('Error deleting personnel from Supabase:', deleteErr);
-          }
-        }
-      }
-
-      for (let idx = 0; idx < data.length; idx++) {
-        const p = data[idx];
-        if (!p.name || !p.name.trim()) continue;
-        const urutanVal = idx + 1;
-        if (p.id) {
-          const payload: Record<string, unknown> = { nama: p.name, no_hp: p.phone, urutan: urutanVal };
-          if (p.nik !== undefined) payload.nik = p.nik || null;
-          if (p.jabatan !== undefined) payload.jabatan = p.jabatan || null;
-          const { error } = await supabase.from('personel').update(payload).eq('id', p.id);
-          if (error && (error.message?.includes('urutan') || error.message?.includes('jabatan') || error.message?.includes('nik'))) {
-            const fallback: Record<string, unknown> = { nama: p.name, no_hp: p.phone };
-            if (p.nik !== undefined && !error.message?.includes('nik')) fallback.nik = p.nik || null;
-            if (p.jabatan !== undefined && !error.message?.includes('jabatan')) fallback.jabatan = p.jabatan || null;
-            await supabase.from('personel').update(fallback).eq('id', p.id);
-          }
-        } else if (unitId) {
-          const payload: Record<string, unknown> = { nama: p.name, no_hp: p.phone, unit_kerja_id: unitId, urutan: urutanVal };
-          if (p.nik !== undefined) payload.nik = p.nik || null;
-          if (p.jabatan !== undefined) payload.jabatan = p.jabatan || null;
-          const { error } = await supabase.from('personel').insert(payload);
-          if (error && (error.message?.includes('urutan') || error.message?.includes('jabatan') || error.message?.includes('nik'))) {
-            const fallback: Record<string, unknown> = { nama: p.name, no_hp: p.phone, unit_kerja_id: unitId };
-            if (p.nik !== undefined && !error.message?.includes('nik')) fallback.nik = p.nik || null;
-            if (p.jabatan !== undefined && !error.message?.includes('jabatan')) fallback.jabatan = p.jabatan || null;
-            await supabase.from('personel').insert(fallback);
-          }
-        }
-      }
-      await get().initializeSupabaseData();
-    } catch (err) {
-      console.error('Failed savePersonelToSupabase:', err);
+        .single();
+      fail('Gagal membuat unit kerja', error);
+      unitId = newUnit?.id;
     }
+    if (!unitId) throw new Error(`Unit kerja ${unitName} tidak ditemukan.`);
+
+    const { data: existing, error: readErr } = await supabase
+      .from('personel')
+      .select('id')
+      .eq('unit_id', unitId);
+    fail('Gagal membaca personel', readErr);
+
+    const plan = planPersonelSave(data, previous, (existing ?? []).map((p) => String(p.id)));
+    if (plan.errors.length > 0) throw new Error(plan.errors.join(' '));
+
+    // Menghapus personel ikut menghapus riwayat jadwal_shift-nya (ON DELETE CASCADE): minta konfirmasi dulu.
+    if (plan.deleteIds.length > 0) {
+      const { count, error } = await supabase
+        .from('jadwal_shift')
+        .select('id', { count: 'exact', head: true })
+        .in('personel_id', plan.deleteIds);
+      fail('Gagal memeriksa riwayat jadwal', error);
+      const names = previous.filter((p) => plan.deleteIds.includes(String(p.id))).map((p) => p.name);
+      if (!confirmDelete(names, count ?? 0)) throw new Error('Penyimpanan dibatalkan.');
+    }
+
+    for (const { id, payload } of plan.updates) {
+      const { error } = await supabase.from('personel').update(payload).eq('id', id);
+      fail(`Gagal memperbarui ${payload.nama}`, error);
+    }
+    if (plan.inserts.length > 0) {
+      const { error } = await supabase
+        .from('personel')
+        .insert(plan.inserts.map((payload) => ({ ...payload, unit_id: unitId })));
+      fail('Gagal menambah personel baru', error);
+    }
+    // Hapus paling akhir: bila langkah sebelumnya gagal, tidak ada yang terlanjur terhapus.
+    if (plan.deleteIds.length > 0) {
+      const { error } = await supabase.from('personel').delete().in('id', plan.deleteIds);
+      fail('Gagal menghapus personel', error);
+    }
+
+    await get().initializeSupabaseData();
   },
   storingEquipments: DEFAULT_STORING_EQUIPMENTS,
   setStoringEquipments: (data) => {

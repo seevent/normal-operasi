@@ -2,7 +2,7 @@
 
 Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **12 tab** terintegrasi, tanda tangan digital, anotasi foto, validasi isian wajib yang seragam, serta sinkronisasi cloud ke **Supabase** dan penyimpanan foto di **Cloudinary** (cadangan: Supabase Storage).
 
-> Status terakhir diperbarui: **1 Oktober 2026** — 133 unit test lulus, `npm run build` berhasil, lint bersih (0 error, 0 peringatan).
+> Status terakhir diperbarui: **1 Oktober 2026** — 141 unit test lulus, `npm run build` berhasil, lint bersih (0 error, 0 peringatan).
 
 ---
 
@@ -65,7 +65,7 @@ Versi diambil dari `package.json` / `npm ls` per 1 Oktober 2026.
 | **Tanda Tangan** | HTML5 Canvas (`SignaturePad.tsx`) | Native |
 | **Ekspor Gambar TIP** | `html-to-image` dimuat dari cdnjs saat dibutuhkan (bukan dependensi npm) | `1.11.11` |
 | **Lint** | ESLint 9 + typescript-eslint + react-hooks | `9.39.x` |
-| **Testing** | Node.js Test Runner (`node --test`) — 32 berkas, 133 test | Node 22 |
+| **Testing** | Node.js Test Runner (`node --test`) — 33 berkas, 141 test | Node 22 |
 | **CI** | GitHub Actions (`.github/workflows/ci.yml`: lint, test, build — ketiganya memblokir) | - |
 | **Deployment** | Netlify (`netlify.toml`, publish `dist/client`) | - |
 
@@ -107,7 +107,7 @@ src/
 ├── store/                            # useAppStore (UI + maskot), useAuthStore, useMasterDataStore
 ├── routes/                           # __root.tsx, index.tsx
 ├── router.tsx · routeTree.gen.ts · styles.css
-tests/                                # 32 berkas *.test.mjs (node --test)
+tests/                                # 33 berkas *.test.mjs (node --test)
 ```
 
 ---
