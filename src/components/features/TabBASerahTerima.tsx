@@ -87,7 +87,7 @@ export const TabBASerahTerima: React.FC = () => {
       // Fallback if no attendance list found for today
       const fallbackList = [
         ...dataApiT2.map(p => ({ ...p, unit: 'API T2' })),
-        ...dataOmIasT2.map(p => ({ ...p, unit: 'OM IAS T2' }))
+        ...dataOmIasT2.map(p => ({ ...p, unit: 'OM IASS T2' }))
       ];
       setDinasPersonelList(fallbackList);
     };
@@ -172,8 +172,8 @@ export const TabBASerahTerima: React.FC = () => {
     let jabatanFormatted = 'T2 - Safety & Security Electronic Services';
 
     if (p) {
-      if (p.unit === 'OM IAS T2' || p.unit === 'OM/IAS T2') {
-        unitFormatted = 'OM IAS T2';
+      if (p.unit === 'OM IASS T2' || p.unit === 'OM IAS T2' || p.unit === 'OM/IAS T2') {
+        unitFormatted = 'OM IASS T2';
         jabatanFormatted = p.jabatan ? String(p.jabatan).trim() : 'Teknisi';
       } else {
         unitFormatted = 'T2 - Safety & Security Electronic Services';

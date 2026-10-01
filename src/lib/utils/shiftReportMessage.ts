@@ -141,7 +141,7 @@ export const buildShiftReportMessage = (
 
     let block = `Daftar Personil :\nHari/Tanggal/Dinas : ${formatHariTanggalIndo(date)}/${code}\n\n`;
     block += `Personel API T2 :\n${formatNameList(api)}\n\n`;
-    block += `Personel OM IAS T2 :\n${formatNameList(ias)}`;
+    block += `Personel OM IASS T2 :\n${formatNameList(ias)}`;
 
     const items = buildKegiatanItems(shiftReports, getDefaultUraian);
     if (items.length > 0) {

@@ -376,7 +376,7 @@ export const TabKehadiran: React.FC = () => {
       <div className="space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
             <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" /> Personel OM IAS T2
+              <Users className="w-5 h-5 text-blue-600" /> Personel OM IASS T2
             </h2>
           </div>
         <div className="space-y-3">
