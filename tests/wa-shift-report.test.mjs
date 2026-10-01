@@ -163,3 +163,24 @@ test('Perbaikan: tanda • pada permasalahan tidak ikut ke pesan, satu atau bebe
   assert.ok(msg.includes('3. Perbaikan WTMD CEIA, Lokasi PSCP D No.1, alarm terus menyala, sensitivitas tidak stabil, reset, Normal Operasi'));
   assert.ok(!msg.includes('•'));
 });
+
+test('Urutan personel di laporan mengikuti jabatan lalu urutan, sama dengan tab Kehadiran dan Data', () => {
+  const p = (nama, jabatan, urutan) => ({ shift: 'PS', personel: { nama, jabatan, urutan } });
+  // urutan masuk sengaja acak (seperti hasil query tanpa ORDER BY)
+  const ias = [
+    p('Aly Masmudi', 'Pembantu Teknisi', 3),
+    p('Sayuti', 'Teknisi', 2),
+    p('Edo Ferry Ardian', 'Supervisor', 1),
+    p('Nora Agil Rumayani', 'Teknisi', 1),
+  ];
+  const apiRows = [p('Dhea Febriani', 'Technician', 2), p('Ageng Pandanaran', 'Supervisor', 1), p('Yuli Syarif', 'Engineer', 1)];
+  const msg = buildShiftReportMessage('2026-10-01', 'PS', apiRows, ias, [], () => '');
+  assert.ok(msg.includes('Personel API T2 :\n- Ageng Pandanaran\n- Yuli Syarif\n- Dhea Febriani'));
+  assert.match(msg, /Personel OM IAS{1,2} T2 :\n- Edo Ferry Ardian\n- Nora Agil Rumayani\n- Sayuti\n- Aly Masmudi/);
+});
+
+test('Personel tanpa jabatan/urutan tetap pada urutan semula', () => {
+  const p = (nama) => ({ shift: 'PS', personel: { nama } });
+  const msg = buildShiftReportMessage('2026-10-01', 'PS', [p('Budi'), p('Andi'), p('Citra')], [], [], () => '');
+  assert.ok(msg.includes('Personel API T2 :\n- Budi\n- Andi\n- Citra'));
+});

@@ -23,7 +23,8 @@ import { getDefaultKalibrasiUraian, generateWA_ShiftReport } from '../../lib/uti
 import {
   isPreventiveReport as isPreventive,
   isStoringReport as isStoring,
-  isCorrectiveReport as isCorrective
+  isCorrectiveReport as isCorrective,
+  sortPersonelRows
 } from '../../lib/utils/shiftReportMessage';
 import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
@@ -158,19 +159,28 @@ export const TabShiftReport: React.FC = () => {
   useEffect(() => {
     const fetchPersonil = async () => {
       try {
-        let query = supabase
-          .from('jadwal_shift')
-          .select(`
-            id, shift, status_kehadiran,
-            personel:personel_id (id, nama, no_hp, unit_kerja(nama))
-          `)
-          .eq('tanggal', date);
-
-        if (shift !== 'ALL') {
-          query = query.eq('shift', shift);
+        // Jabatan dan urutan dipakai untuk mengurutkan personel seperti di tab Kehadiran;
+        // bila kolomnya belum ada di database, pakai pilihan kolom yang lebih sedikit.
+        const personelColumns = [
+          'id, nama, no_hp, jabatan, urutan, unit_kerja(nama)',
+          'id, nama, no_hp, jabatan, unit_kerja(nama)',
+          'id, nama, no_hp, unit_kerja(nama)',
+        ];
+        let data: any[] | null = null;
+        let error: unknown = null;
+        for (const columns of personelColumns) {
+          let query = supabase
+            .from('jadwal_shift')
+            .select(`id, shift, status_kehadiran, personel:personel_id (${columns})`)
+            .eq('tanggal', date);
+          if (shift !== 'ALL') {
+            query = query.eq('shift', shift);
+          }
+          const res = await query;
+          data = res.data as any[] | null;
+          error = res.error;
+          if (!error && data) break;
         }
-
-        const { data, error } = await query;
 
         if (!error && data) {
           const hadir = data.filter(d => d.status_kehadiran !== 'Off' && d.status_kehadiran !== 'Cuti' && d.status_kehadiran !== 'Sakit' && d.status_kehadiran !== 'Izin');
@@ -184,8 +194,8 @@ export const TabShiftReport: React.FC = () => {
              return u === 'OM/IAS T2' || u.includes('IAS') || u.includes('INJOURNEY');
           });
 
-          setApiPersonil(apiList);
-          setIasPersonil(iasList);
+          setApiPersonil(sortPersonelRows(apiList));
+          setIasPersonil(sortPersonelRows(iasList));
         }
       } catch (err) {
         console.error("Gagal fetch personil", err);
