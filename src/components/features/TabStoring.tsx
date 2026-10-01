@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User, RefreshCw } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User, RefreshCw, MapPin, Check, Sparkles } from 'lucide-react';
 import { MonitorSearchIcon } from '../shared/MonitorSearchIcon';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
-import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec, getStoringSupervisorLocations } from '../../lib/utils/locationRules';
+import { getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec, getStoringSupervisorLocations } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { saveStoringToChecklistSync } from '../../lib/services/checklistSyncService';
@@ -12,15 +12,36 @@ import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canva
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { buildLocationEquipmentMap, deriveStoringEquipment } from '../../lib/utils/storingLokasi';
+
+type StoringMode = 'lokasi' | 'Access Control' | 'Mirroring X-Ray';
+
+const MODE_OPTIONS: Array<{ id: StoringMode; label: string }> = [
+  { id: 'lokasi', label: 'Per Lokasi' },
+  { id: 'Access Control', label: 'Access Control' },
+  { id: 'Mirroring X-Ray', label: 'Mirroring X-Ray' },
+];
+
+const EQUIP_CHIP_STYLE: Record<string, string> = {
+  'x-ray': 'bg-blue-100 text-blue-700 border-blue-200',
+  'wtmd': 'bg-violet-100 text-violet-700 border-violet-200',
+  'hhmd': 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
+  'body scanner': 'bg-amber-100 text-amber-700 border-amber-200',
+  'etd': 'bg-rose-100 text-rose-700 border-rose-200',
+  'extension conveyor': 'bg-teal-100 text-teal-700 border-teal-200',
+};
+const equipChipStyle = (equip: string) => EQUIP_CHIP_STYLE[equip.trim().toLowerCase()] || 'bg-slate-100 text-slate-700 border-slate-200';
 
 export const TabStoring: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
-  const { jenisPeralatanData, storingLocAc, storingLocDefault } = useMasterDataStore();
+  const { penempatanData } = useMasterDataStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
 
-  const storingEquipments = Array.from(new Set(jenisPeralatanData.map(j => j.nama)));
+  const locationMap = useMemo(() => buildLocationEquipmentMap(penempatanData), [penempatanData]);
+  const [mode, setMode] = useState<StoringMode>('lokasi');
+  const [excluded, setExcluded] = useState<string[]>([]);
 
   const [storingData, setStoringData] = useState({
     tanggal: getOperationalShiftAndDate().date,
@@ -93,31 +114,61 @@ export const TabStoring: React.FC = () => {
     setStoringData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleStoringEquipToggle = (equip: string) => {
-    setStoringData(prev => {
-      let newPeralatan = [...prev.peralatan];
-      if (newPeralatan.includes(equip)) {
-        newPeralatan = newPeralatan.filter(e => e !== equip);
-      } else {
-        if (equip === 'Access Control' || equip.toLowerCase() === 'mirroring x-ray') {
-          newPeralatan = [equip];
-        } else if (!newPeralatan.some(e => e === 'Access Control' || e.toLowerCase() === 'mirroring x-ray')) {
-          newPeralatan.push(equip);
-        }
-      }
-      const newShowSupervisor = checkNeedsStoringSupervisorAvsec(newPeralatan, [], {});
+  // Setelah lokasi/nomor/pengecualian berubah: peralatan (mode Per Lokasi) dihitung ulang dan
+  // Supervisor Avsec dibersihkan bila tidak lagi diperlukan.
+  const applyLocations = (
+    prev: typeof storingData,
+    newLocs: string[],
+    newNomor: Record<string, string>,
+    nextExcluded: string[] = excluded
+  ) => {
+    const peralatan = mode === 'lokasi' ? deriveStoringEquipment(newLocs, locationMap, nextExcluded) : prev.peralatan;
+    const needSupervisor = checkNeedsStoringSupervisorAvsec(peralatan, newLocs, newNomor);
+    return {
+      ...prev,
+      acLokasi: newLocs,
+      acNomor: newNomor,
+      peralatan,
+      supervisorAvsec: needSupervisor ? prev.supervisorAvsec : ''
+    };
+  };
 
-      // Reset lokasi & nomor jika kombinasi peralatan berubah drastis
-      return { 
-        ...prev, 
-        peralatan: newPeralatan, 
-        lokasi: '', 
-        acLokasi: [], 
-        acNomor: {}, 
-        nomor: '',
-        supervisorAvsec: newShowSupervisor ? prev.supervisorAvsec : ''
-      };
-    });
+  const handleModeChange = (next: StoringMode) => {
+    if (next === mode) return;
+    setMode(next);
+    setExcluded([]);
+    setStoringData(prev => ({
+      ...prev,
+      peralatan: next === 'lokasi' ? [] : [next],
+      lokasi: '',
+      acLokasi: [],
+      acNomor: {},
+      nomor: '',
+      supervisorAvsec: '',
+      supervisorAvsecMap: {}
+    }));
+  };
+
+  const toggleLocation = (loc: string) => {
+    const exists = (storingData.acLokasi || []).includes(loc);
+    const newLocs = exists ? storingData.acLokasi.filter(l => l !== loc) : [...(storingData.acLokasi || []), loc];
+    const newNomor = { ...(storingData.acNomor || {}) };
+    const nomorOpts = getAcNomorOptions(loc);
+    if (!exists && nomorOpts.length > 0) newNomor[loc] = nomorOpts[0];
+    else if (exists) delete newNomor[loc];
+    const nextExcluded = newLocs.length === 0 ? [] : excluded;
+    if (nextExcluded !== excluded) setExcluded(nextExcluded);
+    setStoringData(prev => applyLocations(prev, newLocs, newNomor, nextExcluded));
+  };
+
+  const changeLocationNomor = (loc: string, value: string) => {
+    setStoringData(prev => applyLocations(prev, prev.acLokasi, { ...(prev.acNomor || {}), [loc]: value }));
+  };
+
+  const toggleExcludedEquipment = (equip: string) => {
+    const next = excluded.includes(equip) ? excluded.filter(e => e !== equip) : [...excluded, equip];
+    setExcluded(next);
+    setStoringData(prev => applyLocations(prev, prev.acLokasi, prev.acNomor, next));
   };
 
   // === Photo Handlers ===
@@ -342,54 +393,42 @@ export const TabStoring: React.FC = () => {
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-2">Peralatan <span className="text-xs text-slate-400">(Bisa pilih lebih dari 1)</span></label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {storingEquipments.map(equip => {
-                const isACChecked = storingData.peralatan.includes('Access Control');
-                const isMirroringChecked = storingData.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
-                const isChecked = storingData.peralatan.includes(equip);
-                const isDisabled = (isACChecked && equip !== 'Access Control') || (isMirroringChecked && equip.toLowerCase() !== 'mirroring x-ray');
-
-                return (
-                  <label 
-                    key={equip} 
-                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                      isChecked ? 'bg-blue-50 border-blue-500 shadow-sm' : 
-                      isDisabled ? 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed' : 'bg-white border-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    <input 
-                      type="checkbox" 
-                      checked={isChecked}
-                      disabled={isDisabled}
-                      onChange={() => handleStoringEquipToggle(equip)}
-                      className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                    />
-                    <span className={`ml-2 text-sm font-medium ${isDisabled ? 'text-slate-400' : 'text-slate-700'}`}>
-                      {equip}
-                    </span>
-                  </label>
-                );
-              })}
+            <label className="block text-sm font-medium text-slate-700 mb-2">Jenis Storing</label>
+            <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200" role="tablist">
+              {MODE_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === opt.id}
+                  onClick={() => handleModeChange(opt.id)}
+                  className={`py-2 px-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                    mode === opt.id ? 'bg-white text-blue-700 shadow-sm ring-1 ring-blue-200' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Lokasi{storingData.peralatan.length > 0 && <span className="text-xs text-slate-400 font-normal"> (Pilih 1 atau lebih)</span>}
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <div className="flex items-end justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Lokasi <span className="text-xs text-slate-400 font-normal">(Pilih 1 atau lebih)</span>
+              </label>
+              {storingData.acLokasi.length > 0 && (
+                <span className="text-xs font-semibold text-blue-600">{storingData.acLokasi.length} dipilih</span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {(() => {
-                const locOpts = storingData.peralatan.includes('Access Control')
-                  ? getGeneralLokasiOptions('Access Control')
-                  : storingData.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray')
-                  ? getGeneralLokasiOptions('Mirroring X-Ray')
-                  : getStoringValidLocations(storingData.peralatan, storingLocAc, storingLocDefault);
+                const locOpts = mode === 'lokasi' ? Array.from(locationMap.keys()) : getGeneralLokasiOptions(mode);
 
                 if (locOpts.length === 0) {
                   return (
                     <div className="col-span-full p-3 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-sm text-center">
-                      {storingData.peralatan.length === 0 ? "Pilih peralatan terlebih dahulu untuk melihat daftar lokasi." : "Data lokasi belum tersedia di database."}
+                      Data lokasi belum tersedia di database.
                     </div>
                   );
                 }
@@ -397,72 +436,108 @@ export const TabStoring: React.FC = () => {
                 return locOpts.map((loc: string) => {
                   const isChecked = (storingData.acLokasi || []).includes(loc);
                   const nomorOpts = getAcNomorOptions(loc);
+                  const equipHere = mode === 'lokasi' ? (locationMap.get(loc) || []) : [];
 
                   return (
                     <div
                       key={loc}
-                      className={`flex items-center justify-between p-2 border rounded-lg transition-colors ${
-                        isChecked ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      className={`rounded-xl border transition-all ${
+                        isChecked ? 'bg-blue-50 border-blue-500 shadow-sm ring-1 ring-blue-200' : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'
                       }`}
                     >
-                      <label className="flex items-center cursor-pointer flex-1 min-w-0 mr-1.5">
+                      <label className="flex items-start gap-2.5 p-3 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {
-                            setStoringData(prev => {
-                              const exists = (prev.acLokasi || []).includes(loc);
-                              const newLocs = exists ? (prev.acLokasi || []).filter(l => l !== loc) : [...(prev.acLokasi || []), loc];
-                              const newNomor = { ...(prev.acNomor || {}) };
-                              if (!exists && nomorOpts.length > 0) {
-                                newNomor[loc] = nomorOpts[0];
-                              } else if (exists) {
-                                delete newNomor[loc];
-                              }
-                              const newShowSupervisor = checkNeedsStoringSupervisorAvsec(prev.peralatan, newLocs, newNomor);
-
-                              return { 
-                                ...prev, 
-                                acLokasi: newLocs, 
-                                acNomor: newNomor,
-                                supervisorAvsec: newShowSupervisor ? prev.supervisorAvsec : ''
-                              };
-                            });
-                          }}
-                          className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 flex-shrink-0"
+                          onChange={() => toggleLocation(loc)}
+                          className="mt-0.5 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 flex-shrink-0"
                         />
-                        <span className={`ml-2 text-xs truncate select-none ${isChecked ? 'font-semibold text-blue-700' : 'text-slate-700'}`} title={loc}>
-                          {loc}
+                        <span className="flex-1 min-w-0">
+                          <span className={`flex items-center gap-1 text-sm ${isChecked ? 'font-bold text-blue-800' : 'font-semibold text-slate-700'}`}>
+                            <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${isChecked ? 'text-blue-500' : 'text-slate-400'}`} />
+                            <span className="truncate" title={loc}>{loc}</span>
+                          </span>
+                          {equipHere.length > 0 && (
+                            <span className="mt-1.5 flex flex-wrap gap-1">
+                              {equipHere.map(eq => (
+                                <span key={eq} className={`px-1.5 py-0.5 rounded-md border text-[10px] font-bold leading-none ${equipChipStyle(eq)}`}>{eq}</span>
+                              ))}
+                            </span>
+                          )}
                         </span>
                       </label>
 
                       {isChecked && nomorOpts.length > 0 && (
-                        <select
-                          value={(storingData.acNomor || {})[loc] || nomorOpts[0]}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setStoringData(prev => {
-                              const newNomor = { ...(prev.acNomor || {}), [loc]: val };
-                              const newShowSup = checkNeedsStoringSupervisorAvsec(prev.peralatan, prev.acLokasi, newNomor);
-                              return {
-                                ...prev,
-                                acNomor: newNomor,
-                                supervisorAvsec: newShowSup ? prev.supervisorAvsec : ''
-                              };
-                            });
-                          }}
-                          className="text-xs py-1 px-1 bg-white border border-blue-300 rounded text-blue-800 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 flex-shrink-0 cursor-pointer shadow-sm"
-                        >
-                          {nomorOpts.map(num => (
-                            <option key={num} value={num}>{num}</option>
-                          ))}
-                        </select>
+                        <div className="flex items-center gap-2 px-3 pb-3 -mt-1">
+                          <span className="text-[11px] font-semibold text-slate-500">Nomor</span>
+                          <select
+                            value={(storingData.acNomor || {})[loc] || nomorOpts[0]}
+                            onChange={(e) => changeLocationNomor(loc, e.target.value)}
+                            className="flex-1 text-xs py-1 px-2 bg-white border border-blue-300 rounded-lg text-blue-800 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-sm"
+                          >
+                            {nomorOpts.map(num => (
+                              <option key={num} value={num}>{num}</option>
+                            ))}
+                          </select>
+                        </div>
                       )}
                     </div>
                   );
                 });
               })()}
             </div>
+          </div>
+
+          <div className="col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">Peralatan</label>
+              {mode === 'lokasi' && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                  <Sparkles className="w-3.5 h-3.5" /> Otomatis dari lokasi terpilih
+                </span>
+              )}
+            </div>
+            {mode === 'lokasi' ? (() => {
+              const available = deriveStoringEquipment(storingData.acLokasi, locationMap);
+              if (available.length === 0) {
+                return (
+                  <div className="p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 text-center">
+                    Pilih lokasi, peralatannya akan tercentang otomatis.
+                  </div>
+                );
+              }
+              return (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {available.map(equip => {
+                      const isOn = !excluded.includes(equip);
+                      return (
+                        <button
+                          key={equip}
+                          type="button"
+                          aria-pressed={isOn}
+                          onClick={() => toggleExcludedEquipment(equip)}
+                          className={`inline-flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full border text-sm font-semibold transition-all ${
+                            isOn ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm' : 'bg-white border-slate-300 text-slate-400 line-through'
+                          }`}
+                        >
+                          <span className={`w-4 h-4 rounded-full flex items-center justify-center ${isOn ? 'bg-emerald-500 text-white' : 'border border-slate-300'}`}>
+                            {isOn && <Check className="w-3 h-3" strokeWidth={3} />}
+                          </span>
+                          {equip}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">Ketuk peralatan untuk mengecualikannya dari laporan.</p>
+                </>
+              );
+            })() : (
+              <div className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full border bg-emerald-50 border-emerald-500 text-emerald-800 text-sm font-semibold">
+                <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center"><Check className="w-3 h-3" strokeWidth={3} /></span>
+                {mode}
+              </div>
+            )}
           </div>
 
           <div className="col-span-2">
