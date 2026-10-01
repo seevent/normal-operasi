@@ -32,6 +32,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { ShiftReportPrintDocument } from './shift-report/ShiftReportPrintDocument';
 import { ShiftReportCrudModal } from './shift-report/ShiftReportCrudModal';
 import { ServiceabilityDiagram } from './shift-report/ServiceabilityDiagram';
+import { normalizeLokasi } from '../../lib/utils/lokasiFormat';
 
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -237,7 +238,7 @@ export const TabShiftReport: React.FC = () => {
         Jenis: item.jenis,
         Waktu: item.waktu || '-',
         Peralatan: item.peralatan || '-',
-        Lokasi: item.lokasi || '-',
+        Lokasi: normalizeLokasi(item.lokasi) || '-',
         kategori_maintenance: item.kategori_maintenance,
         Uraian: item.uraian || '-',
         TindakLanjut: item.tindak_lanjut || '-',
@@ -355,7 +356,7 @@ export const TabShiftReport: React.FC = () => {
           Jenis: crudForm.jenis,
           Waktu: crudForm.waktu,
           Peralatan: crudForm.peralatan || '-',
-          Lokasi: crudForm.lokasi || '-',
+          Lokasi: normalizeLokasi(crudForm.lokasi) || '-',
           kategori_maintenance: newKategori,
           Uraian: crudForm.uraian || '-',
           TindakLanjut: crudForm.tindakLanjut || '-',
@@ -390,7 +391,7 @@ export const TabShiftReport: React.FC = () => {
           Jenis: crudForm.jenis,
           Waktu: crudForm.waktu,
           Peralatan: crudForm.peralatan || '-',
-          Lokasi: crudForm.lokasi || '-',
+          Lokasi: normalizeLokasi(crudForm.lokasi) || '-',
           kategori_maintenance: newKategori,
           Uraian: crudForm.uraian || '-',
           TindakLanjut: crudForm.tindakLanjut || '-',
@@ -607,18 +608,7 @@ export const TabShiftReport: React.FC = () => {
 
   const formatLokasiPrint = (lokasi?: string) => {
     if (!lokasi || lokasi === '-') return '-';
-    return lokasi.split(',').map(seg => {
-      const trimmed = seg.trim();
-      // Untuk lokasi yang mengandung kata "PSCP" (dan bukan HBSCP), pertahankan kata "No."
-      if (/\bPSCP\b/i.test(trimmed)) {
-        if (!/\bNo\.?\b/i.test(trimmed)) {
-          return trimmed.replace(/(PSCP\s+[A-Za-z0-9_-]+)\s+(\d+(?:\.\d+)?)/i, '$1 No.$2');
-        }
-        return trimmed;
-      }
-      // Untuk lokasi selain PSCP (misal HBSCP, Rampout, Aviobridge), hilangkan kata "No." tapi tetap sertakan angkanya
-      return trimmed.replace(/\s*\bNo\.?\s*(?=\d)/gi, ' ').trim();
-    }).join(', ');
+    return normalizeLokasi(lokasi) || '-';
   };
 
   // Menghitung range waktu kegiatan storing (dari waktu paling awal s.d. waktu paling akhir)

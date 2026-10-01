@@ -3,6 +3,7 @@
 // Modul murni tanpa akses store/jaringan supaya bisa diuji langsung.
 
 import { formatTanggalIndo } from './dateFormat.ts';
+import { normalizeLokasi } from './lokasiFormat.ts';
 
 export const generateWA_Kegiatan = (kegiatanData: any) => {
   const formattedDate = formatTanggalIndo(kegiatanData.tanggal);
@@ -13,5 +14,5 @@ export const generateWA_Kegiatan = (kegiatanData: any) => {
   const peralatan = String(kegiatanData.peralatan ?? '').trim();
   const peralatanLine = peralatan ? `Peralatan : ${peralatan}\n` : '';
 
-  return `*KEGIATAN SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${waktuText}\n${peralatanLine}Lokasi : ${kegiatanData.lokasi}\nKegiatan : ${kegiatanData.kegiatan}`;
+  return `*KEGIATAN SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${waktuText}\n${peralatanLine}Lokasi : ${normalizeLokasi(kegiatanData.lokasi)}\nKegiatan : ${kegiatanData.kegiatan}`;
 };

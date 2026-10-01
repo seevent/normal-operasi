@@ -2,6 +2,8 @@
 // Pesan WhatsApp laporan Corrective Maintenance (perbaikan) dan verifikasi ETD.
 // Modul murni tanpa akses store/jaringan supaya bisa diuji langsung.
 
+import { formatLokasiRows } from './lokasiFormat.ts';
+
 export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
   const dateParts = formData.tanggal ? formData.tanggal.split('-') : ['','',''];
@@ -10,10 +12,7 @@ export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) =>
     ? formData.lokasiList.filter((l: any) => l.lokasi1)
     : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
 
-  const lokasiFinal = locList.map((loc: any) => {
-    if (loc.isManual || (loc.lokasi2 === '-' && !loc.lokasi2)) return loc.lokasi1;
-    return loc.lokasi1 + (loc.lokasi2 && loc.lokasi2 !== '-' ? ((formData.peralatan === 'Access Control' || loc.lokasi1 === 'HBSCP') ? ` ${loc.lokasi2}` : ` No.${loc.lokasi2}`) : '');
-  }).join(', ');
+  const lokasiFinal = formatLokasiRows(locList);
   const judulLaporan = isVerifikasiETD ? '*LAPORAN VERIFIKASI*' : '*LAPORAN CORRECTIVE MAINTENANCE*';
 
   const statusIcon = (formData.status === 'Pekerjaan Selesai' || formData.status === 'Normal Operasi') ? '✅' : '⚠️';

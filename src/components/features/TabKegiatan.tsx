@@ -9,6 +9,7 @@ import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 import { useTipePeralatanOptions } from '../../lib/hooks/useTipePeralatanOptions';
+import { normalizeLokasi } from '../../lib/utils/lokasiFormat';
 
 export const TabKegiatan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -222,7 +223,7 @@ export const TabKegiatan: React.FC = () => {
           shift: opShift,
           jenis: 'Kegiatan',
           waktu: waktuRange,
-          lokasi: kegiatanData.lokasi,
+          lokasi: normalizeLokasi(kegiatanData.lokasi),
           peralatan: kegiatanData.peralatan.trim() || 'All Faskampen',
           kategori_maintenance: 'KEGIATAN',
           uraian: `Kegiatan : ${kegiatanData.kegiatan}`,

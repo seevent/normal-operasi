@@ -62,7 +62,7 @@ Kegiatan :
 
 1. Storing Peralatan : Semua Peralatan Faskampen (X-Ray, WTMD, HHMD, BodyScanner, ETD, Dan Access Control) Dalam Keadaan Normal Operasi
 
-2. Perbaikan ETD Leidos QS-B220, Lokasi PSCP E No.2, Etd membutuhkan kalibrasi negatif, Dilakukan Melakukan pemeriksaan pc cctv D & E, Reconnect pada aplikasi fvms, Test Fungsi, Normal Operasi
+2. Perbaikan ETD Leidos QS-B220, Lokasi PSCP E 2, Etd membutuhkan kalibrasi negatif, Dilakukan Melakukan pemeriksaan pc cctv D & E, Reconnect pada aplikasi fvms, Test Fungsi, Normal Operasi
 
 3. Perbaikan Acces Control, Lokasi Ruang Monitoring E1 PC CCTV D dan E, Terdapat disconect pada tampilan cctv D & E, Dilakukan pemeriksaan pc cctv D & E, Reconnect pada aplikasi fvms, Test Fungsi, Normal Operasi
 
@@ -158,9 +158,9 @@ test('Perbaikan: tanda • pada permasalahan tidak ikut ke pesan, satu atau bebe
     },
   ], getDefaultUraian);
 
-  assert.ok(msg.includes('1. Perbaikan ETD Leidos B220, Lokasi PSCP E No.2, Muncul Notif Calibration Required, Dilakukan Cleaning, Dilakukan Calibrasi Negative, Blank Sample Test, Normal Operasi, Pekerjaan Selesai'));
-  assert.ok(msg.includes('2. Perbaikan X-Ray Rapiscan 620DV, Lokasi PSCP F No.3, xray off karena tidak ada tegangan, cek power, tidak ada tegangan, koordinasi dengan teknik listrik, Pekerjaan Selesai'));
-  assert.ok(msg.includes('3. Perbaikan WTMD CEIA, Lokasi PSCP D No.1, alarm terus menyala, sensitivitas tidak stabil, reset, Normal Operasi'));
+  assert.ok(msg.includes('1. Perbaikan ETD Leidos B220, Lokasi PSCP E 2, Muncul Notif Calibration Required, Dilakukan Cleaning, Dilakukan Calibrasi Negative, Blank Sample Test, Normal Operasi, Pekerjaan Selesai'));
+  assert.ok(msg.includes('2. Perbaikan X-Ray Rapiscan 620DV, Lokasi PSCP F 3, xray off karena tidak ada tegangan, cek power, tidak ada tegangan, koordinasi dengan teknik listrik, Pekerjaan Selesai'));
+  assert.ok(msg.includes('3. Perbaikan WTMD CEIA, Lokasi PSCP D 1, alarm terus menyala, sensitivitas tidak stabil, reset, Normal Operasi'));
   assert.ok(!msg.includes('•'));
 });
 

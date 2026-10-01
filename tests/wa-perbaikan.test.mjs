@@ -22,7 +22,7 @@ test('Laporan Corrective Maintenance WA cocok dengan contoh format', () => {
     '*LAPORAN CORRECTIVE MAINTENANCE*',
     '',
     'Peralatan : X-Ray Rapiscan 620DV',
-    'Lokasi : PSCP F No.3',
+    'Lokasi : PSCP F 3',
     'Sumber laporan : Avsec',
     'Indikasi awal : Xray off',
     '',
@@ -47,7 +47,7 @@ test('Laporan Corrective Maintenance WA cocok dengan contoh format', () => {
 
 test('Laporan verifikasi ETD tanpa Indikasi awal dan tanpa baris kosong berlebih', () => {
   const msg = generateWA_Perbaikan({ ...formData, peralatan: 'ETD Leidos B220' }, true);
-  assert.ok(msg.startsWith('*LAPORAN VERIFIKASI*\n\nPeralatan : ETD Leidos B220\nLokasi : PSCP F No.3\nSumber laporan : Avsec\n\n🗓️'));
+  assert.ok(msg.startsWith('*LAPORAN VERIFIKASI*\n\nPeralatan : ETD Leidos B220\nLokasi : PSCP F 3\nSumber laporan : Avsec\n\n🗓️'));
   assert.ok(!msg.includes('Indikasi awal'));
 });
 
