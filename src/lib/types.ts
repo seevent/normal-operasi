@@ -17,7 +17,7 @@ export interface Personel {
 export interface AttendanceRow extends Personel {
   phone: string;
   jadwal_id: string | number | null;
-  personel_id?: string | null;
+  personel_id?: string | number | null;
   status: string;
 }
 
@@ -239,29 +239,33 @@ export interface KalibrasiEntry extends KalibrasiParams {
 
 /** Baris kegiatan pada tab Report (hasil pemetaan `laporan_operasional`). */
 export interface ShiftReportRow {
-  rowIndex?: string | number;
+  rowIndex: string | number;
   id?: string;
   shift?: string;
-  Jenis?: string;
-  Waktu?: string;
-  Peralatan?: string;
-  Lokasi?: string;
+  Jenis: string;
+  Waktu: string;
+  Peralatan: string;
+  Lokasi: string;
   kategori_maintenance?: string;
-  Uraian?: string;
-  TindakLanjut?: string;
-  Status?: string;
-  imageUrl?: string | null;
-  fotoUrls?: string[];
+  Uraian: string;
+  TindakLanjut: string;
+  Status: string;
+  imageUrl: string | null;
+  fotoUrls: string[];
 }
 
 /** Baris `jadwal_shift` beserta personelnya, dipakai untuk daftar personel di pesan laporan. */
 export interface JadwalShiftRow {
+  id?: string;
   shift?: string;
   status_kehadiran?: string | null;
   personel?: {
+    id?: string;
     nama?: string;
+    no_hp?: string | null;
     jabatan?: string | null;
     urutan?: number | null;
+    unit_kerja?: { nama?: string } | null;
   } | null;
 }
 
@@ -286,3 +290,14 @@ export type Photo = {
   originalPreview?: string;
   annotation?: PhotoAnnotation;
 };
+
+/** Isian modal tambah/ubah kegiatan pada tab Report. */
+export interface ShiftReportCrudForm {
+  jenis: 'Kegiatan' | 'Perbaikan' | 'Storing' | 'Kalibrasi';
+  waktu: string;
+  peralatan: string;
+  lokasi: string;
+  uraian: string;
+  tindakLanjut: string;
+  status: string;
+}

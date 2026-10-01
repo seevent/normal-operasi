@@ -30,6 +30,36 @@ export interface ChecklistBlock {
   terminals?: ChecklistSubGroup[];
 }
 
+/** Bentuk master checklist untuk tampilan/pesan: semua teks pasti ada (kosong bila belum diisi). */
+export interface MasterCategory { title: string; summaryKey: string; items: string[] }
+export interface MasterSubGroup { title: string; categories: MasterCategory[] }
+export interface MasterBlock {
+  type: ChecklistBlockType;
+  title: string;
+  summary: string;
+  categories: MasterCategory[];
+  locations: MasterSubGroup[];
+  terminals: MasterSubGroup[];
+}
+
+const toMasterCategory = (c: ChecklistCategory): MasterCategory => ({
+  title: c.title ?? '', summaryKey: c.summaryKey ?? '', items: c.items ?? [],
+});
+const toMasterSubGroup = (g: ChecklistSubGroup): MasterSubGroup => ({
+  title: g.title ?? '', categories: (g.categories ?? []).map(toMasterCategory),
+});
+
+/** Normalisasi master checklist dari penyimpanan agar komponen tidak perlu memeriksa field kosong satu per satu. */
+export const toMasterBlocks = (blocks: ChecklistBlock[] | null | undefined): MasterBlock[] =>
+  (blocks ?? []).map((b) => ({
+    type: b.type,
+    title: b.title ?? '',
+    summary: b.summary ?? '',
+    categories: (b.categories ?? []).map(toMasterCategory),
+    locations: (b.locations ?? []).map(toMasterSubGroup),
+    terminals: (b.terminals ?? []).map(toMasterSubGroup),
+  }));
+
 export interface ChecklistStats {
   subGroups: number;
   categories: number;

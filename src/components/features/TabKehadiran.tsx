@@ -3,6 +3,7 @@ import { Users, User, Calendar, ClipboardList, Plus, X, Share2, CheckCircle, Fil
 import { useAppStore, sayPet } from '../../store/useAppStore';
 import { getShiftCheer } from '../../lib/data/petMessages';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
+import type { AttendanceRow, JadwalShiftRow } from '../../lib/types';
 import { generateWA_Kehadiran } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
@@ -20,7 +21,7 @@ export const TabKehadiran: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const [loadedSchedules, setLoadedSchedules] = useState<{ id: number; personel_id: number }[]>([]);
+  const [loadedSchedules, setLoadedSchedules] = useState<{ id: string | number; personel_id: string | number }[]>([]);
 
   const [attendanceData, setAttendanceData] = useState(() => {
     const now = new Date();
@@ -43,8 +44,8 @@ export const TabKehadiran: React.FC = () => {
     return {
       tanggal: localDate,
       shift: shiftValue,
-      apiList: [] as any[],
-      omList: [] as any[],
+      apiList: [] as AttendanceRow[],
+      omList: [] as AttendanceRow[],
       tlpRuangan: '- 021 550 5910',
       rencanaKegiatan: kegiatan
     };
@@ -57,7 +58,7 @@ export const TabKehadiran: React.FC = () => {
     try {
       const targetShiftCode = attendanceData.shift.includes('Pagi') ? 'PS' : 'M';
 
-      let rawJadwalData: any[] = [];
+      let rawJadwalData: JadwalShiftRow[] = [];
       const resMain = await supabase
         .from('jadwal_shift')
         .select(`
@@ -69,7 +70,7 @@ export const TabKehadiran: React.FC = () => {
         .order('id', { ascending: true });
 
       if (!resMain.error && resMain.data) {
-        rawJadwalData = resMain.data;
+        rawJadwalData = resMain.data as unknown as JadwalShiftRow[];
       } else {
         const fallbackRes = await supabase
           .from('jadwal_shift')
@@ -82,7 +83,7 @@ export const TabKehadiran: React.FC = () => {
           .order('id', { ascending: true });
 
         if (!fallbackRes.error && fallbackRes.data) {
-          rawJadwalData = fallbackRes.data;
+          rawJadwalData = fallbackRes.data as unknown as JadwalShiftRow[];
         } else {
           const fallbackRes2 = await supabase
             .from('jadwal_shift')
@@ -93,11 +94,11 @@ export const TabKehadiran: React.FC = () => {
             .eq('tanggal', attendanceData.tanggal)
             .neq('shift', 'D')
             .order('id', { ascending: true });
-          if (fallbackRes2.data) rawJadwalData = fallbackRes2.data;
+          if (fallbackRes2.data) rawJadwalData = fallbackRes2.data as unknown as JadwalShiftRow[];
         }
       }
 
-      const filteredData = (rawJadwalData || []).filter((d: any) => {
+      const filteredData = (rawJadwalData || []).filter((d) => {
         const s = (d.shift || '').toUpperCase();
         if (targetShiftCode === 'PS') {
           return s === 'PS';
@@ -109,14 +110,14 @@ export const TabKehadiran: React.FC = () => {
       // Baca personel dari store saat dipanggil agar perubahan master personel tidak memicu fetch ulang.
       const { dataApiT2: storeApi, dataOmIasT2: storeOm } = useMasterDataStore.getState();
 
-      const apiRows = filteredData
-        .filter((d: any) => d.personel?.unit_kerja?.nama === 'API T2')
-        .map((d: any, idx: number) => {
-          const storeP = storeApi.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
+      const apiRows: AttendanceRow[] = filteredData
+        .filter((d) => d.personel?.unit_kerja?.nama === 'API T2')
+        .map((d, idx: number) => {
+          const storeP = storeApi.find((p) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
           const orderVal = (d.personel?.urutan !== undefined && d.personel?.urutan !== null) ? Number(d.personel.urutan) : (storeP?.dbOrder !== undefined ? Number(storeP.dbOrder) : idx);
           return {
             id: d.id,
-            jadwal_id: d.id,
+            jadwal_id: d.id ?? null,
             personel_id: d.personel?.id,
             name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
             phone: d.personel?.no_hp || '',
@@ -126,14 +127,14 @@ export const TabKehadiran: React.FC = () => {
           };
         });
 
-      const omRows = filteredData
-        .filter((d: any) => d.personel?.unit_kerja?.nama === 'OM/IAS T2')
-        .map((d: any, idx: number) => {
-          const storeP = storeOm.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
+      const omRows: AttendanceRow[] = filteredData
+        .filter((d) => d.personel?.unit_kerja?.nama === 'OM/IAS T2')
+        .map((d, idx: number) => {
+          const storeP = storeOm.find((p) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
           const orderVal = (d.personel?.urutan !== undefined && d.personel?.urutan !== null) ? Number(d.personel.urutan) : (storeP?.dbOrder !== undefined ? Number(storeP.dbOrder) : idx);
           return {
             id: d.id,
-            jadwal_id: d.id,
+            jadwal_id: d.id ?? null,
             personel_id: d.personel?.id,
             name: d.personel?.nama ? toTitleCase(d.personel.nama) : '',
             phone: d.personel?.no_hp || '',
@@ -148,9 +149,7 @@ export const TabKehadiran: React.FC = () => {
 
       const allLoaded = [...apiRows, ...omRows];
       setLoadedSchedules(
-        allLoaded
-          .filter(r => r.jadwal_id && r.personel_id)
-          .map(r => ({ id: r.jadwal_id, personel_id: r.personel_id }))
+        allLoaded.flatMap(r => (r.jadwal_id && r.personel_id ? [{ id: r.jadwal_id, personel_id: r.personel_id }] : []))
       );
 
       // Fetch Jadwal PM untuk tanggal & shift terpilih
@@ -199,9 +198,9 @@ export const TabKehadiran: React.FC = () => {
     
     if (field === 'name') {
       const sourceData = listType === 'apiList' ? dataApiT2 : dataOmIasT2;
-      const person = sourceData.find((p: any) => p.name === value);
+      const person = sourceData.find((p) => p.name === value);
       if (person) {
-        newList[index].phone = person.phone;
+        newList[index].phone = person.phone ?? '';
         newList[index].personel_id = person.id;
         newList[index].jabatan = person.jabatan || '';
         newList[index].dbOrder = (person.dbOrder !== undefined && person.dbOrder !== null) ? Number(person.dbOrder) : 999;

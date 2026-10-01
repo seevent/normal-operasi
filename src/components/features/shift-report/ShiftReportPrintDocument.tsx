@@ -1,6 +1,7 @@
 // src/components/features/shift-report/ShiftReportPrintDocument.tsx
 import React, { forwardRef } from 'react';
 import { ChecklistSummaryItem } from '../../../lib/services/operationalReportService';
+import type { JadwalShiftRow, ShiftReportRow } from '../../../lib/types';
 // `?inline` menanam logo sebagai data URI. Ekspor PDF mengunduh ulang setiap
 // <img> bersumber URL dan menyembunyikannya bila gagal dalam 2 detik, sehingga
 // logo bisa hilang diam-diam dari PDF di jaringan lambat. Sumber data: dilewati.
@@ -22,16 +23,16 @@ const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 
 export interface ShiftReportPrintDocumentProps {
   date: string;
   shift: 'PS' | 'M' | 'ALL';
-  apiPersonil: any[];
-  iasPersonil: any[];
-  printReports: any[];
+  apiPersonil: JadwalShiftRow[];
+  iasPersonil: JadwalShiftRow[];
+  printReports: ShiftReportRow[];
   checklistSummary: ChecklistSummaryItem[];
   formatLokasiPrint: (lokasi?: string) => string;
-  formatHasil: (r: any) => string;
-  formatUraian: (r: any) => React.ReactNode;
-  isCorrective: (r: any) => boolean;
-  isPreventive: (r: any) => boolean;
-  isStoring: (r: any) => boolean;
+  formatHasil: (r: ShiftReportRow) => string;
+  formatUraian: (r: ShiftReportRow) => React.ReactNode;
+  isCorrective: (r: ShiftReportRow) => boolean;
+  isPreventive: (r: ShiftReportRow) => boolean;
+  isStoring: (r: ShiftReportRow) => boolean;
   getTime: (waktuStr: string) => string;
   getDayName: (d: string) => string;
   formatDateIndo: (d: string) => string;

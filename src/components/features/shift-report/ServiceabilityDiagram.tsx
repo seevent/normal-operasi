@@ -1,13 +1,11 @@
 import React from 'react';
 import { BarChart2, CheckCircle, Loader2, Save } from 'lucide-react';
 
-export interface ChecklistSummaryItem {
-  [key: string]: any;
-}
+import type { ChecklistSummaryItem } from '../../../lib/services/operationalReportService';
 
 interface ServiceabilityDiagramProps {
   checklistSummary: ChecklistSummaryItem[];
-  handleChecklistSummaryChange: (...args: any[]) => void;
+  handleChecklistSummaryChange: (no: number, field: 'total' | 'rusak' | 'operasi', val: number) => void;
   handleManualSaveSummary: () => void;
   saveStatus: string;
 }

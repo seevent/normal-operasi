@@ -3,6 +3,22 @@ import { CheckSquare, Save, Share2, RefreshCw, Square, Check, Lock, Loader2, Ale
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { supabase } from '../../lib/supabaseClient';
 import { TIP_MONTHS } from '../../lib/data/constants';
+import type { TipColumnItem } from '../../lib/types';
+import { toMasterBlocks } from '../../lib/utils/checklistEditor';
+
+/** Status per unit X-Ray pada tracker TIP, dengan kunci `<idKolom>-<nomorUnit>`. */
+type TipState = Record<string, { checked?: boolean; locked?: boolean }>;
+
+/** Subset pustaka html-to-image yang dimuat dari CDN. */
+interface HtmlToImage {
+  toBlob: (node: HTMLElement, options?: { backgroundColor?: string; pixelRatio?: number }) => Promise<Blob | null>;
+}
+
+declare global {
+  interface Window {
+    htmlToImage?: HtmlToImage;
+  }
+}
 
 
 const getDefaultTipPeriod = () => {
@@ -26,14 +42,14 @@ export const TabTip: React.FC = () => {
   const { checklistDataMaster } = useMasterDataStore();
 
   const tipCategories = React.useMemo(() => {
-    const cats: any[] = [];
-    (checklistDataMaster || []).forEach(block => {
+    const cats: TipColumnItem[] = [];
+    toMasterBlocks(checklistDataMaster).forEach(block => {
       if (block.type === 'location') {
-        const xrayCat = block.categories?.find((c: any) => c.summaryKey && c.summaryKey.toUpperCase().includes('X-RAY'));
+        const xrayCat = block.categories?.find((c) => c.summaryKey && c.summaryKey.toUpperCase().includes('X-RAY'));
         if (xrayCat && xrayCat.items && xrayCat.items.length > 0) {
           cats.push({
-            id: (block.title ?? '').toLowerCase().replace(/\s+/g, '_'),
-            name: block.title ?? '',
+            id: block.title.toLowerCase().replace(/\s+/g, '_'),
+            name: block.title,
             items: xrayCat.items.map((item: string) => {
               const match = item.match(/\(([^)]+)\)/);
               return match ? match[1] : 'No1';
@@ -41,8 +57,8 @@ export const TabTip: React.FC = () => {
           });
         }
       } else if (block.type === 'group') {
-        (block.locations || []).forEach((loc: any) => {
-          const xrayCat = loc.categories?.find((c: any) => c.summaryKey && c.summaryKey.toUpperCase().includes('X-RAY'));
+        (block.locations || []).forEach((loc) => {
+          const xrayCat = loc.categories?.find((c) => c.summaryKey && c.summaryKey.toUpperCase().includes('X-RAY'));
           if (xrayCat && xrayCat.items && xrayCat.items.length > 0) {
             cats.push({
               id: loc.title.toLowerCase().replace(/\s+/g, '_'),
@@ -65,7 +81,7 @@ export const TabTip: React.FC = () => {
 
   const [tipMonth, setTipMonth] = useState(() => getDefaultTipPeriod().month);
   const [tipYear, setTipYear] = useState(() => getDefaultTipPeriod().year);
-  const [tipDataState, setTipDataState] = useState<any>({});
+  const [tipDataState, setTipDataState] = useState<TipState>({});
   const [tipLastSaved, setTipLastSaved] = useState<string | null>(null);
   const [tipUnsavedChanges, setTipUnsavedChanges] = useState(false);
   const [isGeneratingTipImage, setIsGeneratingTipImage] = useState(false);
@@ -110,7 +126,7 @@ export const TabTip: React.FC = () => {
   }, []);
 
   const getTipCheckedCount = () => {
-    return Object.values(tipDataState).filter((d: any) => d.checked).length;
+    return Object.values(tipDataState).filter((d) => d.checked).length;
   };
 
   const handleTipToggle = (catId: string, item: string) => {
@@ -118,7 +134,7 @@ export const TabTip: React.FC = () => {
     const current = tipDataState[key] || { checked: false, locked: false };
     if (current.locked) return;
     
-    setTipDataState((prev: any) => ({
+    setTipDataState((prev) => ({
       ...prev,
       [key]: { ...current, checked: !current.checked }
     }));
@@ -202,11 +218,11 @@ export const TabTip: React.FC = () => {
   };
 
   const loadHtmlToImage = () => {
-    return new Promise<any>((resolve, reject) => {
-      if ((window as any).htmlToImage) return resolve((window as any).htmlToImage);
+    return new Promise<HtmlToImage>((resolve, reject) => {
+      if (window.htmlToImage) return resolve(window.htmlToImage);
       const script = document.createElement('script');
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js';
-      script.onload = () => resolve((window as any).htmlToImage);
+      script.onload = () => resolve(window.htmlToImage as HtmlToImage);
       script.onerror = () => reject(new Error('Gagal memuat script gambar'));
       document.head.appendChild(script);
     });
@@ -294,18 +310,18 @@ export const TabTip: React.FC = () => {
     }
   };
 
-  const renderTipTable = (columnData: any[]) => (
+  const renderTipTable = (columnData: TipColumnItem[]) => (
     <table className="w-full border-collapse border-[3px] border-slate-800 bg-white shadow-sm">
       <tbody>
         {columnData.map((cat) => {
-          return cat.items.map((item: string, itemIdx: number) => {
+          return cat.items.map((item, itemIdx) => {
             const key = `${cat.id}-${item}`;
             const data = tipDataState[key] || { checked: false, locked: false };
             const isLocked = data.locked;
             const isChecked = data.checked;
             
-            const catItems = cat.items.map((i: string) => tipDataState[`${cat.id}-${i}`] || { checked: false, locked: false });
-            const isAllCatChecked = catItems.every((i: any) => i.checked);
+            const catItems = cat.items.map((i) => tipDataState[`${cat.id}-${i}`] || { checked: false, locked: false });
+            const isAllCatChecked = catItems.every((i) => i.checked);
             
             return (
               <tr key={key}>

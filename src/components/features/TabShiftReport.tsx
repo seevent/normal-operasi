@@ -26,6 +26,7 @@ import {
   sortPersonelRows
 } from '../../lib/utils/shiftReportMessage';
 import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
+import type { JadwalShiftRow, ShiftReportCrudForm, ShiftReportRow } from '../../lib/types';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { useAppStore } from '../../store/useAppStore';
 import { ShiftReportPrintDocument } from './shift-report/ShiftReportPrintDocument';
@@ -48,7 +49,7 @@ export const TabShiftReport: React.FC = () => {
 
   const [sharingWa, setSharingWa] = useState(false);
   const [fetchingLive, setFetchingLive] = useState(false);
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<ShiftReportRow[]>([]);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'info' | 'success' | 'error' } | null>(null);
 
   // Kesiapan Fasilitas (Checklist Summary) State
@@ -63,7 +64,7 @@ export const TabShiftReport: React.FC = () => {
   ]);
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const debounceSaveTimer = useRef<any>(null);
+  const debounceSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleChecklistSummaryChange = (no: number, field: 'total' | 'rusak' | 'operasi', val: number) => {
     const cleanVal = Math.max(0, isNaN(val) ? 0 : val);
@@ -134,12 +135,12 @@ export const TabShiftReport: React.FC = () => {
   // CRUD State
   const [isCrudModalOpen, setIsCrudModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-  const [editingRowIndex, setEditingRowIndex] = useState<any>(null);
+  const [editingRowIndex, setEditingRowIndex] = useState<ShiftReportRow['rowIndex'] | null>(null);
   const [crudSubmitting, setCrudSubmitting] = useState(false);
-  const [deletingRowIndex, setDeletingRowIndex] = useState<any>(null);
+  const [deletingRowIndex, setDeletingRowIndex] = useState<ShiftReportRow['rowIndex'] | null>(null);
 
-  const [crudForm, setCrudForm] = useState({
-    jenis: 'Kegiatan' as 'Perbaikan' | 'Kegiatan' | 'Storing' | 'Kalibrasi',
+  const [crudForm, setCrudForm] = useState<ShiftReportCrudForm>({
+    jenis: 'Kegiatan',
     waktu: '',
     peralatan: '',
     lokasi: '',
@@ -150,8 +151,8 @@ export const TabShiftReport: React.FC = () => {
   const [crudPhotoFile, setCrudPhotoFile] = useState<File | null>(null);
   const [crudPhotoPreview, setCrudPhotoPreview] = useState<string | null>(null);
 
-  const [apiPersonil, setApiPersonil] = useState<any[]>([]);
-  const [iasPersonil, setIasPersonil] = useState<any[]>([]);
+  const [apiPersonil, setApiPersonil] = useState<JadwalShiftRow[]>([]);
+  const [iasPersonil, setIasPersonil] = useState<JadwalShiftRow[]>([]);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   // Load Personil On Duty & Shift Data
@@ -165,7 +166,7 @@ export const TabShiftReport: React.FC = () => {
           'id, nama, no_hp, jabatan, unit_kerja(nama)',
           'id, nama, no_hp, unit_kerja(nama)',
         ];
-        let data: any[] | null = null;
+        let data: JadwalShiftRow[] | null = null;
         let error: unknown = null;
         for (const columns of personelColumns) {
           let query = supabase
@@ -176,7 +177,7 @@ export const TabShiftReport: React.FC = () => {
             query = query.eq('shift', shift);
           }
           const res = await query;
-          data = res.data as any[] | null;
+          data = res.data as unknown as JadwalShiftRow[] | null;
           error = res.error;
           if (!error && data) break;
         }
@@ -184,11 +185,11 @@ export const TabShiftReport: React.FC = () => {
         if (!error && data) {
           const hadir = data.filter(d => d.status_kehadiran !== 'Off' && d.status_kehadiran !== 'Cuti' && d.status_kehadiran !== 'Sakit' && d.status_kehadiran !== 'Izin');
           
-          const apiList = hadir.filter((d: any) => {
+          const apiList = hadir.filter((d) => {
              const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
              return u === 'API T2' || u.includes('API') || u.includes('ANGKASA PURA');
           });
-          const iasList = hadir.filter((d: any) => {
+          const iasList = hadir.filter((d) => {
              const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
              return u === 'OM/IAS T2' || u.includes('IAS') || u.includes('INJOURNEY');
           });
@@ -278,13 +279,13 @@ export const TabShiftReport: React.FC = () => {
     setIsCrudModalOpen(true);
   };
 
-  const openEditModal = (item: any) => {
+  const openEditModal = (item: ShiftReportRow) => {
     setModalMode('edit');
     setEditingRowIndex(item.rowIndex);
     setCrudPhotoFile(null);
     setCrudPhotoPreview(item.imageUrl || null);
     setCrudForm({
-      jenis: (item.Jenis as any) || 'Kegiatan',
+      jenis: (item.Jenis as ShiftReportCrudForm['jenis']) || 'Kegiatan',
       waktu: item.Waktu || '',
       peralatan: item.Peralatan || '',
       lokasi: item.Lokasi || '',
@@ -295,7 +296,7 @@ export const TabShiftReport: React.FC = () => {
     setIsCrudModalOpen(true);
   };
 
-  const handleDeleteItem = async (rowIndex: any, namaAlat: string) => {
+  const handleDeleteItem = async (rowIndex: ShiftReportRow['rowIndex'], namaAlat: string) => {
     if (!window.confirm(`Hapus laporan kegiatan "${namaAlat}" ini?`)) return;
     setDeletingRowIndex(rowIndex);
     
@@ -531,7 +532,7 @@ export const TabShiftReport: React.FC = () => {
     return <span className="ml-1 whitespace-pre-line">{text}</span>;
   };
 
-  const formatUraian = (r: any) => {
+  const formatUraian = (r: ShiftReportRow) => {
     if (isCorrective(r)) {
       return (
         <div className="text-left text-[9px] leading-tight">
@@ -596,7 +597,7 @@ export const TabShiftReport: React.FC = () => {
     return waktuStr;
   };
 
-  const formatHasil = (r: any) => {
+  const formatHasil = (r: ShiftReportRow) => {
     const s = (r.Status || '').toLowerCase();
     if (isCorrective(r)) {
       return (s.includes('selesai') || s.includes('normal')) ? 'Normal' : 'On Progress';
@@ -610,7 +611,7 @@ export const TabShiftReport: React.FC = () => {
   };
 
   // Menghitung range waktu kegiatan storing (dari waktu paling awal s.d. waktu paling akhir)
-  const getCombinedTimeRange = (items: any[], currentShift?: string) => {
+  const getCombinedTimeRange = (items: ShiftReportRow[], currentShift?: string) => {
     const times: { raw: string; minutes: number }[] = [];
     
     items.forEach(item => {
@@ -698,7 +699,7 @@ export const TabShiftReport: React.FC = () => {
       fotoUrls: allPhotos
     } : null;
 
-    const result: any[] = [];
+    const result: ShiftReportRow[] = [];
     reports.forEach((item, idx) => {
       if (isStoring(item)) {
         if (idx === firstStoringIndex && mergedStoringReport) {
@@ -931,7 +932,7 @@ export const TabShiftReport: React.FC = () => {
                 <div className="shrink-0 flex flex-col items-center">
                   {item.imageUrl ? (
                     <div 
-                      onClick={() => setSelectedPhoto({ url: item.imageUrl, title: `${item.Peralatan || item.Jenis} - ${item.Lokasi}` })}
+                      onClick={() => setSelectedPhoto({ url: item.imageUrl ?? '', title: `${item.Peralatan || item.Jenis} - ${item.Lokasi}` })}
                       className="relative cursor-pointer group/img"
                       title="Klik untuk melihat foto lebih besar"
                     >
@@ -967,7 +968,7 @@ export const TabShiftReport: React.FC = () => {
                   )}
                   {item.imageUrl && (
                     <button
-                      onClick={() => setSelectedPhoto({ url: item.imageUrl, title: `${item.Peralatan || item.Jenis} - ${item.Lokasi}` })}
+                      onClick={() => setSelectedPhoto({ url: item.imageUrl ?? '', title: `${item.Peralatan || item.Jenis} - ${item.Lokasi}` })}
                       className="text-[10px] font-bold text-blue-600 hover:text-blue-800 mt-1 cursor-pointer flex items-center gap-0.5"
                     >
                       <span>Lihat Foto</span>

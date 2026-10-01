@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { toMasterBlocks, type MasterBlock, type MasterSubGroup } from '../../lib/utils/checklistEditor';
 import { Clock, Calendar, CheckSquare, MapPin, Check, X, ChevronUp, ChevronDown, Cpu, Share2, CheckCircle, FileText, User, RefreshCw, Loader2, Cloud } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
@@ -11,9 +13,23 @@ import { validateChecklist } from '../../lib/utils/formValidation';
 import { reportMissingFields } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
+/** Payload perubahan realtime `master_configs` yang dipakai tab ini (nilai disinkronkan antar-perangkat). */
+interface ConfigChangePayload {
+  new?: {
+    value?: {
+      senderId?: string;
+      toggles?: Record<string, boolean>;
+      supervisorMap?: Record<string, string>;
+      earliestWaktuMulai?: string;
+      latestWaktuSelesai?: string;
+    };
+  };
+}
+
 export const TabChecklist: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { checklistDataMaster } = useMasterDataStore();
+  const masterBlocks = React.useMemo(() => toMasterBlocks(checklistDataMaster), [checklistDataMaster]);
 
   const [checklistData, setChecklistData] = useState({
     tanggal: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
@@ -22,7 +38,7 @@ export const TabChecklist: React.FC = () => {
     supervisorAvsec: {} as Record<string, string>,
   });
 
-  const shiftChannelRef = useRef<any>(null);
+  const shiftChannelRef = useRef<RealtimeChannel | null>(null);
 
   const handleSupervisorChange = (locTitle: string, value: string) => {
     setChecklistData(prev => {
@@ -43,7 +59,7 @@ export const TabChecklist: React.FC = () => {
   const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
   const [syncStatus, setSyncStatus] = useState<'loading' | 'synced' | 'saving' | 'error'>('loading');
   const clientIdRef = useRef<string>(`client_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`);
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const loadShiftData = useCallback(async () => {
     const data = await fetchChecklistShiftData();
@@ -90,7 +106,7 @@ export const TabChecklist: React.FC = () => {
         schema: 'public', 
         table: 'master_configs', 
         filter: 'key=eq.checklist_active_toggles' 
-      }, (payload: any) => {
+      }, (payload: ConfigChangePayload) => {
         const newValue = payload?.new?.value;
         if (newValue && newValue.senderId !== clientIdRef.current && newValue.toggles) {
           setToggles(newValue.toggles);
@@ -118,7 +134,7 @@ export const TabChecklist: React.FC = () => {
         schema: 'public',
         table: 'master_configs',
         filter: 'key=eq.checklist_shift_data'
-      }, (payload: any) => {
+      }, (payload: ConfigChangePayload) => {
         const newValue = payload?.new?.value;
         if (newValue && newValue.senderId !== clientIdRef.current) {
           setChecklistData(prev => ({
@@ -156,7 +172,7 @@ export const TabChecklist: React.FC = () => {
         type: 'broadcast',
         event: 'toggles_update',
         payload
-      }).catch((err: any) => console.error('Broadcast error:', err));
+      }).catch((err: unknown) => console.error('Broadcast error:', err));
     }
 
     try {
@@ -230,19 +246,19 @@ export const TabChecklist: React.FC = () => {
     });
   };
 
-  const getOffCountForLocation = (block: any) => {
+  const getOffCountForLocation = (block: MasterBlock) => {
     let count = 0;
     if (block.type === 'location') {
-      block.categories?.forEach((cat: any) => {
-        cat.items?.forEach((_: any, iIdx: number) => {
+      block.categories?.forEach((cat) => {
+        cat.items?.forEach((_, iIdx) => {
           const key = `${block.title}|${cat.title}|${iIdx}`;
           if (toggles[key] === false) count++;
         });
       });
     } else if (block.type === 'access_control') {
-      block.terminals?.forEach((term: any) => {
-        term.categories?.forEach((cat: any) => {
-          cat.items?.forEach((_: any, iIdx: number) => {
+      block.terminals?.forEach((term) => {
+        term.categories?.forEach((cat) => {
+          cat.items?.forEach((_, iIdx) => {
             const key = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
             if (toggles[key] === false) count++;
           });
@@ -252,10 +268,10 @@ export const TabChecklist: React.FC = () => {
     return count;
   };
 
-  const getOffCountForGroupLoc = (loc: any) => {
+  const getOffCountForGroupLoc = (loc: MasterSubGroup) => {
     let count = 0;
-    loc.categories?.forEach((cat: any) => {
-      cat.items?.forEach((_: any, iIdx: number) => {
+    loc.categories?.forEach((cat) => {
+      cat.items?.forEach((_, iIdx) => {
         const key = `${loc.title}|${cat.title}|${iIdx}`;
         if (toggles[key] === false) count++;
       });
@@ -413,7 +429,7 @@ export const TabChecklist: React.FC = () => {
         </div>
         
         <div className="space-y-6">
-          {checklistDataMaster.map((block: any, bIdx: number) => {
+          {masterBlocks.map((block, bIdx) => {
             if (block.type === 'location') {
               const offCount = getOffCountForLocation(block);
               return (
@@ -438,11 +454,11 @@ export const TabChecklist: React.FC = () => {
                   </div>
                   {expandedAreas[block.title] && (
                     <div className="p-4 space-y-6">
-                      {block.categories.map((cat: any, cIdx: number) => (
+                      {block.categories.map((cat, cIdx) => (
                         <div key={`cat-${cIdx}`}>
                           <h3 className="text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block">{cat.title}</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {cat.items.map((item: any, iIdx: number) => {
+                            {cat.items.map((item, iIdx) => {
                               const key = `${block.title}|${cat.title}|${iIdx}`;
                               const isOperasi = toggles[key] !== false;
                               return (
@@ -533,7 +549,7 @@ export const TabChecklist: React.FC = () => {
             } else if (block.type === 'group') {
               return (
                 <div key={`grp-${bIdx}`} className="space-y-6">
-                  {block.locations.map((loc: any, lIdx: number) => {
+                  {block.locations.map((loc, lIdx) => {
                     const offCount = getOffCountForGroupLoc(loc);
                     return (
                     <div key={`gloc-${lIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -557,11 +573,11 @@ export const TabChecklist: React.FC = () => {
                       </div>
                       {expandedAreas[loc.title] && (
                         <div className="p-4 space-y-6">
-                          {loc.categories.map((cat: any, cIdx: number) => (
+                          {loc.categories.map((cat, cIdx) => (
                             <div key={`gcat-${cIdx}`}>
                               <h3 className="text-sm font-bold text-blue-900 mb-3 bg-blue-50 px-3 py-1.5 rounded inline-block">{cat.title}</h3>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {cat.items.map((item: any, iIdx: number) => {
+                                {cat.items.map((item, iIdx) => {
                                   const key = `${loc.title}|${cat.title}|${iIdx}`;
                                   const isOperasi = toggles[key] !== false;
                                   return (
@@ -676,15 +692,15 @@ export const TabChecklist: React.FC = () => {
                   </div>
                   {expandedAreas[block.title] && (
                     <div className="p-4 space-y-8">
-                      {block.terminals.map((term: any, tIdx: number) => (
+                      {block.terminals.map((term, tIdx) => (
                         <div key={`term-${tIdx}`} className="space-y-4">
                           {term.title && <h3 className="text-base font-bold text-slate-800 border-b pb-2">{term.title}</h3>}
                           <div className="space-y-6 pl-0 md:pl-4">
-                            {term.categories.map((cat: any, cIdx: number) => (
+                            {term.categories.map((cat, cIdx) => (
                               <div key={`tcat-${cIdx}`}>
                                 <h4 className="text-sm font-bold text-indigo-900 mb-3 bg-indigo-50 px-3 py-1.5 rounded inline-block">{cat.title}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                  {cat.items.map((item: any, iIdx: number) => {
+                                  {cat.items.map((item, iIdx) => {
                                     const key = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
                                     const isOperasi = toggles[key] !== false;
                                     return (

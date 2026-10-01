@@ -2,21 +2,14 @@
 import React from 'react';
 import { Plus, Edit, X, Loader2 } from 'lucide-react';
 import { isTimeWithinShiftBoundary } from '../../../lib/services/operationalReportService';
+import type { ShiftReportCrudForm } from '../../../lib/types';
 
 export interface ShiftReportCrudModalProps {
   isOpen: boolean;
   onClose: () => void;
   modalMode: 'add' | 'edit';
-  crudForm: {
-    jenis: 'Kegiatan' | 'Perbaikan' | 'Storing' | 'Kalibrasi';
-    waktu: string;
-    peralatan: string;
-    lokasi: string;
-    uraian: string;
-    tindakLanjut: string;
-    status: string;
-  };
-  setCrudForm: React.Dispatch<React.SetStateAction<any>>;
+  crudForm: ShiftReportCrudForm;
+  setCrudForm: React.Dispatch<React.SetStateAction<ShiftReportCrudForm>>;
   shift: 'PS' | 'M' | 'ALL';
   crudPhotoPreview: string | null;
   setCrudPhotoPreview: (url: string | null) => void;
@@ -59,7 +52,7 @@ export const ShiftReportCrudModal: React.FC<ShiftReportCrudModalProps> = ({
               <label className="block text-xs font-bold text-slate-700 mb-1">Jenis Pekerjaan</label>
               <select
                 value={crudForm.jenis}
-                onChange={(e) => setCrudForm({ ...crudForm, jenis: e.target.value as any })}
+                onChange={(e) => setCrudForm({ ...crudForm, jenis: e.target.value as ShiftReportCrudForm['jenis'] })}
                 className="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
               >
                 <option value="Kegiatan">Kegiatan</option>
