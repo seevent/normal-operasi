@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import type { JenisPeralatan, TipeOption, UnitPeralatan } from '../../lib/types';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { 
   Plus, Edit2, Trash2, Loader2, Save, X, Search, 
@@ -11,9 +12,9 @@ import { getErrorMessage } from '../../lib/utils/errorUtils';
 export const UnitPeralatanManager: React.FC = () => {
   const { initializeSupabaseData } = useMasterDataStore();
   
-  const [unitList, setUnitList] = useState<any[]>([]);
-  const [jenisList, setJenisList] = useState<any[]>([]);
-  const [tipeList, setTipeList] = useState<any[]>([]);
+  const [unitList, setUnitList] = useState<UnitPeralatan[]>([]);
+  const [jenisList, setJenisList] = useState<JenisPeralatan[]>([]);
+  const [tipeList, setTipeList] = useState<TipeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -64,7 +65,7 @@ export const UnitPeralatanManager: React.FC = () => {
 
       if (jenisRes.data) setJenisList(jenisRes.data);
       if (tipeRes.data) setTipeList(tipeRes.data);
-      if (unitRes.data) setUnitList(unitRes.data);
+      if (unitRes.data) setUnitList(unitRes.data as unknown as UnitPeralatan[]);
     } catch (err) {
       console.error('Failed to load unit equipment data', err);
     } finally {
@@ -92,7 +93,7 @@ export const UnitPeralatanManager: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleOpenEdit = (unit: any) => {
+  const handleOpenEdit = (unit: UnitPeralatan) => {
     setEditingId(unit.id);
     const idJenis = unit.tipe_peralatan?.id_jenis || '';
     setFormJenis(idJenis);
@@ -128,7 +129,7 @@ export const UnitPeralatanManager: React.FC = () => {
       ? (formCustomMilik.trim() || 'Lainnya') 
       : formMilik;
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       id_tipe: formTipe,
       serial_number: formSn.trim() || null,
       no_sertifikasi: formNoSertifikasi.trim() || null,

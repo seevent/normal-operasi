@@ -67,7 +67,7 @@ export const ScheduleUploader: React.FC = () => {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData: any[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      const jsonData: unknown[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
       const allPersonel = [...store.dataApiT2, ...store.dataOmIasT2];
       const nikToIdMap = new Map(allPersonel.map(p => [String(p.nik).trim(), p.id]));

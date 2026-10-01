@@ -22,6 +22,13 @@ import {
   appendBulletItem,
 } from '../../lib/utils/initialReportShortcuts';
 
+/** Baris `tipe_peralatan` beserta jenisnya (relasi to-one yang di-embed). */
+interface TipeJenisRow {
+  nama: string;
+  varian: string | null;
+  jenis_peralatan: { nama: string } | null;
+}
+
 export const TabInitialReport: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [showErrors, setShowErrors] = useState(false);
@@ -75,10 +82,11 @@ export const TabInitialReport: React.FC = () => {
         .order('nama', { ascending: true });
         
       if (dataTipe) {
-        setTipePeralatanOptions(dataTipe.map((d: any) => d.nama));
+        const tipeRows = dataTipe as unknown as TipeJenisRow[];
+        setTipePeralatanOptions(tipeRows.map((d) => d.nama));
         const jenisMapping: Record<string, string> = {};
         const varianMapping: Record<string, string> = {};
-        dataTipe.forEach((d: any) => {
+        tipeRows.forEach((d) => {
           if (d.nama) {
             if (d.jenis_peralatan?.nama) {
               jenisMapping[d.nama] = d.jenis_peralatan.nama;
@@ -255,10 +263,10 @@ export const TabInitialReport: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleBulletKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, field: string) => {
+  const handleBulletKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, field: 'permasalahan' | 'uraian') => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      setFormData(prev => ({ ...prev, [field]: (prev as any)[field] + '\n• ' }));
+      setFormData(prev => ({ ...prev, [field]: prev[field] + '\n• ' }));
     }
   };
 
@@ -455,9 +463,9 @@ export const TabInitialReport: React.FC = () => {
 
     // Process photos for each group
     for (let i = 0; i < photoGroups.length; i++) {
-      const group: any = photoGroups[i];
-      const imagePhotos = group.photos.filter((p: any) => !p.file?.type?.startsWith('video/'));
-      const videoFiles = group.photos.filter((p: any) => p.file?.type?.startsWith('video/')).map((p: any) => p.file);
+      const group = photoGroups[i];
+      const imagePhotos = group.photos.filter((p) => !p.file?.type?.startsWith('video/'));
+      const videoFiles = group.photos.filter((p) => p.file?.type?.startsWith('video/')).map((p) => p.file);
 
       if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {

@@ -1,14 +1,8 @@
 // src/components/features/ba-serah-terima/BADocumentPrint.tsx
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
+import type { BarangItem } from '../../../lib/types';
 
-export interface ItemSerahTerima {
-  id: number;
-  nama: string;
-  qty: string;
-  satuan: string;
-  snList: string[];
-  kondisi: string;
-}
+export type ItemSerahTerima = BarangItem;
 
 export interface BaData {
   tanggal: string;

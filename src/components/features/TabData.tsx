@@ -181,7 +181,7 @@ const LocalDataEditor: React.FC = () => {
           <h3 className="text-lg font-bold text-slate-800 mb-4">Peralatan untuk Tab Kalibrasi</h3>
           <p className="text-sm text-slate-500 mb-6">Pilih jenis peralatan dari database yang akan dimunculkan sebagai opsi di halaman Kalibrasi.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {store.jenisPeralatanData.map((jenis: any) => {
+            {store.jenisPeralatanData.map((jenis) => {
               const isChecked = !!jenis.tampil_di_kalibrasi;
               return (
                 <label key={jenis.id} className={`flex items-center p-4 border rounded-xl cursor-pointer transition-colors ${isChecked ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
@@ -221,7 +221,7 @@ const LocalDataEditor: React.FC = () => {
 // 5. MANAJER DATA TIP TERSIMPAN
 // ==========================================
 const TipDataManager: React.FC = () => {
-  const [tipList, setTipList] = useState<any[]>([]);
+  const [tipList, setTipList] = useState<{ key: string; updated_at: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTipData = async () => {
@@ -281,7 +281,7 @@ const TipDataManager: React.FC = () => {
             ) : (
               tipList.map((row, i) => {
                 const monthYear = row.key.replace('tip_data_', '').replace('_', ' ');
-                const dateObj = new Date(row.updated_at);
+                const dateObj = new Date(row.updated_at ?? '');
                 const formattedDate = !isNaN(dateObj.getTime()) ? dateObj.toLocaleString('id-ID') : '-';
                 
                 return (

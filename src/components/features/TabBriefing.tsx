@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Megaphone, Calendar, MapPin, ClipboardList, Share2, CheckCircle, FileText } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { PhotoUploader, Photo } from '../shared/PhotoUploader';
+import { PhotoUploader, type Photo, type PhotoAnnotation, type PhotoDropEvent } from '../shared/PhotoUploader';
 import { generateWA_Briefing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
@@ -44,7 +44,7 @@ export const TabBriefing: React.FC = () => {
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
-  const [collageAnnotation, setCollageAnnotation] = useState<any>(undefined);
+  const [collageAnnotation, setCollageAnnotation] = useState<PhotoAnnotation | undefined>(undefined);
 
   const photosRef = React.useRef(photos);
   photosRef.current = photos;
@@ -101,7 +101,7 @@ export const TabBriefing: React.FC = () => {
     });
   };
 
-  const handlePhotoDrop = (e: React.DragEvent | any, targetIndex: number) => {
+  const handlePhotoDrop = (e: PhotoDropEvent, targetIndex: number) => {
     e.preventDefault();
     const sourceIndexStr = e.dataTransfer?.getData('text/plain');
     if (!sourceIndexStr) return;
@@ -117,7 +117,7 @@ export const TabBriefing: React.FC = () => {
     });
   };
 
-  const handlePhotoEdit = (index: number, updatedPhoto: any) => {
+  const handlePhotoEdit = (index: number, updatedPhoto: Photo) => {
     setPhotos(prev => {
       const newPhotos = [...prev];
       newPhotos[index] = updatedPhoto;

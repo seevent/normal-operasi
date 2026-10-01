@@ -67,7 +67,7 @@ export const TabPerbaikan: React.FC = () => {
         } else {
           // Fallback from penempatanData in store
           const penempatan = useMasterDataStore.getState().penempatanData || [];
-          const uniqueTipe = Array.from(new Set(penempatan.map((p: any) => p.tipe_peralatan?.nama).filter(Boolean)));
+          const uniqueTipe = Array.from(new Set(penempatan.map((p) => p.tipe_peralatan?.nama).filter(Boolean)));
           if (uniqueTipe.length > 0) {
             setTipePeralatanOptions(uniqueTipe as string[]);
           }
@@ -75,7 +75,7 @@ export const TabPerbaikan: React.FC = () => {
       } catch (err) {
         console.error('Error fetching data in TabPerbaikan:', err);
         const penempatan = useMasterDataStore.getState().penempatanData || [];
-        const uniqueTipe = Array.from(new Set(penempatan.map((p: any) => p.tipe_peralatan?.nama).filter(Boolean)));
+        const uniqueTipe = Array.from(new Set(penempatan.map((p) => p.tipe_peralatan?.nama).filter(Boolean)));
         if (uniqueTipe.length > 0) {
           setTipePeralatanOptions(uniqueTipe as string[]);
         }
@@ -422,9 +422,9 @@ export const TabPerbaikan: React.FC = () => {
 
     // Process photos for each group
     for (let i = 0; i < photoGroups.length; i++) {
-      const group: any = photoGroups[i];
-      const imagePhotos = group.photos.filter((p: any) => !p.file?.type?.startsWith('video/'));
-      const videoFiles = group.photos.filter((p: any) => p.file?.type?.startsWith('video/')).map((p: any) => p.file);
+      const group = photoGroups[i];
+      const imagePhotos = group.photos.filter((p) => !p.file?.type?.startsWith('video/'));
+      const videoFiles = group.photos.filter((p) => p.file?.type?.startsWith('video/')).map((p) => p.file);
 
       if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {
@@ -466,7 +466,7 @@ export const TabPerbaikan: React.FC = () => {
 
       try {
         const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
-        const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
+        const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l) => l.lokasi1);
         const lokasiFinal = formatLokasiRows(activeLocs);
 
         const waktuRange = `${formData.waktuMulai || ''}${formData.waktuSelesai ? ' - ' + formData.waktuSelesai : ''}`;

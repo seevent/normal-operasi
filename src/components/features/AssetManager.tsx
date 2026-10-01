@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import type { AssetPlacement, JenisPeralatan, LokasiOption, TipeOption, UnitPeralatan } from '../../lib/types';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { MapPin, Cpu, Hash, Trash2, Plus, Loader2, AlertCircle, LayoutGrid, Database, Layers, Edit2, Save, X } from 'lucide-react';
 import { AssetMasterLokasi } from './AssetMasterLokasi';
@@ -24,11 +25,11 @@ export const AssetManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('penempatan');
   
   // Base Data for Penempatan Tab
-  const [locations, setLocations] = useState<any[]>([]);
-  const [jenisData, setJenisData] = useState<any[]>([]);
-  const [tipeData, setTipeData] = useState<any[]>([]);
-  const [unitsData, setUnitsData] = useState<any[]>([]);
-  const [allAssets, setAllAssets] = useState<any[]>([]);
+  const [locations, setLocations] = useState<LokasiOption[]>([]);
+  const [jenisData, setJenisData] = useState<JenisPeralatan[]>([]);
+  const [tipeData, setTipeData] = useState<TipeOption[]>([]);
+  const [unitsData, setUnitsData] = useState<UnitPeralatan[]>([]);
+  const [allAssets, setAllAssets] = useState<AssetPlacement[]>([]);
   
   const [loadingBase, setLoadingBase] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,14 +47,14 @@ export const AssetManager: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   // Edit Placement State (ubah lokasi & nomor titik)
-  const [editingPlacement, setEditingPlacement] = useState<any | null>(null);
+  const [editingPlacement, setEditingPlacement] = useState<AssetPlacement | null>(null);
   const [editPlacLokasi, setEditPlacLokasi] = useState<string>('');
   const [editPlacTitik, setEditPlacTitik] = useState<string>('');
   const [savingPlacement, setSavingPlacement] = useState<boolean>(false);
   const [editPlacementError, setEditPlacementError] = useState<string>('');
 
   // Edit Unit Fisik State
-  const [editingUnit, setEditingUnit] = useState<any | null>(null);
+  const [editingUnit, setEditingUnit] = useState<UnitPeralatan | null>(null);
   const [editUnitSn, setEditUnitSn] = useState<string>('');
   const [editUnitMilik, setEditUnitMilik] = useState<string>('API');
   const [editUnitCustomMilik, setEditUnitCustomMilik] = useState<string>('');
@@ -94,10 +95,10 @@ export const AssetManager: React.FC = () => {
       if (lokRes.data) setLocations(lokRes.data);
       if (jenisRes.data) setJenisData(jenisRes.data);
       if (tipeRes.data) setTipeData(tipeRes.data);
-      if (unitRes.data) setUnitsData(unitRes.data);
+      if (unitRes.data) setUnitsData(unitRes.data as unknown as UnitPeralatan[]);
       if (assetRes.data) {
         // Sort
-        const sorted = assetRes.data.sort((a: any, b: any) => {
+        const sorted = (assetRes.data as unknown as AssetPlacement[]).sort((a, b) => {
           const numA = parseInt(a.titik_lokasi?.nomor?.replace(/[^0-9]/g, '') || '0', 10);
           const numB = parseInt(b.titik_lokasi?.nomor?.replace(/[^0-9]/g, '') || '0', 10);
           return numA - numB;
@@ -200,7 +201,7 @@ export const AssetManager: React.FC = () => {
   };
 
   // --- Handler Edit Penempatan (hanya mengubah lokasi dan titik) ---
-  const handleOpenEditPenempatan = (asset: any) => {
+  const handleOpenEditPenempatan = (asset: AssetPlacement) => {
     setEditingPlacement(asset);
     setEditPlacLokasi(asset.id_lokasi || '');
     setEditPlacTitik(asset.titik_lokasi?.nomor || '');
@@ -266,7 +267,7 @@ export const AssetManager: React.FC = () => {
   };
 
   // --- Handler Edit Unit Fisik ---
-  const handleOpenEditUnit = (unit: any) => {
+  const handleOpenEditUnit = (unit: UnitPeralatan) => {
     setEditingUnit(unit);
     setEditUnitSn(unit.serial_number || '');
     if (MILIK_OPTIONS.includes(unit.milik || 'API')) {
@@ -589,7 +590,7 @@ export const AssetManager: React.FC = () => {
 
                           {asset.unit_peralatan && (
                             <button 
-                              onClick={() => handleOpenEditUnit(asset.unit_peralatan)}
+                              onClick={() => asset.unit_peralatan && handleOpenEditUnit(asset.unit_peralatan)}
                               className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-lg transition-colors whitespace-nowrap"
                               title="Ubah rincian unit fisik (S/N, kepemilikan, status)"
                             >

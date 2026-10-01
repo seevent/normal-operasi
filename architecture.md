@@ -54,7 +54,7 @@ graph TD
 | **Icon** | Lucide React | `0.576.0` | Ikon UI. |
 | **Lint** | ESLint 9, typescript-eslint, react-hooks, react-refresh | `9.39.x` | `npm run lint`. |
 | **Testing** | Node.js Test Runner | Node 22 | 32 berkas di `tests/`, 133 test. |
-| **CI** | GitHub Actions | - | `npm ci` → lint (tidak memblokir) → `npm test` → `npm run build`. |
+| **CI** | GitHub Actions | - | `npm ci` → `npm run lint` → `npm test` → `npm run build` (semua memblokir). |
 | **Hosting** | Netlify | - | `publish = dist/client`. |
 
 ---
@@ -80,6 +80,7 @@ src/
 │   └── shared/                         # FieldError, LiveCollagePreview, MonitorSearchIcon,
 │                                       #   PhotoTextEditorModal, PhotoUploader, SignaturePad
 ├── lib/
+│   ├── types.ts                        # tipe domain bersama (lihat §9 butir 5)
 │   ├── data/                           # constants, masterData (default + hirarki jabatan), petMessages
 │   ├── hooks/                          # useAutoResizeTextarea, usePhotoGroups, useTipePeralatanOptions
 │   ├── services/                       # checklistSync, cloudinary, operationalReport, pdf, share
@@ -232,7 +233,8 @@ Skema lengkap dan terverifikasi ada di [`database.md`](database.md). Ringkas:
    - Aturan bisnis: `ba-shift-calculation`, `on-duty-technicians`, `lokasi-format`, `kalibrasi-params`, `initial-report-shortcuts`, `pm-schedule-kehadiran`, `form-validation`, `format-nama-personel`.
    - Struktur/regresi komponen: `tab-*`, `checklist-editor-*`, `personel-manager`, `photo-uploader-consolidation`, `print-header-logo`, `set-is-copied-declared`, `share-report`, `shift-report-refactor`, `auto-resize-textarea`, `pet-messages`, `cloudinary-settings`.
    - Kebersihan: `dead-code-cleanliness`, `dependencies-cleanliness` (mencegah dependensi mati seperti Konva kembali).
-5. **Kualitas kode**: lint 2 error + ±307 peringatan (mayoritas `no-explicit-any`) — masih dijalankan `continue-on-error` di CI; mengurangi `any` adalah utang teknis yang diketahui.
+5. **Kualitas kode**: `npm run lint` bersih (0 error, 0 peringatan) dan memblokir CI. Tipe data bersama ada di `src/lib/types.ts` (personel, peralatan/penempatan, data form tiap tab, `ShiftReportRow`, `Photo`, parameter kalibrasi); modul murni dan komponen memakainya alih-alih `any`. `npx tsc --noEmit` belum ada di CI; satu error tersisa di `vite.config.ts` (`server.https: true` tidak sesuai tipe Vite 7, tidak diubah karena menyangkut dev server HTTPS).
+   * *Batas data Supabase*: klien `supabase` belum bertipe (`createClient` tanpa `Database`), sehingga relasi to-one di-embed (mis. `unit_kerja(nama)`) terbaca sebagai array padahal runtime-nya objek. Hasil query tersebut di-cast `as unknown as <TipeDomain>` pada batas pembacaan (`useMasterDataStore`, `TabKehadiran`, `TabShiftReport`, `operationalReportService`, manajer aset). Menyertakan tipe `Database` hasil `supabase gen types` adalah langkah lanjutan yang menghapus cast itu.
 6. **Status keamanan dependensi (`npm audit`)**:
    * **`xlsx` (SheetJS) `0.18.5` — risiko diterima secara sadar.** Dua advisory `high`: Prototype Pollution ([GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6), diperbaiki di 0.19.3) dan ReDoS ([GHSA-5pgg-2g8v-p4x9](https://github.com/advisories/GHSA-5pgg-2g8v-p4x9), diperbaiki di 0.20.2). Tidak ada perbaikan di npm karena SheetJS berhenti publish ke npm sejak 0.18.5.
      * *Mitigasi*: parsing hanya di browser, dan satu-satunya jalur unggah (`ScheduleUploader.tsx`, `PmScheduleUploader.tsx`) ada di tab **Data** yang memerlukan login admin.

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import type { LokasiOption } from '../../lib/types';
 import { MapPin, Plus, Edit2, Trash2, Loader2, Save, X } from 'lucide-react';
 
 export const AssetMasterLokasi: React.FC = () => {
-  const [lokasiList, setLokasiList] = useState<any[]>([]);
+  const [lokasiList, setLokasiList] = useState<LokasiOption[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [isAdding, setIsAdding] = useState(false);

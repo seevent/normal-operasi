@@ -28,6 +28,11 @@ Dokumen ini berisi instruksi bagi **AI Coding Assistant** (Claude, Antigravity, 
 * Impor antar-modul murni memakai ekstensi `.ts` (mis. `import { x } from './lokasiFormat.ts'`) agar bisa dimuat langsung oleh test Node. Jangan impor store/`supabaseClient` dari modul yang ingin diuji murni (lihat `missingFields.ts` sebagai pemisah: logika di `formValidation.ts`, efek DOM/maskot di `missingFields.ts`).
 * Tambahkan test di `tests/` untuk perilaku baru (lihat §4).
 
+### 2.3b. Tipe, bukan `any`
+* Bentuk data bersama (personel, peralatan/penempatan, data form tiap tab, baris Report, foto, parameter kalibrasi) ada di `src/lib/types.ts`. Pakai/tambah tipe di sana; jangan memakai `any` (lint akan gagal dan CI memblokir).
+* Hasil query Supabase dengan relasi to-one yang di-embed terbaca sebagai array oleh klien yang belum bertipe; cast ke tipe domain di batas pembacaan (`as unknown as Tipe`) dengan komentar singkat, jangan menebar cast di komponen.
+* Master checklist yang judulnya bisa kosong dinormalkan dengan `toMasterBlocks` (`checklistEditor.ts`) sebelum dirender.
+
 ### 2.4. Manajemen State & Data Relasional
 * Pakai `useMasterDataStore` untuk lokasi, titik, jenis/tipe/unit peralatan, sparepart, personel, dan pengaturan PM; `useAppStore` untuk tab aktif & maskot; `useAuthStore` untuk sesi admin (`user`, bukan `isAdmin`).
 * Filter lokasi pada form baru memakai helper `locationRules.ts` supaya pencocokan peralatan ↔ lokasi ↔ titik konsisten dengan database.
@@ -104,7 +109,7 @@ Dokumen ini berisi instruksi bagi **AI Coding Assistant** (Claude, Antigravity, 
 
 1. **Test**: `npm test` (alias `node --test`) — seluruh 133 test harus lulus. Tambahkan test untuk perilaku baru (modul murni lebih mudah; test struktur komponen di repo membaca source dengan `readFileSync`).
 2. **Build**: `npm run build` harus berhasil (CI juga menjalankannya).
-3. **Lint**: `npm run lint` — jangan menambah error/peringatan baru (kondisi sekarang: 2 error, ±307 peringatan; CI belum memblokir).
+3. **Lint**: `npm run lint` harus tetap **bersih** (0 error, 0 peringatan) — CI memblokirnya. Jangan memakai `any`; pakai/tambah tipe di `src/lib/types.ts`. Bila `tsc --noEmit` dijalankan, jangan menambah error baru (kini 1, di `vite.config.ts`).
 4. **Mobile layout**: tidak ada overflow horizontal, tombol mudah ditekan, tidak ada auto-zoom iOS.
 5. **Ketahanan**: bila Supabase/Cloudinary tidak merespons, aplikasi tetap berjalan dengan data bawaan `masterData.ts` / fallback Supabase Storage dan memberi kabar lewat maskot.
 6. **Dokumentasi**: bila perilaku, skema, versi dependensi, atau jumlah test berubah, perbarui `README.md`, `prd.md`, `architecture.md`, `database.md`, dan dokumen ini.

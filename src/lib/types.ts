@@ -36,6 +36,7 @@ export interface JenisPeralatan {
 
 export interface TipePeralatanRef {
   id?: string;
+  id_jenis?: string | null;
   nama: string;
   varian?: string | null;
   jenis_peralatan?: { id?: string; nama: string } | null;
@@ -300,4 +301,32 @@ export interface ShiftReportCrudForm {
   uraian: string;
   tindakLanjut: string;
   status: string;
+}
+
+// ---------------------------------------------------------------------------
+// Manajemen aset (tab Data)
+// ---------------------------------------------------------------------------
+
+export interface LokasiOption {
+  id: string;
+  nama: string;
+}
+
+export interface TipeOption {
+  id: string;
+  id_jenis: string | null;
+  nama: string;
+  varian?: string | null;
+}
+
+/** Baris `penempatan_peralatan` lengkap dengan relasi untuk daftar di Manajemen Aset. */
+export interface AssetPlacement {
+  id: string;
+  is_active?: boolean | null;
+  id_lokasi: string | null;
+  id_unit: string | null;
+  tipe_peralatan?: TipePeralatanRef | null;
+  unit_peralatan?: UnitPeralatan | null;
+  titik_lokasi?: { id: string; nomor: string } | null;
+  lokasi?: { id: string; nama: string } | null;
 }

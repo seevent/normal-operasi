@@ -140,7 +140,7 @@ export const LiveCollagePreview: React.FC<LiveCollagePreviewProps> = ({ photos, 
           onClose={() => setIsEditingText(false)}
           photoUrl={rawCollageUrl || autoCollageUrl || ''}
           initialAnnotation={collageAnnotation}
-          onSave={(newFile, newUrl, annotation) => {
+          onSave={(_newFile, _newUrl, annotation) => {
             setCollageAnnotation(annotation);
             setIsEditingText(false);
           }}

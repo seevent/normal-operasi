@@ -20,7 +20,7 @@ export const SparepartManager: React.FC = () => {
   };
 
   // Filter based on search query: nama sparepart / SKU / nama tipe kompatibel
-  const filteredSpareparts = (sparepartsData || []).filter((item: any) => {
+  const filteredSpareparts = (sparepartsData || []).filter((item) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase().trim();
     const nameMatch = (item.name || '').toLowerCase().includes(query);
@@ -107,7 +107,7 @@ export const SparepartManager: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredSpareparts.map((item: any) => {
+                filteredSpareparts.map((item) => {
                   const isChecked = briefingSparepartIds.includes(item.id);
                   return (
                     <tr

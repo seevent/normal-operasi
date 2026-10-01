@@ -283,7 +283,7 @@ export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => setStyle(item.id as any)}
+                      onClick={() => setStyle(item.id as PhotoAnnotation['style'])}
                       className={`py-2 rounded-lg text-[10px] font-bold flex items-center justify-center transition-transform ${item.bg} ${
                         style === item.id ? 'ring-2 ring-blue-500 ring-offset-2 scale-105' : 'opacity-80 hover:opacity-100'
                       }`}

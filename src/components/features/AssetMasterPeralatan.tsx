@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import type { JenisPeralatan, TipeOption } from '../../lib/types';
 import { Cpu, Plus, Edit2, Trash2, Loader2, Save, X, ChevronRight } from 'lucide-react';
 
 export const AssetMasterPeralatan: React.FC = () => {
-  const [jenisList, setJenisList] = useState<any[]>([]);
-  const [tipeList, setTipeList] = useState<any[]>([]);
+  const [jenisList, setJenisList] = useState<JenisPeralatan[]>([]);
+  const [tipeList, setTipeList] = useState<TipeOption[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedJenisId, setSelectedJenisId] = useState<string | null>(null);

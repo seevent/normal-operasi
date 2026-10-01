@@ -3,7 +3,7 @@ import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User, RefreshCw }
 import { MonitorSearchIcon } from '../shared/MonitorSearchIcon';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { PhotoUploader, Photo } from '../shared/PhotoUploader';
+import { PhotoUploader, type Photo, type PhotoAnnotation, type PhotoDropEvent } from '../shared/PhotoUploader';
 import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec, getStoringSupervisorLocations } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
@@ -43,7 +43,7 @@ export const TabStoring: React.FC = () => {
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
-  const [collageAnnotation, setCollageAnnotation] = useState<any>(undefined);
+  const [collageAnnotation, setCollageAnnotation] = useState<PhotoAnnotation | undefined>(undefined);
 
   const photosRef = React.useRef(photos);
   photosRef.current = photos;
@@ -161,7 +161,7 @@ export const TabStoring: React.FC = () => {
     });
   };
 
-  const handlePhotoDrop = (e: React.DragEvent | any, targetIndex: number) => {
+  const handlePhotoDrop = (e: PhotoDropEvent, targetIndex: number) => {
     e.preventDefault();
     const sourceIndexStr = e.dataTransfer?.getData('text/plain');
     if (!sourceIndexStr) return;
@@ -177,7 +177,7 @@ export const TabStoring: React.FC = () => {
     });
   };
 
-  const handlePhotoEdit = (index: number, updatedPhoto: any) => {
+  const handlePhotoEdit = (index: number, updatedPhoto: Photo) => {
     setPhotos(prev => {
       const newPhotos = [...prev];
       newPhotos[index] = updatedPhoto;

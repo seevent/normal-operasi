@@ -130,6 +130,9 @@ Ada di database tetapi **belum dipakai frontend** saat ini.
 * `sparepart_compatibility`: `sparepart_id` → `spareparts`, `id_tipe` → `tipe_peralatan`, `is_primary` (default `true`); **UNIQUE `(sparepart_id, id_tipe)`**.
 * `stock_mutations`: `sparepart_id` (NOT NULL), `unit_id`, `personel_id`, `mutation_type` **CHECK** ∈ `Masuk | Pakai | Bekas | Rusak | Serah Terima`, `qty` **CHECK > 0**, `notes`, `sumber` (default `'VENDOR'`), `location`, `penerima`, `unit_penerima`, `created_at`.
 
+### 3.8b. View `current_stock`
+View stok sparepart: `id`, `sku`, `name`, `stok_aktual`, `stok_bekas`, `stok_rusak` (agregat dari `stock_mutations`). Belum dipakai frontend; stok yang tampil di aplikasi dihitung dari embed `stock_mutations` di `useMasterDataStore.fetchSparepartsData`.
+
 ### 3.9. `unit_kerja` (2 baris)
 | Kolom | Tipe | Keterangan |
 |---|---|---|
@@ -148,6 +151,8 @@ Ada di database tetapi **belum dipakai frontend** saat ini.
 | `jabatan` | varchar | Supervisor, Engineer, Technician, Teknisi, Pembantu Teknisi, … |
 | `urutan` | int | Urutan manual untuk jabatan yang sama (diubah dengan tombol naik/turun di Data → Personel). |
 | `created_at` | timestamptz | |
+
+> **Temuan (belum diperbaiki):** `savePersonelToSupabase` (`useMasterDataStore.ts`) membaca/menulis kolom `unit_kerja_id`, padahal kolom di tabel ini bernama **`unit_id`**. Akibatnya, mengubah personel yang sudah ada (punya `id`) tetap berhasil, tetapi **menambah personel baru** dan **menghapus personel yang dibuang dari daftar** dari Data → Personel gagal diam-diam di sisi database. Memperbaikinya (3 kemunculan) juga mengaktifkan logika hapus, sehingga perlu diuji dengan hati-hati terhadap FK `jadwal_shift.personel_id`.
 
 Urutan tampil personel: hirarki jabatan, lalu `urutan` (`sortPersonelByJabatan` di `masterData.ts`); dipakai sama di tab Kehadiran dan Report.
 

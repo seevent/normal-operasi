@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, FileCheck, Share2, CheckCircle, FileText, Plus, Trash2, ArrowLeftRight, Download } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
-import { PhotoUploader, Photo } from '../shared/PhotoUploader';
+import { PhotoUploader, type Photo, type PhotoDropEvent } from '../shared/PhotoUploader';
+import type { BarangItem, Personel } from '../../lib/types';
 import { generateWA_BASerahTerima } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { generatePdfBlob, type PdfOptions } from '../../lib/services/pdfService';
@@ -16,14 +17,7 @@ import { validateBASerahTerima } from '../../lib/utils/formValidation';
 import { reportMissingFields } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
-export interface BarangItem {
-  id: string;
-  nama: string;
-  qty: number;
-  satuan: string;
-  kondisi: 'Baik / Baru' | 'Bekas / Normal' | 'Rusak / Perlu Perbaikan';
-  snList: string[]; // Serial number for each item unit
-}
+export type { BarangItem };
 
 const formatDateIndo = (d: string): string => {
   if (!d) return '-';
@@ -41,6 +35,9 @@ const formatDateIndo = (d: string): string => {
 };
 
 /** BA Serah Terima adalah dokumen resmi, jadi memakai nama lengkap, bukan nama ringkas laporan harian. */
+/** Personel yang bisa dipilih sebagai pihak SSES: hasil jadwal dinas atau cadangan dari master personel. */
+type DinasPersonel = Personel & { fullName?: string; unit?: string };
+
 const personelFullName = (p: { name: string; fullName?: string }): string => p.fullName || p.name;
 
 export const TabBASerahTerima: React.FC = () => {
@@ -67,7 +64,7 @@ export const TabBASerahTerima: React.FC = () => {
     penerimaInstansi: 'T2 - Safety & Security Electronic Services',
   });
 
-  const [dinasPersonelList, setDinasPersonelList] = useState<any[]>([]);
+  const [dinasPersonelList, setDinasPersonelList] = useState<DinasPersonel[]>([]);
   const [showErrors, setShowErrors] = useState(false);
   const [activeShiftLabel, setActiveShiftLabel] = useState<string>('');
 
@@ -166,7 +163,7 @@ export const TabBASerahTerima: React.FC = () => {
   };
 
   const handleSelectSsesPersonel = (name: string, isPenyerah: boolean) => {
-    const p = dinasPersonelList.find(item => personelFullName(item) === name) ||
+    const p: DinasPersonel | undefined = dinasPersonelList.find(item => personelFullName(item) === name) ||
               dataApiT2.find(item => item.name === name) ||
               dataOmIasT2.find(item => item.name === name);
 
@@ -216,7 +213,7 @@ export const TabBASerahTerima: React.FC = () => {
     setItems(prev => prev.filter(it => it.id !== id));
   };
 
-  const handleItemChange = (id: string, field: keyof BarangItem, value: any) => {
+  const handleItemChange = (id: string, field: keyof BarangItem, value: string) => {
     setItems(prev => prev.map(it => {
       if (it.id !== id) return it;
       if (field === 'qty') {
@@ -272,7 +269,7 @@ export const TabBASerahTerima: React.FC = () => {
     });
   };
 
-  const handlePhotoDrop = (e: React.DragEvent | any, targetIndex: number) => {
+  const handlePhotoDrop = (e: PhotoDropEvent, targetIndex: number) => {
     e.preventDefault();
     const sourceIndexStr = e.dataTransfer?.getData('text/plain');
     if (!sourceIndexStr) return;
@@ -288,7 +285,7 @@ export const TabBASerahTerima: React.FC = () => {
     });
   };
 
-  const handlePhotoEdit = (index: number, updatedPhoto: any) => {
+  const handlePhotoEdit = (index: number, updatedPhoto: Photo) => {
     setPhotos(prev => {
       const newPhotos = [...prev];
       newPhotos[index] = updatedPhoto;
@@ -695,7 +692,7 @@ export const TabBASerahTerima: React.FC = () => {
                     <td className="p-2">
                       <select
                         value={item.kondisi}
-                        onChange={(e) => handleItemChange(item.id, 'kondisi', e.target.value as any)}
+                        onChange={(e) => handleItemChange(item.id, 'kondisi', e.target.value as BarangItem['kondisi'])}
                         className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500 outline-none"
                       >
                         <option value="Baik / Baru">Baik / Baru</option>
@@ -800,7 +797,7 @@ export const TabBASerahTerima: React.FC = () => {
         <BADocumentPrint
           ref={printableBaRef}
           baData={baData}
-          items={items as any}
+          items={items}
           signaturePenyerah={signaturePenyerah}
           signaturePenerima={signaturePenerima}
           isPenyerahSses={isPenyerahSses}

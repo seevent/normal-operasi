@@ -2,7 +2,7 @@
 
 Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **12 tab** terintegrasi, tanda tangan digital, anotasi foto, validasi isian wajib yang seragam, serta sinkronisasi cloud ke **Supabase** dan penyimpanan foto di **Cloudinary** (cadangan: Supabase Storage).
 
-> Status terakhir diperbarui: **1 Oktober 2026** — 133 unit test lulus, `npm run build` berhasil.
+> Status terakhir diperbarui: **1 Oktober 2026** — 133 unit test lulus, `npm run build` berhasil, lint bersih (0 error, 0 peringatan).
 
 ---
 
@@ -66,7 +66,7 @@ Versi diambil dari `package.json` / `npm ls` per 1 Oktober 2026.
 | **Ekspor Gambar TIP** | `html-to-image` dimuat dari cdnjs saat dibutuhkan (bukan dependensi npm) | `1.11.11` |
 | **Lint** | ESLint 9 + typescript-eslint + react-hooks | `9.39.x` |
 | **Testing** | Node.js Test Runner (`node --test`) — 32 berkas, 133 test | Node 22 |
-| **CI** | GitHub Actions (`.github/workflows/ci.yml`: lint*, test, build) — *lint `continue-on-error` | - |
+| **CI** | GitHub Actions (`.github/workflows/ci.yml`: lint, test, build — ketiganya memblokir) | - |
 | **Deployment** | Netlify (`netlify.toml`, publish `dist/client`) | - |
 
 ---
@@ -94,6 +94,7 @@ src/
 │   └── shared/                       # FieldError, LiveCollagePreview, MonitorSearchIcon,
 │                                     #   PhotoTextEditorModal, PhotoUploader, SignaturePad
 ├── lib/
+│   ├── types.ts                      # Tipe domain bersama (personel, peralatan, data form per tab, baris Report, foto)
 │   ├── data/                         # constants.ts, masterData.ts (default & hirarki jabatan), petMessages.ts
 │   ├── hooks/                        # useAutoResizeTextarea, usePhotoGroups, useTipePeralatanOptions
 │   ├── services/                     # checklistSyncService, cloudinaryService, operationalReportService,
@@ -124,7 +125,7 @@ tests/                                # 32 berkas *.test.mjs (node --test)
    Konfigurasi Cloudinary juga bisa diatur admin lewat Data → Cloudinary CDN dan disimpan global di `master_configs`.
 3. **Dev server (HTTPS)**: `npm run dev` → `https://localhost:3000` (dan `https://<ip-lan>:3000` untuk uji di ponsel).
 4. **Pengujian**: `npm test` (= `node --test`).
-5. **Lint**: `npm run lint` (saat ini 2 error & ±307 peringatan `any`/unused; CI tidak memblokir).
+5. **Lint**: `npm run lint` — bersih (0 error, 0 peringatan) dan memblokir CI. Cek tipe: `npx tsc --noEmit` (satu error tersisa di `vite.config.ts`, lihat architecture.md §9).
 6. **Build**: `npm run build`.
 
 ---

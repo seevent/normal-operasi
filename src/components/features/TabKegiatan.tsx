@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Briefcase, Calendar, MapPin, Clock, Share2, CheckCircle, FileText, ClipboardList, AlertCircle, Cpu } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
-import { PhotoUploader, Photo } from '../shared/PhotoUploader';
+import { PhotoUploader, type Photo, type PhotoAnnotation, type PhotoDropEvent } from '../shared/PhotoUploader';
 import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
@@ -37,7 +37,7 @@ export const TabKegiatan: React.FC = () => {
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
-  const [collageAnnotation, setCollageAnnotation] = useState<any>(undefined);
+  const [collageAnnotation, setCollageAnnotation] = useState<PhotoAnnotation | undefined>(undefined);
 
   const photosRef = React.useRef(photos);
   photosRef.current = photos;
@@ -138,7 +138,7 @@ export const TabKegiatan: React.FC = () => {
     });
   };
 
-  const handlePhotoDrop = (e: React.DragEvent | any, targetIndex: number) => {
+  const handlePhotoDrop = (e: PhotoDropEvent, targetIndex: number) => {
     e.preventDefault();
     const sourceIndexStr = e.dataTransfer?.getData('text/plain');
     if (!sourceIndexStr) return;
@@ -154,7 +154,7 @@ export const TabKegiatan: React.FC = () => {
     });
   };
 
-  const handlePhotoEdit = (index: number, updatedPhoto: any) => {
+  const handlePhotoEdit = (index: number, updatedPhoto: Photo) => {
     setPhotos(prev => {
       const newPhotos = [...prev];
       newPhotos[index] = updatedPhoto;
