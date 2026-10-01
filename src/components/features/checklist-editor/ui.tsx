@@ -99,5 +99,3 @@ export const AddButton: React.FC<{ onClick: () => void; tone: keyof typeof addTo
 export const EmptyHint: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="text-sm text-slate-400 italic px-1 py-2">{children}</p>
 );
-
-export const confirmDelete = (message: string): boolean => window.confirm(message);

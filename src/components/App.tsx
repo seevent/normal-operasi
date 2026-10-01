@@ -1,7 +1,7 @@
 import React, { useState, useEffect, cloneElement } from 'react';
 import { 
   Wrench, Users, Megaphone, CheckSquare, Settings, AlertTriangle, 
-  RefreshCw, Check, Database, CheckCircle, FileText, Briefcase, FileWarning,
+  RefreshCw, Check, Database, FileText, Briefcase, FileWarning,
   ChevronLeft, ChevronRight, Package, ExternalLink, FileCheck
 } from 'lucide-react';
 import { MonitorSearchIcon } from './shared/MonitorSearchIcon';

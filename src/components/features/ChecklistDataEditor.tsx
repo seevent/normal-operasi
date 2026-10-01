@@ -32,7 +32,8 @@ import {
   sumStats,
 } from '../../lib/utils/checklistEditor';
 import { BlockCard } from './checklist-editor/BlockCard';
-import { ChecklistEditorProvider, nodeDomId } from './checklist-editor/EditorContext';
+import { ChecklistEditorProvider } from './checklist-editor/EditorContext';
+import { nodeDomId } from './checklist-editor/helpers';
 import { AddButton, EmptyHint } from './checklist-editor/ui';
 
 const toolButton =

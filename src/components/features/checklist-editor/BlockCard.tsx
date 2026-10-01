@@ -8,10 +8,11 @@ import {
   countBlock,
   countMissingSummaryKeys,
 } from '../../../lib/utils/checklistEditor';
-import { nodeDomId, useChecklistEditor } from './EditorContext';
+import { useChecklistEditor } from './EditorContext';
+import { confirmDelete, nodeDomId } from './helpers';
 import { CategoryList } from './CategoryList';
 import { SubGroupList } from './SubGroupList';
-import { ActionBar, Chevron, confirmDelete, Field, inputClass } from './ui';
+import { ActionBar, Chevron, Field, inputClass } from './ui';
 
 const TONE: Record<ChecklistBlockType, { badge: string; open: string; ring: string }> = {
   location: { badge: 'bg-blue-100 text-blue-700', open: 'bg-blue-50', ring: 'border-blue-300' },

@@ -264,7 +264,6 @@ export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
   const hasExtensionConveyor = sortedEquips.some(eq => eq.toLowerCase().includes('extension conveyor'));
   const hasXRay = sortedEquips.some(eq => eq.toLowerCase().includes('x-ray') || eq.toLowerCase().includes('xray'));
   const hasWtmd = sortedEquips.some(eq => eq.toLowerCase().includes('wtmd'));
-  const hasHhmd = sortedEquips.some(eq => eq.toLowerCase().includes('hhmd'));
   const hasBs = sortedEquips.some(eq => eq.toLowerCase().includes('body scanner'));
   const hasEtd = sortedEquips.some(eq => eq.toLowerCase().includes('etd'));
 

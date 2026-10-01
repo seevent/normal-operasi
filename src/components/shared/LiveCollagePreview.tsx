@@ -11,9 +11,7 @@ interface LiveCollagePreviewProps {
 
 export const LiveCollagePreview: React.FC<LiveCollagePreviewProps> = ({ photos, onCollageChange }) => {
   const [autoCollageUrl, setAutoCollageUrl] = useState<string | null>(null);
-  const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
   const [rawCollageUrl, setRawCollageUrl] = useState<string | null>(null);
-  const [rawCollageFile, setRawCollageFile] = useState<File | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [collageAnnotation, setCollageAnnotation] = useState<PhotoAnnotation | undefined>(undefined);
   const [isEditingText, setIsEditingText] = useState<boolean>(false);
@@ -47,7 +45,6 @@ export const LiveCollagePreview: React.FC<LiveCollagePreviewProps> = ({ photos, 
 
         if (rawResult) {
           setRawCollageUrl(rawResult.url);
-          setRawCollageFile(rawResult.file);
 
           if (collageAnnotation) {
             const annotatedResult = await processPhotosToCollage(photos, collageAnnotation);
@@ -58,27 +55,22 @@ export const LiveCollagePreview: React.FC<LiveCollagePreviewProps> = ({ photos, 
             setIsGenerating(false);
             if (annotatedResult) {
               setAutoCollageUrl(annotatedResult.url);
-              setAutoCollageFile(annotatedResult.file);
               notifyCollage(annotatedResult.file, annotatedResult.url, collageAnnotation);
             }
           } else {
             setIsGenerating(false);
             setAutoCollageUrl(rawResult.url);
-            setAutoCollageFile(rawResult.file);
             notifyCollage(rawResult.file, rawResult.url, undefined);
           }
         } else {
           setIsGenerating(false);
           setAutoCollageUrl(null);
-          setAutoCollageFile(null);
           notifyCollage(null, null, undefined);
         }
       } else {
         setIsGenerating(false);
         setAutoCollageUrl(null);
-        setAutoCollageFile(null);
         setRawCollageUrl(null);
-        setRawCollageFile(null);
         notifyCollage(null, null, undefined);
       }
     };

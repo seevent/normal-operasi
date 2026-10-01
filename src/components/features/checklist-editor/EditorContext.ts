@@ -18,6 +18,3 @@ export const useChecklistEditor = (): ChecklistEditorContextValue => {
   if (!value) throw new Error('useChecklistEditor harus dipakai di dalam ChecklistEditorProvider');
   return value;
 };
-
-/** ID elemen DOM untuk sebuah node editor; dipakai untuk menggulir ke node baru. */
-export const nodeDomId = (id: string) => `cl-${id}`;

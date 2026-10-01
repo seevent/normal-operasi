@@ -7,8 +7,9 @@ import {
   removeAt,
   replaceAt,
 } from '../../../lib/utils/checklistEditor';
-import { nodeDomId, useChecklistEditor } from './EditorContext';
-import { ActionBar, AddButton, Chevron, confirmDelete, EmptyHint, Field, inputClass } from './ui';
+import { useChecklistEditor } from './EditorContext';
+import { confirmDelete, nodeDomId } from './helpers';
+import { ActionBar, AddButton, Chevron, EmptyHint, Field, inputClass } from './ui';
 import { ItemsTextarea } from './ItemsTextarea';
 
 interface CategoryCardProps {

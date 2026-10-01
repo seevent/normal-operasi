@@ -135,7 +135,7 @@ export const AssetManager: React.FC = () => {
       for (const titikStr of titikArray) {
         // 1. Cari atau buat Titik Lokasi
         let titikId = null;
-        const { data: existingTitik, error: titikErr } = await supabase
+        const { data: existingTitik } = await supabase
           .from('titik_lokasi')
           .select('id')
           .eq('id_lokasi', formLokasi)

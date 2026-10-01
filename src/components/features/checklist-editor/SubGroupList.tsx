@@ -7,9 +7,10 @@ import {
   removeAt,
   replaceAt,
 } from '../../../lib/utils/checklistEditor';
-import { nodeDomId, useChecklistEditor } from './EditorContext';
+import { useChecklistEditor } from './EditorContext';
+import { confirmDelete, nodeDomId } from './helpers';
 import { CategoryList } from './CategoryList';
-import { ActionBar, AddButton, Chevron, confirmDelete, EmptyHint, Field, inputClass } from './ui';
+import { ActionBar, AddButton, Chevron, EmptyHint, Field, inputClass } from './ui';
 
 export type SubGroupKind = 'location' | 'terminal';
 

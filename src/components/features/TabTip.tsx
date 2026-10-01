@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CheckSquare, Save, Share2, RefreshCw, Square, Check, Lock, Loader2, AlertTriangle } from 'lucide-react';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { supabase } from '../../lib/supabaseClient';
+import { TIP_MONTHS } from '../../lib/data/constants';
 
-export const TIP_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
 const getDefaultTipPeriod = () => {
   const now = new Date();

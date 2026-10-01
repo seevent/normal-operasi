@@ -15,8 +15,7 @@ import {
   saveChecklistSummary,
   ChecklistSummaryItem,
   saveOperationalLog,
-  getReportDefaultDateAndShift,
-  isTimeWithinShiftBoundary
+  getReportDefaultDateAndShift
 } from '../../lib/services/operationalReportService';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { getDefaultKalibrasiUraian, generateWA_ShiftReport } from '../../lib/utils/waGenerator';
@@ -47,7 +46,6 @@ export const TabShiftReport: React.FC = () => {
   const [dailyCounts, setDailyCounts] = useState<{ ps: number; m: number; total: number }>({ ps: 0, m: 0, total: 0 });
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; title: string } | null>(null);
 
-  const [loading, setLoading] = useState(false);
   const [sharingWa, setSharingWa] = useState(false);
   const [fetchingLive, setFetchingLive] = useState(false);
   const [reports, setReports] = useState<any[]>([]);
@@ -452,7 +450,7 @@ export const TabShiftReport: React.FC = () => {
           reader.onerror = () => resolve(null);
           reader.readAsDataURL(blob);
         });
-      } catch (e) {
+      } catch {
         // Sembunyikan gambar yang gagal di-fetch agar tidak merusak kanvas PDF
         img.style.display = 'none';
       }
@@ -816,7 +814,7 @@ export const TabShiftReport: React.FC = () => {
             {/* Tombol Kirim ke WhatsApp */}
             <button 
               onClick={handleShareWa} 
-              disabled={loading || sharingWa}
+              disabled={sharingWa}
               title="Bagikan ringkasan laporan shift ke WhatsApp"
               className="flex-1 min-w-[130px] flex justify-center items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
             >

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, Type, RotateCcw, Sparkles, ArrowDown, ArrowUp, Minus, Palette, Clock, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { PhotoAnnotation } from './PhotoUploader';
+import { drawTextOnCanvas } from '../../lib/utils/canvasUtils';
 
 interface PhotoTextEditorModalProps {
   isOpen: boolean;
@@ -12,129 +13,6 @@ interface PhotoTextEditorModalProps {
   onReset?: () => void;
   hasOriginal?: boolean;
 }
-
-export const drawTextOverlay = (
-  canvas: HTMLCanvasElement,
-  text: string,
-  position: 'top' | 'bottom' | 'center',
-  style: 'black' | 'red' | 'green' | 'yellow' | 'clear',
-  size: 'small' | 'medium' | 'large' | number,
-  align: 'left' | 'center' | 'right' = 'center'
-) => {
-  const ctx = canvas.getContext('2d');
-  if (!ctx || !text.trim()) return;
-
-  // 2. Calculate font size
-  const baseDim = Math.max(canvas.width, canvas.height);
-  let fontSize = 40;
-  if (typeof size === 'number' && !isNaN(size)) {
-    fontSize = Math.max(12, Math.min(Math.floor(canvas.height / 2), Math.round(size)));
-  } else {
-    let fontScale = 0.12;
-    if (size === 'small') fontScale = 0.08;
-    if (size === 'large') fontScale = 0.18;
-    fontSize = Math.max(20, Math.round(baseDim * fontScale));
-  }
-
-  ctx.font = `bold ${fontSize}px sans-serif, Arial, Inter`;
-  ctx.textAlign = align;
-  ctx.textBaseline = 'middle';
-
-  // 3. Word wrap
-  const lines: string[] = [];
-  const rawLines = text.split('\n');
-  const maxLineWidth = canvas.width * 0.9;
-
-  rawLines.forEach(rawLine => {
-    const words = rawLine.split(' ');
-    let currentLine = '';
-    words.forEach(word => {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      if (ctx.measureText(testLine).width > maxLineWidth && currentLine) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    });
-    if (currentLine) lines.push(currentLine);
-  });
-
-  if (lines.length === 0) return;
-
-  // 4. Calculate banner height and Y position
-  const lineHeight = fontSize * 1.35;
-  const paddingY = fontSize * 0.6;
-  const boxHeight = lines.length * lineHeight + paddingY * 2;
-
-  let boxY = canvas.height - boxHeight; // bottom
-  if (position === 'top') boxY = 0;
-  if (position === 'center') boxY = (canvas.height - boxHeight) / 2;
-
-  // 5. Draw background banner
-  if (style !== 'clear') {
-    let bgColor = 'rgba(0, 0, 0, 0.65)';
-    if (style === 'red') bgColor = 'rgba(220, 38, 38, 0.85)';
-    if (style === 'green') bgColor = 'rgba(22, 163, 74, 0.85)';
-    if (style === 'yellow') bgColor = 'rgba(234, 179, 8, 0.85)';
-
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, boxY, canvas.width, boxHeight);
-  }
-
-  // 6. Draw text lines
-  const paddingX = canvas.width * 0.05;
-  lines.forEach((line, index) => {
-    let textX = canvas.width / 2;
-    if (align === 'left') textX = paddingX;
-    if (align === 'right') textX = canvas.width - paddingX;
-
-    const textY = boxY + paddingY + (index + 0.5) * lineHeight;
-
-    if (style === 'clear') {
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
-      ctx.shadowBlur = Math.round(fontSize * 0.3);
-      ctx.shadowOffsetX = Math.max(2, Math.round(fontSize * 0.05));
-      ctx.shadowOffsetY = Math.max(2, Math.round(fontSize * 0.05));
-      ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
-      ctx.strokeStyle = '#000000';
-      ctx.strokeText(line, textX, textY);
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(line, textX, textY);
-    } else if (style === 'yellow') {
-      ctx.fillStyle = '#000000';
-      ctx.fillText(line, textX, textY);
-    } else {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(line, textX, textY);
-    }
-  });
-};
-
-export const drawTextOnCanvas = (
-  canvas: HTMLCanvasElement,
-  img: HTMLImageElement,
-  text: string,
-  position: 'top' | 'bottom' | 'center',
-  style: 'black' | 'red' | 'green' | 'yellow' | 'clear',
-  size: 'small' | 'medium' | 'large' | number,
-  align: 'left' | 'center' | 'right' = 'center'
-) => {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  canvas.width = img.naturalWidth || img.width || 1200;
-  canvas.height = img.naturalHeight || img.height || 1200;
-
-  // 1. Draw image
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-  // 2. Draw text overlay
-  drawTextOverlay(canvas, text, position, style, size, align);
-};
 
 export const PhotoTextEditorModal: React.FC<PhotoTextEditorModalProps> = ({
   isOpen, onClose, photoUrl, initialAnnotation, onSave, onReset, hasOriginal
