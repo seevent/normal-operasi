@@ -76,20 +76,18 @@ test('Format PM Rencana Kegiatan: groups Mingguan and Bulanan with explicit head
     { lokasi: 'PSCP D', titik: '2', jenis: 'ETD', tipe: 'ETD Leidos B220', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' }
   ];
 
-  const formatted = formatPmRencanaKegiatan(mixedRecords);
-  assert.equal(formatted, [
+  assert.equal(formatPmRencanaKegiatan(mixedRecords), [
     '*Jadwal Preventive Mingguan :*',
     '📍PSCP D 1',
     '- WTMD CEIA',
     '',
     '*Jadwal Preventive Bulanan :*',
-    '  X-Ray Rapiscan 620DV',
     '📍PSCP D 2',
-    '  ETD Leidos B220',
-    '📍PSCP D 2'
+    '- X-Ray Rapiscan 620DV',
+    '- ETD Leidos B220'
   ].join('\n'));
 
-  // Test only Mingguan
+  // Hanya Mingguan
   const mingguanOnly = [
     { lokasi: 'PSCP D', titik: '1', jenis: 'WTMD', tipe: 'WTMD CEIA', kategori_pm: 'PM Mingguan' }
   ];
@@ -97,11 +95,11 @@ test('Format PM Rencana Kegiatan: groups Mingguan and Bulanan with explicit head
   assert.ok(formattedMingguan.includes('*Jadwal Preventive Mingguan :*'));
   assert.ok(!formattedMingguan.includes('*Jadwal Preventive Bulanan :*'));
 
-  // Test only Bulanan
+  // Hanya Bulanan
   const bulananOnly = [
     { lokasi: 'HBSCP', titik: '1.1', jenis: 'X-Ray', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'Kalibrasi & PM Bulanan (M)' }
   ];
-  assert.equal(formatPmRencanaKegiatan(bulananOnly), '*Jadwal Preventive Bulanan :*\n  X-Ray Rapiscan 628DV\n📍HBSCP 1.1');
+  assert.equal(formatPmRencanaKegiatan(bulananOnly), '*Jadwal Preventive Bulanan :*\n📍HBSCP 1.1\n- X-Ray Rapiscan 628DV');
 });
 
 test('PM Display Settings Filter: can disable specific categories or equipment types', () => {
@@ -143,19 +141,68 @@ test('TabKehadiran & PmScheduleUploader integration: uses pmDisplaySettings and 
   assert.match(store, /togglePmTypeSetting/);
 });
 
+const M = 'PM Mingguan';
+const B = 'Kalibrasi & PM Bulanan (PS)';
+// Sengaja dalam urutan acak untuk memastikan hasil diurutkan: lokasi alfabetis (angka natural),
+// peralatan X-Ray, WTMD, Body Scanner, ETD; Access Control di bawah.
 const sampleRecords = [
-  { lokasi: 'HBSCP', titik: '1.1', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'HBSCP', titik: '1.3', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'PSCP E', titik: '2', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'PSCP E', titik: '2', tipe: 'Body Scanner Leidos Provision 2', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'PSCP E', titik: '2', tipe: 'ETD Leidos B220', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'PSCP F', titik: '2', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'PSCP F', titik: '2', tipe: 'WTMD CEIA HI-PE/PZ Multizone', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'PSCP F', titik: '2', tipe: 'Body Scanner Leidos Provision 2', kategori_pm: 'PM Mingguan' },
-  { lokasi: 'Rampout D', titik: '2', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' },
-  { lokasi: 'Aviobridge D', titik: '1', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' },
-  { lokasi: 'Server Access', titik: '-', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)' }
+  { lokasi: 'Server Access', titik: '-', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: M },
+  { lokasi: 'PSCP Umrah', titik: '2', jenis: 'Body Scanner', tipe: 'Body Scanner Leidos Provision 2', kategori_pm: M },
+  { lokasi: 'PSCP Umrah', titik: '2', jenis: 'X-Ray', tipe: 'X-Ray Nuctech CX6040D', kategori_pm: M },
+  { lokasi: 'PSCP E', titik: '3', jenis: 'WTMD', tipe: 'WTMD CEIA HI-PE/PZ Multizone', kategori_pm: M },
+  { lokasi: 'PSCP E', titik: '3', jenis: 'X-Ray', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: M },
+  { lokasi: 'HBSCP', titik: '1.4', jenis: 'X-Ray', tipe: 'X-Ray Rapiscan 628DV', kategori_pm: M },
+  { lokasi: 'PSCP Umrah', titik: '1', jenis: 'WTMD', tipe: 'WTMD CEIA HI-PE/PZ Multizone', kategori_pm: M },
+  { lokasi: 'PSCP Umrah', titik: '1', jenis: 'X-Ray', tipe: 'X-Ray Smith Heimann HS 6040T-2is', kategori_pm: M },
+  { lokasi: 'Rampout D', titik: '2', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: M },
+  { lokasi: 'Aviobridge D', titik: '1', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: M },
+  { lokasi: 'Server Access', titik: '-', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: B },
+  { lokasi: 'Rampout D', titik: '2', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: B },
+  { lokasi: 'Aviobridge D', titik: '1', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: B },
+  { lokasi: 'PSCP D', titik: '1', jenis: 'WTMD', tipe: 'WTMD CEIA HI-PE/PZ Multizone', kategori_pm: B },
+  { lokasi: 'PSCP D', titik: '1', jenis: 'X-Ray', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: B }
 ];
+
+const EXPECTED_JADWAL = [
+  '*Jadwal Preventive Mingguan :*',
+  '📍HBSCP 1.4',
+  '- X-Ray Rapiscan 628DV',
+  '📍PSCP E 3',
+  '- X-Ray Rapiscan 620DV',
+  '- WTMD CEIA HI-PE/PZ Multizone',
+  '📍PSCP Umrah 1',
+  '- X-Ray Smith Heimann HS 6040T-2is',
+  '- WTMD CEIA HI-PE/PZ Multizone',
+  '📍PSCP Umrah 2',
+  '- X-Ray Nuctech CX6040D',
+  '- Body Scanner Leidos Provision 2',
+  '',
+  '- Access Control',
+  '📍Aviobridge D 1',
+  '📍Rampout D 2',
+  '📍Server Access',
+  '',
+  '*Jadwal Preventive Bulanan :*',
+  '📍PSCP D 1',
+  '- X-Ray Rapiscan 620DV',
+  '- WTMD CEIA HI-PE/PZ Multizone',
+  '',
+  '- Access Control',
+  '📍Aviobridge D 1',
+  '📍Rampout D 2',
+  '📍Server Access'
+].join('\n');
+
+test('Jadwal Preventive cocok dengan contoh format (Mingguan dan Bulanan, Access Control di bawah)', () => {
+  assert.equal(formatPmRencanaKegiatan(sampleRecords), EXPECTED_JADWAL);
+});
+
+test('Jadwal Preventive: bagian yang hanya berisi Access Control tidak diawali baris kosong', () => {
+  assert.equal(
+    formatPmRencanaKegiatan([{ lokasi: 'Rampout D', titik: '2', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: B }]),
+    '*Jadwal Preventive Bulanan :*\n- Access Control\n📍Rampout D 2'
+  );
+});
 
 test('Laporan Kehadiran WA matches user template', () => {
   const message = generateWA_Kehadiran({
@@ -207,27 +254,8 @@ test('Laporan Kehadiran WA matches user template', () => {
     '- Monitoring Ops',
     '- Storing Peralatan',
     '- Preventive Maintenance & Kalibrasi Peralatan',
-    '',
-    '*Jadwal Preventive Mingguan :*',
-    '📍HBSCP 1.1',
-    '- X-Ray Rapiscan 628DV',
-    '📍HBSCP 1.3',
-    '- X-Ray Rapiscan 628DV',
-    '📍PSCP E 2',
-    '- X-Ray Rapiscan 620DV',
-    '- Body Scanner Leidos Provision 2',
-    '- ETD Leidos B220',
-    '📍PSCP F 2',
-    '- X-Ray Rapiscan 620DV',
-    '- WTMD CEIA HI-PE/PZ Multizone',
-    '- Body Scanner Leidos Provision 2',
-    '',
-    '*Jadwal Preventive Bulanan :*',
-    '  Access Control',
-    '📍Rampout D 2',
-    '📍Aviobridge D 1',
-    '📍Server Access'
-  ].join('\n');
+    ''
+  ].join('\n') + '\n' + EXPECTED_JADWAL;
 
   assert.equal(message, expected);
 });

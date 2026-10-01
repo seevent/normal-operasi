@@ -356,59 +356,66 @@ export function filterActivePm(
 export const RENCANA_KEGIATAN_DASAR = '- Monitoring Ops\n- Storing Peralatan';
 export const RENCANA_KEGIATAN_PM = '- Preventive Maintenance & Kalibrasi Peralatan';
 
-// Format daftar PM ke bentuk teks rencana kegiatan harian:
-// - Mingguan dikelompokkan per lokasi (📍Lokasi, lalu daftar peralatan)
-// - Bulanan dikelompokkan per tipe peralatan (tipe, lalu daftar 📍Lokasi)
-export function formatPmRencanaKegiatan(activePm: Array<{ lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string }>): string {
-  if (!activePm || activePm.length === 0) return '';
+type PmItem = { lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string };
 
-  const mingguanItems: typeof activePm = [];
-  const bulananItems: typeof activePm = [];
+const isAccessControl = (item: PmItem) => item.jenis === 'Access Control' || item.tipe === 'Access Control';
 
-  activePm.forEach(item => {
-    const isMingguan = item.kategori_pm && item.kategori_pm.toLowerCase().includes('mingguan');
-    if (isMingguan) {
-      mingguanItems.push(item);
-    } else {
-      bulananItems.push(item);
-    }
+const naturalCompare = (a: string, b: string) => a.localeCompare(b, 'id', { numeric: true, sensitivity: 'base' });
+
+// Urutan peralatan dalam satu lokasi: X-Ray, WTMD, Body Scanner, ETD, lainnya.
+const equipRank = (item: PmItem): number => {
+  const text = `${item.jenis || ''} ${item.tipe}`.toLowerCase();
+  if (text.includes('x-ray') || text.includes('xray')) return 0;
+  if (text.includes('wtmd')) return 1;
+  if (text.includes('body scanner')) return 2;
+  if (text.includes('etd')) return 3;
+  return 4;
+};
+
+const locDisplay = (item: PmItem) =>
+  item.titik && item.titik !== '-' ? `${item.lokasi} ${item.titik}` : item.lokasi;
+
+// Satu bagian jadwal: tiap lokasi diikuti peralatannya; Access Control ditaruh di bawah,
+// berupa satu baris "- Access Control" lalu daftar lokasinya. Lokasi diurutkan agar hasil selalu sama.
+const formatPmSection = (header: string, items: PmItem[]): string => {
+  const regular = items.filter(item => !isAccessControl(item));
+  const accessControl = items.filter(isAccessControl);
+  const lines = [header];
+
+  const byLocation = new Map<string, PmItem[]>();
+  regular.forEach(item => {
+    const loc = locDisplay(item);
+    if (!byLocation.has(loc)) byLocation.set(loc, []);
+    byLocation.get(loc)!.push(item);
+  });
+  Array.from(byLocation.keys()).sort(naturalCompare).forEach(loc => {
+    lines.push(`📍${loc}`);
+    const types: string[] = [];
+    [...byLocation.get(loc)!].sort((a, b) => equipRank(a) - equipRank(b)).forEach(item => {
+      if (!types.includes(item.tipe)) types.push(item.tipe);
+    });
+    types.forEach(type => lines.push(`- ${type}`));
   });
 
-  const locDisplay = (item: typeof activePm[number]) =>
-    item.titik && item.titik !== '-' ? `${item.lokasi} ${item.titik}` : item.lokasi;
+  if (accessControl.length > 0) {
+    if (regular.length > 0) lines.push('');
+    lines.push(`- ${accessControl[0].tipe}`);
+    Array.from(new Set(accessControl.map(locDisplay))).sort(naturalCompare).forEach(loc => lines.push(`📍${loc}`));
+  }
 
-  const groupBy = (items: typeof activePm, keyOf: (item: typeof activePm[number]) => string, valueOf: (item: typeof activePm[number]) => string) => {
-    const groups = new Map<string, string[]>();
-    items.forEach(item => {
-      const key = keyOf(item);
-      if (!groups.has(key)) groups.set(key, []);
-      const list = groups.get(key)!;
-      const value = valueOf(item);
-      if (!list.includes(value)) list.push(value);
-    });
-    return groups;
-  };
+  return lines.join('\n');
+};
+
+// Format daftar PM ke bentuk teks rencana kegiatan harian (Mingguan dan Bulanan).
+export function formatPmRencanaKegiatan(activePm: PmItem[]): string {
+  if (!activePm || activePm.length === 0) return '';
+
+  const mingguanItems = activePm.filter(item => item.kategori_pm && item.kategori_pm.toLowerCase().includes('mingguan'));
+  const bulananItems = activePm.filter(item => !(item.kategori_pm && item.kategori_pm.toLowerCase().includes('mingguan')));
 
   const sections: string[] = [];
-
-  if (mingguanItems.length > 0) {
-    const lines = ['*Jadwal Preventive Mingguan :*'];
-    groupBy(mingguanItems, locDisplay, item => item.tipe).forEach((types, loc) => {
-      lines.push(`📍${loc}`);
-      types.forEach(type => lines.push(`- ${type}`));
-    });
-    sections.push(lines.join('\n'));
-  }
-
-  if (bulananItems.length > 0) {
-    const lines = ['*Jadwal Preventive Bulanan :*'];
-    groupBy(bulananItems, item => item.tipe, locDisplay).forEach((locs, type) => {
-      lines.push(`  ${type}`);
-      locs.forEach(loc => lines.push(`📍${loc}`));
-    });
-    sections.push(lines.join('\n'));
-  }
-
+  if (mingguanItems.length > 0) sections.push(formatPmSection('*Jadwal Preventive Mingguan :*', mingguanItems));
+  if (bulananItems.length > 0) sections.push(formatPmSection('*Jadwal Preventive Bulanan :*', bulananItems));
   return sections.join('\n\n');
 }
 
