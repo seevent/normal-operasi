@@ -10,12 +10,16 @@ import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
 import { filterActivePm, buildRencanaKegiatan, RENCANA_KEGIATAN_DASAR, RENCANA_KEGIATAN_PM } from '../../lib/utils/pmScheduleParser';
 import { getErrorMessage } from '../../lib/utils/errorUtils';
 import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
+import { validateKehadiran } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
+import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
 export const TabKehadiran: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { dataApiT2, dataOmIasT2, pmDisplaySettings } = useMasterDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [loadedSchedules, setLoadedSchedules] = useState<{ id: number; personel_id: number }[]>([]);
 
   const [attendanceData, setAttendanceData] = useState(() => {
@@ -253,6 +257,14 @@ export const TabKehadiran: React.FC = () => {
 
   const handleAttendanceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const missing = validateKehadiran(attendanceData);
+    if (missing.length > 0) {
+      setShowErrors(true);
+      reportMissingFields(missing);
+      return;
+    }
+
     setIsSaving(true);
     
     try {
@@ -314,8 +326,11 @@ export const TabKehadiran: React.FC = () => {
     }
   };
 
+  const missingKeys = new Set(validateKehadiran(attendanceData).map(m => m.key));
+  const hasError = (key: string) => showErrors && missingKeys.has(key);
+
   return (
-    <form onSubmit={handleAttendanceSubmit} className="p-6 sm:p-8 space-y-8">
+    <form onSubmit={handleAttendanceSubmit} noValidate className="p-6 sm:p-8 space-y-8">
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
           <Users className="w-5 h-5 text-blue-600" /> Info Shift
@@ -326,8 +341,9 @@ export const TabKehadiran: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="date" name="tanggal" required value={attendanceData.tanggal} onChange={handleAttendanceChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="date" name="tanggal" required value={attendanceData.tanggal} onChange={handleAttendanceChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('tanggal') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} />
             </div>
+            <FieldError show={hasError('tanggal')} message="Tanggal wajib diisi!" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Dinas (Shift)</label>
@@ -345,7 +361,7 @@ export const TabKehadiran: React.FC = () => {
               <User className="w-5 h-5 text-blue-600" /> Personel API T2
             </h2>
           </div>
-        <div className="space-y-3">
+        <div className={`space-y-3 ${hasError('apiList') ? `p-3 rounded-lg border ${FIELD_ERROR_CLASS}` : ''}`} data-field="apiList">
           {attendanceData.apiList.map((row, index) => {
             const availableOptions = dataApiT2.filter(p => !attendanceData.apiList.some(r => r.name === p.name) || p.name === row.name);
             return (
@@ -370,6 +386,7 @@ export const TabKehadiran: React.FC = () => {
           <button type="button" onClick={() => addRow('apiList')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-2">
             <Plus className="w-4 h-4" /> Tambah Personel (Manual)
           </button>
+          <FieldError show={hasError('apiList')} message="Pilih minimal 1 personel API T2!" />
         </div>
       </div>
 
@@ -379,7 +396,7 @@ export const TabKehadiran: React.FC = () => {
               <Users className="w-5 h-5 text-blue-600" /> Personel OM IAS T2
             </h2>
           </div>
-        <div className="space-y-3">
+        <div className={`space-y-3 ${hasError('omList') ? `p-3 rounded-lg border ${FIELD_ERROR_CLASS}` : ''}`} data-field="omList">
           {attendanceData.omList.map((row, index) => {
             const availableOptions = dataOmIasT2.filter(p => !attendanceData.omList.some(r => r.name === p.name) || p.name === row.name);
             return (
@@ -404,6 +421,7 @@ export const TabKehadiran: React.FC = () => {
           <button type="button" onClick={() => addRow('omList')} className="text-sm font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 mt-2">
             <Plus className="w-4 h-4" /> Tambah Personel (Manual)
           </button>
+          <FieldError show={hasError('omList')} message="Pilih minimal 1 personel OM IAS T2!" />
         </div>
       </div>
 
@@ -414,11 +432,13 @@ export const TabKehadiran: React.FC = () => {
         <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Tlp Ruangan</label>
-            <input type="text" name="tlpRuangan" required value={attendanceData.tlpRuangan} onChange={handleAttendanceChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm" />
+            <input type="text" name="tlpRuangan" required value={attendanceData.tlpRuangan} onChange={handleAttendanceChange} className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm ${hasError('tlpRuangan') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} />
+            <FieldError show={hasError('tlpRuangan')} message="Tlp ruangan wajib diisi!" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Rencana Kegiatan Harian</label>
-            <textarea ref={rencanaKegiatanRef} name="rencanaKegiatan" required rows={3} value={attendanceData.rencanaKegiatan} onChange={(e) => handleDashChange(e, 'rencanaKegiatan')} onKeyDown={(e) => handleDashKeyDown(e, 'rencanaKegiatan')} className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed"></textarea>
+            <textarea ref={rencanaKegiatanRef} name="rencanaKegiatan" required rows={3} value={attendanceData.rencanaKegiatan} onChange={(e) => handleDashChange(e, 'rencanaKegiatan')} onKeyDown={(e) => handleDashKeyDown(e, 'rencanaKegiatan')} className={`w-full px-4 py-3 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden font-mono text-sm leading-relaxed ${hasError('rencanaKegiatan') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}></textarea>
+            <FieldError show={hasError('rencanaKegiatan')} message="Rencana kegiatan wajib diisi!" />
             {(() => {
               const hasPM = attendanceData.rencanaKegiatan.includes(RENCANA_KEGIATAN_PM);
               return (

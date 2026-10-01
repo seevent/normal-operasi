@@ -12,12 +12,16 @@ import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canva
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { validateStoring } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
+import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
 export const TabStoring: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { jenisPeralatanData, storingLocAc, storingLocDefault } = useMasterDataStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const isSubmittingRef = useRef(false);
 
   const storingEquipments = Array.from(new Set(jenisPeralatanData.map(j => j.nama)));
@@ -201,8 +205,13 @@ export const TabStoring: React.FC = () => {
       return;
     }
     
-    if (storingData.peralatan.length > 0 && (storingData.acLokasi || []).length === 0) {
-      alert("Pastikan Anda memilih minimal 1 lokasi untuk peralatan terpilih!");
+    const missing = validateStoring(
+      storingData,
+      getStoringSupervisorLocations(storingData.peralatan, storingData.acLokasi, storingData.acNomor)
+    );
+    if (missing.length > 0) {
+      setShowErrors(true);
+      reportMissingFields(missing);
       unlock();
       return;
     }
@@ -298,8 +307,12 @@ export const TabStoring: React.FC = () => {
     }
   };
 
+  const supervisorLocsForValidation = getStoringSupervisorLocations(storingData.peralatan, storingData.acLokasi, storingData.acNomor);
+  const missingKeys = new Set(validateStoring(storingData, supervisorLocsForValidation).map(m => m.key));
+  const hasError = (key: string) => showErrors && missingKeys.has(key);
+
   return (
-    <form onSubmit={handleStoringSubmit} className="p-6 sm:p-8 space-y-8">
+    <form onSubmit={handleStoringSubmit} noValidate className="p-6 sm:p-8 space-y-8">
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center border-b pb-2">
           <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -312,7 +325,8 @@ export const TabStoring: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="date" name="tanggal" required value={storingData.tanggal} onChange={handleStoringChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="date" name="tanggal" required value={storingData.tanggal} onChange={handleStoringChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('tanggal') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} />
+<FieldError show={hasError('tanggal')} message="Tanggal wajib diisi!" />
             </div>
           </div>
           
@@ -325,8 +339,9 @@ export const TabStoring: React.FC = () => {
               max={storingData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
               value={storingData.waktuMulai} 
               onChange={handleStoringChange} 
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+              className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('waktuMulai') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} 
             />
+<FieldError show={hasError('waktuMulai')} message="Pukul mulai wajib diisi!" />
           </div>
           <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-700 mb-1">Pukul Selesai</label>
@@ -337,13 +352,14 @@ export const TabStoring: React.FC = () => {
               max={storingData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
               value={storingData.waktuSelesai} 
               onChange={handleStoringChange} 
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+              className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('waktuSelesai') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} 
             />
+<FieldError show={hasError('waktuSelesai')} message="Pukul selesai wajib diisi!" />
           </div>
 
           <div className="col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-2">Peralatan <span className="text-xs text-slate-400">(Bisa pilih lebih dari 1)</span></label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 ${hasError('peralatan') ? `p-2 rounded-lg border ${FIELD_ERROR_CLASS}` : ''}`} data-field="peralatan">
               {storingEquipments.map(equip => {
                 const isACChecked = storingData.peralatan.includes('Access Control');
                 const isMirroringChecked = storingData.peralatan.some(e => e.toLowerCase() === 'mirroring x-ray');
@@ -372,13 +388,14 @@ export const TabStoring: React.FC = () => {
                 );
               })}
             </div>
+            <FieldError show={hasError('peralatan')} message="Pilih minimal 1 peralatan!" />
           </div>
 
           <div className="col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Lokasi{storingData.peralatan.length > 0 && <span className="text-xs text-slate-400 font-normal"> (Pilih 1 atau lebih)</span>}
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 ${hasError('lokasi') ? `p-2 rounded-lg border ${FIELD_ERROR_CLASS}` : ''}`} data-field="lokasi">
               {(() => {
                 const locOpts = storingData.peralatan.includes('Access Control')
                   ? getGeneralLokasiOptions('Access Control')
@@ -463,13 +480,15 @@ export const TabStoring: React.FC = () => {
                 });
               })()}
             </div>
+            <FieldError show={hasError('lokasi')} message="Pilih minimal 1 lokasi untuk peralatan terpilih!" />
           </div>
 
           <div className="col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Hasil</label>
             <div className="relative">
               <AlertCircle className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="text" name="hasil" required value={storingData.hasil} onChange={handleStoringChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium" />
+              <input type="text" name="hasil" required value={storingData.hasil} onChange={handleStoringChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium ${hasError('hasil') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} />
+<FieldError show={hasError('hasil')} message="Hasil wajib diisi!" />
             </div>
           </div>
 
@@ -491,6 +510,7 @@ export const TabStoring: React.FC = () => {
                         <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
                         <input
                           type="text"
+                          data-field={`supervisor-${locKey}`}
                           value={currentValue}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -505,9 +525,10 @@ export const TabStoring: React.FC = () => {
                             });
                           }}
                           placeholder={`Nama ${labelText}`}
-                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                          className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium ${hasError(`supervisor-${locKey}`) ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
                         />
                       </div>
+                      <FieldError show={hasError(`supervisor-${locKey}`)} message={`${labelText} wajib diisi!`} />
                     </div>
                   );
                 })}

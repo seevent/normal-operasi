@@ -9,6 +9,8 @@ import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 import { useTipePeralatanOptions } from '../../lib/hooks/useTipePeralatanOptions';
+import { validateKegiatan } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
 
 export const TabKegiatan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -163,9 +165,10 @@ export const TabKegiatan: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!kegiatanData.tanggal || !kegiatanData.waktuMulai || !kegiatanData.lokasi || !kegiatanData.kegiatan) {
+    const missing = validateKegiatan(kegiatanData);
+    if (missing.length > 0) {
       setShowErrors(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      reportMissingFields(missing);
       return;
     }
     
@@ -244,7 +247,7 @@ export const TabKegiatan: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
+    <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8 space-y-8">
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
           <Briefcase className="w-5 h-5 text-blue-600" /> Informasi Laporan Kegiatan

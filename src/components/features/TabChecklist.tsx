@@ -7,6 +7,9 @@ import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { fetchChecklistShiftData, saveChecklistSupervisorDirect } from '../../lib/services/checklistSyncService';
 import { calculateChecklistSummary, saveChecklistSummary } from '../../lib/services/operationalReportService';
+import { validateChecklist } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
+import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
 export const TabChecklist: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -35,6 +38,7 @@ export const TabChecklist: React.FC = () => {
     });
   };
 
+  const [showErrors, setShowErrors] = useState(false);
   const [toggles, setToggles] = useState<Record<string, boolean>>({});
   const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
   const [syncStatus, setSyncStatus] = useState<'loading' | 'synced' | 'saving' | 'error'>('loading');
@@ -261,6 +265,14 @@ export const TabChecklist: React.FC = () => {
 
   const handleChecklistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const missing = validateChecklist(checklistData);
+    if (missing.length > 0) {
+      setShowErrors(true);
+      reportMissingFields(missing);
+      return;
+    }
+
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -288,8 +300,11 @@ export const TabChecklist: React.FC = () => {
     });
   };
 
+  const missingKeys = new Set(validateChecklist(checklistData).map(m => m.key));
+  const hasError = (key: string) => showErrors && missingKeys.has(key);
+
   return (
-    <form onSubmit={handleChecklistSubmit} className="p-4 sm:p-8 space-y-8 bg-slate-50/50">
+    <form onSubmit={handleChecklistSubmit} noValidate className="p-4 sm:p-8 space-y-8 bg-slate-50/50">
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
         <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-4">
           <Clock className="w-5 h-5 text-blue-600" /> Waktu Pelaksanaan Checklist
@@ -300,7 +315,8 @@ export const TabChecklist: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="date" name="tanggal" required value={checklistData.tanggal} onChange={handleChecklistChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="date" name="tanggal" required value={checklistData.tanggal} onChange={handleChecklistChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('tanggal') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} />
+<FieldError show={hasError('tanggal')} message="Tanggal wajib diisi!" />
             </div>
           </div>
           
@@ -315,8 +331,9 @@ export const TabChecklist: React.FC = () => {
                 max={checklistData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
                 value={checklistData.waktuMulai} 
                 onChange={handleChecklistChange} 
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('waktuMulai') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} 
               />
+<FieldError show={hasError('waktuMulai')} message="Pukul mulai wajib diisi!" />
             </div>
           </div>
 
@@ -331,8 +348,9 @@ export const TabChecklist: React.FC = () => {
                 max={checklistData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
                 value={checklistData.waktuSelesai} 
                 onChange={handleChecklistChange} 
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('waktuSelesai') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} 
               />
+<FieldError show={hasError('waktuSelesai')} message="Pukul selesai wajib diisi!" />
             </div>
           </div>
         </div>
