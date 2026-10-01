@@ -3,13 +3,14 @@
 // Modul murni tanpa akses store/jaringan supaya bisa diuji langsung.
 
 import { formatLokasiRows } from './lokasiFormat.ts';
+import type { IncidentFormData } from '../types.ts';
 
-export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) => {
+export const generateWA_Perbaikan = (formData: IncidentFormData, isVerifikasiETD: boolean) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
   const dateParts = formData.tanggal ? formData.tanggal.split('-') : ['','',''];
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : '';
   const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0
-    ? formData.lokasiList.filter((l: any) => l.lokasi1)
+    ? formData.lokasiList.filter((l) => l.lokasi1)
     : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
 
   const lokasiFinal = formatLokasiRows(locList);

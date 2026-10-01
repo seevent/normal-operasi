@@ -1,4 +1,5 @@
 // src/lib/data/masterData.ts
+import type { ChecklistBlock } from '../utils/checklistEditor';
 
 export const toTitleCase = (str: string): string => {
   if (!str) return '';
@@ -45,14 +46,14 @@ export const getJabatanRank = (jabatan?: string): number => {
   return 100;
 };
 
-export const sortPersonelByJabatan = <T extends Record<string, any>>(list: T[]): T[] => {
+export const sortPersonelByJabatan = <T extends { jabatan?: string | null; urutan?: number | null; dbOrder?: number }>(list: T[]): T[] => {
   return [...list].sort((a, b) => {
-    const rankA = getJabatanRank(a.jabatan);
-    const rankB = getJabatanRank(b.jabatan);
+    const rankA = getJabatanRank(a.jabatan ?? undefined);
+    const rankB = getJabatanRank(b.jabatan ?? undefined);
     if (rankA !== rankB) {
       return rankA - rankB;
     }
-    const getOrder = (item: any) => {
+    const getOrder = (item: T) => {
       if (item.urutan !== undefined && item.urutan !== null && !isNaN(Number(item.urutan))) return Number(item.urutan);
       if (item.dbOrder !== undefined && item.dbOrder !== null && !isNaN(Number(item.dbOrder))) return Number(item.dbOrder);
       return 999;
@@ -98,7 +99,7 @@ export const DEFAULT_STORING_LOC_DEFAULT = [
   'HBSCP 1.1 -1.6', 'HBSCP 2.1-2.6', 'HBSCP Umrah'
 ];
 
-export const DEFAULT_CHECKLIST_DATA = [
+export const DEFAULT_CHECKLIST_DATA: ChecklistBlock[] = [
   {
     type: 'location',
     title: 'PSCP D',

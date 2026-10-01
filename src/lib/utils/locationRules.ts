@@ -28,7 +28,7 @@ export const getValidModels = (lokasi: string, jenisPeralatan: string, titik?: s
     const penempatanData = useMasterDataStore.getState().penempatanData || [];
     const extractedModels: Set<string> = new Set();
 
-    penempatanData.forEach((p: any) => {
+    penempatanData.forEach((p) => {
       const pLoc = normalizeLoc(p.lokasi?.nama || '');
       if (
         pLoc === targetLoc &&
@@ -111,7 +111,7 @@ export const getGeneralLokasiOptions = (peralatanType: string) => {
   try {
     const penempatanData = useMasterDataStore.getState().penempatanData || [];
 
-    penempatanData.forEach((p: any) => {
+    penempatanData.forEach((p) => {
       const jenisNama = p.tipe_peralatan?.jenis_peralatan?.nama?.toUpperCase() || '';
       const tipeNama = p.tipe_peralatan?.nama?.toUpperCase() || '';
       const target = peralatanType.toUpperCase();
@@ -130,7 +130,7 @@ export const getGeneralLokasiOptions = (peralatanType: string) => {
     });
 
     if (extractedLocs.size === 0) {
-      penempatanData.forEach((p: any) => {
+      penempatanData.forEach((p) => {
         if (p.lokasi?.nama) extractedLocs.add(p.lokasi.nama);
       });
     }
@@ -180,7 +180,7 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
       const equipMap: Record<string, Set<string>> = {};
       peralatanArray.forEach(eq => { equipMap[eq] = new Set(); });
 
-      penempatanData.forEach((p: any) => {
+      penempatanData.forEach((p) => {
         if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase()) {
           const jenisNama = p.tipe_peralatan?.jenis_peralatan?.nama;
           const tipeNama = p.tipe_peralatan?.nama;
@@ -209,7 +209,7 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
       }
     }
 
-    penempatanData.forEach((p: any) => {
+    penempatanData.forEach((p) => {
       if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase()) {
         // Jika ada filter peralatanArray, pastikan titik lokasi ini memang untuk salah satu peralatan tersebut
         if (peralatanArray.length > 0) {
@@ -226,7 +226,7 @@ export const getLokasi2Options = (lokasi: string, peralatanArray: string[] = [])
     });
 
     if (extractedNumbers.size === 0 && peralatanArray.length > 0) {
-      penempatanData.forEach((p: any) => {
+      penempatanData.forEach((p) => {
         if (p.lokasi?.nama?.toUpperCase() === lokasi.toUpperCase()) {
           if (p.titik_lokasi?.nomor) extractedNumbers.add(p.titik_lokasi.nomor);
         }

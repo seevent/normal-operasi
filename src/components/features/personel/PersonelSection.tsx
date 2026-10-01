@@ -3,15 +3,9 @@ import { ArrowDown, ArrowUp, CheckCircle2, Loader2, Plus, Save, Trash2, Undo2 } 
 import { toTitleCase } from '../../../lib/data/masterData';
 import { getErrorMessage } from '../../../lib/utils/errorUtils';
 import { sayPet } from '../../../store/useAppStore';
+import type { Personel } from '../../../lib/types';
 
-export interface PersonelRecord {
-  id?: number | string;
-  name?: string;
-  phone?: string;
-  nik?: string;
-  jabatan?: string;
-  [extra: string]: unknown;
-}
+export type PersonelRecord = Personel;
 
 /** Baris editor: `_k` hanya untuk key React dan tidak pernah ikut disimpan. */
 interface Row {

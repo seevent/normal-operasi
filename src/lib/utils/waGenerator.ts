@@ -3,6 +3,11 @@
 import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels, parseLokasiDanTitik } from './locationRules';
 import { buildShiftReportMessage } from './shiftReportMessage';
 import { formatLokasi, formatLokasiRows, formatStoringLokasi } from './lokasiFormat.ts';
+import type {
+  BAFormData, ChecklistFormData, IncidentFormData, JadwalShiftRow, KalibrasiEntry, KalibrasiGlobalData,
+  ShiftReportRow, StoringFormData,
+} from '../types.ts';
+import type { ChecklistBlock } from './checklistEditor.ts';
 import { formatXRayParams, formatWtmdParams, XRAY_ARCHIVE_DEFAULT } from './kalibrasiParams.ts';
 
 export { formatACLokasiList } from './lokasiFormat.ts';
@@ -12,7 +17,7 @@ export { generateWA_Kehadiran } from './kehadiranMessage.ts';
 
 export { generateWA_Briefing } from './briefingMessage.ts';
 
-export const generateWA_Storing = (storingData: any) => {
+export const generateWA_Storing = (storingData: StoringFormData) => {
   const formattedDate = formatTanggalIndo(storingData.tanggal);
   const jamMulai = storingData.waktuMulai || '...';
   const jamSelesai = storingData.waktuSelesai || '...';
@@ -48,7 +53,9 @@ Lokasi : ${locString}
 Hasil : ${storingData.hasil}${supervisorAvsecLine}`;
 };
 
-export const generateWA_Checklist = (checklistData: any, checklistDataMaster: any[], toggles: any) => {
+type SummaryCounts = Record<string, { total: number; operasi: number; off: number }>;
+
+export const generateWA_Checklist = (checklistData: ChecklistFormData, checklistDataMaster: ChecklistBlock[], toggles: Record<string, boolean>) => {
   const formattedDate = formatTanggalIndo(checklistData.tanggal);
   const jamMulai = checklistData.waktuMulai || '...';
   const jamSelesai = checklistData.waktuSelesai || '...';
@@ -57,22 +64,23 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
   result += `Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}\n\n`;
 
   checklistDataMaster.forEach((block) => {
+    const blockTitle = block.title ?? '';
     if (block.type === 'location') {
-      result += `${block.title}\n`;
-      const summaryCounts: any = {};
+      result += `${blockTitle}\n`;
+      const summaryCounts: SummaryCounts = {};
 
-      block.categories.forEach((cat: any) => {
+      (block.categories ?? []).forEach((cat) => {
         result += `${cat.title}\n`;
-        if (!summaryCounts[cat.summaryKey]) summaryCounts[cat.summaryKey] = { total: 0, operasi: 0, off: 0 };
+        if (!summaryCounts[String(cat.summaryKey)]) summaryCounts[String(cat.summaryKey)] = { total: 0, operasi: 0, off: 0 };
 
-        cat.items.forEach((item: string, iIdx: number) => {
-          const key = `${block.title}|${cat.title}|${iIdx}`;
+        (cat.items ?? []).forEach((item, iIdx) => {
+          const key = `${blockTitle}|${cat.title}|${iIdx}`;
           const isOperasi = toggles[key] !== false; // Default is true (Operasi)
           result += `* ${item} ${isOperasi ? '✅' : '❌'}\n`;
           
-          summaryCounts[cat.summaryKey].total++;
-          if (isOperasi) summaryCounts[cat.summaryKey].operasi++;
-          else summaryCounts[cat.summaryKey].off++;
+          summaryCounts[String(cat.summaryKey)].total++;
+          if (isOperasi) summaryCounts[String(cat.summaryKey)].operasi++;
+          else summaryCounts[String(cat.summaryKey)].off++;
         });
         result += `\n`; 
       });
@@ -85,51 +93,52 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
       });
       result += `\n`;
       
-      if (block.title === 'HBSCP' || (block.title.includes('HBSCP') && !block.title.includes('UMROH'))) {
+      if (blockTitle === 'HBSCP' || (blockTitle.includes('HBSCP') && !blockTitle.includes('UMROH'))) {
         const sup1 = checklistData.supervisorAvsec?.['HBSCP 1.1 - 1.6'] || '-';
         const sup2 = checklistData.supervisorAvsec?.['HBSCP 2.1 - 2.6'] || '-';
         result += `Supervisor Avsec HBSCP 1.1 - 1.6 : ${sup1}\n`;
         result += `Supervisor Avsec HBSCP 2.1 - 2.6 : ${sup2}\n\n`;
-      } else if (block.title === 'ACCESS CONTROL' || block.title.includes('ACCESS CONTROL')) {
-        const sup = checklistData.supervisorAvsec?.[block.title] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
+      } else if (blockTitle === 'ACCESS CONTROL' || blockTitle.includes('ACCESS CONTROL')) {
+        const sup = checklistData.supervisorAvsec?.[blockTitle] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
         result += `Supervisor Avsec Monitoring Access E1 : ${sup}\n\n`;
       } else {
-        const supAvsec = checklistData.supervisorAvsec?.[block.title] || '-';
-        result += `Supervisor Avsec ${block.title} : ${supAvsec}\n\n`;
+        const supAvsec = checklistData.supervisorAvsec?.[blockTitle] || '-';
+        result += `Supervisor Avsec ${blockTitle} : ${supAvsec}\n\n`;
       }
 
     } else if (block.type === 'group') {
-      const summaryCounts: any = {};
+      const summaryCounts: SummaryCounts = {};
       
-      block.locations.forEach((loc: any) => {
-        result += `${loc.title}\n`;
-        loc.categories.forEach((cat: any) => {
+      (block.locations ?? []).forEach((loc) => {
+        const locTitle = loc.title ?? '';
+        result += `${locTitle}\n`;
+        (loc.categories ?? []).forEach((cat) => {
           result += `${cat.title}\n`;
-          if (!summaryCounts[cat.summaryKey]) summaryCounts[cat.summaryKey] = { total: 0, operasi: 0, off: 0 };
+          if (!summaryCounts[String(cat.summaryKey)]) summaryCounts[String(cat.summaryKey)] = { total: 0, operasi: 0, off: 0 };
 
-          cat.items.forEach((item: string, iIdx: number) => {
-            const key = `${loc.title}|${cat.title}|${iIdx}`;
+          (cat.items ?? []).forEach((item, iIdx) => {
+            const key = `${locTitle}|${cat.title}|${iIdx}`;
             const isOperasi = toggles[key] !== false;
             result += `* ${item} ${isOperasi ? '✅' : '❌'}\n`;
             
-            summaryCounts[cat.summaryKey].total++;
-            if (isOperasi) summaryCounts[cat.summaryKey].operasi++;
-            else summaryCounts[cat.summaryKey].off++;
+            summaryCounts[String(cat.summaryKey)].total++;
+            if (isOperasi) summaryCounts[String(cat.summaryKey)].operasi++;
+            else summaryCounts[String(cat.summaryKey)].off++;
           });
           result += `\n`;
         });
         
-        if (loc.title === 'HBSCP' || (loc.title.includes('HBSCP') && !loc.title.includes('UMROH'))) {
+        if (locTitle === 'HBSCP' || (locTitle.includes('HBSCP') && !locTitle.includes('UMROH'))) {
           const sup1 = checklistData.supervisorAvsec?.['HBSCP 1.1 - 1.6'] || '-';
           const sup2 = checklistData.supervisorAvsec?.['HBSCP 2.1 - 2.6'] || '-';
           result += `Supervisor Avsec HBSCP 1.1 - 1.6 : ${sup1}\n`;
           result += `Supervisor Avsec HBSCP 2.1 - 2.6 : ${sup2}\n\n`;
-        } else if (loc.title === 'ACCESS CONTROL' || loc.title.includes('ACCESS CONTROL')) {
-          const sup = checklistData.supervisorAvsec?.[loc.title] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
+        } else if (locTitle === 'ACCESS CONTROL' || locTitle.includes('ACCESS CONTROL')) {
+          const sup = checklistData.supervisorAvsec?.[locTitle] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
           result += `Supervisor Avsec Monitoring Access E1 : ${sup}\n\n`;
         } else {
-          const supAvsecLoc = checklistData.supervisorAvsec?.[loc.title] || '-';
-          result += `Supervisor Avsec ${loc.title} : ${supAvsecLoc}\n\n`;
+          const supAvsecLoc = checklistData.supervisorAvsec?.[locTitle] || '-';
+          result += `Supervisor Avsec ${locTitle} : ${supAvsecLoc}\n\n`;
         }
       });
 
@@ -142,15 +151,16 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
       result += `\n`;
 
     } else if (block.type === 'access_control') {
-      result += `${block.title}\n`;
+      result += `${blockTitle}\n`;
       let totalAc = 0, operasiAc = 0, offAc = 0;
 
-      block.terminals.forEach((term: any) => {
-        if (term.title) result += `${term.title}\n`;
-        term.categories.forEach((cat: any) => {
+      (block.terminals ?? []).forEach((term) => {
+        const termTitle = term.title ?? '';
+        if (termTitle) result += `${termTitle}\n`;
+        (term.categories ?? []).forEach((cat) => {
           result += `${cat.title}\n`;
-          cat.items.forEach((item: string, iIdx: number) => {
-            const key = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
+          (cat.items ?? []).forEach((item, iIdx) => {
+            const key = `${blockTitle}|${termTitle}|${cat.title}|${iIdx}`;
             const isOperasi = toggles[key] !== false;
             result += `* ${item} ${isOperasi ? '✅' : '❌'}\n`;
             
@@ -166,7 +176,7 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
       result += `OPERASI : ${operasiAc}\n`;
       result += `OFF : ${offAc}\n`;
       result += `\n`;
-      const supAvsec = checklistData.supervisorAvsec?.[block.title] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
+      const supAvsec = checklistData.supervisorAvsec?.[blockTitle] || checklistData.supervisorAvsec?.['Monitoring Access E1'] || '-';
       result += `Supervisor Avsec Monitoring Access E1 : ${supAvsec}\n\n`;
     }
   });
@@ -175,7 +185,7 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
   return result.trim();
 };
 
-export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
+export const formatKalibrasiEntryKegiatanDanCatatan = (entry: KalibrasiEntry) => {
   const hasAccessControl = Array.isArray(entry.peralatan)
     ? entry.peralatan.some((p: string) => String(p).toLowerCase().includes('access control'))
     : String(entry.peralatan || '').toLowerCase().includes('access control');
@@ -203,9 +213,11 @@ export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
     };
   }
 
-  const peralatanList = Array.isArray(entry.peralatan) 
-    ? entry.peralatan 
-    : (typeof entry.peralatan === 'string' ? entry.peralatan.split(/[,&]/).map((s: string) => s.trim()).filter(Boolean) : []);
+  // Data lama bisa berupa string "A, B & C"; tipe resminya string[].
+  const rawPeralatan = entry.peralatan as string[] | string;
+  const peralatanList = Array.isArray(rawPeralatan)
+    ? rawPeralatan
+    : (typeof rawPeralatan === 'string' ? rawPeralatan.split(/[,&]/).map((s) => s.trim()).filter(Boolean) : []);
 
   // Sort equipments so 'Extension Conveyor' appears first if present
   const sortedEquips = [...peralatanList].sort((a, b) => {
@@ -335,7 +347,7 @@ export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
 export const getDefaultKalibrasiUraian = (peralatan: string, lokasi?: string): string => {
   const equips = peralatan ? peralatan.split(/[,&]/).map(s => s.trim()).filter(Boolean) : [];
   const { lokasi1, lokasi2 } = parseLokasiDanTitik(lokasi || '');
-  const fakeEntry: any = {
+  const fakeEntry: KalibrasiEntry = {
     peralatan: equips.length > 0 ? equips : ['Peralatan'],
     lokasi1,
     lokasi2,
@@ -376,7 +388,7 @@ export const getDefaultKalibrasiUraian = (peralatan: string, lokasi?: string): s
   return formatKalibrasiEntryKegiatanDanCatatan(fakeEntry).fullText;
 };
 
-export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any[]) => {
+export const generateWA_Kalibrasi = (kalibrasiGlobal: KalibrasiGlobalData, kalibrasiEntries: KalibrasiEntry[]) => {
   if (kalibrasiEntries.length === 0 || kalibrasiEntries.every(e => e.peralatan.length === 0)) {
     return "Silakan tambah peralatan pada lokasi untuk melihat preview laporan...";
   }
@@ -406,14 +418,14 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
 
 export { generateWA_Kegiatan } from './kegiatanMessage.ts';
 
-export const generateWA_InitialReport = (formData: any) => {
+export const generateWA_InitialReport = (formData: IncidentFormData) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";
 
   const dateParts = formData.tanggal ? formData.tanggal.split('-') : ['','',''];
   const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : '';
 
   const locList = formData.lokasiList && Array.isArray(formData.lokasiList) && formData.lokasiList.length > 0
-    ? formData.lokasiList.filter((l: any) => l.lokasi1)
+    ? formData.lokasiList.filter((l) => l.lokasi1)
     : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
     
   const lokasiFinal = formatLokasiRows(locList) || '-';
@@ -454,13 +466,13 @@ Demikian laporan kronologis dan tindak lanjut kami sampaikan
 Terimakasih atas perhatiannya.`;
 };
 
-export const generateWA_BASerahTerima = (baData: any) => {
+export const generateWA_BASerahTerima = (baData: BAFormData) => {
   const formattedDate = formatTanggalIndo(baData.tanggal);
   const waktuText = baData.waktu ? `${baData.waktu} WIB` : '...';
   const jenisText = baData.jenisTransaksi === 'masuk' ? 'PENERIMAAN BARANG' : 'PENYERAHAN BARANG';
 
   const barangListText = Array.isArray(baData.items) && baData.items.length > 0
-    ? baData.items.map((it: any, idx: number) => {
+    ? baData.items.map((it, idx) => {
         const snJoined = Array.isArray(it.snList)
           ? it.snList.filter((s: string) => s && s.trim() !== '').join(', ')
           : (it.sn || '');
@@ -494,8 +506,8 @@ Terimakasih atas perhatiannya.`;
 export const generateWA_ShiftReport = (
   date: string,
   shift: string,
-  apiPersonil: any[],
-  iasPersonil: any[],
-  reports: any[]
+  apiPersonil: JadwalShiftRow[],
+  iasPersonil: JadwalShiftRow[],
+  reports: ShiftReportRow[]
 ): string => buildShiftReportMessage(date, shift, apiPersonil, iasPersonil, reports, getDefaultKalibrasiUraian);
 

@@ -4,6 +4,7 @@
 
 import { toTitleCase, sortPersonelByJabatan } from '../data/masterData.ts';
 import { normalizeLokasi } from './lokasiFormat.ts';
+import type { JadwalShiftRow, ShiftReportRow } from '../types.ts';
 
 /** Membuat teks "Kegiatan/Catatan" bawaan untuk preventive maintenance (getDefaultKalibrasiUraian). */
 export type DefaultUraianFn = (peralatan: string, lokasi?: string) => string;
@@ -11,13 +12,13 @@ export type DefaultUraianFn = (peralatan: string, lokasi?: string) => string;
 // ---------------------------------------------------------------------------
 // Klasifikasi baris laporan operasional (dipakai tab Report dan pesan WhatsApp)
 // ---------------------------------------------------------------------------
-export const isPreventiveReport = (r: any): boolean =>
+export const isPreventiveReport = (r: ShiftReportRow): boolean =>
   r.Jenis === 'Kalibrasi' || r.kategori_maintenance === 'PREVENTIVE' || r.Jenis === 'Preventive';
 
-export const isStoringReport = (r: any): boolean =>
+export const isStoringReport = (r: ShiftReportRow): boolean =>
   r.Jenis === 'Storing' || r.kategori_maintenance === 'STORING' || !!r.Uraian?.toLowerCase().includes('storing peralatan');
 
-export const isCorrectiveReport = (r: any): boolean => {
+export const isCorrectiveReport = (r: ShiftReportRow): boolean => {
   if (isPreventiveReport(r) || isStoringReport(r)) return false;
   if (r.kategori_maintenance) return r.kategori_maintenance === 'CORRECTIVE';
   if (r.Uraian?.toLowerCase().includes('permasalahan') || r.TindakLanjut?.toLowerCase().includes('perbaikan')) return true;
@@ -55,8 +56,8 @@ const tindakLanjutSteps = (text: unknown): string[] =>
     .map(step => step.trim().replace(/[.,;]+$/, ''))
     .filter(step => step && step !== '-');
 
-const formatPreventiveBody = (r: any, getDefaultUraian: DefaultUraianFn): string => {
-  const defaultUraian = getDefaultUraian(r.Peralatan, r.Lokasi);
+const formatPreventiveBody = (r: ShiftReportRow, getDefaultUraian: DefaultUraianFn): string => {
+  const defaultUraian = getDefaultUraian(r.Peralatan ?? '', r.Lokasi);
   let raw: string = r.Uraian && r.Uraian.includes('Kegiatan :') ? r.Uraian : defaultUraian;
   if (!raw.includes('Catatan :')) {
     const idx = defaultUraian.indexOf('Catatan :');
@@ -66,7 +67,7 @@ const formatPreventiveBody = (r: any, getDefaultUraian: DefaultUraianFn): string
   return (start !== -1 ? raw.slice(start) : raw).trim();
 };
 
-const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => {
+const formatReportItem = (r: ShiftReportRow, getDefaultUraian: DefaultUraianFn): string => {
   const status = cleanField(r.Status) || 'Normal Operasi';
   const peralatan = cleanField(r.Peralatan);
   const lokasi = normalizeLokasi(cleanField(r.Lokasi));
@@ -91,7 +92,7 @@ const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => 
   return joinParts([judul, lokasiPart, cleanField(r.Uraian), steps.join(', '), status]);
 };
 
-const buildKegiatanItems = (reports: any[], getDefaultUraian: DefaultUraianFn): string[] => {
+const buildKegiatanItems = (reports: ShiftReportRow[], getDefaultUraian: DefaultUraianFn): string[] => {
   const items: string[] = [];
   let storingAdded = false;
   reports.forEach(r => {
@@ -111,10 +112,10 @@ const buildKegiatanItems = (reports: any[], getDefaultUraian: DefaultUraianFn): 
  * Urutkan baris jadwal_shift seperti di tab Kehadiran dan Data: jabatan lebih dulu,
  * lalu `urutan` personel. Baris tanpa jabatan/urutan tetap pada urutan semula (sort stabil).
  */
-export const sortPersonelRows = <T extends { personel?: any }>(rows: T[]): T[] =>
+export const sortPersonelRows = <T extends { personel?: JadwalShiftRow['personel'] }>(rows: T[]): T[] =>
   sortPersonelByJabatan(rows.map(row => ({ row, jabatan: row.personel?.jabatan, urutan: row.personel?.urutan }))).map(x => x.row);
 
-const personelNames = (rows: any[], shiftCode: string): string[] =>
+const personelNames = (rows: JadwalShiftRow[], shiftCode: string): string[] =>
   sortPersonelRows(rows)
     .filter(d => String(d.shift || '').toUpperCase() === shiftCode)
     .map(d => toTitleCase(String(d.personel?.nama || '').trim()))
@@ -129,13 +130,13 @@ const formatNameList = (names: string[]): string => (names.length ? names.map(n 
 export const buildShiftReportMessage = (
   date: string,
   shift: string,
-  apiPersonil: any[],
-  iasPersonil: any[],
-  reports: any[],
+  apiPersonil: JadwalShiftRow[],
+  iasPersonil: JadwalShiftRow[],
+  reports: ShiftReportRow[],
   getDefaultUraian: DefaultUraianFn
 ): string => {
   const shiftCodes = shift === 'PS' || shift === 'M' ? [shift] : ['PS', 'M'];
-  const reportShift = (r: any): string => {
+  const reportShift = (r: ShiftReportRow): string => {
     const code = String(r.shift || '').toUpperCase();
     return code === 'M' ? 'M' : 'PS';
   };

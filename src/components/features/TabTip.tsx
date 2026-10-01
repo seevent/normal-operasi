@@ -32,8 +32,8 @@ export const TabTip: React.FC = () => {
         const xrayCat = block.categories?.find((c: any) => c.summaryKey && c.summaryKey.toUpperCase().includes('X-RAY'));
         if (xrayCat && xrayCat.items && xrayCat.items.length > 0) {
           cats.push({
-            id: block.title.toLowerCase().replace(/\s+/g, '_'),
-            name: block.title,
+            id: (block.title ?? '').toLowerCase().replace(/\s+/g, '_'),
+            name: block.title ?? '',
             items: xrayCat.items.map((item: string) => {
               const match = item.match(/\(([^)]+)\)/);
               return match ? match[1] : 'No1';

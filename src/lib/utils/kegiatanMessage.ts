@@ -4,8 +4,9 @@
 
 import { formatTanggalIndo } from './dateFormat.ts';
 import { normalizeLokasi } from './lokasiFormat.ts';
+import type { KegiatanFormData } from '../types.ts';
 
-export const generateWA_Kegiatan = (kegiatanData: any) => {
+export const generateWA_Kegiatan = (kegiatanData: KegiatanFormData) => {
   const formattedDate = formatTanggalIndo(kegiatanData.tanggal);
   const waktuText = kegiatanData.waktuSelesai
     ? `${kegiatanData.waktuMulai} - ${kegiatanData.waktuSelesai}`

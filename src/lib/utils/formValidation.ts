@@ -5,6 +5,10 @@
 // (atribut data-field atau name), `label` dipakai untuk kalimat maskot.
 
 import { buildMissingFieldsMessage } from '../data/petMessages.ts';
+import type {
+  BAFormData, BriefingFormData, ChecklistFormData, IncidentFormData, KalibrasiEntry, KalibrasiGlobalData, KalibrasiParamKey,
+  KegiatanFormData, KehadiranFormData, LokasiRow, StoringFormData,
+} from '../types.ts';
 
 export interface MissingField {
   key: string;
@@ -34,29 +38,29 @@ export const buildMissingPetMessage = (missing: MissingField[]): string | null =
   return buildMissingFieldsMessage(labels);
 };
 
-const hasLokasi = (d: any): boolean => {
-  const rows = d.lokasiList || [{ lokasi1: d.lokasi1, lokasi2: d.lokasi2 }];
-  return rows.some((l: any) => l.lokasi1);
+const hasLokasi = (d: Pick<IncidentFormData, 'lokasiList' | 'lokasi1' | 'lokasi2'>): boolean => {
+  const rows: LokasiRow[] = d.lokasiList || [{ lokasi1: d.lokasi1, lokasi2: d.lokasi2 }];
+  return rows.some(l => l.lokasi1);
 };
 
-const noTeknisi = (d: any): boolean => !d.teknisi || d.teknisi === '-';
+const noTeknisi = (d: Pick<IncidentFormData, 'teknisi'>): boolean => !d.teknisi || d.teknisi === '-';
 
-export const validateKehadiran = (d: any): MissingField[] =>
+export const validateKehadiran = (d: KehadiranFormData): MissingField[] =>
   collect(
     [blank(d.tanggal), 'tanggal', 'tanggal'],
-    [!(d.apiList || []).some((r: any) => !blank(r.name)), 'apiList', 'personel API T2'],
-    [!(d.omList || []).some((r: any) => !blank(r.name)), 'omList', 'personel OM IAS T2'],
+    [!(d.apiList || []).some(r => !blank(r.name)), 'apiList', 'personel API T2'],
+    [!(d.omList || []).some(r => !blank(r.name)), 'omList', 'personel OM IAS T2'],
     [blank(d.tlpRuangan), 'tlpRuangan', 'tlp ruangan'],
     [blank(d.rencanaKegiatan), 'rencanaKegiatan', 'rencana kegiatan'],
   );
 
-export const validateBriefing = (d: any): MissingField[] =>
+export const validateBriefing = (d: BriefingFormData): MissingField[] =>
   collect(
     [blank(d.tanggal), 'tanggal', 'tanggal'],
     [blank(d.lokasi), 'lokasi', 'lokasi'],
   );
 
-export const validateChecklist = (d: any): MissingField[] =>
+export const validateChecklist = (d: ChecklistFormData): MissingField[] =>
   collect(
     [blank(d.tanggal), 'tanggal', 'tanggal'],
     [blank(d.waktuMulai), 'waktuMulai', 'pukul mulai'],
@@ -64,7 +68,7 @@ export const validateChecklist = (d: any): MissingField[] =>
   );
 
 /** @param supervisorLocs lokasi yang mewajibkan Supervisor Avsec (getStoringSupervisorLocations). */
-export const validateStoring = (d: any, supervisorLocs: string[] = []): MissingField[] => {
+export const validateStoring = (d: StoringFormData, supervisorLocs: string[] = []): MissingField[] => {
   const noPeralatan = (d.peralatan || []).length === 0;
   const supMap = d.supervisorAvsecMap || {};
   const missingSupervisors: Array<[boolean, string, string]> = supervisorLocs
@@ -82,7 +86,7 @@ export const validateStoring = (d: any, supervisorLocs: string[] = []): MissingF
   );
 };
 
-export const validateKegiatan = (d: any): MissingField[] =>
+export const validateKegiatan = (d: KegiatanFormData): MissingField[] =>
   collect(
     [blank(d.tanggal), 'tanggal', 'tanggal'],
     [blank(d.waktuMulai), 'waktuMulai', 'pukul mulai'],
@@ -90,7 +94,7 @@ export const validateKegiatan = (d: any): MissingField[] =>
     [blank(d.kegiatan), 'kegiatan', 'kegiatan'],
   );
 
-export const validateBASerahTerima = (d: any, items: Array<{ nama?: string }>): MissingField[] =>
+export const validateBASerahTerima = (d: BAFormData, items: Array<{ nama?: string }>): MissingField[] =>
   collect(
     [blank(d.tanggal), 'tanggal', 'tanggal'],
     [blank(d.waktu), 'waktu', 'pukul'],
@@ -99,7 +103,7 @@ export const validateBASerahTerima = (d: any, items: Array<{ nama?: string }>): 
     [!items.some(it => !blank(it.nama)), 'items', 'minimal 1 barang'],
   );
 
-export const validateInitialReport = (d: any): MissingField[] =>
+export const validateInitialReport = (d: IncidentFormData): MissingField[] =>
   collect(
     [blank(d.peralatan), 'peralatan', 'peralatan'],
     [!hasLokasi(d), 'lokasi', 'lokasi'],
@@ -113,7 +117,7 @@ export const validateInitialReport = (d: any): MissingField[] =>
     [blankList(d.tindakanMitigasi, '1.'), 'tindakanMitigasi', 'tindakan mitigasi'],
   );
 
-export const validatePerbaikan = (d: any, isVerifikasiETD: boolean): MissingField[] =>
+export const validatePerbaikan = (d: IncidentFormData, isVerifikasiETD: boolean): MissingField[] =>
   collect(
     [blank(d.peralatan), 'peralatan', 'peralatan'],
     [!hasLokasi(d), 'lokasi', 'lokasi'],
@@ -128,31 +132,32 @@ export const validatePerbaikan = (d: any, isVerifikasiETD: boolean): MissingFiel
   );
 
 // Parameter kalibrasi per jenis peralatan: [nama field entri, label untuk maskot].
-const XRAY_PARAMS: Array<[string, string]> = [
+type ParamPairs = Array<[KalibrasiParamKey, string]>;
+const XRAY_PARAMS: ParamPairs = [
   ['xrayKvV', 'kV Vertikal X-Ray'], ['xrayKvH', 'kV Horizontal X-Ray'],
   ['xrayMaV', 'mA Vertikal X-Ray'], ['xrayMaH', 'mA Horizontal X-Ray'],
   ['xrayOnV', 'Ontime Vertikal X-Ray'], ['xrayOnH', 'Ontime Horizontal X-Ray'],
   ['xrayArchive', 'Archive X-Ray'],
 ];
-const WTMD_PARAMS: Array<[string, string]> = [
+const WTMD_PARAMS: ParamPairs = [
   ['wtmdZ1', 'Z1 WTMD'], ['wtmdZ2', 'Z2 WTMD'], ['wtmdZ3', 'Z3 WTMD'], ['wtmdZ4', 'Z4 WTMD'],
   ['wtmdLc', 'LC WTMD'], ['wtmdLs', 'LS WTMD'], ['wtmdUc', 'UC WTMD'], ['wtmdSe', 'SE WTMD'], ['wtmdDs', 'DS WTMD'],
 ];
-const BS_PARAMS: Array<[string, string]> = [
+const BS_PARAMS: ParamPairs = [
   ['bsSuspect', 'Test Tampilan Suspect Item Body Scanner'], ['bsMonitor', 'Test Monitor Body Scanner'],
   ['bsScanning', 'Test Fungsi Scanning Body Scanner'], ['bsCalibration', 'Test Fungsi Kalibrasi Body Scanner'],
 ];
-const ETD_PARAMS: Array<[string, string]> = [['etdTnt', 'TNT ETD'], ['etdPetn', 'PETN ETD'], ['etdRdx', 'RDX ETD']];
-const EC_PARAMS: Array<[string, string]> = [
+const ETD_PARAMS: ParamPairs = [['etdTnt', 'TNT ETD'], ['etdPetn', 'PETN ETD'], ['etdRdx', 'RDX ETD']];
+const EC_PARAMS: ParamPairs = [
   ['ecGearbox', 'Gearbox Motor Extension Conveyor'], ['ecTension', 'Tension Roller Extension Conveyor'],
   ['ecBelt', 'Conveyor Belt Extension Conveyor'],
 ];
-const AC_PARAMS: Array<[string, string]> = [
+const AC_PARAMS: ParamPairs = [
   ['acEmlock', 'Fungsi Emlock'], ['acIntercom', 'Fungsi Intercom'], ['acFingerprint', 'Fungsi Fingerprint'],
   ['acCctv', 'Fungsi CCTV'], ['acPengontrolan', 'Fungsi Pengontrolan Kunci Pintu'], ['acRecordCctv', 'Record CCTV'],
 ];
 
-export const validateKalibrasi = (global: any, entries: any[]): MissingField[] => {
+export const validateKalibrasi = (global: KalibrasiGlobalData, entries: KalibrasiEntry[]): MissingField[] => {
   const missing = collect(
     [blank(global.tanggal), 'tanggal', 'tanggal'],
     [blank(global.waktuMulai), 'waktuMulai', 'pukul mulai'],
@@ -174,7 +179,7 @@ export const validateKalibrasi = (global: any, entries: any[]): MissingField[] =
       add('lokasi', 'lokasi');
     }
 
-    const params: Array<Array<[string, string]>> = [];
+    const params: ParamPairs[] = [];
     if (has('Extension Conveyor')) params.push(EC_PARAMS);
     if (has('X-Ray')) params.push(XRAY_PARAMS);
     if (has('WTMD')) params.push(WTMD_PARAMS);
