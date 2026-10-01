@@ -184,12 +184,8 @@ export const processPhotosToCollage = async (
     align?: 'left' | 'center' | 'right';
   }
 ): Promise<{ url: string, file: File } | null> => {
-  return new Promise(async (resolve) => {
-    const imagePhotos = photosArray.filter((p: any) => !p.file?.type?.startsWith('video/'));
-    if (imagePhotos.length <= 1) {
-      resolve(null);
-      return;
-    }
+  const imagePhotos = photosArray.filter((p: any) => !p.file?.type?.startsWith('video/'));
+  if (imagePhotos.length <= 1) return null;
 
   try {
     const loadedImages = await Promise.all(imagePhotos.map(p => {
@@ -218,10 +214,7 @@ export const processPhotosToCollage = async (
     }));
     
     const validImages = loadedImages.filter(item => item.img && item.img.naturalWidth > 0 && item.img.naturalHeight > 0);
-    if (validImages.length <= 1) {
-      resolve(null);
-      return;
-    }
+    if (validImages.length <= 1) return null;
 
     const CELL_SIZE = 800; 
     const SPACING = 24;    
@@ -231,10 +224,7 @@ export const processPhotosToCollage = async (
     canvas.width = cols * CELL_SIZE + (cols + 1) * SPACING; 
     canvas.height = rows * CELL_SIZE + (rows + 1) * SPACING;
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      resolve(null);
-      return;
-    }
+    if (!ctx) return null;
     ctx.fillStyle = '#ffffff'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
@@ -273,18 +263,13 @@ export const processPhotosToCollage = async (
       drawTextOverlay(canvas, annotation.text, annotation.position, annotation.style, annotation.size, annotation.align || 'center');
     }
     
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        resolve(null);
-        return;
-      }
-      const newFile = new File([blob], `Kolase_${Date.now()}.jpg`, { type: 'image/jpeg' });
-      const newUrl = URL.createObjectURL(blob);
-      resolve({ url: newUrl, file: newFile });
-    }, 'image/jpeg', 0.85);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+    if (!blob) return null;
+    const newFile = new File([blob], `Kolase_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    const newUrl = URL.createObjectURL(blob);
+    return { url: newUrl, file: newFile };
   } catch (err) {
     console.error("Gagal membuat kolase:", err);
-    resolve(null);
+    return null;
   }
-  });
 };

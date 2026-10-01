@@ -733,6 +733,9 @@ export const TabShiftReport: React.FC = () => {
     });
 
     return result;
+  // penempatanData sengaja jadi pemicu: formatPreventivePeralatan membaca penempatan dari store,
+  // sehingga hasil harus dihitung ulang ketika data penempatan selesai dimuat.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reports, shift, penempatanData]);
 
   return (

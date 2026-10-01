@@ -19,11 +19,20 @@ export const LiveCollagePreview: React.FC<LiveCollagePreviewProps> = ({ photos, 
   const [isEditingText, setIsEditingText] = useState<boolean>(false);
   const genRef = useRef<number>(0);
 
+  // Efek kolase hanya boleh jalan ulang saat isi foto/anotasi berubah (photosHash). `photos` dan
+  // `onCollageChange` dari induk berubah identitas tiap render, jadi dibaca lewat ref nilai terbaru.
+  const photosRef = useRef(photos);
+  const onCollageChangeRef = useRef(onCollageChange);
+  photosRef.current = photos;
+  onCollageChangeRef.current = onCollageChange;
+
   // Buat hash unik dari daftar foto agar perubahan urutan, penambahan/penghapusan, atau zoom memicu re-render
   const photosHash = photos.map((p, idx) => `${idx}_${p.preview}_${p.zoom || 1}`).join('|');
 
   useEffect(() => {
     const currentGen = ++genRef.current;
+    const photos = photosRef.current;
+    const notifyCollage: NonNullable<typeof onCollageChange> = (...args) => onCollageChangeRef.current?.(...args);
 
     const generate = async () => {
       if (photos.length > 1) {
@@ -50,19 +59,19 @@ export const LiveCollagePreview: React.FC<LiveCollagePreviewProps> = ({ photos, 
             if (annotatedResult) {
               setAutoCollageUrl(annotatedResult.url);
               setAutoCollageFile(annotatedResult.file);
-              if (onCollageChange) onCollageChange(annotatedResult.file, annotatedResult.url, collageAnnotation);
+              notifyCollage(annotatedResult.file, annotatedResult.url, collageAnnotation);
             }
           } else {
             setIsGenerating(false);
             setAutoCollageUrl(rawResult.url);
             setAutoCollageFile(rawResult.file);
-            if (onCollageChange) onCollageChange(rawResult.file, rawResult.url, undefined);
+            notifyCollage(rawResult.file, rawResult.url, undefined);
           }
         } else {
           setIsGenerating(false);
           setAutoCollageUrl(null);
           setAutoCollageFile(null);
-          if (onCollageChange) onCollageChange(null, null, undefined);
+          notifyCollage(null, null, undefined);
         }
       } else {
         setIsGenerating(false);
@@ -70,7 +79,7 @@ export const LiveCollagePreview: React.FC<LiveCollagePreviewProps> = ({ photos, 
         setAutoCollageFile(null);
         setRawCollageUrl(null);
         setRawCollageFile(null);
-        if (onCollageChange) onCollageChange(null, null, undefined);
+        notifyCollage(null, null, undefined);
       }
     };
 

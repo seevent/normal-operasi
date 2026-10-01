@@ -328,13 +328,16 @@ export const AssetManager: React.FC = () => {
     return allAssets.some(a => a.id_lokasi === loc.id && a.tipe_peralatan?.id_jenis === filterJenis);
   });
 
-  // Automatically reset filterLokasi if it's no longer valid under the new filterJenis
-  useEffect(() => {
-    if (filterJenis && filterLokasi) {
-      const isValid = locationsWithFilteredJenis.some(l => l.id === filterLokasi);
-      if (!isValid) setFilterLokasi('');
-    }
-  }, [filterJenis]);
+  // Reset filterLokasi if it's no longer valid under the newly chosen filterJenis
+  const handleFilterJenisChange = (nextJenis: string) => {
+    setFilterJenis(nextJenis);
+    if (!nextJenis || !filterLokasi) return;
+    const isValid = locations.some(loc =>
+      loc.id === filterLokasi &&
+      allAssets.some(a => a.id_lokasi === loc.id && a.tipe_peralatan?.id_jenis === nextJenis)
+    );
+    if (!isValid) setFilterLokasi('');
+  };
 
   const displayAssets = allAssets.filter(a => {
     if (filterJenis && a.tipe_peralatan?.id_jenis !== filterJenis) return false;
@@ -511,7 +514,7 @@ export const AssetManager: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-600 mb-1">Filter Jenis Peralatan</label>
                     <select 
                       value={filterJenis}
-                      onChange={(e) => setFilterJenis(e.target.value)}
+                      onChange={(e) => handleFilterJenisChange(e.target.value)}
                       className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white font-medium"
                     >
                       <option value="">Semua Jenis Peralatan</option>

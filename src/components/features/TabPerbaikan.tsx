@@ -18,6 +18,16 @@ import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate, fetchOnDutyPersonnel } from '../../lib/services/operationalReportService';
 import { formatLokasiRows } from '../../lib/utils/lokasiFormat';
 
+const isCustomLocationString = (locStr: string): boolean => {
+  if (!locStr) return false;
+  const normalized = locStr.trim().toLowerCase();
+  const isRedlineArrival = normalized.includes('redline arrival');
+  const isConvayer = normalized.includes('convayer') || normalized.includes('conveyor');
+  const isMonitoringCustom = normalized.includes('monitoring custom') || (normalized.includes('monitoring') && normalized.includes('custom'));
+  const isArrivalHallF = normalized.includes('arrival hall f');
+  return isRedlineArrival || isConvayer || isMonitoringCustom || isArrivalHallF;
+};
+
 export const TabPerbaikan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { penempatanData } = useMasterDataStore();
@@ -116,27 +126,18 @@ export const TabPerbaikan: React.FC = () => {
   const permasalahanRef = useAutoResizeTextarea(formData.permasalahan);
   const tindakLanjutRef = useAutoResizeTextarea(formData.tindakLanjut);
 
-  // Otomatisasi sumberLaporan (Custom vs Avsec) berdasarkan lokasi yang dipilih
+  // Otomatisasi sumberLaporan (Custom vs Avsec) berdasarkan lokasi yang dipilih.
+  // `lokasiKey` ikut sebagai pemicu agar setiap perubahan lokasi menyegarkan sumber (menimpa isian manual).
+  const lokasiKey = JSON.stringify(formData.lokasiList ?? [formData.lokasi1]);
+  const targetSumber = (formData.lokasiList || [{ lokasi1: formData.lokasi1 }])
+    .some(item => isCustomLocationString(item.lokasi1)) ? 'Custom' : 'Avsec';
+
   React.useEffect(() => {
-    const isCustomLocationString = (locStr: string): boolean => {
-      if (!locStr) return false;
-      const normalized = locStr.trim().toLowerCase();
-      const isRedlineArrival = normalized.includes('redline arrival');
-      const isConvayer = normalized.includes('convayer') || normalized.includes('conveyor');
-      const isMonitoringCustom = normalized.includes('monitoring custom') || (normalized.includes('monitoring') && normalized.includes('custom'));
-      const isArrivalHallF = normalized.includes('arrival hall f');
-      return isRedlineArrival || isConvayer || isMonitoringCustom || isArrivalHallF;
-    };
-
-    const list = formData.lokasiList || [{ lokasi1: formData.lokasi1 }];
-    const hasCustomLoc = list.some(item => isCustomLocationString(item.lokasi1));
-    const targetSumber = hasCustomLoc ? 'Custom' : 'Avsec';
-
     setFormData(prev => {
       if (prev.sumberLaporan === targetSumber) return prev;
       return { ...prev, sumberLaporan: targetSumber };
     });
-  }, [JSON.stringify(formData.lokasiList), formData.lokasi1]);
+  }, [lokasiKey, targetSumber]);
 
   // === Handlers ===
   const handleRepairChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

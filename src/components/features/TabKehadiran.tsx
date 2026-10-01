@@ -106,10 +106,13 @@ export const TabKehadiran: React.FC = () => {
         }
       });
 
+      // Baca personel dari store saat dipanggil agar perubahan master personel tidak memicu fetch ulang.
+      const { dataApiT2: storeApi, dataOmIasT2: storeOm } = useMasterDataStore.getState();
+
       const apiRows = filteredData
         .filter((d: any) => d.personel?.unit_kerja?.nama === 'API T2')
         .map((d: any, idx: number) => {
-          const storeP = dataApiT2.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
+          const storeP = storeApi.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
           const orderVal = (d.personel?.urutan !== undefined && d.personel?.urutan !== null) ? Number(d.personel.urutan) : (storeP?.dbOrder !== undefined ? Number(storeP.dbOrder) : idx);
           return {
             id: d.id,
@@ -126,7 +129,7 @@ export const TabKehadiran: React.FC = () => {
       const omRows = filteredData
         .filter((d: any) => d.personel?.unit_kerja?.nama === 'OM/IAS T2')
         .map((d: any, idx: number) => {
-          const storeP = dataOmIasT2.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
+          const storeP = storeOm.find((p: any) => p.id === d.personel?.id || p.name === toTitleCase(d.personel?.nama || ''));
           const orderVal = (d.personel?.urutan !== undefined && d.personel?.urutan !== null) ? Number(d.personel.urutan) : (storeP?.dbOrder !== undefined ? Number(storeP.dbOrder) : idx);
           return {
             id: d.id,

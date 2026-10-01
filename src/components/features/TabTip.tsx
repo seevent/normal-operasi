@@ -254,7 +254,9 @@ export const TabTip: React.FC = () => {
       let canShare = false; 
       try { 
         canShare = navigator.canShare && navigator.canShare({ files: [file] }); 
-      } catch(e) {} 
+      } catch (err) {
+        console.warn('navigator.canShare gagal, memakai jalur unduh:', err);
+      }
       
       if (canShare) {
         try {

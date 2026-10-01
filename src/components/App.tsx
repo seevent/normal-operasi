@@ -142,12 +142,7 @@ export default function App() {
   // Sync currentPage with activeTab
   useEffect(() => {
     const idx = ALL_TABS.findIndex((t) => t.id === activeTab);
-    if (idx !== -1) {
-      const pageOfActive = Math.floor(idx / ITEMS_PER_PAGE);
-      if (pageOfActive !== currentPage) {
-        setCurrentPage(pageOfActive);
-      }
-    }
+    if (idx !== -1) setCurrentPage(Math.floor(idx / ITEMS_PER_PAGE));
   }, [activeTab]);
 
   const switchTab = (tab: string) => {
