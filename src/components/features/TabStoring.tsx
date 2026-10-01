@@ -1,5 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User, RefreshCw, MapPin, Check, Sparkles } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { Calendar, AlertCircle, Share2, CheckCircle, FileText, User, RefreshCw, MapPin, Check, Sparkles, History } from 'lucide-react';
 import { MonitorSearchIcon } from '../shared/MonitorSearchIcon';
 import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
@@ -12,9 +12,16 @@ import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canva
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
-import { buildLocationEquipmentMap, deriveStoringEquipment } from '../../lib/utils/storingLokasi';
+import { buildLocationEquipmentMap, deriveStoringEquipment, parseLastStoring, summarizeLastStoring, type LastStoring, type StoringMode } from '../../lib/utils/storingLokasi';
 
-type StoringMode = 'lokasi' | 'Access Control' | 'Mirroring X-Ray';
+const LAST_STORING_KEY = 'sses-t2:storing-terakhir';
+
+const readLastStoring = (): LastStoring | null => {
+  try { return parseLastStoring(localStorage.getItem(LAST_STORING_KEY)); } catch { return null; }
+};
+const writeLastStoring = (last: LastStoring) => {
+  try { localStorage.setItem(LAST_STORING_KEY, JSON.stringify(last)); } catch { /* penyimpanan tidak tersedia: abaikan */ }
+};
 
 const MODE_OPTIONS: Array<{ id: StoringMode; label: string }> = [
   { id: 'lokasi', label: 'Per Lokasi' },
@@ -34,6 +41,7 @@ const equipChipStyle = (equip: string) => EQUIP_CHIP_STYLE[equip.trim().toLowerC
 
 export const TabStoring: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
+  const setBottomInset = useAppStore((st) => st.setBottomInset);
   const { penempatanData } = useMasterDataStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,10 +50,14 @@ export const TabStoring: React.FC = () => {
   const locationMap = useMemo(() => buildLocationEquipmentMap(penempatanData), [penempatanData]);
   const [mode, setMode] = useState<StoringMode>('lokasi');
   const [excluded, setExcluded] = useState<string[]>([]);
+  const [last] = useState<LastStoring | null>(readLastStoring);
+  const prefilledSupervisors = useRef<Set<string>>(new Set());
+  const shareBarRef = useRef<HTMLDivElement>(null);
 
   const [storingData, setStoringData] = useState({
     tanggal: getOperationalShiftAndDate().date,
-    waktuMulai: '',
+    // Pukul mulai terisi saat tab dibuka; pukul selesai terisi otomatis saat dikirim
+    waktuMulai: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
     waktuSelesai: '',
     peralatan: [] as string[],
     lokasi: '',
@@ -171,6 +183,60 @@ export const TabStoring: React.FC = () => {
     setStoringData(prev => applyLocations(prev, prev.acLokasi, prev.acNomor, next));
   };
 
+  const selectAllLocations = (all: string[]) => {
+    const newNomor: Record<string, string> = {};
+    all.forEach(loc => {
+      const opts = getAcNomorOptions(loc);
+      if (opts.length > 0) newNomor[loc] = (storingData.acNomor || {})[loc] || opts[0];
+    });
+    setStoringData(prev => applyLocations(prev, all, newNomor));
+  };
+
+  const clearLocations = () => {
+    setExcluded([]);
+    setStoringData(prev => applyLocations(prev, [], {}, []));
+  };
+
+  const applyLastStoring = () => {
+    if (!last) return;
+    setMode(last.mode);
+    setExcluded(last.excluded);
+    setStoringData(prev => {
+      const peralatan = last.mode === 'lokasi' ? deriveStoringEquipment(last.acLokasi, locationMap, last.excluded) : [last.mode];
+      return {
+        ...prev,
+        peralatan,
+        acLokasi: last.acLokasi,
+        acNomor: last.acNomor,
+        lokasi: '',
+        nomor: '',
+        supervisorAvsec: '',
+        supervisorAvsecMap: {}
+      };
+    });
+  };
+
+  // Supervisor Avsec diisi otomatis dari Storing terakhir (sekali per lokasi, agar bisa dikosongkan)
+  useEffect(() => {
+    if (!last) return;
+    const keys = getStoringSupervisorLocations(storingData.peralatan, storingData.acLokasi, storingData.acNomor);
+    const map = storingData.supervisorAvsecMap || {};
+    const fill = keys.filter(k => !map[k] && last.supervisors[k] && !prefilledSupervisors.current.has(k));
+    if (fill.length === 0) return;
+    fill.forEach(k => prefilledSupervisors.current.add(k));
+    setStoringData(prev => ({
+      ...prev,
+      supervisorAvsecMap: { ...(prev.supervisorAvsecMap || {}), ...Object.fromEntries(fill.map(k => [k, last.supervisors[k]])) },
+      supervisorAvsec: prev.supervisorAvsec || last.supervisors[fill[0]]
+    }));
+  }, [storingData.peralatan, storingData.acLokasi, storingData.acNomor, storingData.supervisorAvsecMap, last]);
+
+  // Bilah kirim menempel di bawah; maskot bergeser di atasnya
+  useEffect(() => {
+    setBottomInset((shareBarRef.current?.offsetHeight ?? 88) + 12);
+    return () => setBottomInset(0);
+  }, [setBottomInset, storingData.acLokasi.length]);
+
   // === Photo Handlers ===
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -246,6 +312,9 @@ export const TabStoring: React.FC = () => {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    // Pukul selesai kosong: otomatis memakai waktu saat ini
+    const data = storingData.waktuSelesai ? storingData : { ...storingData, waktuSelesai: currentTimeStr };
+    if (!storingData.waktuSelesai) setStoringData(prev => ({ ...prev, waktuSelesai: currentTimeStr }));
     if (storingData.tanggal === todayStr && storingData.waktuSelesai && storingData.waktuSelesai > currentTimeStr) {
       alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
       unlock();
@@ -288,7 +357,7 @@ export const TabStoring: React.FC = () => {
       if (finalFilesToShare.length > 0) {
         for (const file of finalFilesToShare) {
           try {
-            const res = await uploadPhotoToCloudinary(file, `Storing_${storingData.peralatan.join('_')}_${Date.now()}.jpg`);
+            const res = await uploadPhotoToCloudinary(file, `Storing_${data.peralatan.join('_')}_${Date.now()}.jpg`);
             if (res && res.status === 'success' && res.url) {
               uploadedPhotoUrls.push(res.url);
             } else if (res && res.status === 'error') {
@@ -304,23 +373,23 @@ export const TabStoring: React.FC = () => {
 
       try {
         const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
-        const locString = (storingData.acLokasi && storingData.acLokasi.length > 0)
-          ? storingData.acLokasi.join(', ')
-          : (storingData.lokasi ? `${storingData.lokasi} ${storingData.nomor || ''}`.trim() : 'Terminal 2');
+        const locString = (data.acLokasi && data.acLokasi.length > 0)
+          ? data.acLokasi.join(', ')
+          : (data.lokasi ? `${data.lokasi} ${data.nomor || ''}`.trim() : 'Terminal 2');
 
-        const waktuRange = `${storingData.waktuMulai || ''}${storingData.waktuSelesai ? ' - ' + storingData.waktuSelesai : ''}`;
+        const waktuRange = `${data.waktuMulai || ''}${data.waktuSelesai ? ' - ' + data.waktuSelesai : ''}`;
 
         await saveOperationalLog({
-          tanggal: storingData.tanggal || opDate,
+          tanggal: data.tanggal || opDate,
           shift: opShift,
           jenis: 'Storing',
           waktu: waktuRange,
           lokasi: locString,
-          peralatan: storingData.peralatan.join(', ') || 'All Faskampen',
+          peralatan: data.peralatan.join(', ') || 'All Faskampen',
           kategori_maintenance: 'STORING',
-          uraian: `Storing Peralatan: ${storingData.peralatan.join(', ')}`,
-          tindak_lanjut: storingData.hasil || 'Storing Peralatan',
-          status: storingData.hasil || 'Normal',
+          uraian: `Storing Peralatan: ${data.peralatan.join(', ')}`,
+          tindak_lanjut: data.hasil || 'Storing Peralatan',
+          status: data.hasil || 'Normal',
           foto_urls: uploadedPhotoUrls
         });
       } catch (dbErr) {
@@ -328,16 +397,28 @@ export const TabStoring: React.FC = () => {
       }
 
       saveStoringToChecklistSync({
-        supervisorAvsec: storingData.supervisorAvsec,
-        supervisorAvsecMap: storingData.supervisorAvsecMap,
-        acLokasi: storingData.acLokasi,
-        acNomor: storingData.acNomor,
-        waktuMulai: storingData.waktuMulai,
-        waktuSelesai: storingData.waktuSelesai
+        supervisorAvsec: data.supervisorAvsec,
+        supervisorAvsecMap: data.supervisorAvsecMap,
+        acLokasi: data.acLokasi,
+        acNomor: data.acNomor,
+        waktuMulai: data.waktuMulai,
+        waktuSelesai: data.waktuSelesai
       });
     })();
 
-    const message = generateWA_Storing(storingData);
+    writeLastStoring({
+      mode,
+      acLokasi: data.acLokasi,
+      acNomor: data.acNomor,
+      excluded,
+      supervisors: Object.fromEntries(
+        getStoringSupervisorLocations(data.peralatan, data.acLokasi, data.acNomor)
+          .map(k => [k, (data.supervisorAvsecMap || {})[k] || data.supervisorAvsec || ''])
+          .filter(([, v]) => v)
+      )
+    });
+
+    const message = generateWA_Storing(data);
 
     try {
       await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
@@ -390,7 +471,24 @@ export const TabStoring: React.FC = () => {
               onChange={handleStoringChange} 
               className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
             />
+            {!storingData.waktuSelesai && <p className="text-[11px] text-emerald-600 font-medium mt-1">Kosong = otomatis saat dikirim</p>}
           </div>
+
+          {last && storingData.acLokasi.length === 0 && (
+            <button
+              type="button"
+              onClick={applyLastStoring}
+              className="col-span-2 flex items-center gap-3 p-3 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 active:scale-[0.99] transition-all text-left"
+            >
+              <span className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">
+                <History className="w-5 h-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-emerald-800">Ulangi Storing terakhir</span>
+                <span className="block text-xs text-emerald-700 truncate">{last.mode === 'lokasi' ? '' : `${last.mode} · `}{summarizeLastStoring(last)}</span>
+              </span>
+            </button>
+          )}
 
           <div className="col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-2">Jenis Storing</label>
@@ -417,11 +515,21 @@ export const TabStoring: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700">
                 Lokasi <span className="text-xs text-slate-400 font-normal">(Pilih 1 atau lebih)</span>
               </label>
-              {storingData.acLokasi.length > 0 && (
-                <span className="text-xs font-semibold text-blue-600">{storingData.acLokasi.length} dipilih</span>
-              )}
+              {(() => {
+                const allOpts = mode === 'lokasi' ? Array.from(locationMap.keys()) : getGeneralLokasiOptions(mode);
+                const allSelected = allOpts.length > 0 && allOpts.every(l => storingData.acLokasi.includes(l));
+                return allOpts.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => (allSelected ? clearLocations() : selectAllLocations(allOpts))}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 -my-1 rounded-md hover:bg-blue-50"
+                  >
+                    {allSelected ? 'Kosongkan' : 'Pilih semua'}
+                  </button>
+                ) : null;
+              })()}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {(() => {
                 const locOpts = mode === 'lokasi' ? Array.from(locationMap.keys()) : getGeneralLokasiOptions(mode);
 
@@ -445,7 +553,7 @@ export const TabStoring: React.FC = () => {
                         isChecked ? 'bg-blue-50 border-blue-500 shadow-sm ring-1 ring-blue-200' : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'
                       }`}
                     >
-                      <label className="flex items-start gap-2.5 p-3 cursor-pointer select-none">
+                      <label className="flex items-start gap-2 p-2.5 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -455,7 +563,7 @@ export const TabStoring: React.FC = () => {
                         <span className="flex-1 min-w-0">
                           <span className={`flex items-center gap-1 text-sm ${isChecked ? 'font-bold text-blue-800' : 'font-semibold text-slate-700'}`}>
                             <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${isChecked ? 'text-blue-500' : 'text-slate-400'}`} />
-                            <span className="truncate" title={loc}>{loc}</span>
+                            <span className="leading-tight" title={loc}>{loc}</span>
                           </span>
                           {equipHere.length > 0 && (
                             <span className="mt-1.5 flex flex-wrap gap-1">
@@ -468,8 +576,8 @@ export const TabStoring: React.FC = () => {
                       </label>
 
                       {isChecked && nomorOpts.length > 0 && (
-                        <div className="flex items-center gap-2 px-3 pb-3 -mt-1">
-                          <span className="text-[11px] font-semibold text-slate-500">Nomor</span>
+                        <div className="flex items-center gap-1.5 px-2.5 pb-2.5 -mt-1">
+                          <span className="text-[11px] font-semibold text-slate-500">No.</span>
                           <select
                             value={(storingData.acNomor || {})[loc] || nomorOpts[0]}
                             onChange={(e) => changeLocationNomor(loc, e.target.value)}
@@ -583,6 +691,9 @@ export const TabStoring: React.FC = () => {
                           className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium"
                         />
                       </div>
+                      {last?.supervisors[locKey] && currentValue === last.supervisors[locKey] && (
+                        <p className="text-[11px] text-emerald-600 font-medium mt-1">Terisi dari Storing terakhir, ketuk untuk mengubah</p>
+                      )}
                     </div>
                   );
                 })}
@@ -610,7 +721,16 @@ export const TabStoring: React.FC = () => {
         }} 
       />
 
-      <div className="flex flex-col sm:flex-row gap-4 mt-8">
+      <div ref={shareBarRef} className="sticky bottom-3 z-10 mt-8 space-y-2">
+        {storingData.acLokasi.length > 0 && (
+          <div className="mx-auto w-fit max-w-full px-3 py-1.5 rounded-full bg-slate-900/90 text-white text-xs font-semibold shadow-lg backdrop-blur flex items-center gap-2">
+            <span>{storingData.acLokasi.length} lokasi</span>
+            <span className="opacity-40">·</span>
+            <span>{storingData.peralatan.length} peralatan</span>
+            <span className="opacity-40">·</span>
+            <span>{storingData.waktuMulai || '--:--'} – {storingData.waktuSelesai || 'sekarang'}</span>
+          </div>
+        )}
         <button
           type="submit"
           disabled={isSubmitting}

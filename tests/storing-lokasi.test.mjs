@@ -35,3 +35,19 @@ test('Peralatan yang dikecualikan pengguna tidak ikut dicentang', () => {
 test('Urutan peralatan baku, yang tak dikenal di akhir', () => {
   assert.deepEqual(sortStoringEquipment(['ETD', 'ATRS', 'WTMD', 'X-Ray', 'Body Scanner']), ['X-Ray', 'WTMD', 'Body Scanner', 'ETD', 'ATRS']);
 });
+
+import { parseLastStoring, summarizeLastStoring } from '../src/lib/utils/storingLokasi.ts';
+
+test('Pilihan terakhir: dibaca hanya bila sah, dan diringkas untuk tombol', () => {
+  const ok = JSON.stringify({ mode: 'lokasi', acLokasi: ['PSCP D', 'PSCP E'], acNomor: { 'PSCP D': '1' }, excluded: ['ETD'], supervisors: { 'PSCP D': 'Budi' } });
+  assert.deepEqual(parseLastStoring(ok), { mode: 'lokasi', acLokasi: ['PSCP D', 'PSCP E'], acNomor: { 'PSCP D': '1' }, excluded: ['ETD'], supervisors: { 'PSCP D': 'Budi' } });
+  assert.equal(parseLastStoring(null), null);
+  assert.equal(parseLastStoring('bukan json'), null);
+  assert.equal(parseLastStoring(JSON.stringify({ mode: 'lain', acLokasi: ['A'] })), null);
+  assert.equal(parseLastStoring(JSON.stringify({ mode: 'lokasi', acLokasi: [] })), null);
+  // bidang opsional yang rusak diganti nilai kosong
+  assert.deepEqual(parseLastStoring(JSON.stringify({ mode: 'Access Control', acLokasi: ['Rampout D'], acNomor: 5, excluded: 'x' })),
+    { mode: 'Access Control', acLokasi: ['Rampout D'], acNomor: {}, excluded: [], supervisors: {} });
+  assert.equal(summarizeLastStoring({ mode: 'lokasi', acLokasi: ['A', 'B'], acNomor: {}, excluded: [], supervisors: {} }), 'A, B');
+  assert.equal(summarizeLastStoring({ mode: 'lokasi', acLokasi: ['A', 'B', 'C', 'D', 'E'], acNomor: {}, excluded: [], supervisors: {} }), 'A, B, C +2 lainnya');
+});

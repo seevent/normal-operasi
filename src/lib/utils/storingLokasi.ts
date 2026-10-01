@@ -46,3 +46,48 @@ export const deriveStoringEquipment = (
   selectedLocations.forEach(loc => (locationMap.get(loc) || []).forEach(e => union.add(e)));
   return sortStoringEquipment(Array.from(union)).filter(e => !excluded.includes(e));
 };
+
+// ---------------------------------------------------------------------------
+// "Ulangi Storing terakhir": pilihan terakhir diingat di perangkat agar Storing rutin
+// cukup satu ketukan.
+// ---------------------------------------------------------------------------
+export type StoringMode = 'lokasi' | 'Access Control' | 'Mirroring X-Ray';
+
+export interface LastStoring {
+  mode: StoringMode;
+  acLokasi: string[];
+  acNomor: Record<string, string>;
+  excluded: string[];
+  /** Nama Supervisor Avsec terakhir per kunci lokasi supervisor. */
+  supervisors: Record<string, string>;
+}
+
+const MODES: StoringMode[] = ['lokasi', 'Access Control', 'Mirroring X-Ray'];
+const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === 'string');
+const isStringRecord = (v: unknown): v is Record<string, string> =>
+  !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v as object).every(x => typeof x === 'string');
+
+/** Baca pilihan terakhir dari teks tersimpan; bentuk yang tidak sah dianggap tidak ada. */
+export const parseLastStoring = (raw: string | null | undefined): LastStoring | null => {
+  if (!raw) return null;
+  try {
+    const d = JSON.parse(raw);
+    if (!d || !MODES.includes(d.mode) || !isStringArray(d.acLokasi) || d.acLokasi.length === 0) return null;
+    return {
+      mode: d.mode,
+      acLokasi: d.acLokasi,
+      acNomor: isStringRecord(d.acNomor) ? d.acNomor : {},
+      excluded: isStringArray(d.excluded) ? d.excluded : [],
+      supervisors: isStringRecord(d.supervisors) ? d.supervisors : {},
+    };
+  } catch {
+    return null;
+  }
+};
+
+/** Ringkasan satu baris untuk tombol "Ulangi terakhir". */
+export const summarizeLastStoring = (last: LastStoring, maxLocations = 3): string => {
+  const shown = last.acLokasi.slice(0, maxLocations).join(', ');
+  const rest = last.acLokasi.length - maxLocations;
+  return rest > 0 ? `${shown} +${rest} lainnya` : shown;
+};
