@@ -80,7 +80,9 @@ const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => 
 
   if (isCorrectiveReport(r)) {
     const steps = tindakLanjutSteps(r.TindakLanjut).filter(step => step.toLowerCase() !== status.toLowerCase());
-    return joinParts([`Perbaikan ${peralatan}`.trim(), lokasiPart, cleanField(r.Uraian), steps.join(', '), status]);
+    // Permasalahan diisi per butir berawalan "•"; tanda itu tidak ikut ke pesan.
+    const permasalahan = tindakLanjutSteps(r.Uraian).join(', ');
+    return joinParts([`Perbaikan ${peralatan}`.trim(), lokasiPart, permasalahan, steps.join(', '), status]);
   }
 
   const judul = peralatan || cleanField(r.Jenis) || 'Kegiatan';

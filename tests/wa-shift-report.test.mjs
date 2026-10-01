@@ -139,3 +139,27 @@ test('TabShiftReport menampilkan preview real-time dari pesan yang sama dengan S
   assert.match(src, /\{waMessagePreview\}/);
   assert.match(src, /generateShiftWaSummary = \(\) => waMessagePreview/);
 });
+
+test('Perbaikan: tanda • pada permasalahan tidak ikut ke pesan, satu atau beberapa butir', () => {
+  const msg = buildShiftReportMessage('2026-09-30', 'PS', api, ias, [
+    {
+      shift: 'PS', Jenis: 'Perbaikan', kategori_maintenance: 'CORRECTIVE', Peralatan: 'ETD Leidos B220', Lokasi: 'PSCP E No.2',
+      Uraian: '• Muncul Notif Calibration Required',
+      TindakLanjut: '• Dilakukan Cleaning\n• Dilakukan Calibrasi Negative\n• Blank Sample Test\n• Normal Operasi', Status: 'Pekerjaan Selesai',
+    },
+    {
+      shift: 'PS', Jenis: 'Perbaikan', kategori_maintenance: 'CORRECTIVE', Peralatan: 'X-Ray Rapiscan 620DV', Lokasi: 'PSCP F No.3',
+      Uraian: '• xray off karena tidak ada tegangan',
+      TindakLanjut: '• cek power, tidak ada tegangan\n• koordinasi dengan teknik listrik', Status: 'Pekerjaan Selesai',
+    },
+    {
+      shift: 'PS', Jenis: 'Perbaikan', kategori_maintenance: 'CORRECTIVE', Peralatan: 'WTMD CEIA', Lokasi: 'PSCP D No.1',
+      Uraian: '• alarm terus menyala\n• sensitivitas tidak stabil', TindakLanjut: '• reset', Status: 'Normal Operasi',
+    },
+  ], getDefaultUraian);
+
+  assert.ok(msg.includes('1. Perbaikan ETD Leidos B220, Lokasi PSCP E No.2, Muncul Notif Calibration Required, Dilakukan Cleaning, Dilakukan Calibrasi Negative, Blank Sample Test, Normal Operasi, Pekerjaan Selesai'));
+  assert.ok(msg.includes('2. Perbaikan X-Ray Rapiscan 620DV, Lokasi PSCP F No.3, xray off karena tidak ada tegangan, cek power, tidak ada tegangan, koordinasi dengan teknik listrik, Pekerjaan Selesai'));
+  assert.ok(msg.includes('3. Perbaikan WTMD CEIA, Lokasi PSCP D No.1, alarm terus menyala, sensitivitas tidak stabil, reset, Normal Operasi'));
+  assert.ok(!msg.includes('•'));
+});
