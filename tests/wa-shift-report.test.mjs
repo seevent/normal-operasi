@@ -52,7 +52,7 @@ Hari/Tanggal/Dinas : Selasa, 29 September 2026/PS
 Personel API T2 :
 - Romie Ade Putra A
 
-Personel OM IAS T2 :
+Personel OM IASS T2 :
 - Sayuti
 - Nora Agil R
 - Wellynthon Agustinus
@@ -75,7 +75,7 @@ Hari/Tanggal/Dinas : Selasa, 29 September 2026/M
 Personel API T2 :
 - Dimas Aria Wiratama
 
-Personel OM IAS T2 :
+Personel OM IASS T2 :
 - Harmin Sanjayah
 - Abdul Rifan Sukarno
 
@@ -107,7 +107,7 @@ test('storing beberapa baris digabung menjadi satu butir', () => {
 
 test('personel kosong ditulis "- -" dan shift kosong dilewati pada mode semua shift', () => {
   const single = buildShiftReportMessage('2026-09-29', 'PS', [], [], [], getDefaultUraian);
-  assert.match(single, /Personel API T2 :\n- -\n\nPersonel OM IAS T2 :\n- -/);
+  assert.match(single, /Personel API T2 :\n- -\n\nPersonel OM IASS T2 :\n- -/);
   const onlyPs = buildShiftReportMessage('2026-09-29', 'ALL', [person('PS', 'Sayuti')], [], [], getDefaultUraian);
   assert.doesNotMatch(onlyPs, /\/M\b/);
 });

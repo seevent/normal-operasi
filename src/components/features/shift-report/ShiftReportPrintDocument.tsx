@@ -98,7 +98,7 @@ export const ShiftReportPrintDocument = forwardRef<HTMLDivElement, ShiftReportPr
               </div>
             </div>
             <div className="w-1/2 flex flex-col">
-              <div className="bg-gray-200 text-center font-bold text-[10px] py-1 border-b-[3px] border-black">IAS</div>
+              <div className="bg-gray-200 text-center font-bold text-[10px] py-1 border-b-[3px] border-black">IASS</div>
               <div className="p-1 flex-1 flex flex-col justify-around">
                 {iasPersonil.map((p, i) => (
                   <div key={i} className="flex justify-between text-[10px] font-semibold px-4">

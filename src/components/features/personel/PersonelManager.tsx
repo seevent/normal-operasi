@@ -23,7 +23,7 @@ const PERSONEL_UNITS: UnitConfig[] = [
   },
   {
     key: 'ias',
-    title: 'Personel OM/IAS T2',
+    title: 'Personel OM/IASS T2',
     subtitle: 'Dipakai di laporan Kehadiran dan Initial Report.',
     accent: 'teal',
     jabatan: ['Supervisor', 'Teknisi', 'Pembantu Teknisi'],
