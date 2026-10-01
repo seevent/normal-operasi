@@ -324,6 +324,7 @@ export interface PmDisplaySettings {
  * Filter daftar jadwal PM berdasarkan Shift (warna) dan Pengaturan Tampilan Jenis PM
  * - Biru (Bulanan M): Hanya untuk shift M, tidak tampil pada shift PS
  * - Merah (Bulanan PS) & Kuning (Mingguan): Hanya untuk shift PS, tidak tampil pada shift M
+ * - Pengecualian: Access Control Mingguan hanya untuk shift M, tidak tampil pada shift PS
  * - Sesuai settingan per jenis PM / kategori yang diatur di Tab Data
  */
 export function filterActivePm(
@@ -348,7 +349,9 @@ export function filterActivePm(
     // 2. Filter Shift & Warna:
     // Biru (Bulanan M) -> untuk shift M, tidak tampil pada shift PS
     // Merah (Bulanan PS) & Kuning (Mingguan) -> untuk shift PS, tidak tampil pada shift M
-    const isShiftM = d.shift === 'M' || (d.kategori_pm && d.kategori_pm.includes('(M)'));
+    // Kecuali Access Control Mingguan -> dikerjakan shift M, tidak tampil pada shift PS
+    const isAccessMingguan = isAccessControl(d) &&d.kategori_pm && d.kategori_pm.toLowerCase().includes('mingguan');
+    const isShiftM = isAccessMingguan || d.shift === 'M' || (d.kategori_pm && d.kategori_pm.includes('(M)'));
     return targetShiftCode === 'PS' ? !isShiftM : isShiftM;
   });
 }
