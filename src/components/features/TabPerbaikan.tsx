@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, Wrench, Camera, Move, Trash2 } from 'lucide-react';
-import { useAppStore, sayPet } from '../../store/useAppStore';
-import { buildMissingFieldsMessage } from '../../lib/data/petMessages';
+import { useAppStore } from '../../store/useAppStore';
+import { validatePerbaikan } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
+import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 import { PhotoUploader } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
 import { generateWA_Perbaikan } from '../../lib/utils/waGenerator';
@@ -408,31 +410,10 @@ export const TabPerbaikan: React.FC = () => {
   const handleRepairSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation check
-    const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
-    const hasEmptyPeralatan = !formData.peralatan;
-    const hasEmptyLokasi = activeLocs.length === 0;
-    const hasEmptyTanggal = !formData.tanggal;
-    const hasEmptyWaktu = !formData.waktuMulai;
-    const hasEmptyTeknisi = !formData.teknisi || formData.teknisi === '-';
-    const hasEmptyIndikasi = !isVerifikasiETD && !formData.indikasiAwal;
-    const hasEmptyPermasalahan = !formData.permasalahan || formData.permasalahan.trim() === '•';
-    const hasEmptyTindakLanjut = !formData.tindakLanjut || formData.tindakLanjut.trim() === '•';
-
-    if (hasEmptyPeralatan || hasEmptyLokasi || hasEmptyTanggal || hasEmptyWaktu || hasEmptyTeknisi || hasEmptyIndikasi || hasEmptyPermasalahan || hasEmptyTindakLanjut) {
+    const missing = validatePerbaikan(formData, isVerifikasiETD);
+    if (missing.length > 0) {
       setShowErrors(true);
-      const missingMessage = buildMissingFieldsMessage([
-        hasEmptyPeralatan ? 'peralatan' : '',
-        hasEmptyLokasi ? 'lokasi' : '',
-        hasEmptyTanggal ? 'tanggal' : '',
-        hasEmptyWaktu ? 'waktu mulai' : '',
-        hasEmptyTeknisi ? 'teknisi bertugas' : '',
-        hasEmptyIndikasi ? 'indikasi awal' : '',
-        hasEmptyPermasalahan ? 'permasalahan' : '',
-        hasEmptyTindakLanjut ? 'tindak lanjut' : '',
-      ]);
-      if (missingMessage) sayPet(missingMessage, 'warning');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      reportMissingFields(missing);
       return;
     }
 
@@ -516,8 +497,11 @@ export const TabPerbaikan: React.FC = () => {
     });
   };
 
+  const missingKeys = new Set(validatePerbaikan(formData, isVerifikasiETD).map(m => m.key));
+  const hasError = (key: string) => showErrors && missingKeys.has(key);
+
   return (
-    <form onSubmit={handleRepairSubmit} className="bg-white rounded-b-2xl">
+    <form onSubmit={handleRepairSubmit} noValidate className="bg-white rounded-b-2xl">
       <div className="bg-blue-50/50 px-6 py-5 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-full">
@@ -529,6 +513,7 @@ export const TabPerbaikan: React.FC = () => {
                 <input
                   type="text"
                   required
+                  data-field="peralatan"
                   placeholder="Ketik nama peralatan secara manual..."
                   value={formData.peralatan}
                   onChange={(e) => setFormData(prev => ({ ...prev, peralatan: e.target.value }))}
@@ -550,6 +535,7 @@ export const TabPerbaikan: React.FC = () => {
             ) : (
               <select 
                 required 
+                data-field="peralatan"
                 value={formData.peralatan} 
                 onChange={handlePeralatanChange} 
                 className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm cursor-pointer appearance-none ${
@@ -587,7 +573,7 @@ export const TabPerbaikan: React.FC = () => {
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2 space-y-3">
+            <div className="md:col-span-2 space-y-3" data-field="lokasi">
               <label className="block text-sm font-medium text-slate-700">Lokasi</label>
               {(formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).map((loc, index) => {
                 const allRows = formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
@@ -776,8 +762,9 @@ export const TabPerbaikan: React.FC = () => {
                 max={formData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined} 
                 value={formData.waktuSelesai} 
                 onChange={handleRepairChange} 
-                className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                className={`w-full px-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('waktuSelesai') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} 
               />
+<FieldError show={hasError('waktuSelesai')} message="Wajib diisi!" />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1">Lama Pengerjaan</label>
@@ -789,7 +776,7 @@ export const TabPerbaikan: React.FC = () => {
                 {availableTeknisi.length === 0 && <span className="text-xs text-rose-500 font-normal">*(Tidak ada teknisi hadir/jadwal kosong)</span>}
               </label>
               
-              <div className={`flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border ${
+              <div data-field="teknisi" className={`flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border ${
                 showErrors && (!formData.teknisi || formData.teknisi === '-') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-200'
               }`}>
                 {(() => {

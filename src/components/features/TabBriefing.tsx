@@ -7,10 +7,14 @@ import { generateWA_Briefing } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
+import { validateBriefing } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
+import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
 export const TabBriefing: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const { sparepartsData = [], briefingSparepartIds = [] } = useMasterDataStore();
+  const [showErrors, setShowErrors] = useState(false);
 
   const selectedSpareparts = (sparepartsData || []).filter(sp => (briefingSparepartIds || []).includes(sp.id));
 
@@ -124,7 +128,14 @@ export const TabBriefing: React.FC = () => {
   // === Submit ===
   const handleBriefingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    const missing = validateBriefing(briefingData);
+    if (missing.length > 0) {
+      setShowErrors(true);
+      reportMissingFields(missing);
+      return;
+    }
+
     let generatedCollageFile: File | null = null;
     const finalFilesToShare: File[] = [];
 
@@ -160,8 +171,11 @@ export const TabBriefing: React.FC = () => {
     }
   };
 
+  const missingKeys = new Set(validateBriefing(briefingData).map(m => m.key));
+  const hasError = (key: string) => showErrors && missingKeys.has(key);
+
   return (
-    <form onSubmit={handleBriefingSubmit} className="p-6 sm:p-8 space-y-8">
+    <form onSubmit={handleBriefingSubmit} noValidate className="p-6 sm:p-8 space-y-8">
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b pb-2">
           <Megaphone className="w-5 h-5 text-blue-600" /> Detail Briefing
@@ -227,8 +241,9 @@ export const TabBriefing: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="date" name="tanggal" required value={briefingData.tanggal} onChange={handleBriefingChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="date" name="tanggal" required value={briefingData.tanggal} onChange={handleBriefingChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('tanggal') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} />
             </div>
+            <FieldError show={hasError('tanggal')} message="Tanggal wajib diisi!" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Shift</label>
@@ -241,8 +256,9 @@ export const TabBriefing: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Lokasi</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <input type="text" name="lokasi" required value={briefingData.lokasi} onChange={handleBriefingChange} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="text" name="lokasi" required value={briefingData.lokasi} onChange={handleBriefingChange} className={`w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${hasError('lokasi') ? FIELD_ERROR_CLASS : 'border-slate-300'}`} />
             </div>
+            <FieldError show={hasError('lokasi')} message="Lokasi wajib diisi!" />
           </div>
         </div>
       </div>

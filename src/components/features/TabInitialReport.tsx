@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Cpu, FileText, MapPin, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, FileWarning, Camera, Move, Trash2 } from 'lucide-react';
-import { useAppStore, sayPet } from '../../store/useAppStore';
-import { buildMissingFieldsMessage } from '../../lib/data/petMessages';
+import { useAppStore } from '../../store/useAppStore';
+import { validateInitialReport } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
@@ -443,33 +444,10 @@ export const TabInitialReport: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation check
-    const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
-    const hasEmptyPeralatan = !formData.peralatan;
-    const hasEmptyLokasi = activeLocs.length === 0;
-    const hasEmptyTanggal = !formData.tanggal;
-    const hasEmptyWaktu = !formData.waktuMulai;
-    const hasEmptyTeknisi = !formData.teknisi || formData.teknisi === '-';
-    const hasEmptyPermasalahan = !formData.permasalahan || formData.permasalahan.trim() === '•' || formData.permasalahan.trim() === '';
-    const hasEmptyUraian = !formData.uraian || formData.uraian.trim() === '•' || formData.uraian.trim() === '';
-    const hasEmptyDampak = !formData.dampak || formData.dampak.trim() === '1.' || formData.dampak.trim() === '';
-    const hasEmptyMitigasi = !formData.tindakanMitigasi || formData.tindakanMitigasi.trim() === '1.' || formData.tindakanMitigasi.trim() === '';
-
-    if (hasEmptyPeralatan || hasEmptyLokasi || hasEmptyTanggal || hasEmptyWaktu || hasEmptyTeknisi || hasEmptyPermasalahan || hasEmptyUraian || hasEmptyDampak || hasEmptyMitigasi) {
+    const missing = validateInitialReport(formData);
+    if (missing.length > 0) {
       setShowErrors(true);
-      const missingMessage = buildMissingFieldsMessage([
-        hasEmptyPeralatan ? 'peralatan' : '',
-        hasEmptyLokasi ? 'lokasi' : '',
-        hasEmptyTanggal ? 'tanggal' : '',
-        hasEmptyWaktu ? 'waktu mulai' : '',
-        hasEmptyTeknisi ? 'teknisi bertugas' : '',
-        hasEmptyPermasalahan ? 'permasalahan' : '',
-        hasEmptyUraian ? 'uraian' : '',
-        hasEmptyDampak ? 'dampak' : '',
-        hasEmptyMitigasi ? 'tindakan mitigasi' : '',
-      ]);
-      if (missingMessage) sayPet(missingMessage, 'warning');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      reportMissingFields(missing);
       return;
     }
 
@@ -507,7 +485,7 @@ export const TabInitialReport: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-b-2xl">
+    <form onSubmit={handleSubmit} noValidate className="bg-white rounded-b-2xl">
       <div className="p-6 sm:p-8 bg-blue-50/50 border-b border-blue-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-full">
@@ -519,6 +497,7 @@ export const TabInitialReport: React.FC = () => {
                 <input
                   type="text"
                   required
+                  data-field="peralatan"
                   placeholder="Ketik nama peralatan secara manual..."
                   value={formData.peralatan}
                   onChange={(e) => setFormData(prev => ({ ...prev, peralatan: e.target.value }))}
@@ -540,6 +519,7 @@ export const TabInitialReport: React.FC = () => {
             ) : (
               <select 
                 required 
+                data-field="peralatan"
                 value={formData.peralatan} 
                 onChange={handlePeralatanChange} 
                 className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium shadow-sm cursor-pointer appearance-none ${
@@ -570,7 +550,7 @@ export const TabInitialReport: React.FC = () => {
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2 space-y-3">
+            <div className="md:col-span-2 space-y-3" data-field="lokasi">
               <label className="block text-sm font-medium text-slate-700">Lokasi</label>
               {(formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).map((loc, index) => {
                 const allRows = formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
@@ -732,7 +712,7 @@ export const TabInitialReport: React.FC = () => {
                 {availableTeknisi.length === 0 && <span className="text-xs text-rose-500 font-normal">*(Tidak ada teknisi hadir/jadwal kosong)</span>}
               </label>
               
-              <div className={`flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border ${
+              <div data-field="teknisi" className={`flex flex-col gap-3 bg-slate-50 p-3 rounded-lg border ${
                 showErrors && (!formData.teknisi || formData.teknisi === '-') ? 'border-red-500 ring-2 ring-red-300 bg-red-50/50' : 'border-slate-200'
               }`}>
                 {(() => {

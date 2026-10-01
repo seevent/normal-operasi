@@ -37,9 +37,8 @@ test('TabKegiatan: dropdown Peralatan opsional, tidak masuk validasi wajib', () 
   const peralatanSelect = tab.match(/<select\s+name="peralatan"[\s\S]*?<\/select>/)?.[0] ?? '';
   assert.doesNotMatch(peralatanSelect, /\brequired\b/);
   assert.match(tab, /Peralatan <span[^>]*>\(Opsional\)/);
-  // validasi submit tidak boleh mensyaratkan peralatan
-  const guard = tab.match(/if \(!kegiatanData\.tanggal[^)]*\) \{/)?.[0] ?? '';
-  assert.ok(guard && !guard.includes('peralatan'));
+  // validasi submit memakai validateKegiatan, yang tidak mensyaratkan peralatan
+  assert.match(tab, /validateKegiatan\(kegiatanData\)/);
   // tanpa peralatan, log operasional tetap memakai 'All Faskampen'
   assert.match(tab, /kegiatanData\.peralatan\.trim\(\) \|\| 'All Faskampen'/);
 });

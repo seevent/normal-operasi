@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, AlertCircle, RefreshCw } from 'lucide-react';
-import { useAppStore, sayPet } from '../../store/useAppStore';
-import { buildMissingFieldsMessage } from '../../lib/data/petMessages';
+import { useAppStore } from '../../store/useAppStore';
+import { validateKalibrasi } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
 import { generateWA_Kalibrasi, formatKalibrasiEntryKegiatanDanCatatan } from '../../lib/utils/waGenerator';
@@ -384,45 +385,10 @@ export const TabKalibrasi: React.FC = () => {
       return;
     }
 
-    // Global time validation check
-    const hasEmptyGlobalTime = !kalibrasiGlobal.tanggal || !kalibrasiGlobal.waktuMulai || !kalibrasiGlobal.waktuSelesai;
-
-    // Per entry parameters validation check
-    const hasEmptyEntryParams = kalibrasiEntries.some(entry => {
-      if (entry.peralatan.length === 0) return true;
-      if (entry.peralatan.includes('Access Control')) {
-        if (!entry.acLokasi || entry.acLokasi.length === 0) return true;
-        if (!entry.acEmlock || !entry.acIntercom || !entry.acFingerprint || !entry.acCctv || !entry.acPengontrolan || !entry.acRecordCctv.trim()) return true;
-      } else {
-        if (!entry.lokasi1) return true;
-      }
-      
-      if (entry.peralatan.includes('X-Ray')) {
-        if (!entry.xrayKvV.trim() || !entry.xrayKvH.trim() || !entry.xrayMaV.trim() || !entry.xrayMaH.trim() || !entry.xrayOnV.trim() || !entry.xrayOnH.trim() || !entry.xrayArchive.trim()) return true;
-      }
-      if (entry.peralatan.includes('WTMD')) {
-        if (!entry.wtmdZ1.trim() || !entry.wtmdZ2.trim() || !entry.wtmdZ3.trim() || !entry.wtmdZ4.trim() || !entry.wtmdLc.trim() || !entry.wtmdLs.trim() || !entry.wtmdUc.trim() || !entry.wtmdSe.trim() || !entry.wtmdDs.trim()) return true;
-      }
-      if (entry.peralatan.includes('Body Scanner')) {
-        if (!entry.bsSuspect || !entry.bsMonitor || !entry.bsScanning || !entry.bsCalibration) return true;
-      }
-      if (entry.peralatan.includes('ETD')) {
-        if (!entry.etdTnt || !entry.etdPetn || !entry.etdRdx) return true;
-      }
-      if (entry.peralatan.includes('Extension Conveyor')) {
-        if (!entry.ecGearbox || !entry.ecTension || !entry.ecBelt) return true;
-      }
-      return false;
-    });
-
-    if (hasEmptyGlobalTime || hasEmptyEntryParams) {
+    const missing = validateKalibrasi(kalibrasiGlobal, kalibrasiEntries);
+    if (missing.length > 0) {
       setShowErrors(true);
-      const missingMessage = buildMissingFieldsMessage([
-        hasEmptyGlobalTime ? 'waktu pelaksanaan kalibrasi' : '',
-        hasEmptyEntryParams ? 'pemilihan peralatan & parameter kalibrasi' : '',
-      ]);
-      if (missingMessage) sayPet(missingMessage, 'warning');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      reportMissingFields(missing);
       unlock();
       return;
     }
@@ -518,7 +484,7 @@ export const TabKalibrasi: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleKalibrasiSubmit} className="p-4 sm:p-8 space-y-8 bg-slate-50/50">
+    <form onSubmit={handleKalibrasiSubmit} noValidate className="p-4 sm:p-8 space-y-8 bg-slate-50/50">
       
       {/* GLOBAL KALIBRASI SETTINGS */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -619,7 +585,7 @@ export const TabKalibrasi: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
+                <div className="md:col-span-2" data-field={`kal-${index}-peralatan`}>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     <Cpu className="w-4 h-4 inline-block text-blue-500 mr-1" /> Peralatan <span className="text-xs text-slate-400 font-normal">(Pilih 1 atau lebih)</span>
                   </label>
@@ -670,7 +636,7 @@ export const TabKalibrasi: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-2">Lokasi{entry.peralatan.includes('Access Control') && <span className="text-xs text-slate-400 font-normal"> (Pilih 1 atau lebih)</span>}</label>
                   {entry.peralatan.includes('Access Control') ? (
                     <>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" data-field={`kal-${index}-lokasi`}>
                         {(() => {
                           const acOpts = getGeneralLokasiOptions('Access Control');
                           if (acOpts.length === 0) {
@@ -717,6 +683,7 @@ export const TabKalibrasi: React.FC = () => {
                         <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
                         <select
                           name="lokasi1"
+                          data-field={`kal-${index}-lokasi`}
                           required
                           value={entry.lokasi1}
                           onChange={(e) => handleKalibrasiEntryChange(index, e)}

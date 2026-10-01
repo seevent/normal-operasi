@@ -13,6 +13,9 @@ import { toTitleCase } from '../../lib/data/masterData';
 import { supabase } from '../../lib/supabaseClient';
 import { fetchOnDutyPersonnel, calculateOperationalShift } from '../../lib/services/operationalReportService';
 import { BADocumentPrint } from './ba-serah-terima/BADocumentPrint';
+import { validateBASerahTerima } from '../../lib/utils/formValidation';
+import { reportMissingFields } from '../../lib/utils/missingFields';
+import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
 export interface BarangItem {
   id: string;
@@ -66,6 +69,7 @@ export const TabBASerahTerima: React.FC = () => {
   });
 
   const [dinasPersonelList, setDinasPersonelList] = useState<any[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
   const [activeShiftLabel, setActiveShiftLabel] = useState<string>('');
 
   useEffect(() => {
@@ -300,16 +304,14 @@ export const TabBASerahTerima: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!baData.penyerahNama.trim() || !baData.penerimaNama.trim()) {
-      alert('Harap isi nama Pihak Kesatu (Menyerahkan) dan Pihak Kedua (Menerima)!');
+    const missing = validateBASerahTerima(baData, items);
+    if (missing.length > 0) {
+      setShowErrors(true);
+      reportMissingFields(missing);
       return;
     }
 
     const validItems = items.filter(it => it.nama.trim() !== '');
-    if (validItems.length === 0) {
-      alert('Harap masukkan minimal 1 barang pada tabel daftar barang!');
-      return;
-    }
 
     setIsSharingPdf(true);
 
@@ -354,8 +356,11 @@ export const TabBASerahTerima: React.FC = () => {
   const isPenyerahSses = baData.jenisTransaksi === 'keluar';
   const isPenerimaSses = baData.jenisTransaksi === 'masuk';
 
+  const missingKeys = new Set(validateBASerahTerima(baData, items).map(m => m.key));
+  const hasError = (key: string) => showErrors && missingKeys.has(key);
+
   return (
-    <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8 print:p-0 print:m-0 print:space-y-0">
+    <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8 space-y-8 print:p-0 print:m-0 print:space-y-0">
       <div className="space-y-6 print:hidden">
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center border-b pb-3">
           <div>
@@ -417,8 +422,9 @@ export const TabBASerahTerima: React.FC = () => {
                 required
                 value={baData.tanggal}
                 onChange={handleChange}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                className={`w-full pl-9 pr-3 py-2 bg-slate-50 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium ${hasError('tanggal') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
               />
+<FieldError show={hasError('tanggal')} message="Tanggal wajib diisi!" />
             </div>
           </div>
 
@@ -433,8 +439,9 @@ export const TabBASerahTerima: React.FC = () => {
                 max={baData.tanggal === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}` : undefined}
                 value={baData.waktu}
                 onChange={handleChange}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                className={`w-full pl-9 pr-3 py-2 bg-slate-50 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium ${hasError('waktu') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
               />
+<FieldError show={hasError('waktu')} message="Pukul wajib diisi!" />
             </div>
           </div>
         </div>
@@ -459,9 +466,10 @@ export const TabBASerahTerima: React.FC = () => {
               {isPenyerahSses ? (
                 <select
                   required
+                  data-field="penyerahNama"
                   value={baData.penyerahNama}
                   onChange={(e) => handleSelectSsesPersonel(e.target.value, true)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                  className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium ${hasError('penyerahNama') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
                 >
                   <option value="">-- Pilih Personel Berdinas --</option>
                   {dinasPersonelList.map((p, idx) => (
@@ -478,9 +486,10 @@ export const TabBASerahTerima: React.FC = () => {
                   value={baData.penyerahNama}
                   onChange={handleChange}
                   placeholder="Ketik nama lengkap penyerah..."
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                  className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium ${hasError('penyerahNama') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
                 />
               )}
+              <FieldError show={hasError('penyerahNama')} message="Nama penyerah wajib diisi!" />
             </div>
 
             <div>
@@ -540,9 +549,10 @@ export const TabBASerahTerima: React.FC = () => {
               {isPenerimaSses ? (
                 <select
                   required
+                  data-field="penerimaNama"
                   value={baData.penerimaNama}
                   onChange={(e) => handleSelectSsesPersonel(e.target.value, false)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
+                  className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium ${hasError('penerimaNama') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
                 >
                   <option value="">-- Pilih Personel Berdinas --</option>
                   {dinasPersonelList.map((p, idx) => (
@@ -559,9 +569,10 @@ export const TabBASerahTerima: React.FC = () => {
                   value={baData.penerimaNama}
                   onChange={handleChange}
                   placeholder="Ketik nama lengkap penerima..."
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
+                  className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium ${hasError('penerimaNama') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
                 />
               )}
+              <FieldError show={hasError('penerimaNama')} message="Nama penerima wajib diisi!" />
             </div>
 
             <div>
@@ -640,10 +651,11 @@ export const TabBASerahTerima: React.FC = () => {
                       <input
                         type="text"
                         required
+                        data-field={idx === 0 ? 'items' : undefined}
                         value={item.nama}
                         onChange={(e) => handleItemChange(item.id, 'nama', e.target.value)}
                         placeholder="Nama barang..."
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                        className={`w-full px-2.5 py-1.5 bg-slate-50 border rounded focus:ring-1 focus:ring-blue-500 outline-none ${idx === 0 && hasError('items') ? FIELD_ERROR_CLASS : 'border-slate-300'}`}
                       />
                     </td>
                     <td className="p-2">
@@ -707,6 +719,7 @@ export const TabBASerahTerima: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            <FieldError show={hasError('items')} message="Masukkan minimal 1 barang pada daftar barang!" />
           </div>
         </div>
 
