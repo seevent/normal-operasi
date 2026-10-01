@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { compressImageFile } from '../utils/canvasUtils';
+import type { Photo, PhotoAnnotation } from '../types';
+import type { PhotoDropEvent } from '../../components/shared/PhotoUploader';
 
 export interface PhotoGroupPhoto {
   id: number;
@@ -10,15 +12,15 @@ export interface PhotoGroupPhoto {
 
 export interface PhotoGroup {
   id: number;
-  photos: any[];
+  photos: Photo[];
   isGenerating: boolean;
   autoCollageFile: File | null;
-  collageAnnotation: string | undefined;
+  collageAnnotation: PhotoAnnotation | undefined;
 }
 
 export const createEmptyPhotoGroup = (): PhotoGroup => ({
   id: Date.now(),
-  photos: [] as any[],
+  photos: [],
   isGenerating: false,
   autoCollageFile: null,
   collageAnnotation: undefined,
@@ -32,7 +34,7 @@ export const createEmptyPhotoGroup = (): PhotoGroup => ({
  * foto tidak membocorkan memori.
  */
 export const usePhotoGroups = () => {
-  const [photoGroups, setPhotoGroups] = useState<any[]>([createEmptyPhotoGroup()]);
+  const [photoGroups, setPhotoGroups] = useState<PhotoGroup[]>([createEmptyPhotoGroup()]);
 
   const photoGroupsRef = React.useRef(photoGroups);
   photoGroupsRef.current = photoGroups;
@@ -40,7 +42,7 @@ export const usePhotoGroups = () => {
   React.useEffect(() => {
     return () => {
       photoGroupsRef.current.forEach((group) => {
-        group.photos.forEach((p: any) => {
+        group.photos.forEach((p) => {
           if (p.preview && p.preview.startsWith('blob:')) {
             URL.revokeObjectURL(p.preview);
           }
@@ -94,7 +96,7 @@ export const usePhotoGroups = () => {
     );
   };
 
-  const handlePhotoDrop = (e: React.DragEvent | any, groupId: number, targetIndex: number) => {
+  const handlePhotoDrop = (e: PhotoDropEvent, groupId: number, targetIndex: number) => {
     e.preventDefault();
     const sourceIndexStr = e.dataTransfer?.getData('text/plain');
     if (!sourceIndexStr) return;
@@ -124,7 +126,7 @@ export const usePhotoGroups = () => {
     setPhotoGroups((prev) => {
       const groupToRemove = prev.find((g) => g.id === groupId);
       if (groupToRemove) {
-        groupToRemove.photos.forEach((p: any) => URL.revokeObjectURL(p.preview));
+        groupToRemove.photos.forEach((p) => URL.revokeObjectURL(p.preview));
       }
       return prev.filter((g) => g.id !== groupId);
     });

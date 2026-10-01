@@ -1,7 +1,7 @@
 // src/components/shared/PhotoTextEditorModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, Type, RotateCcw, Sparkles, ArrowDown, ArrowUp, Minus, Palette, Clock, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
-import { PhotoAnnotation } from './PhotoUploader';
+import type { PhotoAnnotation } from '../../lib/types';
 import { drawTextOnCanvas } from '../../lib/utils/canvasUtils';
 
 interface PhotoTextEditorModalProps {

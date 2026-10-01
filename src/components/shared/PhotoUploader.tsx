@@ -2,31 +2,30 @@
 import React, { useState } from 'react';
 import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Type } from 'lucide-react';
 import { PhotoTextEditorModal } from './PhotoTextEditorModal';
+import type { Photo, PhotoAnnotation } from '../../lib/types';
 
-export type PhotoAnnotation = {
-  text: string;
-  position: 'top' | 'bottom' | 'center';
-  style: 'black' | 'red' | 'green' | 'yellow' | 'clear';
-  size: 'small' | 'medium' | 'large' | number;
-  align?: 'left' | 'center' | 'right';
+export type { Photo, PhotoAnnotation };
+
+/** Bentuk minimal event drop: event drag asli ataupun tiruan dari sentuhan. */
+export type PhotoDropEvent = {
+  preventDefault: () => void;
+  dataTransfer?: { getData: (format: string) => string } | null;
 };
 
-export type Photo = {
-  id: number | string;
-  file: File;
-  preview: string;
-  zoom?: number;
-  originalFile?: File;
-  originalPreview?: string;
-  annotation?: PhotoAnnotation;
-};
+type TouchDragState = { type: string; index: number; startX: number; startY: number; isDragging: boolean };
+
+declare global {
+  interface Window {
+    touchDragState?: TouchDragState | null;
+  }
+}
 
 type PhotoUploaderProps = {
   photos: Photo[];
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemove: (index: number) => void;
   onZoom: (index: number, delta: number) => void;
-  onDrop: (e: any, targetIndex: number) => void;
+  onDrop: (e: PhotoDropEvent, targetIndex: number) => void;
   onEdit?: (index: number, updatedPhoto: Photo) => void;
   listType: string;
   hideHeader?: boolean;
@@ -126,30 +125,31 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 onDrop={(e) => onDrop(e, index)}
                 onTouchStart={(e) => {
                   if (e.touches.length === 1) {
-                    (window as any).touchDragState = { type: listType, index: index, startX: e.touches[0].clientX, startY: e.touches[0].clientY, isDragging: false };
+                    window.touchDragState = { type: listType, index: index, startX: e.touches[0].clientX, startY: e.touches[0].clientY, isDragging: false };
                   }
                 }}
                 onTouchMove={(e) => {
-                  if ((window as any).touchDragState && e.touches.length === 1) {
-                    if (Math.abs(e.touches[0].clientY - (window as any).touchDragState.startY) > 10 || Math.abs(e.touches[0].clientX - (window as any).touchDragState.startX) > 10) {
-                       (window as any).touchDragState.isDragging = true;
+                  if (window.touchDragState && e.touches.length === 1) {
+                    if (Math.abs(e.touches[0].clientY - window.touchDragState.startY) > 10 || Math.abs(e.touches[0].clientX - window.touchDragState.startX) > 10) {
+                       window.touchDragState.isDragging = true;
                     }
                   }
                 }}
                 onTouchEnd={(e) => {
-                  if ((window as any).touchDragState && (window as any).touchDragState.isDragging && (window as any).touchDragState.type === listType) {
+                  const dragState = window.touchDragState;
+                  if (dragState && dragState.isDragging && dragState.type === listType) {
                     const touch = e.changedTouches[0];
                     const elem = document.elementFromPoint(touch.clientX, touch.clientY);
                     const target = elem?.closest(`[data-list-type="${listType}"]`);
                     if (target) {
                       const targetIdx = parseInt(target.getAttribute('data-photo-index') || '', 10);
-                      if (!isNaN(targetIdx) && targetIdx !== (window as any).touchDragState.index) {
-                        const mockEvent = { preventDefault: () => {}, dataTransfer: { getData: () => (window as any).touchDragState.index.toString() } };
+                      if (!isNaN(targetIdx) && targetIdx !== dragState.index) {
+                        const mockEvent = { preventDefault: () => {}, dataTransfer: { getData: () => dragState.index.toString() } };
                         onDrop(mockEvent, targetIdx);
                       }
                     }
                   }
-                  (window as any).touchDragState = null;
+                  window.touchDragState = null;
                 }}
                 className="relative bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm group/photo hover:shadow-md transition-shadow aspect-square cursor-move flex flex-col touch-pan-y"
               >

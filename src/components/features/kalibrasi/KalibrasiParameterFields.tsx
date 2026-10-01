@@ -1,10 +1,11 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 import { getValidXRayModels, getValidModels } from '../../../lib/utils/locationRules';
+import type { KalibrasiEntry } from '../../../lib/types';
 
 interface KalibrasiParameterFieldsProps {
   /** Satu entri kalibrasi (satu lokasi) dari state `kalibrasiEntries`. */
-  entry: any;
+  entry: KalibrasiEntry;
   index: number;
   showErrors: boolean;
   handleKalibrasiEntryChange: (

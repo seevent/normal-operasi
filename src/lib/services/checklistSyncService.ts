@@ -1,4 +1,5 @@
 // src/lib/services/checklistSyncService.ts
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import { getCurrentShiftKey, mapStoringToChecklistSupervisorKeys } from '../utils/locationRules';
 
@@ -49,7 +50,7 @@ export const saveStoringToChecklistSync = async (
     waktuMulai?: string;
     waktuSelesai?: string;
   },
-  channelRef?: any,
+  channelRef?: RealtimeChannel | null,
   senderId?: string
 ): Promise<ChecklistShiftDataValue> => {
   const currentShiftKey = getCurrentShiftKey();
@@ -111,7 +112,7 @@ export const saveStoringToChecklistSync = async (
       type: 'broadcast',
       event: 'shift_data_update',
       payload
-    }).catch((err: any) => console.error('Broadcast shift_data_update error:', err));
+    }).catch((err: unknown) => console.error('Broadcast shift_data_update error:', err));
   }
 
   try {
@@ -128,7 +129,7 @@ export const saveStoringToChecklistSync = async (
 
 export const saveChecklistSupervisorDirect = async (
   supervisorMap: Record<string, string>,
-  channelRef?: any,
+  channelRef?: RealtimeChannel | null,
   senderId?: string
 ): Promise<ChecklistShiftDataValue> => {
   const currentShiftKey = getCurrentShiftKey();
@@ -147,7 +148,7 @@ export const saveChecklistSupervisorDirect = async (
       type: 'broadcast',
       event: 'shift_data_update',
       payload
-    }).catch((err: any) => console.error('Broadcast shift_data_update error:', err));
+    }).catch((err: unknown) => console.error('Broadcast shift_data_update error:', err));
   }
 
   try {

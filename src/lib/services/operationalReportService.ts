@@ -3,6 +3,7 @@
 import { supabase } from '../supabaseClient.ts';
 import { formatNamaPersonel, toTitleCase } from '../data/masterData.ts';
 import { sayPet } from '../../store/useAppStore.ts';
+import type { ChecklistBlock } from '../utils/checklistEditor.ts';
 
 export interface OperationalLog {
   id?: string;
@@ -186,6 +187,14 @@ export interface OnDutyPersonel {
   jabatan?: string;
 }
 
+/** Baris `jadwal_shift` beserta personel yang di-embed oleh query on-duty. */
+interface OnDutyRow {
+  id: string;
+  shift?: string | null;
+  status_kehadiran?: string | null;
+  personel?: { id?: string; nama?: string; jabatan?: string | null; unit_kerja?: { nama?: string } | null } | null;
+}
+
 /**
  * Mengambil daftar personel dinas yang aktif / hadir dari tabel jadwal_shift
  */
@@ -206,13 +215,14 @@ export const fetchOnDutyPersonnel = async (
 
     if (!data) return [];
 
-    return data
-      .filter((d: any) => {
+    // Klien Supabase belum bertipe: relasi to-one `personel` terbaca array, padahal runtime-nya objek.
+    return (data as unknown as OnDutyRow[])
+      .filter((d) => {
         const s = (d.shift || '').toUpperCase();
         const status = (d.status_kehadiran || '').toLowerCase();
         return s === queryShift && status !== 'sakit' && status !== 'cuti' && status !== 'libur';
       })
-      .map((d: any) => ({
+      .map((d) => ({
         id: String(d.id),
         name: formatNamaPersonel(toTitleCase(d.personel?.nama || '')),
         fullName: toTitleCase((d.personel?.nama || '').trim()),
@@ -310,7 +320,7 @@ export const fetchDailyShiftCounts = async (tanggal: string): Promise<{ ps: numb
  * Menghitung ringkasan kelaikan peralatan dari master checklist & toggles status aktif
  */
 export const calculateChecklistSummary = (
-  checklistDataMaster: any[],
+  checklistDataMaster: ChecklistBlock[],
   toggles: Record<string, boolean>
 ): ChecklistSummaryItem[] => {
   const counts: Record<string, { total: number; operasi: number; rusak: number }> = {
@@ -323,15 +333,15 @@ export const calculateChecklistSummary = (
     'CCTV': { total: 0, operasi: 0, rusak: 0 }
   };
 
-  checklistDataMaster.forEach((block: any) => {
+  checklistDataMaster.forEach((block) => {
     if (block.type === 'location') {
-      block.categories?.forEach((cat: any) => {
+      block.categories?.forEach((cat) => {
         let key = (cat.summaryKey || '').toUpperCase().trim();
         if (key === 'X-RAY') key = 'XRAY';
         if (key === 'EXPLOSIVE DETECTOR') key = 'ETD';
         if (!counts[key]) counts[key] = { total: 0, operasi: 0, rusak: 0 };
 
-        cat.items?.forEach((_: any, iIdx: number) => {
+        cat.items?.forEach((_, iIdx) => {
           counts[key].total++;
           const tKey = `${block.title}|${cat.title}|${iIdx}`;
           if (toggles[tKey] !== false) {
@@ -342,9 +352,9 @@ export const calculateChecklistSummary = (
         });
       });
     } else if (block.type === 'access_control') {
-      block.terminals?.forEach((term: any) => {
-        term.categories?.forEach((cat: any) => {
-          cat.items?.forEach((_: any, iIdx: number) => {
+      block.terminals?.forEach((term) => {
+        term.categories?.forEach((cat) => {
+          cat.items?.forEach((_, iIdx) => {
             counts['ACCESS CONTROL'].total++;
             const tKey = `${block.title}|${term.title}|${cat.title}|${iIdx}`;
             if (toggles[tKey] !== false) {

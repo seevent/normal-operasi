@@ -4,7 +4,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 
 const namaDariPenempatan = (): string[] => {
   const penempatan = useMasterDataStore.getState().penempatanData || [];
-  return Array.from(new Set(penempatan.map((p: any) => p.tipe_peralatan?.nama).filter(Boolean))) as string[];
+  return Array.from(new Set(penempatan.map((p) => p.tipe_peralatan?.nama).filter(Boolean))) as string[];
 };
 
 /**
@@ -21,7 +21,7 @@ export const useTipePeralatanOptions = (): string[] => {
       let result: string[] = [];
       try {
         const { data } = await supabase.from('tipe_peralatan').select('nama').order('nama', { ascending: true });
-        if (data && data.length > 0) result = data.map((d: any) => d.nama);
+        if (data && data.length > 0) result = data.map((d: { nama: string }) => d.nama);
       } catch (err) {
         console.error('Gagal memuat tipe peralatan:', err);
       }

@@ -9,7 +9,8 @@ import { generateWA_Kalibrasi, formatKalibrasiEntryKegiatanDanCatatan } from '..
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
-import { PhotoUploader } from '../shared/PhotoUploader';
+import { createEmptyPhotoGroup, type PhotoGroup } from '../../lib/hooks/usePhotoGroups';
+import { PhotoUploader, type PhotoDropEvent } from '../shared/PhotoUploader';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { KalibrasiParameterFields } from './kalibrasi/KalibrasiParameterFields';
@@ -24,8 +25,8 @@ export const TabKalibrasi: React.FC = () => {
   
   const kalibrasiEquipments = jenisPeralatanData && jenisPeralatanData.length > 0
     ? jenisPeralatanData
-        .filter((j: any) => j.tampil_di_kalibrasi)
-        .map((j: any) => j.nama)
+        .filter((j) => j.tampil_di_kalibrasi)
+        .map((j) => j.nama)
     : ['X-Ray', 'WTMD', 'HHMD', 'Body Scanner', 'ETD', 'Access Control', 'Extension Conveyor'];
 
   // === STATE UNTUK TAB 5: KALIBRASI (MULTI LOKASI) ===
@@ -57,9 +58,7 @@ export const TabKalibrasi: React.FC = () => {
   const [kalibrasiEntries, setKalibrasiEntries] = useState([createEmptyKalibrasiEntry()]);
 
   // === STATE UNTUK FOTO KALIBRASI (MULTI KOLASE) ===
-  const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState<any[]>([
-    { id: Date.now(), photos: [] as any[], isGenerating: false, autoCollageFile: null, collageAnnotation: undefined }
-  ]);
+  const [kalibrasiPhotoGroups, setKalibrasiPhotoGroups] = useState<PhotoGroup[]>([createEmptyPhotoGroup()]);
 
   const photoGroupsRef = React.useRef(kalibrasiPhotoGroups);
   photoGroupsRef.current = kalibrasiPhotoGroups;
@@ -67,7 +66,7 @@ export const TabKalibrasi: React.FC = () => {
   React.useEffect(() => {
     return () => {
       photoGroupsRef.current.forEach(group => {
-        group.photos.forEach((p: any) => {
+        group.photos.forEach((p) => {
           if (p.preview && p.preview.startsWith('blob:')) {
             URL.revokeObjectURL(p.preview);
           }
@@ -259,9 +258,9 @@ export const TabKalibrasi: React.FC = () => {
     }));
   };
 
-  const handleKalibrasiPhotoDrop = (e: React.DragEvent, groupId: number, targetIndex: number) => {
+  const handleKalibrasiPhotoDrop = (e: PhotoDropEvent, groupId: number, targetIndex: number) => {
     e.preventDefault();
-    const sourceIndexStr = e.dataTransfer.getData('text/plain');
+    const sourceIndexStr = e.dataTransfer?.getData('text/plain');
     if (!sourceIndexStr) return;
     const sourceIndex = parseInt(sourceIndexStr, 10);
     if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
@@ -286,7 +285,7 @@ export const TabKalibrasi: React.FC = () => {
     setKalibrasiPhotoGroups(prev => {
       const groupToRemove = prev.find(g => g.id === groupId);
       if (groupToRemove) {
-        groupToRemove.photos.forEach((p: any) => URL.revokeObjectURL(p.preview));
+        groupToRemove.photos.forEach((p) => URL.revokeObjectURL(p.preview));
       }
       return prev.filter(g => g.id !== groupId);
     });
@@ -397,9 +396,9 @@ export const TabKalibrasi: React.FC = () => {
     
     // Process photos for each group
     for (let i = 0; i < kalibrasiPhotoGroups.length; i++) {
-      const group: any = kalibrasiPhotoGroups[i];
-      const imagePhotos = group.photos.filter((p: any) => !p.file?.type?.startsWith('video/'));
-      const videoFiles = group.photos.filter((p: any) => p.file?.type?.startsWith('video/')).map((p: any) => p.file);
+      const group = kalibrasiPhotoGroups[i];
+      const imagePhotos = group.photos.filter((p) => !p.file?.type?.startsWith('video/'));
+      const videoFiles = group.photos.filter((p) => p.file?.type?.startsWith('video/')).map((p) => p.file);
 
       if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {

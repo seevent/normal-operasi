@@ -320,6 +320,9 @@ export interface PmDisplaySettings {
   types?: Record<string, boolean>;
 }
 
+/** Baris jadwal PM yang ditampilkan di Rencana Kegiatan (subset kolom `jadwal_pm`). */
+export type PmItem = { lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string; shift?: string | null };
+
 /**
  * Filter daftar jadwal PM berdasarkan Shift (warna) dan Pengaturan Tampilan Jenis PM
  * - Biru (Bulanan M): Hanya untuk shift M, tidak tampil pada shift PS
@@ -327,11 +330,11 @@ export interface PmDisplaySettings {
  * - Sesuai settingan per jenis PM / kategori yang diatur di Tab Data
  */
 export function filterActivePm(
-  pmData: any[],
+  pmData: PmItem[],
   targetShiftCode: string,
   displaySettings?: PmDisplaySettings
-): any[] {
-  return (pmData || []).filter((d: any) => {
+): PmItem[] {
+  return (pmData || []).filter((d) => {
     // 1. Filter pengaturan per jenis / kategori PM jika ada
     if (displaySettings) {
       const isMingguan = d.kategori_pm && d.kategori_pm.toLowerCase().includes('mingguan');
@@ -356,7 +359,6 @@ export function filterActivePm(
 export const RENCANA_KEGIATAN_DASAR = '- Monitoring Ops\n- Storing Peralatan';
 export const RENCANA_KEGIATAN_PM = '- Preventive Maintenance & Kalibrasi Peralatan';
 
-type PmItem = { lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string };
 
 const isAccessControl = (item: PmItem) => item.jenis === 'Access Control' || item.tipe === 'Access Control';
 

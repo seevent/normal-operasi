@@ -6,7 +6,7 @@ import {
   Edit, Trash2, X, Share2, ExternalLink, Printer
 } from 'lucide-react';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { generatePdfBlob } from '../../lib/services/pdfService';
+import { generatePdfBlob, type PdfOptions } from '../../lib/services/pdfService';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   fetchShiftOperationalLogs, 
@@ -475,7 +475,7 @@ export const TabShiftReport: React.FC = () => {
         await prepareImagesForPdf(element);
 
         const filename = `SSES_T2_Laporan_Shift_${shift}_${date}.pdf`;
-        const opt = {
+        const opt: PdfOptions = {
           margin: [5, 5, 5, 5],
           filename: filename,
           image: { type: 'jpeg' as const, quality: 0.95 },

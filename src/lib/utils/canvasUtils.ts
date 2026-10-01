@@ -1,4 +1,5 @@
 // src/lib/utils/canvasUtils.ts
+import type { PhotoAnnotation } from '../types';
 
 export const compressImageFile = async (
   file: File,
@@ -297,7 +298,7 @@ export const drawCellTextOverlay = (
 };
 
 export const processPhotosToCollage = async (
-  photosArray: { preview: string; zoom?: number; annotation?: any; originalPreview?: string }[],
+  photosArray: { preview: string; zoom?: number; annotation?: PhotoAnnotation; originalPreview?: string; file?: File }[],
   annotation?: {
     text: string;
     position: 'top' | 'bottom' | 'center';
@@ -306,12 +307,12 @@ export const processPhotosToCollage = async (
     align?: 'left' | 'center' | 'right';
   }
 ): Promise<{ url: string, file: File } | null> => {
-  const imagePhotos = photosArray.filter((p: any) => !p.file?.type?.startsWith('video/'));
+  const imagePhotos = photosArray.filter((p) => !p.file?.type?.startsWith('video/'));
   if (imagePhotos.length <= 1) return null;
 
   try {
     const loadedImages = await Promise.all(imagePhotos.map(p => {
-      return new Promise<{img: HTMLImageElement, zoom: number, annotation?: any}>((resolve) => {
+      return new Promise<{img: HTMLImageElement, zoom: number, annotation?: PhotoAnnotation}>((resolve) => {
         const img = new Image();
         let settled = false;
         const finish = () => {

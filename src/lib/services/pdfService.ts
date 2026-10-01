@@ -1,12 +1,15 @@
 // src/lib/services/pdfService.ts
 
+type PageBreakSelector = string | string[];
+
 export interface PdfOptions {
-  margin?: number | number[];
+  margin?: number | [number, number] | [number, number, number, number];
   filename?: string;
-  image?: { type?: 'jpeg' | 'png'; quality?: number };
-  html2canvas?: any;
-  jsPDF?: { unit?: string; format?: string | number[]; orientation?: 'portrait' | 'landscape' };
-  pagebreak?: any;
+  image?: { type?: 'jpeg' | 'png' | 'webp'; quality?: number };
+  html2canvas?: Record<string, unknown>;
+  jsPDF?: { unit?: string; format?: string | [number, number]; orientation?: 'portrait' | 'landscape' };
+  /** Didukung html2pdf.js saat berjalan, tetapi belum ada di tipenya. */
+  pagebreak?: { mode?: PageBreakSelector; before?: PageBreakSelector; after?: PageBreakSelector; avoid?: PageBreakSelector };
 }
 
 /**

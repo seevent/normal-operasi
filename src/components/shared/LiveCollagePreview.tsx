@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { Type } from 'lucide-react';
 import { PhotoTextEditorModal } from './PhotoTextEditorModal';
-import { PhotoAnnotation } from './PhotoUploader';
+import type { PhotoAnnotation } from '../../lib/types';
 
 interface LiveCollagePreviewProps {
   photos: { preview: string; zoom?: number }[];

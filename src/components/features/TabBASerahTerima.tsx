@@ -5,7 +5,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_BASerahTerima } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { generatePdfBlob } from '../../lib/services/pdfService';
+import { generatePdfBlob, type PdfOptions } from '../../lib/services/pdfService';
 import { compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { SignaturePad } from '../shared/SignaturePad';
@@ -317,7 +317,7 @@ export const TabBASerahTerima: React.FC = () => {
       let pdfFile: File | null = null;
 
       if (printableBaRef.current) {
-        const opt = {
+        const opt: PdfOptions = {
           margin: [10, 10, 10, 10],
           filename: `BA_Serah_Terima_${baData.tanggal}.pdf`,
           image: { type: 'jpeg' as const, quality: 0.98 },

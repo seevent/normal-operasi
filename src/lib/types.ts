@@ -220,7 +220,7 @@ export interface KalibrasiParams {
 export type KalibrasiParamKey = keyof KalibrasiParams;
 
 /** Satu lokasi kalibrasi: peralatan terpilih + lokasi + parameter uji. */
-export interface KalibrasiEntry extends Partial<KalibrasiParams> {
+export interface KalibrasiEntry extends KalibrasiParams {
   id?: number;
   peralatan: string[];
   lokasi1: string;
@@ -264,3 +264,25 @@ export interface JadwalShiftRow {
     urutan?: number | null;
   } | null;
 }
+
+// ---------------------------------------------------------------------------
+// Foto
+// ---------------------------------------------------------------------------
+
+export type PhotoAnnotation = {
+  text: string;
+  position: 'top' | 'bottom' | 'center';
+  style: 'black' | 'red' | 'green' | 'yellow' | 'clear';
+  size: 'small' | 'medium' | 'large' | number;
+  align?: 'left' | 'center' | 'right';
+};
+
+export type Photo = {
+  id: number | string;
+  file: File;
+  preview: string;
+  zoom?: number;
+  originalFile?: File;
+  originalPreview?: string;
+  annotation?: PhotoAnnotation;
+};
