@@ -505,14 +505,7 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
   return msg;
 };
 
-export const generateWA_Kegiatan = (kegiatanData: any) => {
-  const formattedDate = formatTanggalIndo(kegiatanData.tanggal);
-  const waktuText = kegiatanData.waktuSelesai 
-    ? `${kegiatanData.waktuMulai} - ${kegiatanData.waktuSelesai}`
-    : kegiatanData.waktuMulai;
-    
-  return `*KEGIATAN SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${waktuText}\nLokasi : ${kegiatanData.lokasi}\nKegiatan : ${kegiatanData.kegiatan}`;
-};
+export { generateWA_Kegiatan } from './kegiatanMessage.ts';
 
 export const generateWA_InitialReport = (formData: any) => {
   if (!formData.peralatan) return "Silakan pilih peralatan terlebih dahulu untuk melihat preview laporan...";

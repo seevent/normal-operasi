@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Briefcase, Calendar, MapPin, Clock, Share2, CheckCircle, FileText, ClipboardList, AlertCircle } from 'lucide-react';
+import { Briefcase, Calendar, MapPin, Clock, Share2, CheckCircle, FileText, ClipboardList, AlertCircle, Cpu } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
@@ -8,10 +8,13 @@ import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canva
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { useTipePeralatanOptions } from '../../lib/hooks/useTipePeralatanOptions';
 
 export const TabKegiatan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
   const [showErrors, setShowErrors] = useState(false);
+  const tipePeralatanOptions = useTipePeralatanOptions();
+  const [isManualPeralatan, setIsManualPeralatan] = useState(false);
 
   const [kegiatanData, setKegiatanData] = useState(() => {
     const { date: defaultDate } = getOperationalShiftAndDate();
@@ -23,6 +26,7 @@ export const TabKegiatan: React.FC = () => {
       tanggal: defaultDate,
       waktuMulai: `${currentHour}:${currentMinute}`,
       waktuSelesai: '',
+      peralatan: '',
       lokasi: '',
       kegiatan: ''
     };
@@ -46,6 +50,16 @@ export const TabKegiatan: React.FC = () => {
   }, []);
 
   // === Handlers ===
+  const handlePeralatanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    if (value === 'MANUAL_ENTRY') {
+      setIsManualPeralatan(true);
+      setKegiatanData(prev => ({ ...prev, peralatan: '' }));
+      return;
+    }
+    setKegiatanData(prev => ({ ...prev, peralatan: value }));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     const now = new Date();
@@ -209,7 +223,7 @@ export const TabKegiatan: React.FC = () => {
           jenis: 'Kegiatan',
           waktu: waktuRange,
           lokasi: kegiatanData.lokasi,
-          peralatan: 'All Faskampen',
+          peralatan: kegiatanData.peralatan.trim() || 'All Faskampen',
           kategori_maintenance: 'KEGIATAN',
           uraian: `Kegiatan : ${kegiatanData.kegiatan}`,
           tindak_lanjut: kegiatanData.kegiatan,
@@ -288,6 +302,48 @@ export const TabKegiatan: React.FC = () => {
                   className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Peralatan <span className="text-slate-400 text-xs font-normal">(Opsional)</span></label>
+            <div className="relative">
+              <Cpu className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+              {isManualPeralatan ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    name="peralatan"
+                    placeholder="Ketik nama peralatan secara manual..."
+                    value={kegiatanData.peralatan}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsManualPeralatan(false);
+                      setKegiatanData(prev => ({ ...prev, peralatan: '' }));
+                    }}
+                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs shrink-0 transition-colors"
+                  >
+                    Pilih dari Daftar
+                  </button>
+                </div>
+              ) : (
+                <select
+                  name="peralatan"
+                  value={kegiatanData.peralatan}
+                  onChange={handlePeralatanChange}
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
+                >
+                  <option value="">-- Tanpa Peralatan --</option>
+                  {tipePeralatanOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                  <option value="MANUAL_ENTRY">+ Ketik Manual (Peralatan Lainnya)</option>
+                </select>
+              )}
             </div>
           </div>
 
