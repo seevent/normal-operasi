@@ -1,3 +1,5 @@
+> **Status (1 Oktober 2026): digantikan / tidak dijalankan sesuai rencana (0 dari 67 langkah dicentang).** Rencana ini mengandaikan Vitest, Playwright, Google Apps Script, dan fungsi Netlify; proyek akhirnya memakai `node --test`, Cloudinary (migrasi dari Google Drive, 26 September 2026), dan tanpa fungsi server. Tujuan kualitasnya (CI, lint, penghapusan kode/dependensi mati, modularisasi) dikerjakan lewat [rencana refactoring 28 September](2026-09-28-codebase-refactoring.md). Dokumentasi hasilnya ada di `README.md`, `architecture.md`, `database.md`, dan `prd.md`.
+
 # Codebase Hardening and Documentation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` (recommended) or `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

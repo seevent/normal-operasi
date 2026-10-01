@@ -1,3 +1,5 @@
+> **Status (1 Oktober 2026): selesai.** Dikerjakan pada 28–29 September (modularisasi tab, konsolidasi `PhotoUploader` & pengambilan on-duty, penghapusan kode/dependensi mati termasuk Konva). Hasilnya dijaga oleh `tests/dead-code-cleanliness.test.mjs`, `tests/dependencies-cleanliness.test.mjs`, dan `tests/photo-uploader-consolidation.test.mjs`. Catatan "jangan commit dan deploy" di bawah berlaku saat rencana ini ditulis dan sudah tidak relevan.
+
 # Codebase Refactoring Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

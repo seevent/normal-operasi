@@ -1,3 +1,5 @@
+> **Status (1 Oktober 2026): usang.** Digantikan oleh `CloudinarySettingsPanel` (sub-tab *Cloudinary CDN* di tab Data) setelah migrasi dari Google Drive ke Cloudinary. Dipertahankan sebagai arsip keputusan desain.
+
 # Pemindahan Pengaturan Google Drive ke Tab Data
 
 ## Tujuan

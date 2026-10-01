@@ -1,3 +1,5 @@
+> **Status (1 Oktober 2026): usang.** Panel pengaturan Google Drive sempat diimplementasikan (11 September) tetapi seluruh penyimpanan foto dimigrasikan ke **Cloudinary** (26 September). Panel penggantinya adalah `CloudinarySettingsPanel` pada sub-tab *Cloudinary CDN* di tab Data; tidak ada lagi kode Google Drive di `src/`.
+
 # Google Drive Settings Data Tab Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

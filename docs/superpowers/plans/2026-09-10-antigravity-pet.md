@@ -1,3 +1,5 @@
+> **Status (1 Oktober 2026): diimplementasikan lalu digantikan.** Maskot Chibi Iron Man (SVG) dibuat 10 September, diganti gambar yang disediakan (28 September) dan kini berupa **mesin X-Ray** (`public/pet-xray.webp`, 29 September) yang juga menjadi pelapor operasional (`useAppStore.sayPet`). Lihat `prd.md` §3.13 dan `architecture.md` §4 untuk kondisi terkini.
+
 # Chibi Iron Man Antigravity Pet Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -1,111 +1,128 @@
 # AI Agent & Developer Guidelines
 ## Project SSES T2 Normal Operasi
 
+> Terakhir diselaraskan dengan kode: **1 Oktober 2026**. Baca juga [GEMINI.md](GEMINI.md) (wajib memakai skill `ponytail` saat menulis kode), [architecture.md](architecture.md), [database.md](database.md), dan [prd.md](prd.md).
+
 ---
 
 ## 1. Peran & Pengantar Agent
 
-Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta aturan arsitektur bagi **AI Coding Assistant** (seperti Google Antigravity, Claude, Cursor, Copilot, dll.) dan pengembang manusia yang bekerja pada codebase **SSES T2 Normal Operasi**.
+Dokumen ini berisi instruksi bagi **AI Coding Assistant** (Claude, Antigravity, Cursor, Copilot, dll.) dan pengembang manusia yang bekerja pada codebase **SSES T2 Normal Operasi**.
 
 ---
 
-## 2. Prinsip Utama Pengembangan (Core Rules)
+## 2. Prinsip Utama Pengembangan
 
-### 2.1. Filosofi Desain Mobile-First
-* **Kerapian Layar Seluler**: Aplikasi digunakan langsung di perangkat seluler oleh personel teknisi di lapangan. Semua komponen UI harus diuji pada tampilan seluler (375px - 430px width).
-* **Ukuran Font Input (iOS Safari Guard)**: Selalu gunakan `font-size: 16px` (atau `text-base` / `text-sm` dengan override 16px) pada elemen `<input>`, `<select>`, dan `<textarea>`. Ini penting untuk mencegah browser iOS Safari melakukan auto-zoom otomatis saat fokus input.
-* **Ukuran Touch Target**: Area sentuh tombol dan elemen interaktif minimal **44px x 44px**.
+### 2.1. Mobile-First
+* Aplikasi dipakai teknisi di ponsel; uji pada lebar 375–430px.
+* `<input>`, `<select>`, `<textarea>` wajib `font-size: 16px` (cegah auto-zoom iOS Safari).
+* Target sentuh minimal **44×44px**.
 
 ### 2.2. Isolasi Komponen Tab (`src/components/features/`)
-* Setiap tab dari 12 modul utama memiliki file komponen khusus di `src/components/features/Tab<NamaFitur>.tsx`.
-* **Jangan menggabungkan logika antar-tab** ke dalam satu file raksasa. Jika terdapat UI reusable (seperti uploader foto, signature pad, modal editor, atau icon), tempatkan di `src/components/shared/`.
+* Setiap tab dari 12 modul punya `Tab<Nama>.tsx` (tab "Report" = `TabShiftReport.tsx`). Jangan menggabungkan logika antar-tab.
+* UI reusable → `src/components/shared/`; potongan khusus satu fitur → subfolder fitur (`checklist-editor/`, `personel/`, `shift-report/`, `kalibrasi/`, `ba-serah-terima/`).
+* Tab baru: daftarkan di `ALL_TABS` dan render-nya di `App.tsx` (tab ditampilkan 8 per halaman).
 
-### 2.3. Manajemen State Relasional (`useMasterDataStore.ts`)
-* Selalu gunakan `useMasterDataStore` untuk mengakses data relasional (Lokasi, Titik, Jenis Peralatan, Tipe Peralatan, Unit Peralatan, Spareparts, Personel, Jadwal Shift).
-* Ketika menambahkan filter lokasi pada form baru, selalu manfaatkan helper function dari `src/lib/utils/locationRules.ts` untuk memastikan pencocokan peralatan ↔ lokasi ↔ titik berjalan konsisten dengan database.
+### 2.3. Modul Murni untuk Logika (`src/lib/utils/`)
+* Logika yang tidak butuh DOM/store/jaringan **ditulis sebagai modul murni** supaya bisa diuji dengan `node --test` (pola: `waGenerator`/`*Message.ts`, `formValidation`, `lokasiFormat`, `kalibrasiParams`, `checklistEditor`, `pmScheduleParser`, `initialReportShortcuts`).
+* Impor antar-modul murni memakai ekstensi `.ts` (mis. `import { x } from './lokasiFormat.ts'`) agar bisa dimuat langsung oleh test Node. Jangan impor store/`supabaseClient` dari modul yang ingin diuji murni (lihat `missingFields.ts` sebagai pemisah: logika di `formValidation.ts`, efek DOM/maskot di `missingFields.ts`).
+* Tambahkan test di `tests/` untuk perilaku baru (lihat §4).
 
-### 2.4. Template Generator WhatsApp (`waGenerator.ts`)
-* Format pesan WhatsApp yang dihasilkan oleh `waGenerator.ts` mengikuti standar format laporan resmi operasional SSES T2.
-* **Aturan Penting**: Jangan mengubah emoji header, pemisah baris, atau penataan bullet point secara acak tanpa permintaan eksplisit dari pengguna, karena format ini di-parse otomatis oleh sistem rekapitulasi eksternal di grup WhatsApp operasional.
+### 2.4. Manajemen State & Data Relasional
+* Pakai `useMasterDataStore` untuk lokasi, titik, jenis/tipe/unit peralatan, sparepart, personel, dan pengaturan PM; `useAppStore` untuk tab aktif & maskot; `useAuthStore` untuk sesi admin (`user`, bukan `isAdmin`).
+* Filter lokasi pada form baru memakai helper `locationRules.ts` supaya pencocokan peralatan ↔ lokasi ↔ titik konsisten dengan database.
+* Menulis konfigurasi: `saveConfigToSupabase(key, value)` (di dalam store) — hasilnya `boolean`; beri tahu pengguna lewat `sayPet` bila gagal.
+* Kolom `master_configs` adalah **`key` / `value`** (bukan `config_key`/`config_value`).
 
-### 2.5. Pemrosesan Canvas, Konva Anotasi & Signature Pad (`canvasUtils.ts`, `PhotoTextEditorModal.tsx`, `SignaturePad.tsx`)
-* Gambar yang diunggah harus dikompres secara efisien via Canvas API sebelum dikirim ke backend/Cloudinary untuk menghemat bandwidth.
-* Saat mengubah `PhotoTextEditorModal.tsx`, pastikan posisi koordinat teks overlay diskalakan sesuai rasio asli gambar (`stage.width() / image.width`).
-* Pada `SignaturePad.tsx`, pastikan event touch (`onTouchStart`, `onTouchMove`, `onTouchEnd`) ditangani dengan `preventDefault()` agar kanvas tidak menyebabkan scroll halaman saat ditandatangani di ponsel.
+### 2.5. Format Pesan WhatsApp
+* Pesan dibuat oleh modul murni: `kehadiranMessage`, `briefingMessage`, `perbaikanMessage`, `kegiatanMessage`, `shiftReportMessage`, serta `waGenerator.ts` (Storing, Checklist, Kalibrasi, Initial Report, BA Serah Terima). `waGenerator.ts` meng-*re-export* sebagian dari modul-modul itu.
+* **Jangan mengubah judul, emoji, pemisah baris, atau bullet tanpa permintaan eksplisit** — format dibaca pihak lain di grup WA. Judul saat ini: `LAPORAN DINAS`, `GIAT BRIEFING UNIT SSES T2`, `BRIEFING MOT T2`, `KEGIATAN STORING PERALATAN`, `LAPORAN CORRECTIVE MAINTENANCE`, `LAPORAN PREVENTIVE MAINTENANCE & KALIBRASI`. Perubahan format wajib disertai pembaruan test `tests/wa-*.test.mjs`.
+* Kalibrasi: parameter X-Ray/WTMD **tanpa nilai bawaan** (hanya `Archive` X-Ray = `+- 1 bulan`); jangan menambah default angka.
+* Teks yang terlihat pengguna memakai **IASS** (bukan IAS). Nilai `unit_kerja.nama` di database tetap `OM/IAS T2` — jangan diubah di kode pencocokan.
 
-### 2.6. Aturan Shift & Persistensi Operasional (`operationalReportService.ts`)
-* **Batas Jam Shift**:
-  * **Shift PS (Pagi/Siang)**: Jam dinas 08:00 s.d. 20:00 WIB.
-  * **Shift M (Malam)**: Jam dinas 20:00 s.d. 08:00 WIB hari berikutnya.
-* **Pergantian Default Tanggal/Shift**:
-  * Pukul `00:00 - 09:59`: Tanggal kemarin, Shift M.
-  * Pukul `10:00 - 21:59`: Tanggal hari ini, Shift PS.
-  * Pukul `22:00 - 23:59`: Tanggal hari ini, Shift M.
-* **Persistensi Data**: Selalu gunakan fungsi `saveOperationalLog` dan `saveChecklistSummary` dari `operationalReportService.ts` agar kegiatan dari setiap tab tersinkronisasi ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
+### 2.6. Penulisan Lokasi
+* Selalu `"<Lokasi> <Nomor>"` tanpa "No." (`PSCP D 2`, `HBSCP 2.5`). Gunakan `formatLokasi`, `formatLokasiRows`, `normalizeLokasi` dari `lokasiFormat.ts`; jangan merangkai string lokasi manual di tab/pesan baru.
 
-### 2.7. Integrasi Cloud Storage Dual-Tier & Instant Web Share (`cloudinaryService.ts`, `operationalReportService.ts`, `pdfService.ts`)
-* **Cloudinary Upload (Primary)**: Sistem mengunggah foto ke Cloudinary via Unsigned Upload Preset (kecepatan tinggi ~300-600ms, tanpa cold start, didukung Global CDN).
-* **Supabase Storage Fallback**: Jika kredensial Cloudinary belum diatur di `.env` / Admin atau jaringan Cloudinary gagal, `cloudinaryService.ts` secara otomatis mengalihkan penyimpanan ke Supabase Storage bucket `dokumentasi` dan mengembalikan URL HTTPS permanen.
-* **Seluruh Tab Operasional Terhubung**: Seluruh formulir yang memuat foto (Initial Report, Perbaikan, Kalibrasi, BA Serah Terima, dan Shift Report) wajib memanggil `uploadPhotoToCloudinary` sebelum menyimpan log kegiatan ke Supabase.
-* **Zero Base64 in DB**: Dilarang keras menyimpan string Base64 (`data:image/...`) ke dalam PostgreSQL Supabase karena akan memicu pelanggaran constraint `chk_foto_urls_no_base64` dan membuat kuota database penuh. Selalu gunakan URL HTTPS publik yang dikembalikan dari `uploadPhotoToCloudinary`.
-* **Instant Web Share**: Browser modern mewajibkan user gesture aktif untuk `navigator.share`. Panggil `navigator.share` secara sinkron/instan saat tombol ditekan, dan jalankan kompresi foto, upload cloud, serta penulisan Supabase secara asinkron di latar belakang dengan perlindungan deduplikasi `recentOperationalLogs`.
+### 2.7. Validasi Isian Wajib
+* Setiap tab yang membagikan laporan memakai pola yang sama: validator di `formValidation.ts` → daftar `MissingField {key, label}` → `reportMissingFields` (maskot menyebut isian, layar bergulir & fokus) → `FieldError` + `FIELD_ERROR_CLASS` untuk tampilan merah.
+* Tandai elemen isian dengan `data-field="<key>"` atau `name="<key>"` yang sama dengan `key` validator agar `focusFirstMissing` menemukannya.
+* Tab baru atau isian wajib baru → tambah/ubah validator + test di `tests/form-validation.test.mjs`.
 
-### 2.8. Aturan Cetak (Print Layout) & CSS `@page`
-* **Format Cetak Tab Shift Report**: Wajib menggunakan format **A4 Landscape** (`@page { size: landscape; size: A4 landscape; margin: 5mm; }`). Lebar kontainer `#printable-shift-report` harus diatur ke `100%` agar mengisi lembar landscape secara penuh.
-* **Lembar Khusus Serviceability (Dedicated Final Page)**: Tabel checklist kesiapan fasilitas dan diagram batang serviceability wajib berada di lembar tersendiri di akhir dokumen (`.serviceability-page-sheet`). Total tinggi vertikal kontainer harus dijaga padat (~520px) agar tidak meluber melewati batas tinggi A4 Landscape (~766px), dan hindari penambahan class `.html2pdf__page-break` pada kontainer agar tidak memicu padding lembaran kosong ekstra di akhir dokumen.
-* **Format Cetak Tab BA Serah Terima**: Menggunakan format resmi **A4 Portrait** (`@page { size: portrait; size: A4 portrait; margin: 12mm 15mm; }`).
-* **Isolasi Aturan `@page`**: Dilarang menempatkan aturan `@page { size: ...; }` di berkas global `src/styles.css` karena akan menimpa orientasi cetak seluruh tab lain. Selalu letakkan aturan `@page` secara terisolasi di dalam komponen masing-masing tab yang bersangkutan.
+### 2.8. Maskot & Notifikasi
+* Satu-satunya kanal notifikasi adalah `useAppStore.sayPet(text, tone)` (atau pintasan `sayPet` di luar React). Jangan membuat toast/alert baru. Nada: `info | success | warning | error | cheer`; `error` menetap sampai ditutup.
+* Teks maskot ada di `src/lib/data/petMessages.ts` (diuji `tests/pet-messages.test.mjs`). Maskot harus tetap `print:hidden` dan tidak menutupi isian (ia menyingkir saat fokus; gunakan `setBottomInset` bila menambah bilah menempel di dasar layar).
+
+### 2.9. Foto, Canvas & Signature Pad
+* Kompres via Canvas sebelum unggah (`compressImageFile`/`cloudinaryService.compressImage`).
+* Anotasi memakai Canvas native (`PhotoTextEditorModal.tsx`, `canvasUtils.ts`). **Jangan menambah Konva/react-konva/use-image** — sengaja dihapus dan dijaga `tests/dependencies-cleanliness.test.mjs`.
+* `SignaturePad.tsx`: tangani event touch dengan `preventDefault()` agar kanvas tidak men-scroll halaman.
+
+### 2.10. Aturan Shift & Persistensi (`operationalReportService.ts`)
+* **Shift PS** 08:00–20:00 WIB; **Shift M** 20:00–08:00 WIB hari berikutnya.
+* Default tanggal/shift: `00:00–09:59` → kemarin, M · `10:00–21:59` → hari ini, PS · `22:00–23:59` → hari ini, M.
+* Simpan log lewat `saveOperationalLog` dan ringkasan kelaikan lewat `saveChecklistSummary` (upsert `(tanggal, shift)`); mengambil teknisi/personel on-duty lewat `fetchOnDutyPersonnel` — jangan menduplikasi query jadwal di tab.
+
+### 2.11. Cloud Storage Dual-Tier & Instant Web Share
+* Foto → `uploadPhotoToCloudinary` (primary Cloudinary, fallback otomatis Supabase Storage `dokumentasi`). `uploadPhotoToGoogleDrive` hanya alias lama; jangan dipakai di kode baru.
+* **Dilarang menyimpan Base64** (`data:image/...`) ke Postgres (constraint `chk_foto_urls_no_base64`); simpan URL HTTPS.
+* `navigator.share` harus dipanggil **sinkron** dalam user gesture (`shareToWhatsApp`); kompresi, upload, dan penyimpanan Supabase berjalan async di latar belakang, dengan dedup `recentOperationalLogs`, lalu hasil dikabarkan via `sayPet`.
+
+### 2.12. Cetak (`@page`)
+* **Report**: A4 Landscape (`margin: 5mm`), lebar `#printable-shift-report` 100%, lembar serviceability terakhir (`.serviceability-page-sheet`, ±520px; jangan menambah `.html2pdf__page-break` pada kontainernya).
+* **BA Serah Terima**: A4 Portrait (`margin: 12mm 15mm`).
+* **Dilarang** menaruh `@page { size: … }` di `src/styles.css`; letakkan terisolasi di komponen tab masing-masing. Elemen non-dokumen (maskot, tombol) harus `print:hidden`/`data-html2canvas-ignore`.
+
+### 2.13. Keamanan & Data
+* Jangan commit `.env*`. Kredensial Supabase hanya lewat `VITE_SUPABASE_*`.
+* Tabel `public` memakai RLS; beberapa kebijakan tulis masih terbuka (lihat [database.md §6](database.md#6-catatan-keamanan-rls)). Jangan mengandalkan login tab Data sebagai satu-satunya pengaman bila menambah tabel/fitur sensitif.
+* Skema database tidak ada di repo (tanpa berkas migrasi). Perubahan skema harus dicatat di `database.md`.
 
 ---
 
-## 3. Direktori Kunci & File Penting
+## 3. Direktori Kunci
 
-| Path File | Fungsi Utama | Perhatian Khusus bagi Agent |
+| Path | Fungsi | Perhatian |
 |---|---|---|
-| [`src/components/App.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/App.tsx) | Navigation root, tab bar, & mascot | Menangani navigasi 12 tab, swipe touch, floating WA share, dan mount `AntigravityPet`. |
-| [`src/components/features/AntigravityPet.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/AntigravityPet.tsx) | Interactive mascot widget | Maskot mesin X-Ray terapung (zero-g float, glow, dan kabar operasional lewat `useAppStore.sayPet`). |
-| [`src/components/features/TabShiftReport.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/TabShiftReport.tsx) | Shift report & serviceability | Interactive Serviceability Diagram (Zone D, E, F), in-modal photo upload/attachment, dan sinkronisasi kelaikan peralatan. |
-| [`src/lib/services/operationalReportService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/operationalReportService.ts) | Layanan persistensi operasional | Menyimpan & memfilter log operasional shift (dengan deduplikasi) dan kelaikan peralatan ke Supabase. |
-| [`src/lib/services/cloudinaryService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/cloudinaryService.ts) | Layanan cloud upload Cloudinary | Mengunggah foto dokumentasi ke Cloudinary via Unsigned Upload Preset. |
-| [`src/lib/services/pdfService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/pdfService.ts) | Layanan ekspor PDF | Ekspor dokumen non-blocking menggunakan dynamic import `html2pdf.js`. |
-| [`src/lib/utils/waGenerator.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/waGenerator.ts) | Template pesan WA | Memiliki generator khusus per-tab untuk seluruh 12 modul operasional. |
-| [`src/lib/utils/locationRules.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/locationRules.ts) | Helper relasi lokasi & peralatan | Memfilter dropdown lokasi berdasarkan peralatan terpilih. |
-| [`src/store/useMasterDataStore.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/store/useMasterDataStore.ts) | Zustand store master data | Mengelola pencocokan Supabase, spareparts, & local cache. |
+| `src/components/App.tsx` | `ALL_TABS`, navigasi 8 tab/halaman, swipe, tombol header, mount maskot | Tab aktif awal `initial`; `data` & `ba_serah_terima` memakai kontainer lebar. |
+| `src/components/features/TabShiftReport.tsx` + `shift-report/` | Tab **Report**: preview WA real-time, CRUD log, serviceability, cetak | Komponen terbesar (±1.2 rb baris); ubah dengan hati-hati. |
+| `src/components/features/AntigravityPet.tsx` | Maskot X-Ray (aset `public/pet-xray.webp`) | Hanya membaca `useAppStore`. |
+| `src/components/features/TabData.tsx` | Login admin + 8 sub-tab | Semua sub-tab di dalam `LocalDataEditor`. |
+| `src/lib/services/operationalReportService.ts` | Shift, log operasional, serviceability, on-duty | Sumber tunggal aturan shift. |
+| `src/lib/services/cloudinaryService.ts` | Upload foto dual-tier, konfigurasi Cloudinary | |
+| `src/lib/services/checklistSyncService.ts` | Sinkron checklist antar-perangkat | Memakai `master_configs`. |
+| `src/lib/services/pdfService.ts` · `shareService.ts` | PDF non-blocking · Web Share + fallback | |
+| `src/lib/utils/*Message.ts`, `waGenerator.ts` | Format pesan WA | Lihat §2.5. |
+| `src/lib/utils/formValidation.ts` · `missingFields.ts` | Validasi isian wajib | Lihat §2.7. |
+| `src/lib/utils/lokasiFormat.ts` · `locationRules.ts` | Format lokasi · relasi peralatan↔lokasi | |
+| `src/lib/utils/pmScheduleParser.ts` | Parse Excel jadwal PM + Rencana Kegiatan | |
+| `src/store/useMasterDataStore.ts` | Master data + konfigurasi Supabase | `master_configs` memakai kolom `key`/`value`. |
+| `tests/` | 32 berkas, 133 test | Jalankan `npm test`. |
 
 ---
 
-## 4. Checklist Verifikasi Sebelum Menyelesaikan Tugas
+## 4. Checklist Verifikasi Sebelum Menyatakan Selesai
 
-Sebelum Agent menyatakan bahwa suatu perbaikan atau fitur telah selesai, lakukan langkah-langkah verifikasi berikut:
-
-1. **Automated Tests Verification**:
-   ```bash
-   node --test
-   ```
-   Pastikan seluruh test suite di direktori `tests/` (11 unit tests) lulus tanpa kegagalan assertion.
-
-2. **Build Verification**:
-   ```bash
-   npm run build
-   ```
-   Pastikan proses bundling Vite dan TanStack Router berhasil tanpa error.
-
-3. **Mobile Layout Check**:
-   Pastikan input teks tidak menyebabkan overflow horizontal dan tombol-tombol mudah ditekan di layar seluler.
-
-4. **Kemampuan Offline / Fallback**:
-   Pastikan jika Supabase atau Cloudinary tidak merespons, aplikasi tetap dapat menggunakan `masterData.ts` / `localStorage` secara aman tanpa crash.
-
-5. **Pembaruan Knowledge Graph (Graphify)**:
-   Jika terjadi penambahan file baru atau refactoring arsitektur skala besar, jalankan pembaruan `graphify` agar indeks keterkaitan antar file tetap up-to-date.
+1. **Test**: `npm test` (alias `node --test`) — seluruh 133 test harus lulus. Tambahkan test untuk perilaku baru (modul murni lebih mudah; test struktur komponen di repo membaca source dengan `readFileSync`).
+2. **Build**: `npm run build` harus berhasil (CI juga menjalankannya).
+3. **Lint**: `npm run lint` — jangan menambah error/peringatan baru (kondisi sekarang: 2 error, ±307 peringatan; CI belum memblokir).
+4. **Mobile layout**: tidak ada overflow horizontal, tombol mudah ditekan, tidak ada auto-zoom iOS.
+5. **Ketahanan**: bila Supabase/Cloudinary tidak merespons, aplikasi tetap berjalan dengan data bawaan `masterData.ts` / fallback Supabase Storage dan memberi kabar lewat maskot.
+6. **Dokumentasi**: bila perilaku, skema, versi dependensi, atau jumlah test berubah, perbarui `README.md`, `prd.md`, `architecture.md`, `database.md`, dan dokumen ini.
+7. **Knowledge graph**: setelah penambahan file/refactor besar, jalankan `graphify update .` (atau `/graphify . --update`) — lihat §5.
 
 ---
 
-## 5. Perintah & Tool Helper untuk Agent
+## 5. Perintah & Tool Helper
 
-* **Menjalankan Dev Server**:
-  `npm run dev` (Port default: 3000)
-* **Menjalankan Pengujian Unit**:
-  `node --test`
-* **Pemeriksaan Knowledge Graph**:
-  Gunakan skill `graphify` untuk mengajukan pertanyaan arsitektur codebase atau memperbarui `graphify-out/graph.json`.
+| Kebutuhan | Perintah |
+|---|---|
+| Dev server (HTTPS, port 3000) | `npm run dev` |
+| Test | `npm test` |
+| Lint | `npm run lint` |
+| Build | `npm run build` |
+| Tanya graph | `graphify query "<pertanyaan>"` / skill `/graphify query "<pertanyaan>"` |
+| Perbarui graph | `graphify update .` atau `/graphify . --update` |
+
+**Knowledge graph (graphify)**: output ada di `graphify-out/` (`graph.json`, `graph.html`, `GRAPH_REPORT.md`), **di-ignore git** — setiap klon/sesi membuatnya sendiri (`pip install graphifyy`). Untuk pertanyaan arsitektur, cek `graphify-out/GRAPH_REPORT.md` / `graphify query` lebih dulu sebelum menelusuri file satu per satu.
+
+**Skill workspace** (`.agents/skills/`): `ponytail` (wajib untuk kode), `graphify`, `brainstorming`, `writing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`, dan lainnya. Rencana & spesifikasi historis ada di `docs/superpowers/` (lihat README di sana).

@@ -1,0 +1,5 @@
+# Skill/agent pihak ketiga & berkas yang dibuat otomatis tidak ikut dipetakan
+.agents/
+package-lock.json
+skills-lock.json
+src/routeTree.gen.ts

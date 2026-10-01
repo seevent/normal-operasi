@@ -1,341 +1,277 @@
 # Database & Data Schema Specification
 ## SSES T2 Generator Laporan Operasional
 
+> Skema di bawah ini **diverifikasi terhadap database Supabase live** (proyek "SSES T2 Project", Postgres 17, region `ap-southeast-2`) pada **1 Oktober 2026**. Jumlah baris adalah hitungan `count(*)` pada tanggal itu.
+> Repositori ini tidak menyimpan berkas migrasi SQL; skema dikelola langsung di Supabase. Bila skema berubah, perbarui dokumen ini.
+
 ---
 
 ## 1. Ringkasan Arsitektur Data
 
-Aplikasi **SSES T2 Generator Laporan** menerapkan arsitektur data multi-tier:
-
-1. **Cloud Database (Supabase PostgreSQL)**: Menyimpan master data terstruktur, relasi peralatan-lokasi, data personel, jadwal shift, catatan performa TIP, log kegiatan operasional, dan ringkasan kelaikan peralatan.
-2. **Cloud Media Storage (Cloudinary Global CDN)**: Penyimpanan foto lampiran laporan operasional terkompresi (~150–250 KB) via Unsigned Upload Preset dengan CDN berkecepatan tinggi (~300–600ms).
-3. **Local Storage Fallback**: Menyimpan draf formulir pengguna dan data master lokal di peramban pengguna (*offline resilience*).
+1. **Supabase PostgreSQL** — master data relasional, personel, jadwal shift & PM, log operasional, ringkasan kelaikan, dan konfigurasi fleksibel (`master_configs`).
+2. **Media Foto** — Cloudinary (primary, folder `SSES_T2_Dokumentasi`) dengan cadangan **Supabase Storage** bucket `dokumentasi`. Database hanya menyimpan URL HTTPS.
+3. **Browser** — `localStorage` hanya untuk kredensial Cloudinary (§5). Bila Supabase tidak terjangkau, `useMasterDataStore` memakai **data bawaan `src/lib/data/masterData.ts`**; draf formulir **tidak** disimpan ke `localStorage`.
 
 ---
 
-## 2. Diagram Relasi Entitas (ERD - Supabase PostgreSQL & Storage)
+## 2. Diagram Relasi Entitas
 
 ```mermaid
 erDiagram
-    JENIS_PERALATAN ||--o{ TIPE_PERALATAN : "memiliki"
-    LOKASI ||--o{ TITIK_LOKASI : "memiliki"
-    
-    TIPE_PERALATAN ||--o{ PENEMPATAN_PERALATAN : "ditempatkan di"
-    LOKASI ||--o{ PENEMPATAN_PERALATAN : "lokasi penempatan"
-    TITIK_LOKASI ||--o{ PENEMPATAN_PERALATAN : "titik penempatan"
+    JENIS_PERALATAN ||--o{ TIPE_PERALATAN : "id_jenis"
+    LOKASI ||--o{ TITIK_LOKASI : "id_lokasi"
 
-    UNIT_KERJA ||--o{ PERSONEL : "mewadahi"
-    PERSONEL ||--o{ JADWAL_SHIFT : "memiliki jadwal"
+    TIPE_PERALATAN ||--o{ PENEMPATAN_PERALATAN : "id_tipe"
+    LOKASI ||--o{ PENEMPATAN_PERALATAN : "id_lokasi"
+    TITIK_LOKASI ||--o{ PENEMPATAN_PERALATAN : "id_titik"
+    UNIT_PERALATAN ||--o{ PENEMPATAN_PERALATAN : "id_unit"
+    TIPE_PERALATAN ||--o{ UNIT_PERALATAN : "id_tipe"
 
-    LAPORAN_OPERASIONAL {
-        uuid id PK
-        date tanggal
-        string shift
-        string jenis
-        string lokasi
-        string peralatan
-        string kategori_maintenance
-        text uraian
-        text tindak_lanjut
-        string status
-        string teknisi
-        jsonb foto_urls "URL HTTPS only (chk_foto_urls_no_base64)"
-        timestamp created_at
-    }
+    TIPE_PERALATAN ||--o{ SPAREPARTS : "id_tipe"
+    SPAREPARTS ||--o{ SPAREPART_COMPATIBILITY : "sparepart_id"
+    TIPE_PERALATAN ||--o{ SPAREPART_COMPATIBILITY : "id_tipe"
+    SPAREPARTS ||--o{ STOCK_MUTATIONS : "sparepart_id"
+    UNIT_PERALATAN ||--o{ STOCK_MUTATIONS : "unit_id"
+    PERSONEL ||--o{ STOCK_MUTATIONS : "personel_id"
 
-    LAPORAN_CHECKLIST {
-        uuid id PK
-        date tanggal "UK (tanggal, shift)"
-        string shift "UK (tanggal, shift)"
-        jsonb summary
-        timestamp created_at
-    }
+    UNIT_KERJA ||--o{ PERSONEL : "unit_id"
+    PERSONEL ||--o{ JADWAL_SHIFT : "personel_id"
 
-    MASTER_CONFIGS {
-        uuid id PK
-        string config_key UK
-        jsonb config_value
-        timestamp updated_at
-    }
+    LOKASI ||--o{ JADWAL_PM : "id_lokasi"
+    TITIK_LOKASI ||--o{ JADWAL_PM : "id_titik"
+    TIPE_PERALATAN ||--o{ JADWAL_PM : "id_tipe"
 
-    STORAGE_BUCKET_DOKUMENTASI {
-        string bucket_id "dokumentasi"
-        string file_name "{timestamp}_{name}.jpg"
-        boolean is_public true
-    }
-
-    STORAGE_BUCKET_DOKUMENTASI ||--o{ LAPORAN_OPERASIONAL : "menyimpan foto lampiran"
+    LAPORAN_OPERASIONAL { uuid id PK }
+    LAPORAN_CHECKLIST { uuid id PK }
+    MASTER_CONFIGS { uuid id PK }
 ```
 
----
-
-## 3. Spesifikasi Skema Tabel PostgreSQL (Supabase)
-
-### 3.1. Tabel `jenis_peralatan`
-Menyimpan kategori/jenis umum peralatan keamanan di bandara.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik jenis peralatan. |
-| `nama_jenis` | `VARCHAR(100)` | **NOT NULL** | Nama jenis (misal: X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control). |
-| `deskripsi` | `TEXT` | NULL | Penjelasan tambahan jenis peralatan. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembuatan data. |
+`laporan_operasional`, `laporan_checklist`, dan `master_configs` berdiri sendiri (tanpa foreign key).
 
 ---
 
-### 3.2. Tabel `tipe_peralatan`
-Menyimpan merk, tipe, atau varian spesifik dari suatu jenis peralatan.
+## 3. Spesifikasi Tabel (schema `public`)
 
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik tipe peralatan. |
-| `id_jenis` | `UUID` / `BIGINT` | **FK** | Referensi ke `jenis_peralatan(id)`. |
-| `nama` / `nama_tipe` | `VARCHAR(150)` | **NOT NULL** | Nama merk/tipe (misal: Rapiscan 620DV, Smiths Heimann, Nuctech). |
-| `varian` | `VARCHAR(50)` | NULL | Varian peralatan (misal: `Cabin`, `Bagasi`, `Dekstop`, `Portable`). |
-| `brand` | `VARCHAR(100)` | NULL | Merk manufaktur. |
-| `spesifikasi` | `TEXT` | NULL | Catatan spesifikasi teknis peralatan. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembuatan data. |
+Semua `id` bertipe `uuid` default `gen_random_uuid()`. RLS aktif di semua tabel (lihat §6).
 
----
-
-### 3.3. Tabel `lokasi`
-Menyimpan daftar nama lokasi atau area utama di Terminal 2 Bandara Soekarno-Hatta.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik lokasi. |
-| `nama_lokasi` | `VARCHAR(150)` | **NOT NULL** | Nama lokasi (misal: PSCP D, HBSCP E, SSCP F, Umrah, Arrival Hall F). |
-| `kode_lokasi` | `VARCHAR(50)` | NULL | Kode singkat area/lokasi. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembuatan data. |
-
----
-
-### 3.4. Tabel `titik_lokasi`
-Menyimpan nomor titik atau gate spesifik dari suatu lokasi area.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik titik lokasi. |
-| `id_lokasi` | `UUID` / `BIGINT` | **FK** | Referensi ke `lokasi(id)`. |
-| `nomor_titik` | `VARCHAR(50)` | **NOT NULL** | Nomor titik (misal: Titik 1, Gate 2, Line 3, Pos 5). |
-| `keterangan` | `TEXT` | NULL | Catatan khusus posisi titik. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembuatan data. |
-
----
-
-### 3.5. Tabel Pivot `penempatan_peralatan`
-Menghubungkan tipe peralatan dengan lokasi dan titik penempatannya secara relasional dinamis.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik penempatan. |
-| `id_tipe` | `UUID` / `BIGINT` | **FK** | Referensi ke `tipe_peralatan(id)`. |
-| `id_lokasi` | `UUID` / `BIGINT` | **FK** | Referensi ke `lokasi(id)`. |
-| `id_titik` | `UUID` / `BIGINT` | **FK** | Referensi ke `titik_lokasi(id)`. |
-| `status` | `VARCHAR(50)` | DEFAULT `'Aktif'` | Status operasional penempatan (Aktif / Storing / Non-Aktif). |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pemasangan/pencatatan. |
-
----
-
-### 3.6. Tabel `unit_peralatan`
-Menyimpan inventaris unit fisik peralatan per nomor seri (SN) dan status operasionalnya.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` | **PK** | Identifier unik unit peralatan. |
-| `id_tipe` | `UUID` / `BIGINT` | **FK** | Referensi ke `tipe_peralatan(id)`. |
-| `sn` | `VARCHAR(100)` | NULL | Nomor Seri (*Serial Number*) unit peralatan. |
-| `no_sertifikasi` | `VARCHAR(100)` | NULL | Nomor sertifikasi kelaikan operasi. |
-| `tahun_instalasi` | `VARCHAR(10)` | NULL | Tahun pemasangan unit di bandara. |
-| `ampere` | `VARCHAR(20)` | NULL | Konsumsi/kapasitas daya listrik (Ampere). |
-| `milik` | `VARCHAR(50)` | DEFAULT `'API'` | Kepemilikan aset (API / OM / IAS / Custom). |
-| `status` | `VARCHAR(50)` | DEFAULT `'operasi'` | Status (operasi / backup / rusak / storing / scrap). |
-| `catatan` | `TEXT` | NULL | Catatan riwayat atau kondisi khusus unit. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pencatatan unit. |
-
----
-
-### 3.7. Tabel `spareparts`
-Menyimpan inventaris komponen suku cadang dan konfigurasi item pembahasan briefing.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` | **PK** | Identifier unik sparepart. |
-| `name` | `VARCHAR(150)` | **NOT NULL** | Nama komponen sparepart. |
-| `sku` | `VARCHAR(100)` | NULL | Kode part number / SKU inventaris. |
-| `id_tipe` | `UUID` / `BIGINT` | **FK** | Kompatibilitas dengan `tipe_peralatan(id)`. |
-| `qty` | `INTEGER` | DEFAULT `0` | Jumlah stok tersedia. |
-| `satuan` | `VARCHAR(30)` | DEFAULT `'Pcs'` | Satuan barang (Pcs, Set, Roll, Meter, dll.). |
-| `lokasi_rak` | `VARCHAR(100)` | NULL | Posisi penyimpanan di gudang/workshop. |
-| `in_briefing` | `BOOLEAN` | DEFAULT `false` | Menentukan apakah tampil di tab Briefing Unit. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu penambahan sparepart. |
-
----
-
-### 3.8. Tabel `unit_kerja`
-Menyimpan daftar unit kerja operasional.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik unit kerja. |
-| `nama_unit` | `VARCHAR(100)` | **NOT NULL** | Nama unit (misal: API T2, OM/IAS T2). |
-| `deskripsi` | `TEXT` | NULL | Keterangan tugas unit kerja. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembuatan data. |
-
----
-
-### 3.9. Tabel `personel`
-Menyimpan data anggota personel teknisi SSES T2.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik personel. |
-| `nama` | `VARCHAR(150)` | **NOT NULL** | Nama lengkap personel. |
-| `nik` | `VARCHAR(50)` | NULL | Nomor Induk Karyawan / NIK personel. |
-| `phone` | `VARCHAR(20)` | NULL | Nomor WhatsApp / kontak. |
-| `id_unit` | `UUID` / `BIGINT` | **FK** | Referensi ke `unit_kerja(id)`. |
-| `jabatan` | `VARCHAR(100)` | NULL | Jabatan struktural (Manager, Supervisor, Engineer, Team Leader, Teknisi, dll.). |
-| `role` | `VARCHAR(50)` | DEFAULT `'Teknisi'`| Peran otorisasi (Teknisi / Leader / Admin). |
-| `status` | `VARCHAR(20)` | DEFAULT `'Aktif'` | Status keanggotaan. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pendaftaran. |
-
----
-
-### 3.10. Tabel `jadwal_shift`
-Menyimpan alokasi jadwal shift harian personel teknisi yang dapat diunggah dari berkas Excel.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik jadwal shift. |
-| `tanggal` | `DATE` | **NOT NULL** | Tanggal tugas shift (YYYY-MM-DD). |
-| `id_personel` | `UUID` / `BIGINT` | **FK** | Referensi ke `personel(id)`. |
-| `shift` | `VARCHAR(20)` | **NOT NULL** | Kode shift (PS / Pagi / Siang / M / Malam / Off / Cuti / Special). |
-| `status_kehadiran` | `VARCHAR(20)` | DEFAULT `'Hadir'` | Status presensi personel. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pencatatan. |
-
----
-
-### 3.11. Tabel `master_configs` (JSONB)
-Menyimpan konfigurasi fleksibel dan data agregat dalam format JSONB.
-
-| Nama Kolom | Tipe Data | Kunci | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` | **PK** | Identifier unik konfigurasi. |
-| `config_key` | `VARCHAR(100)` | **UNIQUE** | Kunci identifikasi unik (misal: `checklist_config`, `storing_config`, `tip_performance_data`, `cloudinary_config`). |
-| `config_value` | `JSONB` | **NOT NULL** | Payload JSON sesuai jenis `config_key`. |
-| `updated_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pembaruan konfigurasi terakhir. |
-
----
-
-### 3.12. Tabel `laporan_operasional`
-Menyimpan catatan kegiatan operasional harian teknisi (Perbaikan, Storing, Kegiatan, Kalibrasi) untuk sinkronisasi antar-shift dan rekapitulasi Shift Report.
-
-| Nama Kolom | Tipe Data | Kunci / Constraint | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik log kegiatan. |
-| `tanggal` | `DATE` / `VARCHAR(10)` | **NOT NULL** | Tanggal operasional log (YYYY-MM-DD). |
-| `shift` | `VARCHAR(10)` | **NOT NULL** | Shift dinas log ('PS' / 'M'). |
-| `jenis` | `VARCHAR(50)` | **NOT NULL** | Jenis kegiatan ('Perbaikan', 'Storing', 'Kegiatan', 'Kalibrasi'). |
-| `waktu` | `VARCHAR(20)` | NULL | Jam pelaksanaan (HH:mm). |
-| `lokasi` | `VARCHAR(150)` | NULL | Lokasi pelaksanaan. |
-| `peralatan` | `VARCHAR(150)` | NULL | Nama jenis & tipe peralatan terkait. |
-| `kategori_maintenance` | `VARCHAR(50)` | DEFAULT `'CORRECTIVE'` | Kategori pemeliharaan ('CORRECTIVE', 'PREVENTIVE', 'STORING', 'KEGIATAN'). |
-| `uraian` | `TEXT` | NULL | Deskripsi masalah / uraian kegiatan. |
-| `tindak_lanjut` | `TEXT` | NULL | Tindakan penanganan teknis / mitigasi. |
-| `status` | `VARCHAR(50)` | DEFAULT `'Normal Operasi'` | Status akhir peralatan / kegiatan. |
-| `teknisi` | `VARCHAR(150)` | NULL | Nama teknisi penanggung jawab dinas. |
-| `foto_urls` | `JSONB` / `TEXT[]` | **CHECK (`chk_foto_urls_no_base64`)** | Array tautan URL foto HTTPS (Cloudinary Global CDN / Supabase Storage fallback). Check constraint memastikan string Base64 (`data:image`) ditolak. |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Timestamp pembuatan record. |
-
-> **Constraint Khusus**:
-> ```sql
-> ALTER TABLE laporan_operasional 
-> ADD CONSTRAINT chk_foto_urls_no_base64 
-> CHECK (foto_urls IS NULL OR foto_urls::text NOT LIKE '%data:image%');
-> ```
-
----
-
-### 3.13. Tabel `laporan_checklist`
-Menyimpan rekapitulasi ringkasan kelaikan peralatan (*serviceability summary*) per tanggal dan shift dinas.
-
-| Nama Kolom | Tipe Data | Kunci / Constraint | Keterangan |
-|---|---|---|---|
-| `id` | `UUID` / `BIGINT` | **PK** | Identifier unik laporan checklist. |
-| `tanggal` | `DATE` / `VARCHAR(10)` | **UNIQUE (`tanggal, shift`)** | Tanggal checklist (YYYY-MM-DD). |
-| `shift` | `VARCHAR(10)` | **UNIQUE (`tanggal, shift`)** | Shift dinas ('PS' / 'M'). |
-| `summary` | `JSONB` | **NOT NULL** | Array objek ringkasan kelaikan (`[{ no, nama, total, operasi, rusak, persenOperasi, persenRusak }]`). |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu penyimpanan record. |
-
-> **Constraint Khusus**:
-> ```sql
-> ALTER TABLE laporan_checklist 
-> ADD CONSTRAINT uq_laporan_checklist_tanggal_shift UNIQUE (tanggal, shift);
-> ```
-> Memungkinkan operasi **atomic upsert** (`INSERT ... ON CONFLICT (tanggal, shift) DO UPDATE SET summary = EXCLUDED.summary`) dari browser.
-
----
-
-### 3.14. Supabase Storage Bucket: `dokumentasi`
-Bucket penyimpanan objek publik yang digunakan sebagai fail-safe secondary tier penyimpanan foto laporan operasional.
-
-| Parameter | Nilai | Keterangan |
+### 3.1. `jenis_peralatan` (9 baris)
+| Kolom | Tipe | Keterangan |
 |---|---|---|
-| `bucket_id` | `dokumentasi` | Nama unik bucket pada Supabase Storage. |
-| `public` | `true` | URL objek dapat diakses secara publik via HTTPS tanpa token jangka pendek. |
-| `Format File` | `image/jpeg` | Seluruh foto dikompresi ke JPEG (maks. 1280px, kualitas 80%, ~150–250 KB) sebelum diunggah. |
-| `Penamaan Berkas` | `{timestamp}_{filename}.jpg` | Menghindari konflik penamaan file antar-pengguna. |
-| `RLS Policy` | `FOR ALL USING (bucket_id = 'dokumentasi')` | Mengizinkan select dan insert publik dari aplikasi frontend mobile. |
+| `id` | uuid **PK** | |
+| `nama` | varchar, **UNIQUE** | Jenis (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control, Extension Conveyor, …). |
+| `tampil_di_kalibrasi` | bool, default `false` | Menentukan jenis yang muncul di dropdown tab Kalibrasi (diatur di Data → Config Peralatan Kalibrasi). |
+
+### 3.2. `tipe_peralatan` (16 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `id_jenis` | uuid FK → `jenis_peralatan.id` | |
+| `nama` | varchar, **UNIQUE** | Nama merk/tipe (mis. "X-Ray Rapiscan 628DV"). Dipakai dropdown *Peralatan* (`useTipePeralatanOptions`). |
+| `varian` | text, nullable | Mis. Cabin / Bagasi. |
+
+### 3.3. `lokasi` (42 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `nama` | varchar, **UNIQUE** | Nama lokasi/area (PSCP D, HBSCP, Rampout E, …). |
+
+### 3.4. `titik_lokasi` (164 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `id_lokasi` | uuid FK → `lokasi.id` | |
+| `nomor` | varchar | Nomor titik. **UNIQUE `(id_lokasi, nomor)`**. |
+
+### 3.5. `penempatan_peralatan` (202 baris)
+Pivot yang menempatkan tipe/unit peralatan di lokasi & titik.
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `id_tipe` | uuid FK → `tipe_peralatan.id` | |
+| `id_lokasi` | uuid FK → `lokasi.id` | |
+| `id_titik` | uuid FK → `titik_lokasi.id` | |
+| `id_unit` | uuid FK → `unit_peralatan.id`, nullable | Unit fisik yang terpasang. |
+| `is_active` | bool, default `true` | |
+| `created_at` | timestamptz | |
+
+### 3.6. `unit_peralatan` (135 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `id_tipe` | uuid FK → `tipe_peralatan.id`, NOT NULL | |
+| `serial_number` | varchar | |
+| `no_sertifikasi` | varchar | |
+| `tahun_instalasi` | int | |
+| `ampere` | varchar | |
+| `milik` | varchar, default `'Injourney / AP2'` | Kepemilikan aset. |
+| `status` | varchar, default `'operasi'`, **CHECK** ∈ `operasi \| standby \| gudang \| rusak` | |
+| `catatan`, `foto_url` | text | |
+| `created_at`, `updated_at` | timestamptz | |
+
+### 3.7. `spareparts` (4 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `sku` | varchar, **UNIQUE** | |
+| `name` | varchar | |
+| `description` | text | |
+| `id_tipe` | uuid FK → `tipe_peralatan.id` | |
+| `unit` | varchar, default `'PCS'` | Satuan. |
+| `minimum_stok` | int, default `1`, **CHECK ≥ 0** | |
+| `lokasi`, `rack` | varchar | Lokasi/rak penyimpanan. |
+| `mtbf_days` | int, default `180` | |
+| `last_replaced_at` | timestamptz | |
+| `created_at`, `updated_at` | timestamptz | |
+
+> Sparepart yang tampil di tab **Briefing** tidak ditandai lewat kolom, melainkan daftar id di `master_configs.briefing_spareparts` (§4).
+
+### 3.8. `sparepart_compatibility` & `stock_mutations` (0 baris)
+Ada di database tetapi **belum dipakai frontend** saat ini.
+* `sparepart_compatibility`: `sparepart_id` → `spareparts`, `id_tipe` → `tipe_peralatan`, `is_primary` (default `true`); **UNIQUE `(sparepart_id, id_tipe)`**.
+* `stock_mutations`: `sparepart_id` (NOT NULL), `unit_id`, `personel_id`, `mutation_type` **CHECK** ∈ `Masuk | Pakai | Bekas | Rusak | Serah Terima`, `qty` **CHECK > 0**, `notes`, `sumber` (default `'VENDOR'`), `location`, `penerima`, `unit_penerima`, `created_at`.
+
+### 3.9. `unit_kerja` (2 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `nama` | text, **UNIQUE** | Dua baris: `API T2` dan `OM/IAS T2`. Nilai ini dipakai apa adanya untuk memisahkan personel di store (tampilan aplikasi menulisnya "OM IASS T2"). |
+| `created_at` | timestamptz | |
+
+### 3.10. `personel` (22 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `nik` | text, **UNIQUE** | |
+| `nama` | text | |
+| `no_hp` | text | |
+| `unit_id` | uuid FK → `unit_kerja.id` | |
+| `jabatan` | varchar | Supervisor, Engineer, Technician, Teknisi, Pembantu Teknisi, … |
+| `urutan` | int | Urutan manual untuk jabatan yang sama (diubah dengan tombol naik/turun di Data → Personel). |
+| `created_at` | timestamptz | |
+
+Urutan tampil personel: hirarki jabatan, lalu `urutan` (`sortPersonelByJabatan` di `masterData.ts`); dipakai sama di tab Kehadiran dan Report.
+
+> Sumber daftar personel di aplikasi adalah tabel ini (digabung dengan `unit_kerja.nama`); data bawaan `masterData.ts` hanya dipakai bila query gagal atau kosong. `savePersonelToSupabase` menulis perubahan dari Data → Personel.
+
+### 3.11. `jadwal_shift` (617 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `personel_id` | uuid FK → `personel.id` | |
+| `tanggal` | date | |
+| `shift` | text | Kode shift (PS / M / Off / Cuti / …). |
+| `status_kehadiran` | text, default `'Hadir'` | |
+| `created_at` | timestamptz | |
+| | **UNIQUE `(personel_id, tanggal)`** | Satu jadwal per personel per hari (upload Excel melakukan upsert). |
+
+### 3.12. `jadwal_pm` (761 baris)
+Jadwal Preventive Maintenance (hasil upload Excel di Data → Upload Jadwal Excel → PM), dipakai tab Kehadiran untuk *Rencana Kegiatan*.
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `tanggal` | date | |
+| `bulan`, `tahun` | int | Upload per bulan: baris bulan/tahun yang sama dihapus lalu diisi ulang. |
+| `lokasi` | text | Lokasi (nama standar Supabase). |
+| `titik` | text, default `'-'` | |
+| `jenis`, `tipe` | text | Jenis & tipe peralatan. |
+| `kategori_pm` | text | "PM Mingguan" / "PM Bulanan" (disaring oleh `pm_display_settings`). |
+| `shift` | text, nullable | |
+| `id_lokasi`, `id_titik`, `id_tipe` | uuid FK, nullable | Diperkaya dari master (`enrichRecordsWithSupabaseIds`). |
+| `created_at` | timestamptz | |
+
+### 3.13. `laporan_operasional` (176 baris)
+Log kegiatan shift (Perbaikan, Storing, Kegiatan, Kalibrasi, …).
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `tanggal` | date | |
+| `shift` | varchar | `'PS'` / `'M'`. |
+| `jenis` | varchar | Jenis kegiatan. |
+| `waktu`, `lokasi`, `peralatan`, `teknisi` | varchar, default `'-'` | |
+| `kategori_maintenance` | varchar, default `'CORRECTIVE'` | `CORRECTIVE`, `PREVENTIVE`, `STORING`, … |
+| `uraian`, `tindak_lanjut` | text, default `'-'` | |
+| `status` | varchar, default `'Normal Operasi'` | |
+| `foto_urls` | jsonb, default `[]` | Array URL HTTPS. **CHECK `chk_foto_urls_no_base64`**: `NOT foto_urls::text LIKE '%data:image%'`. |
+| `created_at` | timestamptz | |
+
+### 3.14. `laporan_checklist` (8 baris)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `tanggal` | date | |
+| `shift` | varchar | |
+| `summary` | jsonb, default `[]` | Ringkasan kelaikan `[{ no, nama, total, operasi, rusak, persenOperasi, persenRusak }]`. |
+| `created_at` | timestamptz | |
+| | **UNIQUE `uq_laporan_checklist_tanggal_shift (tanggal, shift)`** | Untuk upsert atomik. |
+
+### 3.15. `master_configs` (9 baris)
+Penyimpanan key–value JSONB untuk konfigurasi dan data agregat.
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | uuid **PK** | |
+| `key` | text, **UNIQUE** | Kunci (§4). *Bukan* `config_key`. |
+| `value` | jsonb | Payload. *Bukan* `config_value`. |
+| `updated_at` | timestamptz | |
+
+Semua penulisan memakai `upsert({ key, value, updated_at }, { onConflict: 'key' })`.
+
+### 3.16. Supabase Storage — bucket `dokumentasi`
+| Parameter | Nilai |
+|---|---|
+| `id` / `name` | `dokumentasi` |
+| `public` | `true` (URL permanen via HTTPS) |
+| Isi | JPEG terkompresi (maks. 1280px, kualitas ±80%, ±150–250 KB); hanya dipakai bila Cloudinary tidak tersedia. |
+| Policy | `Public Access` pada `storage.objects`: `ALL` untuk `bucket_id = 'dokumentasi'`. |
 
 ---
 
-## 4. Struktur Payload JSONB (`master_configs`)
+## 4. Kunci `master_configs`
 
-### 4.1. Payload `checklist_config`
+| Key | Tipe | Pemilik / pembaca | Keterangan |
+|---|---|---|---|
+| `master_api_t2`, `master_om_ias_t2` | array | *(legacy)* | Sisa dari sebelum personel dipindah ke tabel `personel`; tidak dibaca kode saat ini. |
+| `master_checklist` | array | `ChecklistDataEditor`, `TabChecklist` | Struktur master checklist (blok `location` / `group` / `access_control`, sub-grup, kategori, item). |
+| `checklist_active_toggles` | object | `TabChecklist` (Realtime) | Toggle aktif checklist. |
+| `checklist_shift_data` | object | `checklistSyncService` | Status checklist per shift (disinkronkan juga dari tab Storing). |
+| `briefing_spareparts` | array of id | `useMasterDataStore`, `SparepartManager`, `TabBriefing` | Sparepart yang tampil di Briefing. |
+| `pm_display_settings` | object | `useMasterDataStore`, `PmScheduleUploader`, `TabKehadiran` | `{ categories: {'PM Mingguan','PM Bulanan'}, types: {X-Ray, WTMD, Body Scanner, ETD, Extension Conveyor, Access Control} }` (boolean). |
+| `cloudinary_config` | object | `cloudinaryService`, `CloudinarySettingsPanel` | Cloud name + upload preset (sumber kebenaran global). |
+| `tip_data_<Bulan>_<Tahun>` | object | `TabTip`, Data → Data TIP Tersimpan | Mis. `tip_data_Agustus_2026`: `{ items: {...}, lastSaved }`. |
+| `master_storing_equip`, `master_storing_loc_ac`, `master_storing_loc_default`, `master_tip_left`, `master_tip_right` | array | `useMasterDataStore` | Dibuat saat admin mengubah daftar terkait; belum ada di database pada tanggal verifikasi (memakai data bawaan). |
+
+Contoh `pm_display_settings`:
 ```json
 {
-  "categories": [
-    {
-      "name": "X-Ray Security",
-      "items": [
-        { "id": "chk_xr_1", "label": "Pemeriksaan Power & Indikator LED", "defaultStatus": "OK" },
-        { "id": "chk_xr_2", "label": "Pemeriksaan Conveyor Belt & Emergency Stop", "defaultStatus": "OK" }
-      ]
-    }
-  ]
-}
-```
-
-### 4.2. Payload `tip_performance_data`
-```json
-{
-  "records": [
-    {
-      "id": "tip_2026_07_001",
-      "bulan": "2026-07",
-      "personelName": "Budi Santoso",
-      "hit": 45,
-      "miss": 3,
-      "falseAlarm": 1,
-      "totalProjection": 49,
-      "scorePercentage": 91.8,
-      "updatedAt": "2026-07-27T10:00:00Z"
-    }
-  ]
+  "categories": { "PM Mingguan": true, "PM Bulanan": true },
+  "types": { "X-Ray": true, "WTMD": true, "Body Scanner": true, "ETD": true, "Extension Conveyor": true, "Access Control": true }
 }
 ```
 
 ---
 
-## 5. Penyimpanan Lokal (`localStorage` Key Schema)
+## 5. Penyimpanan Lokal (`localStorage`)
 
-| Key Name | Tipe | Deskripsi |
+| Key | Keterangan |
+|---|---|
+| `sses_cloudinary_cloud_name` | Cloud Name Cloudinary (cache dari `cloudinary_config`). |
+| `sses_cloudinary_upload_preset` | Unsigned Upload Preset (cache). |
+
+Selain itu, token sesi Supabase Auth dikelola otomatis oleh `@supabase/supabase-js`. Sisa data TIP lama (`tip_data_*`) dihapus dari `localStorage` saat tab TIP dibuka karena TIP kini hanya tersimpan di Supabase.
+
+---
+
+## 6. Catatan Keamanan (RLS)
+
+Ringkasan kebijakan RLS pada tanggal verifikasi — dicatat apa adanya sebagai temuan, bukan rekomendasi desain:
+
+| Tabel | Baca | Tulis |
 |---|---|---|
-| `sses_admin_auth` | `Boolean` | Flag status login admin pada tab Data. |
-| `sses_master_data_cache` | `Object JSON` | Cache offline master data untuk mencegah lag UI jika Supabase slow-response. |
-| `sses_active_tab` | `String` | Tab UI aktif yang terakhir dibuka pengguna. |
-| `sses_tip_data_draft` | `Object JSON` | Draft sementara pengisian TIP performance. |
-| `sses_cloudinary_cloud_name` | `String` | Cloud Name akun Cloudinary. |
-| `sses_cloudinary_upload_preset` | `String` | Nama Unsigned Upload Preset akun Cloudinary. |
-| `sses_checklist_summary_cache` | `Object JSON` | Cache offline ringkasan kelaikan peralatan per shift. |
+| `jenis_peralatan`, `tipe_peralatan`, `lokasi`, `titik_lokasi`, `penempatan_peralatan`, `personel`, `unit_kerja` | publik | hanya pengguna login (`auth.uid() IS NOT NULL`) |
+| `jadwal_shift` | publik | kebijakan "Auth can …" **dan** kebijakan `*_public` (`true`) → praktis **terbuka untuk publik** |
+| `jadwal_pm`, `laporan_operasional`, `laporan_checklist` | publik | **terbuka untuk publik** (insert/update/delete `true`) — aplikasi menyimpan laporan sebagai tamu (tanpa login), sehingga tulis publik diperlukan oleh desain saat ini |
+| `spareparts`, `sparepart_compatibility`, `stock_mutations` | publik | **terbuka** (`ALL` untuk `anon, authenticated`) |
+| `unit_peralatan` | publik | `ALL` dengan `true` (nama kebijakan "Allow all for authenticated", tetapi tidak membatasi) |
+| `master_configs` | publik | kebijakan "Allow public read access" bertipe `ALL` dengan `true` → **siapa pun dengan kunci anon dapat menulis konfigurasi** (termasuk `cloudinary_config`) |
+| `storage.objects` (`dokumentasi`) | publik | publik |
 
+Konsekuensi: perlindungan tab **Data** hanya berlaku di sisi UI untuk tabel yang kebijakannya terbuka. Bila ingin memperketat, kandidat pertama adalah `master_configs` (batasi tulis ke `authenticated`, kecuali kunci yang memang ditulis tamu seperti `checklist_*` dan `tip_data_*`) dan `jadwal_*`/`spareparts`/`unit_peralatan` (tulis hanya `authenticated`).

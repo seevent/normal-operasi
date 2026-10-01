@@ -1,181 +1,151 @@
 # Product Requirements Document (PRD)
 ## Sistem Informasi & Generator Laporan Operasional SSES T2 Bandara Soekarno-Hatta
 
+> Terakhir diselaraskan dengan kode: **1 Oktober 2026**. Dokumen ini menjelaskan *apa* yang dilakukan produk; detail teknis ada di [architecture.md](architecture.md), skema data di [database.md](database.md).
+
 ---
 
 ## 1. Visi & Ringkasan Produk
 
-Aplikasi **SSES T2 Normal Operasi** adalah aplikasi web *mobile-first* yang dirancang khusus untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini berfungsi sebagai pusat otomatisasi pelaporan operasional harian, pemantauan peralatan keamanan bandara, manajemen jadwal shift, pembuatan Berita Acara Serah Terima Barang dengan tanda tangan digital, pelacakan TIP (*Threat Image Projection*) performance, serta integrasi data real-time dengan **Supabase** dan CDN penyimpanan foto **Cloudinary**.
+Aplikasi **SSES T2 Normal Operasi** adalah aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi menjadi pusat otomatisasi pelaporan operasional harian: laporan kehadiran/dinas, briefing, storing, checklist, gangguan, perbaikan, kalibrasi/preventive, kegiatan, berita acara serah terima (dengan tanda tangan digital), laporan harian (Report), dan pelacakan TIP — dengan data tersinkron ke **Supabase** dan foto di **Cloudinary** (cadangan Supabase Storage).
 
-Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berformat standar hanya dalam hitungan detik dan mendistribusikannya secara instan melalui **WhatsApp (Web Share API)**.
+Personel menyusun laporan berformat standar dalam hitungan detik dan membagikannya langsung ke WhatsApp lewat **Web Share API**.
 
 ---
 
 ## 2. Target Pengguna & Persona
 
-| Peran Pengguna | Deskripsi & Tanggung Jawab Utama |
+| Peran | Deskripsi & Tanggung Jawab |
 |---|---|
-| **Teknisi API (Airport Power & Infrastructure)** | Personel yang bertugas melakukan pengecekan, perbaikan, kalibrasi, serah terima barang, dan penyusunan laporan harian unit API T2. |
-| **Teknisi OM / IAS (Operation & Maintenance)** | Personel teknisi dari vendor/mitra kerja IAS yang melakukan pemeliharaan, pengoperasian peralatan keamanan, dan serah terima barang. |
-| **Team Leader / Supervisor SSES T2** | Mengawasi laporan shift (*Shift Handover Report*), briefing, verifikasi gangguan (*Initial Report*), validasi tanda tangan BA Serah Terima, dan rekapitulasi performa bulanan. |
-| **Admin Sistem SSES T2** | Mengelola master data lokasi, peralatan, unit peralatan (SN/status), stok sparepart, penempatan relasional, upload jadwal shift Excel, konfigurasi checklist, serta konfigurasi Cloudinary CDN. |
+| **Teknisi API T2** | Pengecekan, perbaikan, kalibrasi/preventive, serah terima barang, dan laporan harian unit API T2. |
+| **Teknisi OM / IASS T2** | Teknisi mitra (OM/IAS) yang memelihara dan mengoperasikan peralatan keamanan, serta terlibat serah terima barang. |
+| **Team Leader / Supervisor SSES T2** | Mengawasi laporan harian (Report), briefing, Initial Report gangguan, dan tanda tangan BA Serah Terima. |
+| **Admin Sistem SSES T2** | Login di tab Data: kelola master lokasi/peralatan/unit, sparepart, personel, jadwal shift & PM (Excel), konfigurasi checklist, peralatan kalibrasi, dan Cloudinary. |
+
+Sebagian besar pengguna menyimpan laporan **sebagai tamu** (tanpa login); hanya tab Data yang meminta login.
 
 ---
 
-## 3. Fitur Utama (12 Tab Modul Operasional)
+## 3. Fitur Utama (12 Tab)
 
-### 3.1. Tab Kehadiran
-* **Fungsi**: Generator laporan kehadiran shift personel (API T2 & OM IAS T2).
-* **Fitur Utama**:
-  * Auto-populate nama personel berdasarkan tanggal dan shift dinas yang aktif (Pagi PS / Malam M) dari database `jadwal_shift`.
-  * Status kehadiran (Hadir, Izin, Sakit, Cuti, Off).
-  * Format pesan WhatsApp otomatis sesuai standar laporan kehadiran shift.
+Urutan tab di layar: Kehadiran, Briefing, Storing, Checklist, Initial Report, Perbaikan, Kalibrasi, Kegiatan, BA Serah Terima, Report, TIP, Data (8 tab per halaman, geser/swipe untuk halaman kedua). Tab awal saat dibuka: Initial Report.
 
-### 3.2. Tab Briefing
-* **Fungsi**: Generator laporan kegiatan briefing operasional shift / MOT (*Manager on Duty*).
-* **Fitur Utama**:
-  * Pengisian materi briefing, arahan pimpinan, dan daftar peserta briefing.
-  * Pilihan sparepart unit yang dibahas dalam briefing.
-  * Lampiran foto dokumentasi briefing.
+### 3.1. Kehadiran
+* Laporan dinas **API T2** dan **OM IASS T2**, terisi otomatis dari jadwal shift (`jadwal_shift`) sesuai tanggal dan shift; daftar personel diurutkan mengikuti jabatan.
+* Status per personel: Hadir, Izin, Sakit, Dinas Luar; nomor telepon personel tampil di pesan.
+* **Rencana Kegiatan** terisi otomatis: kegiatan dasar (Monitoring Ops, Storing Peralatan) dan, bila ada jadwal PM hari itu, baris Preventive Maintenance & Kalibrasi dengan format **Preventive Mingguan / Bulanan** dari `jadwal_pm` (disaring pengaturan tampilan PM). Kotak Rencana Kegiatan menyesuaikan tinggi isinya.
+* Pesan WA berjudul **LAPORAN DINAS** ("T2 Safety & Security Electronic Services").
+* Setelah laporan dibagikan, maskot memberi penyemangat awal shift (Pagi/Siang atau Malam).
 
-### 3.3. Tab Storing
-* **Fungsi**: Generator laporan penyimpanan atau pemindahan (*storing*) peralatan operasional.
-* **Fitur Utama**:
-  * Pilihan jenis peralatan terintegrasi database `jenis_peralatan`.
-  * Filter lokasi relasional berdasarkan `penempatan_peralatan`.
-  * Catatan kondisi dan alasan storing.
+### 3.2. Briefing
+* Jenis **Unit** (judul WA `GIAT BRIEFING UNIT SSES T2`) atau **MOT** (`BRIEFING MOT T2`) — judul huruf kapital.
+* Memuat tanggal, shift, lokasi; untuk briefing Unit, daftar sparepart yang ditandai admin beserta stok; lampiran foto.
 
-### 3.4. Tab Checklist
-* **Fungsi**: Checklist status kelayakan operasi peralatan keamanan bandara.
-* **Fitur Utama**:
-  * Toggle status OK / Not OK per item peralatan.
-  * Kategori peralatan: X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control, CCTV, dll.
-  * Konfigurasi item checklist dapat disesuaikan secara dinamis via Panel Admin Data.
+### 3.3. Storing
+* Laporan storing peralatan dengan pilihan peralatan dan lokasi relasional (daftar lokasi menyesuaikan peralatan); hasil/status storing.
+* Judul WA **KEGIATAN STORING PERALATAN** (tebal). Data storing juga disinkronkan ke status checklist (supervisor Avsec per lokasi).
 
-### 3.5. Tab Initial Report
-* **Fungsi**: Generator laporan awal indikasi gangguan atau kerusakan peralatan secara cepat.
-* **Fitur Utama**:
-  * Input data peralatan, indikasi kerusakan, lokasi titik spesifik, dan tindakan awal.
-  * **Shortcut Cerdas Tindakan Mitigasi**: Tombol rekomendasi otomatis berdasarkan jenis peralatan (X-Ray, Access Control, ETD, WTMD, Body Scanner, Mirroring, dll.) dan kondisi lokasi (PSCP, HBSCP, SSCP, Conveyor Belt, Area Custom, Lift, Data Network).
-  * **Shortcut Cerdas Dampak Kerusakan**: Tombol rekomendasi otomatis dampak operasional berdasarkan peralatan (X-Ray Cabin/Bagasi, ETD random check/senyawa, Access Control perijinan/pintu, WTMD/HHMD metal detector).
-  * **Photo Uploader & Multi-Layout Live Collage**: Unggah hingga 4 foto dengan opsi pengaturan urutan (*drag/move*).
-  * **Photo Text Overlay (Anotasi Teks via Konva)**: Menambahkan teks label, panah, atau catatan langsung di atas foto sebelum dibuat kolase.
+### 3.4. Checklist
+* Checklist status operasi peralatan per lokasi/blok, sinkron antar-perangkat secara *realtime* (toggle aktif & data shift lewat `master_configs`).
+* Struktur checklist dikelola admin di **Data → Checklist Config** (editor terstruktur: blok lokasi/grup/access control, sub-grup, kategori, item; pencarian, ringkasan statistik, peringatan perubahan belum disimpan).
 
-### 3.6. Tab Perbaikan
-* **Fungsi**: Generator laporan kegiatan perbaikan (*troubleshooting*) dan verifikasi peralatan.
-* **Fitur Utama**:
-  * Auto-detect sumber laporan (Pihak Custom / Pihak Avsec) berdasarkan lokasi titik yang dipilih.
-  * Pilihan jenis & tipe peralatan keamanan otomatis dari database relasional.
-  * Auto-complete nama teknisi penanggung jawab.
-  * Pengisian rincian masalah, penyebab, tindakan perbaikan, dan status akhir (Normal / Monitoring / Pending).
-  * Lampiran foto dokumentasi perbaikan dengan kompresi Canvas dan dual-tier cloud storage.
+### 3.5. Initial Report
+* Laporan awal indikasi gangguan: peralatan, lokasi (satu atau lebih), waktu, indikasi, permasalahan, mitigasi, dampak.
+* **Shortcut cerdas** permasalahan, mitigasi, dan dampak yang menyesuaikan jenis peralatan (X-Ray, Access Control, Body Scanner, ATRS, Mirroring, WTMD, HHMD, dst.) dan lokasi (PSCP, HBSCP, SSCP, Conveyor, Custom, Lift, …).
+* Foto dengan kolase multi-layout dan anotasi teks overlay (Canvas) sebelum dibagikan.
 
-### 3.7. Tab Kalibrasi
-* **Fungsi**: Generator laporan Preventative Maintenance (PM) & Kalibrasi peralatan keamanan multi-lokasi.
-* **Fitur Utama**:
-  * Parameter pengujian dinamis sesuai standar penerbangan (STP test piece untuk X-Ray, test strip ETD, WTMD detection zones, HHMD, Body Scanner, Access Control).
-  * Pengujian & parameter khusus **Extension Conveyor** (Forward/Reverse speed, Emergency Stop, Roller Condition, Belt Tracking, Motor Drive).
-  * Multi-lokasi pencatatan kalibrasi harian/mingguan.
-  * Terintegrasi upload foto dokumentasi dual-tier (Cloudinary + Supabase Storage fallback) dengan penyimpanan URL HTTPS permanen ke database `laporan_operasional`.
+### 3.6. Perbaikan
+* Judul WA **LAPORAN CORRECTIVE MAINTENANCE** (atau LAPORAN VERIFIKASI untuk verifikasi ETD).
+* Sumber laporan (Custom / Avsec) **terdeteksi otomatis** dari lokasi yang dipilih; peralatan dari database relasional (atau ketik manual); teknisi on-duty disarankan otomatis.
+* Status akhir: Pekerjaan Selesai, Normal Operasi, On Progress, Menunggu Sparepart. Foto dokumentasi dengan penyimpanan cloud.
+* Isian *Permasalahan* dan *Tindak lanjut* membesar mengikuti isi (hook `useAutoResizeTextarea`).
 
-### 3.8. Tab Kegiatan
-* **Fungsi**: Generator laporan kegiatan harian rutin personel di lapangan (non-perbaikan).
-* **Fitur Utama**:
-  * Pencatatan uraian kegiatan harian, waktu pelaksanaan, dan teknisi yang bertugas.
-  * Penyimpanan riwayat log kegiatan ke tabel Supabase `laporan_operasional`.
+### 3.7. Kalibrasi
+* Laporan **PREVENTIVE MAINTENANCE & KALIBRASI** multi-lokasi; jenis peralatan yang muncul diatur admin (`tampil_di_kalibrasi`).
+* Parameter dinamis per peralatan: X-Ray (kV, mA, Ontime vertikal/horizontal, Archive), WTMD (zona Z1–Z4 dan LC/LS/UC/SE/DS), Body Scanner, ETD, HHMD, Access Control, **Extension Conveyor**.
+* **Parameter X-Ray & WTMD tidak punya nilai bawaan** — hanya *Archive* X-Ray default `+- 1 bulan`; nilai kosong tetap kosong di pesan.
+* Preview WA mengikuti panjang pesan; foto diunggah ke cloud dan URL-nya disimpan.
 
-### 3.9. Tab BA Serah Terima (Berita Acara)
-* **Fungsi**: Generator Berita Acara Serah Terima Barang/Material antar unit dan pihak terkait.
-* **Fitur Utama**:
-  * Input pihak yang menyerahkan (Pihak I) dan pihak yang menerima (Pihak II).
-  * Multi-item barang dengan kuantitas, satuan, kondisi barang, dan input daftar Serial Number (SN) dinamis.
-  * **Digital Signature Canvas**: Pad tanda tangan digital interaktif untuk Pihak I, Pihak II, dan Supervisor yang bertugas dinas.
-  * Lampiran dokumentasi foto serah terima.
-  * **Format Cetak Standar**: Format cetak default dokumen adalah **A4 Portrait** resmi dengan tanda tangan digital dan tabel daftar barang.
-  * Ekspor pesan WhatsApp dan unduh format PDF resmi non-blocking via `pdfService.ts`.
+### 3.8. Kegiatan
+* Laporan kegiatan harian dengan dropdown **Peralatan opsional** (kosong → `All Faskampen`); bisa ketik manual. Riwayat tersimpan di `laporan_operasional`.
 
-### 3.10. Tab Shift Report
-* **Fungsi**: Generator rekapitulasi laporan pergantian shift (*Shift Handover Report*) dan pemantauan kelaikan peralatan.
-* **Fitur Utama**:
-  * **Format Cetak Standar A4 Landscape**: Format cetak default dokumen (dialog print browser & ekspor PDF) adalah **A4 Landscape** yang sesuai dengan format lembar kerja Excel SSES T2.
-  * **Dedicated Final Sheet (Lembar Khusus Rekapitulasi & Serviceability)**: Tabel rekapitulasi checklist kesiapan fasilitas dan diagram batang serviceability selalu berada di **satu lembar tersendiri di halaman terakhir** tanpa tercampur konten kegiatan sebelumnya dan tanpa menghasilkan lembar kosong di akhir dokumen.
-  * **Full-Width Serviceability Table**: Tabel checklist kesiapan fasilitas membentang penuh (`w-full`) secara bersih tanpa footer catatan yang mengaburkan data.
-  * **Interactive Serviceability Diagram**: Visualisasi denah matriks kelaikan peralatan keamanan di sub-terminal D, E, dan F Terminal 2 dengan koordinat sinkron.
-  * **In-Modal Photo Upload & Viewer**: Modal CRUD untuk menambahkan atau memperbarui entri kegiatan dengan lampiran foto langsung yang diunggah ke Cloudinary/Supabase dan ditampilkan pada kartu laporan.
-  * **Editable Total & Off Counts**: Fleksibilitas penyesuaian jumlah unit operasi vs rusak secara langsung.
-  * **Kalkulasi Kesiapan Real-time**: Indikator persentase kelaikan dinamis per kategori peralatan (X-Ray, WTMD, HHMD, Body Scanner, ETD, Access Control, CCTV).
-  * **Sinkronisasi Database Cloud**: Riwayat kegiatan dan rekapitulasi tersimpan otomatis ke `laporan_operasional` (dengan constraint anti-base64) dan `laporan_checklist` (dengan atomic upsert).
-  * Catatan penting untuk shift berikutnya.
+### 3.9. BA Serah Terima
+* Berita Acara serah terima barang: Pihak Kesatu (penyerah) dan Pihak Kedua (penerima), multi-item (jumlah, satuan, kondisi, daftar serial number), lampiran foto.
+* **Tanda tangan digital** untuk penyerah dan penerima di layar sentuh; nama lengkap personel dipakai di dokumen.
+* Dokumen resmi **A4 Portrait**; ekspor PDF non-blocking dan pesan WA. Maskot dan elemen UI tidak ikut tercetak.
 
-### 3.11. Tab TIP (Threat Image Projection)
-* **Fungsi**: Tracker performa TIP personel aviation security / teknisi bulanan.
-* **Fitur Utama**:
-  * Pencatatan jumlah hit, miss, false alarm, total projection, dan persentase skor.
-  * Grafik/visualisasi indikator pencapaian target.
-  * Penyimpanan data historis langsung ke **Supabase Cloud**.
-  * Opsi ekspor laporan TIP menjadi gambar (*canvas export*).
+### 3.10. Report (laporan harian / Shift Handover)
+* Merekap log kegiatan shift dari `laporan_operasional` dan kelaikan peralatan dari `laporan_checklist`; hasil dapat dicetak/PDF dan dibagikan.
+* **Preview WhatsApp real-time** berformat *Closing briefing* — personel diurutkan seperti tab Kehadiran; bagian permasalahan tanpa tanda "•"; preview mengikuti panjang pesan.
+* **Serviceability**: diagram interaktif denah Terminal 2 (sub-terminal D, E, F), total & off peralatan yang dapat diedit, persentase kelaikan per kategori (X-Ray, WTMD, HHMD, Body Scanner, ETD, Access Control, CCTV), dan lembar terpisah di halaman terakhir.
+* **CRUD log** lewat modal dengan lampiran foto langsung. Header cetak memakai logo InJourney Airports.
+* Cetak default **A4 Landscape**.
 
-### 3.12. Tab Data (Panel Admin)
-* **Fungsi**: Panel pengelolaan master data dan konfigurasi sistem (memerlukan autentikasi admin).
-* **Fitur Utama**:
-  * **Asset Manager**: Manajemen penempatan aset peralatan (relasi Jenis ↔ Tipe ↔ Lokasi ↔ Titik).
-  * **Master Lokasi & Peralatan**: CRUD master lokasi, titik lokasi, jenis peralatan, dan tipe peralatan.
-  * **Unit Peralatan Manager**: CRUD unit fisik peralatan dengan SN, sertifikasi, tahun instalasi, kapasitas ampere, dan status operasi.
-  * **Sparepart Manager**: Manajemen inventaris sparepart dan seleksi item sparepart untuk tab briefing.
-  * **Cloudinary Settings Panel**: Konfigurasi Cloud Name dan Unsigned Upload Preset untuk penyimpanan cloud foto dokumentasi berkecepatan tinggi.
-  * **Schedule Uploader**: Upload jadwal shift harian dari berkas Excel (`.xlsx`).
-  * **Checklist Editor**: Pengaturan parameter checklist operasi.
-  * **Personel Editor**: Manajemen data personel teknisi termasuk NIK dan unit kerja.
+### 3.11. TIP (Threat Image Projection)
+* Pencatatan TIP bulanan per unit X-Ray; daftar lokasi/unit dibentuk otomatis dari master checklist (kategori X-Ray), dengan penanda per unit, indikator progres (terisi / total), dan waktu simpan terakhir.
+* Data tersimpan di Supabase (`master_configs`, kunci `tip_data_<Bulan>_<Tahun>`); admin dapat meninjau/menghapusnya di Data → Data TIP Tersimpan.
+* Ekspor hasil sebagai gambar JPG dan bagikan lewat Web Share API.
 
-### 3.13. Maskot Asisten (AntigravityPet)
-* **Fungsi**: Widget asisten mengambang interaktif berbasis karakter mesin X-Ray pemindai bagasi di layout utama aplikasi, yang berperan sebagai pelapor kabar operasional.
-* **Fitur Utama**:
-  * Gerak melayang (zero-gravity float) dengan glow hangat di belakang karakter; dapat digeser dan di-minimize.
-  * Melaporkan kabar operasional yang sebelumnya tidak terlihat: hasil sinkronisasi laporan ke database, peralihan penyimpanan foto ke cadangan, dan field yang belum terisi saat validasi.
-  * Penyemangat khusus di awal shift, muncul setelah laporan Kehadiran dibagikan, disesuaikan Shift Pagi/Siang atau Malam.
-  * Otomatis menyingkir saat isian form difokuskan agar tidak menutupi kolom input.
-  * Respons interaktif terhadap ketukan/sentuhan pengguna berupa kalimat santai bertema pemindaian bagasi.
+### 3.12. Data (panel admin)
+Login dengan **email + kata sandi** (Supabase Auth). Delapan sub-tab:
+1. **Upload Jadwal Excel** — jadwal shift (`jadwal_shift`, upsert) dan jadwal PM (`jadwal_pm`, per bulan; ada pengaturan kategori/jenis PM yang ditampilkan di Kehadiran).
+2. **Sparepart List** — CRUD sparepart dan penandaan sparepart untuk Briefing.
+3. **Manajemen Aset (Lokasi & Mesin)** — master lokasi/titik, jenis/tipe peralatan, penempatan, dan unit peralatan (serial number, status operasi/standby/gudang/rusak, kepemilikan).
+4. **Personel** — satu tab untuk API T2 dan OM IASS T2: nama, NIK, nomor HP, jabatan, urutan (naik/turun).
+5. **Checklist Config** — editor struktur checklist.
+6. **Config Peralatan Kalibrasi** — jenis peralatan yang muncul di tab Kalibrasi.
+7. **Data TIP Tersimpan** — daftar & hapus data TIP bulanan.
+8. **Cloudinary CDN** — cloud name & upload preset (global, tersimpan di `master_configs`).
+
+### 3.13. Maskot AntigravityPet
+* Karakter **mesin X-Ray pemindai bagasi** yang melayang (zero-g, glow hangat); dapat digeser dan di-minimize; merespons ketukan dengan kalimat bertema pemindaian bagasi ("Bip bip! Hasil scan: …").
+* **Satu-satunya kanal notifikasi** aplikasi (`sayPet`): hasil sinkronisasi latar belakang ke Supabase (kegagalan menetap sampai ditutup), peralihan foto Cloudinary → Supabase Storage, isian wajib yang belum lengkap, dan penyemangat awal shift.
+* Menyingkir saat `input`/`select`/`textarea` difokuskan, dan bergeser di atas bilah simpan yang menempel agar tidak menelan ketukan tombol.
 
 ---
 
-## 4. Fitur Shared & Utilities
+## 4. Fitur Lintas Tab
 
-1. **WhatsApp Report Generator (`waGenerator.ts`)**:
-   * Mengubah formulir input menjadi format teks WhatsApp yang terstruktur rapi dengan emoji, bullet points, dan monospace header untuk seluruh 12 tab.
-   * Tombol **"Kirim ke WhatsApp"** memanfaatkan Web Share API / WhatsApp direct link (`https://api.whatsapp.com/send?text=...`).
-2. **Editor Anotasi Foto & Kolase (`PhotoTextEditorModal.tsx` & `LiveCollagePreview.tsx`)**:
-   * Pengeditan foto berbasis HTML5 Canvas & Konva.js.
-   * Pembuatan kolase foto otomatis (1x1, 2x1, 2x2, grid) untuk efisiensi lampiran laporan di WhatsApp/Cloudinary.
-3. **Cloud Photo Storage Dual-Tier (`cloudinaryService.ts`)**:
-   * Kompresi otomatis berbasis Canvas (JPEG 80%, maks. 1280px, ~150–250 KB).
-   * Upload primer langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms).
-   * **Supabase Storage Fallback**: Fallback otomatis ke bucket Supabase `dokumentasi` jika kredensial Cloudinary belum diisi atau terjadi kegagalan upload.
-   * Zero-Base64 enforcement: database dilindungi oleh check constraint `chk_foto_urls_no_base64`.
-4. **Canvas Signature Pad (`SignaturePad.tsx`)**:
-   * Tanda tangan digital interaktif berbasis touch event & mouse event HTML5 Canvas dengan fitur clear dan preview.
-5. **Ekspor Dokumentasi & Cetak Teroptimasi (`pdfService.ts` & Native `@page`)**:
-   * Ekspor laporan ke PDF (`html2pdf.js`) non-blocking, Excel (`xlsx`), atau gambar PNG (`html2canvas`).
-   * **Dual Print Orientations**: Tab Shift Report otomatis memilih format cetak **A4 Landscape** dengan pemisahan lembar serviceability yang rapi, sedangkan Tab BA Serah Terima otomatis memilih format cetak **A4 Portrait** resmi.
+1. **Format pesan WhatsApp standar** — setiap tab punya generator murni (`*Message.ts`/`waGenerator.ts`). Format (judul, emoji, pemisah, bullet) mengikuti standar grup operasional dan **tidak boleh diubah tanpa permintaan eksplisit**, karena dibaca pihak lain. Judul yang sudah ditetapkan: LAPORAN DINAS, GIAT BRIEFING UNIT SSES T2, BRIEFING MOT T2, KEGIATAN STORING PERALATAN, LAPORAN CORRECTIVE MAINTENANCE, LAPORAN PREVENTIVE MAINTENANCE & KALIBRASI.
+2. **Validasi isian wajib yang seragam** — pada Kehadiran, Briefing, Checklist, Storing, Kegiatan, BA Serah Terima, Initial Report, Perbaikan, dan Kalibrasi: bila ada isian kosong saat membagikan, (a) layar bergulir & fokus ke isian kosong pertama, (b) isian berbingkai merah dengan tulisan merah, (c) maskot menyebut isian yang kurang (diringkas bila lebih dari 5). Isian bernomor/berpoin yang hanya berisi penanda dianggap kosong.
+3. **Standar penulisan lokasi** — `"<Lokasi> <Nomor>"` tanpa "No." (mis. `PSCP D 2`, `HBSCP 2.5`); data lama dinormalkan otomatis di semua tab dan pesan.
+4. **Istilah tampilan "IASS"** — teks yang terlihat pengguna memakai *IASS* (bukan *IAS*); nilai `unit_kerja.nama` di database tetap `OM/IAS T2`.
+5. **Relasi peralatan ↔ lokasi ↔ titik** — dropdown lokasi pada Perbaikan, Initial Report, Storing, dan Kalibrasi disaring oleh jenis peralatan terpilih.
+6. **Foto & cloud** — kompresi Canvas (maks. 1280px, ~150–250 KB), unggah ke Cloudinary dengan cadangan otomatis ke Supabase Storage; database hanya menerima URL HTTPS (constraint anti-Base64).
+7. **Berbagi WhatsApp instan** — Web Share API dipanggil seketika saat tombol ditekan; unggah dan penyimpanan berjalan di latar belakang dengan deduplikasi; fallback clipboard + `wa.me` dan unduh berkas.
+8. **Cetak & PDF** — Report A4 Landscape, BA Serah Terima A4 Portrait; ekspor PDF (`html2pdf.js`) non-blocking.
+9. **Aturan shift** — PS (08:00–20:00) dan M (20:00–08:00); default tanggal/shift laporan: 00:00–09:59 → kemarin M; 10:00–21:59 → hari ini PS; 22:00–23:59 → hari ini M.
 
 ---
 
 ## 5. Kebutuhan Non-Fungsional (NFR)
 
-* **Mobile-First UX/UI**: Dioptimalkan untuk perangkat seluler Android dan iOS dengan paginasi dan gesture swipe tab horizontal. Seluruh input teks menggunakan `font-size: 16px` untuk mencegah auto-zoom pada iOS Safari.
-* **Performa & Ukuran Bundle**: Menggunakan Vite 7 dengan Code Splitting TanStack Router untuk waktu muat awal < 2 detik pada jaringan 4G.
-* **Protokol Aman (HTTPS Local & Production)**: Menggunakan plugin `@vitejs/plugin-basic-ssl` pada environment pengembang lokal untuk memastikan Web Share API dan Camera API berfungsi di browser ponsel.
-* **Offline Resilience & Data Persistence**: Menyimpan draf input sementara ke `localStorage` agar tidak hilang jika terjadi kegagalan koneksi.
-* **Keamanan Akses**: Tab **Data** dilindungi oleh sistem autentikasi password/pin admin berbasis Zustand & Supabase Auth.
-* **Reliabilitas Integrasi**: Dukungan fallback otomatis dari Supabase Cloud ke Local Storage jika terjadi hambatan koneksi backend.
+* **Mobile-first**: dioptimalkan untuk Android/iOS (375–430px); input `font-size ≥ 16px` agar iOS Safari tidak auto-zoom; target sentuh ≥ 44px; navigasi tab dengan swipe.
+* **Performa**: Vite 7 + code splitting TanStack; unduhan berat (html2pdf, html-to-image) dimuat saat dibutuhkan.
+* **HTTPS**: dev server HTTPS (`@vitejs/plugin-basic-ssl`) agar Web Share dan Camera API berfungsi di ponsel.
+* **Ketahanan**: bila Supabase tak terjangkau, aplikasi memakai data bawaan `masterData.ts` dan tidak crash; bila Cloudinary gagal, foto beralih ke Supabase Storage; kegagalan simpan latar belakang dikabarkan maskot. *Draf formulir tidak disimpan ke `localStorage`* — menutup tab sebelum membagikan berarti isian hilang.
+* **Keamanan akses**: tab Data memakai Supabase Auth. Tulis ke tabel operasional/konfigurasi saat ini masih terbuka untuk publik pada level RLS (lihat [database.md §6](database.md#6-catatan-keamanan-rls)); `xlsx 0.18.5` memiliki advisory yang diterima secara sadar (lihat architecture.md §9).
+* **Kualitas**: 133 unit test (`npm test`) harus lulus dan `npm run build` harus berhasil sebelum merge; lint belum memblokir CI (utang teknis: `any` dan 2 error lint).
 
 ---
 
 ## 6. Roadmap & Pengembangan Mendatang
 
-* [x] Integrasi Penyimpanan Cloud Foto Dokumentasi Berbasis CDN (Cloudinary).
-* [x] Diagram Serviceability Interaktif & Persistensi Cloud Laporan Operasional.
-* [x] In-Modal Photo Upload & Attachment pada Tab Shift Report.
-* [ ] Integrasi Notifikasi Push (PWA Service Worker) untuk jadwal shift.
-* [ ] Ekspor Otomatis Rekap Bulanan ke PDF.
-* [ ] Mode Dark Mode / Light Mode switchable.
-* [ ] Pengenalan Suara (Voice-to-Text) untuk pengisian uraian perbaikan di lapangan.
+Selesai:
+* [x] Penyimpanan foto di Cloudinary (migrasi dari Google Drive, September 2026).
+* [x] Diagram serviceability interaktif + persistensi cloud; upload foto di modal Report.
+* [x] Cetak default A4 Landscape (Report) / Portrait (BA) dengan `@page` terisolasi.
+* [x] Maskot sebagai pelapor operasional (notifikasi sinkronisasi, peralihan foto, isian kosong, penyemangat shift).
+* [x] Modularisasi tab, perangkat lint/CI, penghapusan dependensi mati (Konva dll.).
+* [x] Editor Checklist Config terstruktur; tab Personel tunggal.
+* [x] Validasi isian wajib seragam; standar penulisan lokasi; format WA baru (Kehadiran, Report, Kalibrasi, Perbaikan, Briefing, Storing); jadwal Preventive Mingguan/Bulanan.
+
+Belum dikerjakan / ide:
+* [ ] Memperketat RLS Supabase (tulis `master_configs`, `jadwal_*`, `spareparts`, `unit_peralatan` hanya untuk pengguna login).
+* [ ] Menurunkan temuan lint (2 error, ±307 peringatan `any`/unused) lalu menjadikan lint pemblokir CI.
+* [ ] Menyimpan draf formulir sementara agar tahan terhadap tab tertutup.
+* [ ] Notifikasi push (PWA Service Worker) untuk jadwal shift.
+* [ ] Ekspor otomatis rekap bulanan ke PDF.
+* [ ] Mode gelap/terang.
+* [ ] Voice-to-text untuk uraian perbaikan.
+* [ ] Endpoint MCP untuk pelaporan penuh (rencana ada di `docs/superpowers/plans/2026-09-15-mcp-full-reporting.md`, belum diimplementasikan).

@@ -1,3 +1,6 @@
+> **Status (1 Oktober 2026): referensi awal, belum diterapkan.** Berkas ini dihasilkan otomatis pada 21 Juli 2026 dengan kategori "Password Manager" (palet ungu/pink, font Fira Code/Fira Sans). Kode aplikasi **tidak** memakai palet atau font tersebut.
+> Gaya aktual aplikasi: Tailwind CSS v4 dengan palet **slate + biru** (aksen per tab berupa gradien, didefinisikan di `ALL_TABS` pada `src/components/App.tsx`), merah/rose untuk kesalahan validasi (`FIELD_ERROR_CLASS` di `src/components/shared/FieldError.tsx`), dan font sistem (`src/styles.css`). Aturan UI yang berlaku ada di `agent.md` §2.1 (mobile-first, input 16px, target sentuh 44px). Perlakukan isi di bawah sebagai inspirasi, bukan standar.
+
 # Design System Master File
 
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.

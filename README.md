@@ -1,58 +1,73 @@
 # SSES T2 - Generator Laporan Operasional
 
-Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **12 fitur tab** terintegrasi, dukungan tanda tangan digital, anotasi foto, serta sinkronisasi cloud real-time ke **Supabase** dan CDN penyimpanan foto **Cloudinary**.
+Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **12 tab** terintegrasi, tanda tangan digital, anotasi foto, validasi isian wajib yang seragam, serta sinkronisasi cloud ke **Supabase** dan penyimpanan foto di **Cloudinary** (cadangan: Supabase Storage).
+
+> Status terakhir diperbarui: **1 Oktober 2026** — 133 unit test lulus, `npm run build` berhasil.
 
 ---
 
 ## 📚 Dokumentasi Proyek
 
-Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan panduan pengembang AI/Human telah tersedia pada berkas-berkas berikut:
-
-* 📄 **[Product Requirements Document (PRD)](prd.md)**: Spesifikasi produk, visi, daftar 12 fitur tab, target pengguna, dan Kebutuhan Non-Fungsional (NFR).
-* 🏗️ **[System Architecture Document](architecture.md)**: Arsitektur SPA, diagram alur data, stack teknologi, state management (Zustand), dan pipeline Canvas Konva / Signature Pad.
-* 🗄️ **[Database & Data Schema Specification](database.md)**: Skema tabel Supabase PostgreSQL (termasuk Unit Peralatan, Sparepart, NIK Personel), ERD relasional peralatan-lokasi, dan struktur JSONB `master_configs`.
-* 🤖 **[AI Agent & Developer Guidelines](agent.md)**: Panduan konvensi pengkodean, aturan mobile-first, isolasi komponen tab, dan checklist verifikasi untuk AI Assistant.
+| Dokumen | Isi |
+|---|---|
+| 📄 **[prd.md](prd.md)** | Spesifikasi produk: visi, persona, 12 tab + maskot, aturan format pesan WhatsApp, validasi isian, NFR, roadmap. |
+| 🏗️ **[architecture.md](architecture.md)** | Arsitektur SPA, diagram alur data, stack & versi, state management (Zustand), service layer, pipeline foto & cetak, status keamanan dependensi. |
+| 🗄️ **[database.md](database.md)** | Skema tabel Supabase **sesuai database live**, ERD, constraint, kunci `master_configs`, bucket Storage, dan `localStorage`. |
+| 🤖 **[agent.md](agent.md)** | Panduan konvensi untuk AI Assistant & pengembang: aturan mobile-first, modul murni, validasi, format WA, checklist verifikasi. |
+| 🧭 **[GEMINI.md](GEMINI.md)** | Instruksi workspace (wajib memakai skill `ponytail`). |
+| 🎨 **[design-system/](design-system/sses-t2-report/MASTER.md)** | Master design system (hasil generator awal; lihat catatan di berkas tersebut). |
+| 📝 **[docs/superpowers/](docs/superpowers/README.md)** | Arsip rencana (*plans*) & spesifikasi (*specs*) historis beserta statusnya. |
+| 🕸️ **`graphify-out/`** | Knowledge graph codebase (lokal, tidak di-commit). Lihat bagian [Knowledge Graph](#-knowledge-graph-graphify). |
 
 ---
 
-## ✨ Fitur Utama (12 Tab Modul Operasional)
+## ✨ Fitur Utama (12 Tab)
+
+Urutan tab mengikuti `ALL_TABS` di `src/components/App.tsx`; navigasi 8 tab per halaman dengan *swipe*. Tab awal saat aplikasi dibuka: **Initial Report**.
 
 | Tab | Fungsi & Deskripsi Utama |
 |---|---|
-| **Kehadiran** | Generator laporan kehadiran shift personel API & OM IAS T2, terintegrasi jadwal shift harian dari Supabase dengan filter shift otomatis (Pagi/Malam). |
-| **Briefing** | Generator laporan kegiatan briefing operasional shift / MOT (*Manager on Duty*) dengan lampiran foto dokumentasi & integrasi sparepart briefing. |
-| **Storing** | Generator laporan penyimpanan/pemindahan peralatan dengan pilihan lokasi relasional terintegrasi. |
-| **Checklist** | Checklist status operasi peralatan keamanan dengan toggle status & kustomisasi via Admin. |
-| **Initial Report** | Generator laporan awal indikasi gangguan/kerusakan cepat. Dilengkapi **Shortcut Cerdas Mitigasi & Dampak** (otomatis menyesuaikan jenis peralatan: X-Ray, Access Control, ETD, WTMD, HHMD, dll. dan lokasi: PSCP, HBSCP, SSCP, Conveyor, Custom, Lift), serta lampiran kolase foto dengan anotasi teks Konva. |
-| **Perbaikan** | Generator laporan perbaikan/verifikasi peralatan. Auto-detect sumber laporan (Custom / Avsec) berdasarkan lokasi titik, relasi jenis & tipe peralatan, serta teknisi bertugas. |
-| **Kalibrasi** | Generator laporan PM & kalibrasi multi-lokasi dengan parameter pengujian dinamis (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control, serta Extension Conveyor), terintegrasi upload foto dual-tier cloud storage (Cloudinary + Supabase Storage fallback). |
-| **Kegiatan** | Generator laporan kegiatan harian personel di lapangan. |
-| **BA Serah Terima** | Generator Berita Acara (BA) Serah Terima Barang & Material. Dilengkapi **Digital Signature Canvas (Pad Tanda Tangan)** untuk Pihak 1, Pihak 2, dan Supervisor yang bertugas dinas, multi-item serial number, lampiran foto, format cetak default **A4 Portrait**, serta ekspor format WA & PDF teroptimasi (`pdfService.ts`). |
-| **Shift Report** | Rekapitulasi laporan pergantian shift (*Shift Handover Report*). Dilengkapi **Interactive Serviceability Diagram** dengan sinkronisasi koordinat denah Terminal 2 (sub-terminal D, E, F), hitungan total & off peralatan yang dapat diedit, persentase kelaikan dinamis, format cetak default **A4 Landscape**, lembar terpisah khusus untuk checklist & diagram serviceability (`.serviceability-page-sheet`), fitur CRUD entri log dengan **lampiran foto langsung (in-modal upload/edit)**, dan persistensi otomatis ke database (`laporan_operasional`, `laporan_checklist`). |
-| **TIP** | Tracker TIP (*Threat Image Projection*) Performance bulanan/tahunan dengan visualisasi skor dan ekspor gambar. Data tersimpan ke Supabase Cloud. |
-| **Data** | Panel admin (login required) untuk mengelola master data, penempatan relasional aset, unit peralatan per lokasi, sparepart, konfigurasi Cloudinary CDN, upload jadwal Excel, dan konfigurasi personel (termasuk NIK). |
+| **Kehadiran** | Laporan dinas personel API T2 & OM IASS T2 dari `jadwal_shift` (filter shift Pagi/Siang vs Malam). *Rencana Kegiatan* terisi otomatis, termasuk jadwal **Preventive Mingguan/Bulanan** dari tabel `jadwal_pm` sesuai pengaturan tampilan PM. Membagikan laporan memicu penyemangat awal shift dari maskot. |
+| **Briefing** | Laporan giat briefing unit / MOT (judul WA huruf kapital), daftar sparepart briefing, dan foto dokumentasi. |
+| **Storing** | Laporan storing peralatan dengan lokasi relasional; judul WA **KEGIATAN STORING PERALATAN** bercetak tebal. |
+| **Checklist** | Checklist status operasi peralatan (konfigurasi dari editor Checklist Config), sinkron antar-perangkat lewat `master_configs`. |
+| **Initial Report** | Laporan awal gangguan dengan **shortcut cerdas** permasalahan, mitigasi & dampak sesuai jenis peralatan dan lokasi, serta kolase foto beranotasi teks. |
+| **Perbaikan** | Laporan **CORRECTIVE MAINTENANCE**; sumber laporan (Custom/Avsec) terdeteksi otomatis dari lokasi, peralatan, dan teknisi on-duty. |
+| **Kalibrasi** | Laporan **PREVENTIVE MAINTENANCE & KALIBRASI** multi-lokasi dengan parameter dinamis (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control, Extension Conveyor). Parameter X-Ray & WTMD tanpa nilai bawaan (hanya *Archive* X-Ray = `+- 1 bulan`). |
+| **Kegiatan** | Laporan kegiatan harian; dropdown **Peralatan** opsional (bawaan `All Faskampen`). |
+| **BA Serah Terima** | Berita Acara serah terima barang: multi-item + serial number, tanda tangan digital 3 pihak, cetak **A4 Portrait**, ekspor PDF, nama lengkap personel; maskot tidak ikut tercetak. |
+| **Report** | Laporan harian / *Shift Handover* (komponen `TabShiftReport`): **preview WhatsApp real-time** berformat Closing briefing, personel diurutkan mengikuti jabatan (sama dengan tab Kehadiran), diagram serviceability, CRUD log dengan foto, cetak **A4 Landscape** & PDF. |
+| **TIP** | Tracker *Threat Image Projection* bulanan/tahunan, tersimpan di Supabase, ekspor gambar. |
+| **Data** | Panel admin (login email + kata sandi Supabase Auth) dengan 8 sub-tab: Upload Jadwal Excel (shift & PM), Sparepart List, Manajemen Aset, **Personel** (API T2 + OM IASS dalam satu tab), Checklist Config (editor terstruktur), Config Peralatan Kalibrasi, Data TIP Tersimpan, Cloudinary CDN. |
+
+Selain tab, ada **maskot AntigravityPet** (mesin X-Ray melayang) yang menjadi kanal notifikasi tunggal.
 
 ---
 
 ## 🛠️ Stack Teknologi
 
+Versi diambil dari `package.json` / `npm ls` per 1 Oktober 2026.
+
 | Layer | Teknologi / Library | Versi |
 |---|---|---|
-| **Framework** | TanStack Start + TanStack Router | `v1.168.22` / `v1.167.41` |
-| **Frontend** | React 19 + TypeScript 5 | `19.2.5` / `5.9.3` |
-| **Build Tool** | Vite 7 | `7.3.3` |
-| **Styling** | Tailwind CSS v4 | `4.2.2` |
+| **Framework** | TanStack Start + TanStack Router | `1.168.59` / `1.170.40` |
+| **Frontend** | React 19 + TypeScript | `19.2.5` / `5.9.3` |
+| **Build Tool** | Vite | `7.3.6` |
+| **Styling** | Tailwind CSS v4 (`@tailwindcss/vite`) | `4.2.2` |
 | **Icons** | Lucide React | `0.576.0` |
-| **State Management** | Zustand (App, Auth, & Master Data Stores) | `5.0.14` |
-| **Backend / Cloud DB** | Supabase (PostgreSQL, Auth, Realtime) | `@supabase/supabase-js 2.108.2` |
-| **Cloud Storage** | Dual-Tier: Cloudinary CDN + Supabase Storage fallback (`dokumentasi`) | REST API (Unsigned Preset & Supabase Storage) |
-| **Dev Server / SSL** | Vite 7 + `@vitejs/plugin-basic-ssl` (HTTPS untuk Web Share & Camera API) | `7.3.3` |
-| **PDF Generation & Native Print** | `html2pdf.js` + `html2canvas` + Native Browser Print (`@page` A4 Landscape & Portrait) | `0.14.0` / `1.4.1` |
-| **Spreadsheet Import** | SheetJS (`xlsx`) | `0.18.5` |
-| **Canvas / Photo Annotation** | Konva + React Konva (`PhotoTextEditorModal.tsx`) | `10.3.0` / `19.2.5` |
-| **Digital Signature** | HTML5 Canvas Signature Pad (`SignaturePad.tsx`) | Native Canvas |
-| **Testing** | Node.js Test Runner (11 unit tests) | `node --test` |
-| **Deployment** | Netlify | - |
+| **State Management** | Zustand (App, Auth, Master Data) | `5.0.14` |
+| **Backend / Cloud DB** | Supabase (PostgreSQL, Auth, Realtime, Storage) | `@supabase/supabase-js 2.108.2` |
+| **Cloud Foto** | Cloudinary (Unsigned Preset) + fallback Supabase Storage bucket `dokumentasi` | REST API |
+| **Dev Server** | Vite HTTPS via `@vitejs/plugin-basic-ssl` (Web Share & Camera API) | `2.3.0` |
+| **PDF & Cetak** | `html2pdf.js` + `html2canvas` + CSS `@page` terisolasi per tab | `0.14.0` / `1.4.1` |
+| **Spreadsheet** | SheetJS `xlsx` (jadwal shift & PM) | `0.18.5` |
+| **Anotasi Foto & Kolase** | HTML5 Canvas native (`canvasUtils.ts`, `PhotoTextEditorModal.tsx`) — *Konva sudah dihapus* | Native |
+| **Tanda Tangan** | HTML5 Canvas (`SignaturePad.tsx`) | Native |
+| **Ekspor Gambar TIP** | `html-to-image` dimuat dari cdnjs saat dibutuhkan (bukan dependensi npm) | `1.11.11` |
+| **Lint** | ESLint 9 + typescript-eslint + react-hooks | `9.39.x` |
+| **Testing** | Node.js Test Runner (`node --test`) — 32 berkas, 133 test | Node 22 |
+| **CI** | GitHub Actions (`.github/workflows/ci.yml`: lint*, test, build) — *lint `continue-on-error` | - |
+| **Deployment** | Netlify (`netlify.toml`, publish `dist/client`) | - |
 
 ---
 
@@ -61,114 +76,87 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 ```
 src/
 ├── components/
-│   ├── App.tsx                    # Root layout: Header, Navigation 12 tab (pagination & touch swipe), Floating WA share, & AntigravityPet
-│   ├── features/                  # Komponen per-fitur (12 Tab Modul, Admin CRUD, Mascot)
-│   │   ├── AntigravityPet.tsx     # Maskot mesin X-Ray: pelapor status operasional & validasi (baca useAppStore.petMessage)
-│   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) & sync foto
-│   │   ├── TabKehadiran.tsx       # Tab laporan kehadiran shift
-│   │   ├── TabBriefing.tsx        # Tab laporan briefing operasional
-│   │   ├── TabStoring.tsx         # Tab laporan storing peralatan
-│   │   ├── TabChecklist.tsx       # Tab checklist status peralatan
-│   │   ├── TabInitialReport.tsx   # Tab laporan awal gangguan (Smart Mitigasi & Dampak Shortcuts)
-│   │   ├── TabPerbaikan.tsx       # Tab laporan perbaikan (Auto Sumber Laporan Avsec/Custom)
-│   │   ├── TabKalibrasi.tsx       # Tab kalibrasi multi-lokasi (termasuk Extension Conveyor)
-│   │   ├── TabKegiatan.tsx        # Tab laporan kegiatan harian
-│   │   ├── TabBASerahTerima.tsx   # Tab Berita Acara Serah Terima Barang & Tanda Tangan Digital
-│   │   ├── TabShiftReport.tsx     # Tab rekapitulasi shift report & diagram serviceability
-│   │   ├── TabTip.tsx             # Tab TIP performance tracker & cloud storage
-│   │   ├── TabData.tsx            # Panel admin CRUD + Auth login & Cloudinary settings
-│   │   ├── AssetManager.tsx       # CRUD manajemen penempatan relasional aset
-│   │   ├── AssetMasterLokasi.tsx  # CRUD master lokasi & titik
-│   │   ├── AssetMasterPeralatan.tsx # CRUD master jenis & tipe peralatan
-│   │   ├── UnitPeralatanManager.tsx # CRUD unit peralatan (SN, status operasi, kepemilikan)
-│   │   ├── SparepartManager.tsx   # CRUD manajemen stok sparepart & briefing toggle
-│   │   ├── ChecklistDataEditor.tsx # Editor konfigurasi checklist
-│   │   └── ScheduleUploader.tsx   # Upload & parse jadwal shift dari Excel
-│   └── shared/                    # Komponen reusable
-│       ├── PhotoUploader.tsx      # Upload, reorder, & manajemen lampiran foto
-│       ├── LiveCollagePreview.tsx # Preview live kolase foto multi-layout (Canvas)
-│       ├── PhotoTextEditorModal.tsx # Editor teks overlay / anotasi foto (Konva)
-│       ├── SignaturePad.tsx       # Komponen tanda tangan digital berbasis canvas
-│       └── MonitorSearchIcon.tsx  # Ikon kustom MonitorSearch
+│   ├── App.tsx                       # Layout root: header, 12 tab (8/halaman, swipe), tombol share WA, AntigravityPet
+│   ├── features/
+│   │   ├── Tab*.tsx                  # 12 tab (Kehadiran, Briefing, Storing, Checklist, InitialReport, Perbaikan,
+│   │   │                             #   Kalibrasi, Kegiatan, BASerahTerima, ShiftReport (tab "Report"), Tip, Data)
+│   │   ├── AntigravityPet.tsx        # Maskot X-Ray (membaca useAppStore.petMessage)
+│   │   ├── AssetManager.tsx · AssetMasterLokasi.tsx · AssetMasterPeralatan.tsx · UnitPeralatanManager.tsx
+│   │   ├── SparepartManager.tsx      # CRUD sparepart & toggle sparepart briefing
+│   │   ├── ScheduleUploader.tsx · PmScheduleUploader.tsx   # Upload jadwal shift & jadwal PM (Excel)
+│   │   ├── ChecklistDataEditor.tsx   # Editor Checklist Config (memakai checklist-editor/)
+│   │   ├── CloudinarySettingsPanel.tsx
+│   │   ├── ba-serah-terima/          # BADocumentPrint
+│   │   ├── checklist-editor/         # BlockCard, CategoryList, SubGroupList, ItemsTextarea, EditorContext, ui
+│   │   ├── kalibrasi/                # KalibrasiParameterFields
+│   │   ├── personel/                 # PersonelManager, PersonelSection (satu tab Personel)
+│   │   └── shift-report/             # ServiceabilityDiagram, ShiftReportCrudModal, ShiftReportPrintDocument
+│   └── shared/                       # FieldError, LiveCollagePreview, MonitorSearchIcon,
+│                                     #   PhotoTextEditorModal, PhotoUploader, SignaturePad
 ├── lib/
-│   ├── data/
-│   │   ├── masterData.ts          # Fallback master data, hirarki jabatan, & helper formatting
-│   │   └── constants.ts           # Key konstanta aplikasi & localStorage
-│   ├── services/
-│   │   ├── checklistSyncService.ts # Sinkronisasi status checklist ke Supabase
-│   │   ├── cloudinaryService.ts   # Upload foto ke Cloudinary (dengan fallback otomatis ke Supabase Storage)
-│   │   ├── operationalReportService.ts # Layanan persistensi log kegiatan & checklist summary Supabase
-│   │   ├── pdfService.ts          # Layanan ekspor PDF non-blocking via dynamic import
-│   │   └── shareService.ts        # Web Share API + fallback clipboard & sanitasi share
-│   ├── utils/
-│   │   ├── waGenerator.ts         # Generator teks WhatsApp 12 tab (termasuk Extension Conveyor)
-│   │   ├── locationRules.ts       # Logika lokasi relasional (Peralatan ↔ Lokasi ↔ Titik)
-│   │   └── canvasUtils.ts         # Utility Canvas API & kompresi kolase foto
-│   └── supabaseClient.ts          # Inisialisasi Supabase client
-├── store/
-│   ├── useAppStore.ts             # State global UI
-│   ├── useAuthStore.ts            # State autentikasi admin
-│   └── useMasterDataStore.ts      # State master data, spareparts, & sync Supabase
-├── routes/
-│   ├── __root.tsx                 # Root layout: HTML shell & meta viewport
-│   └── index.tsx                  # Route "/" → render App component
-├── router.tsx                     # Setup TanStack Router
-├── routeTree.gen.ts               # Route tree auto-generated oleh TanStack
-└── styles.css                     # Tailwind v4 import & zero-g keyframe animation styles
+│   ├── data/                         # constants.ts, masterData.ts (default & hirarki jabatan), petMessages.ts
+│   ├── hooks/                        # useAutoResizeTextarea, usePhotoGroups, useTipePeralatanOptions
+│   ├── services/                     # checklistSyncService, cloudinaryService, operationalReportService,
+│   │                                 #   pdfService, shareService
+│   ├── utils/                        # Modul murni (mudah diuji): waGenerator + *Message.ts per tab,
+│   │                                 #   formValidation, missingFields, lokasiFormat, locationRules,
+│   │                                 #   kalibrasiParams, initialReportShortcuts, pmScheduleParser,
+│   │                                 #   checklistEditor, canvasUtils, dateFormat, errorUtils
+│   └── supabaseClient.ts
+├── store/                            # useAppStore (UI + maskot), useAuthStore, useMasterDataStore
+├── routes/                           # __root.tsx, index.tsx
+├── router.tsx · routeTree.gen.ts · styles.css
+tests/                                # 32 berkas *.test.mjs (node --test)
 ```
 
 ---
 
 ## 🚀 Menjalankan Aplikasi Secara Lokal
 
-1. **Install Dependensi**:
-   ```bash
-   npm install
-   ```
-
-2. **Jalankan Server Pengembang (HTTPS Enabled)**:
-   ```bash
-   npm run dev
-   ```
-   Aplikasi akan berjalan di [https://localhost:3000](https://localhost:3000) (dan IP LAN seperti `https://192.168.x.x:3000` via `@vitejs/plugin-basic-ssl`) untuk mendukung pengujian Web Share API dan Camera API langsung dari perangkat seluler.
-
-3. **Jalankan Pengujian (Unit Tests)**:
-   ```bash
-   node --test
-   ```
-
-4. **Konfigurasi Environment Variables (`.env`)**:
-   Buat berkas `.env` di root direktori project:
+1. **Install dependensi**: `npm install` (CI memakai `npm ci`, Node 22).
+2. **Environment** — buat `.env` di root (jangan di-commit):
    ```env
    VITE_SUPABASE_URL=<your-supabase-url>
    VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-   VITE_CLOUDINARY_CLOUD_NAME=<your-cloudinary-cloud-name>
-   VITE_CLOUDINARY_UPLOAD_PRESET=<your-unsigned-upload-preset>
+   VITE_CLOUDINARY_CLOUD_NAME=<opsional: cloud name>
+   VITE_CLOUDINARY_UPLOAD_PRESET=<opsional: unsigned upload preset>
    ```
+   Konfigurasi Cloudinary juga bisa diatur admin lewat Data → Cloudinary CDN dan disimpan global di `master_configs`.
+3. **Dev server (HTTPS)**: `npm run dev` → `https://localhost:3000` (dan `https://<ip-lan>:3000` untuk uji di ponsel).
+4. **Pengujian**: `npm test` (= `node --test`).
+5. **Lint**: `npm run lint` (saat ini 2 error & ±307 peringatan `any`/unused; CI tidak memblokir).
+6. **Build**: `npm run build`.
 
 ---
 
 ## 📦 Build & Deployment
 
-```bash
-npm run build    # Production build Vite
-```
-
-Deploy otomatis terkonfigurasi ke **Netlify** via `netlify.toml`.
+`npm run build` menghasilkan `dist/client` (publish Netlify) dan fungsi SSR. Deploy otomatis lewat Netlify (`netlify.toml`); CI GitHub menjalankan lint, test, dan build pada push ke `main` serta pull request.
 
 ---
 
 ## 💡 Fitur Unggulan Sistem
 
-- **Smart Shortcut Mitigasi & Dampak**: Tab Initial Report secara otomatis menampilkan tombol pintasan tindakan mitigasi dan dampak kerusakan yang relevan berdasarkan kombinasi jenis peralatan (X-Ray, Access Control, ETD, WTMD, HHMD, Mirroring, dll.) dan lokasi spesifik (PSCP, HBSCP, SSCP, Conveyor Belt, Area Custom, Lift, dll.).
-- **Interactive Serviceability Diagram & Persistensi Cloud**: Tab Shift Report menampilkan visual matriks kelaikan peralatan per sub-terminal (D, E, F), koordinat diagram yang sinkron, kalkulasi persentase kelaikan dinamis, fitur CRUD log dengan lampiran foto langsung, dan integrasi penyimpanan data log ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
-- **Cloud Photo Storage (Cloudinary Global CDN)**: Unggah foto dokumentasi terkompresi (~150–250 KB via Canvas) langsung ke Cloudinary Global CDN via Unsigned Upload Preset (~300–600ms). Skema PostgreSQL diperkuat dengan constraint `chk_foto_urls_no_base64` sehingga database tetap ramping dan bebas dari string Base64.
-- **Tanda Tangan Digital & Ekspor PDF Teroptimasi**: Tab BA Serah Terima memungkinkan pembuatan tanda tangan langsung pada layar sentuh ponsel dan konversi PDF resmi non-blocking via `pdfService.ts`.
-- **AntigravityPet Mascot (mesin X-Ray pemindai bagasi) sebagai Pelapor Operasional**: Maskot berupa mesin X-Ray ramah yang melayang dengan animasi zero-g dan glow hangat. Ia berbicara sebagai pemindai bagasi ("Bip bip! Hasil scan: ...") dan berperan sebagai satu-satunya kanal notifikasi maskot (`useAppStore.sayPet`). Maskot melaporkan hal-hal yang sebelumnya tidak terlihat oleh petugas:
-  - **Status sinkronisasi latar belakang**: karena pengiriman laporan memakai pola *share dulu, simpan belakangan*, kegagalan penyimpanan ke Supabase dulu hanya berakhir di console. Kini maskot mengabarkannya (nada `error`, balon menetap sampai ditutup), begitu pula keberhasilannya.
-  - **Peralihan penyimpanan foto**: saat Cloudinary gagal dan sistem diam-diam beralih ke Supabase Storage, maskot memberi tahu (nada `warning`).
-  - **Field yang belum lengkap**: menggantikan kalimat acak, maskot menyebutkan field mana saja yang masih kosong saat laporan gagal divalidasi (Initial Report, Perbaikan, Kalibrasi).
-  - **Penyemangat awal shift**: setiap laporan **Kehadiran** dibagikan — penanda sebuah shift dimulai — maskot menyambut tim dengan penyemangat yang disesuaikan Shift Pagi/Siang atau Shift Malam.
-  - **Tidak menghalangi isian**: maskot otomatis menyingkir selama `input`/`select`/`textarea` sedang difokuskan, agar tidak menutupi form saat keyboard ponsel muncul.
-- **Relasi Lokasi Relasional**: Pilihan lokasi pada Tab Perbaikan, Initial Report, Storing, dan Kalibrasi otomatis memfilter titik penempatan berdasarkan jenis peralatan yang dipilih.
-- **Direct WhatsApp Web Share**: Semua format laporan siap dikirim langsung ke WhatsApp grup operasional melalui **Web Share API** (dengan fallback clipboard & URL link). Sinkronisasi background non-blocking menjaga user gesture tetap aktif saat membagikan laporan.
+- **Validasi isian wajib yang seragam** (`formValidation.ts` + `missingFields.ts` + `FieldError.tsx`): saat tombol bagikan ditekan dengan isian kosong, layar bergulir & fokus ke isian kosong pertama, isian diberi bingkai & tulisan merah, dan maskot menyebut isian apa yang kurang. Berlaku di Kehadiran, Briefing, Checklist, Storing, Kegiatan, BA Serah Terima, Initial Report, Perbaikan, dan Kalibrasi.
+- **Standar penulisan lokasi** (`lokasiFormat.ts`): selalu `"<Lokasi> <Nomor>"` tanpa kata "No." (mis. `PSCP D 2`, `HBSCP 2.5`); data lama dinormalkan otomatis.
+- **Format WhatsApp resmi per tab**: modul murni `*Message.ts` (Kehadiran "LAPORAN DINAS", Briefing, Perbaikan "LAPORAN CORRECTIVE MAINTENANCE", Kegiatan, Report/Closing briefing) + `waGenerator.ts` (Storing, Checklist, Kalibrasi, Initial Report, BA). Preview WA tab Kalibrasi dan Report mengikuti panjang pesan.
+- **Shortcut cerdas Initial Report**: pintasan permasalahan, mitigasi, dan dampak sesuai kombinasi peralatan × lokasi.
+- **Serviceability & persistensi**: tab Report menghitung kelaikan peralatan, menyimpan log ke `laporan_operasional` dan ringkasan ke `laporan_checklist` (upsert atomik per `(tanggal, shift)`).
+- **Foto dual-tier**: kompresi Canvas (~150–250 KB) → Cloudinary; bila gagal/belum dikonfigurasi → Supabase Storage. Constraint `chk_foto_urls_no_base64` menolak Base64 di database.
+- **Tanda tangan digital & PDF**: `SignaturePad.tsx` + `pdfService.ts` (dynamic import `html2pdf.js`), `@page` terisolasi per tab (Report = A4 Landscape, BA = A4 Portrait).
+- **Maskot AntigravityPet** (`useAppStore.sayPet`): melaporkan hasil sinkronisasi latar belakang, peralihan penyimpanan foto, isian yang belum lengkap, dan penyemangat awal shift; menyingkir saat isian difokuskan dan bergeser di atas bilah simpan yang menempel (`bottomInset`).
+- **Direct WhatsApp Share**: Web Share API dipanggil sinkron (user gesture), upload & simpan Supabase berjalan di latar belakang dengan deduplikasi `recentOperationalLogs`; fallback ke clipboard + `wa.me`.
+
+---
+
+## 🕸️ Knowledge Graph (graphify)
+
+Peta keterkaitan kode dan dokumentasi dibuat dengan skill **graphify** (`.agents/skills/graphify`). Hasilnya ada di `graphify-out/` (`graph.json`, `graph.html`, `GRAPH_REPORT.md`) dan **tidak di-commit** (`.gitignore`). Untuk membuat/memperbarui:
+
+```bash
+pip install graphifyy          # sekali saja
+graphify update .              # re-ekstraksi kode (AST, tanpa LLM) setelah perubahan
+graphify query "bagaimana alur share WA di tab Kalibrasi?"
+```
+
+Atau jalankan `/graphify . --update` dari agent. Perbarui graph setelah penambahan file/refactor besar.

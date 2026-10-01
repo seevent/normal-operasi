@@ -1,3 +1,5 @@
+> **Status (1 Oktober 2026): belum diimplementasikan.** Tidak ada endpoint MCP, fungsi Netlify, maupun dependensi `@modelcontextprotocol/sdk` di repositori. Tercatat sebagai ide di roadmap `prd.md`.
+
 # MCP Full Reporting Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

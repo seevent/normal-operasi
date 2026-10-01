@@ -1,3 +1,5 @@
+> **Status (1 Oktober 2026): digantikan.** Desain karakter Chibi Iron Man di bawah sudah tidak dipakai; maskot saat ini adalah mesin X-Ray pelapor operasional (lihat `prd.md` §3.13). Spesifikasi perilaku seret/minimize/balon dialog masih relevan sebagian.
+
 # Spesifikasi Desain: Chibi Iron Man Antigravity Pet
 
 ## 1. Ringkasan Fitur
