@@ -2,6 +2,7 @@
 
 import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels, parseLokasiDanTitik } from './locationRules';
 import { buildShiftReportMessage } from './shiftReportMessage';
+import { formatXRayParams, formatWtmdParams, XRAY_ARCHIVE_DEFAULT } from './kalibrasiParams.ts';
 
 export { generateWA_Perbaikan } from './perbaikanMessage.ts';
 
@@ -391,15 +392,7 @@ export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
     const xrayName = (rawXRay.toLowerCase() === 'x-ray' || rawXRay.toLowerCase() === 'xray')
       ? getEquipDisplayName('X-Ray')
       : rawXRay;
-    const fmtUnit = (val: string, unit: string) => {
-      if (!val) return '...';
-      const trimmed = String(val).trim();
-      return /[a-zA-Z]$/.test(trimmed) ? trimmed : `${trimmed} ${unit}`;
-    };
-    const kvStr = `${fmtUnit(entry.xrayKvV || '140', 'kV')} / ${fmtUnit(entry.xrayKvH || '140', 'kV')}`;
-    const maStr = `${fmtUnit(entry.xrayMaV || '0.7', 'mA')} / ${fmtUnit(entry.xrayMaH || '0.7', 'mA')}`;
-    const onStr = `${fmtUnit(entry.xrayOnV || 'Normal', 'h')} / ${fmtUnit(entry.xrayOnH || 'Normal', 'h')}`;
-    catatanBlocks.push(`${xrayName}\n- kV Vertikal/Horizontal : ${kvStr}\n- mA Vertikal/Horizontal : ${maStr}\n- Ontime Vertikal/Horizontal : ${onStr}\n- Archive : ${entry.xrayArchive || '+- 1 bulan'}`);
+    catatanBlocks.push(`${xrayName}\n${formatXRayParams(entry)}`);
   }
   
   if (hasWtmd) {
@@ -407,7 +400,7 @@ export const formatKalibrasiEntryKegiatanDanCatatan = (entry: any) => {
     const wtmdName = rawWtmd.toUpperCase() === 'WTMD'
       ? getEquipDisplayName('WTMD')
       : rawWtmd;
-    catatanBlocks.push(`${wtmdName}\n- Z1 : ${entry.wtmdZ1 || 'Normal'} - Z2 : ${entry.wtmdZ2 || 'Normal'} - Z3 : ${entry.wtmdZ3 || 'Normal'} - Z4 : ${entry.wtmdZ4 || 'Normal'}\n- LC : ${entry.wtmdLc || 'Normal'} - LS : ${entry.wtmdLs || 'Normal'} - UC : ${entry.wtmdUc || 'Normal'} - SE : ${entry.wtmdSe || 'Normal'} - DS : ${entry.wtmdDs || 'Normal'}`);
+    catatanBlocks.push(`${wtmdName}\n${formatWtmdParams(entry)}`);
   }
 
   if (hasBs) {
@@ -464,22 +457,22 @@ export const getDefaultKalibrasiUraian = (peralatan: string, lokasi?: string): s
     etdTnt: 'Alarm',
     etdPetn: 'Alarm',
     etdRdx: 'Alarm',
-    xrayKvV: '140',
-    xrayKvH: '140',
-    xrayMaV: '0.7',
-    xrayMaH: '0.7',
-    xrayOnV: 'Normal',
-    xrayOnH: 'Normal',
-    xrayArchive: '+- 1 bulan',
-    wtmdZ1: 'Normal',
-    wtmdZ2: 'Normal',
-    wtmdZ3: 'Normal',
-    wtmdZ4: 'Normal',
-    wtmdLc: 'Normal',
-    wtmdLs: 'Normal',
-    wtmdUc: 'Normal',
-    wtmdSe: 'Normal',
-    wtmdDs: 'Normal'
+    xrayKvV: '',
+    xrayKvH: '',
+    xrayMaV: '',
+    xrayMaH: '',
+    xrayOnV: '',
+    xrayOnH: '',
+    xrayArchive: XRAY_ARCHIVE_DEFAULT,
+    wtmdZ1: '',
+    wtmdZ2: '',
+    wtmdZ3: '',
+    wtmdZ4: '',
+    wtmdLc: '',
+    wtmdLs: '',
+    wtmdUc: '',
+    wtmdSe: '',
+    wtmdDs: ''
   };
   return formatKalibrasiEntryKegiatanDanCatatan(fakeEntry).fullText;
 };
