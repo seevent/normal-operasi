@@ -1,5 +1,7 @@
 // src/lib/services/shareService.ts
 import { isAbortError } from '../utils/errorUtils';
+import { sayPet } from '../../store/useAppStore';
+import { getTabCheer, TabCheerKey } from '../data/petMessages';
 
 export const triggerFileDownload = (file: File) => {
   const url = URL.createObjectURL(file);
@@ -43,7 +45,8 @@ export const fallbackShare = async (message: string, files: File[], setIsCopied:
 export const shareToWhatsApp = async (
   message: string,
   filesArray: File[] | File | null,
-  setIsCopied: (v: boolean) => void
+  setIsCopied: (v: boolean) => void,
+  cheerTab?: TabCheerKey
 ) => {
   let finalFiles: File[] = [];
   if (filesArray) {
@@ -65,6 +68,7 @@ export const shareToWhatsApp = async (
       });
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2500);
+      if (cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
       return;
     } else if (finalFiles.length === 0 && navigator.share) {
       await navigator.share({
@@ -73,6 +77,7 @@ export const shareToWhatsApp = async (
       });
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2500);
+      if (cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
       return;
     }
   } catch (err) {
@@ -81,5 +86,6 @@ export const shareToWhatsApp = async (
   }
 
   await fallbackShare(message, finalFiles, setIsCopied);
+  if (cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
 };
 

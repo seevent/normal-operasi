@@ -494,7 +494,7 @@ export const TabPerbaikan: React.FC = () => {
     await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
-    });
+    }, 'perbaikan');
   };
 
   const missingKeys = new Set(validatePerbaikan(formData, isVerifikasiETD).map(m => m.key));

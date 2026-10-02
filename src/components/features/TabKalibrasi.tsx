@@ -477,7 +477,7 @@ export const TabKalibrasi: React.FC = () => {
       await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
-      });
+      }, 'kalibrasi');
     } finally {
       setTimeout(unlock, 2500);
     }

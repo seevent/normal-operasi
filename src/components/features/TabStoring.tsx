@@ -302,7 +302,7 @@ export const TabStoring: React.FC = () => {
       await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
-      });
+      }, 'storing');
     } finally {
       setTimeout(unlock, 2500);
     }

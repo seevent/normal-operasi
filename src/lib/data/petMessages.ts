@@ -36,6 +36,87 @@ export const PET_SHIFT_MALAM_CHEERS = [
   'Tim Malam sudah siaga. Tetap waspada dan saling jaga sampai pagi menjemput!',
 ];
 
+/** Tab yang punya penyemangat sendiri saat laporannya dikirim ke WhatsApp (Kehadiran memakai penyemangat shift). */
+export type TabCheerKey =
+  | 'briefing'
+  | 'storing'
+  | 'checklist'
+  | 'initial'
+  | 'perbaikan'
+  | 'kalibrasi'
+  | 'kegiatan'
+  | 'ba_serah_terima'
+  | 'report'
+  | 'tip';
+
+/** Penyemangat per tab, dikirim maskot setiap laporan tab tersebut dibagikan ke WhatsApp. */
+export const PET_TAB_CHEERS: Record<TabCheerKey, string[]> = {
+  briefing: [
+    'Briefing terkirim! Tim yang tahu arahan akan bekerja dengan tenang. Semangat, Pak Leader!',
+    'Bip! Arahan hari ini sudah sampai ke semua orang. Awal yang rapi, hasil akhir pasti mantap!',
+    'Briefing selesai, semua siap bergerak. Kompak itu kekuatan terbesar tim SSES T2!',
+  ],
+  storing: [
+    'Laporan storing terkirim! Peralatan boleh istirahat, kamu tetap semangat. Mantap!',
+    'Bip! Storing tercatat rapi. Kerja yang teliti hari ini memudahkan tim berikutnya. Semangat!',
+    'Satu peralatan sudah aman tercatat. Pelan tapi pasti, kita jaga semua tetap terkendali!',
+  ],
+  checklist: [
+    'Checklist terkirim! Pengecekan teliti seperti ini yang membuat Terminal 2 tetap aman. Hebat!',
+    'Bip bip! Semua poin sudah dicek dan dilaporkan. Terima kasih sudah teliti, semangat dinas!',
+    'Checklist beres! Detail kecil kamu jaga, hasilnya terasa untuk ribuan penumpang. Keren!',
+  ],
+  initial: [
+    'Laporan awal terkirim! Gerak cepatmu membantu tim menangani gangguan lebih tenang. Semangat!',
+    'Bip! Kabar gangguan sudah sampai. Tarik napas, kamu sudah melakukan langkah pertama dengan baik.',
+    'Laporan awal selesai. Setiap gangguan pasti ada jalan keluarnya, dan kita hadapi bersama!',
+  ],
+  perbaikan: [
+    'Laporan perbaikan terkirim! Satu masalah selesai, terima kasih sudah turun tangan. Mantap!',
+    'Bip bip! Peralatan kembali sehat berkat tanganmu. Lelahmu terbayar, semangat terus!',
+    'Perbaikan tercatat rapi. Teknisi hebat itu yang sabar menelusuri sampai tuntas. Salut!',
+  ],
+  kalibrasi: [
+    'Laporan kalibrasi terkirim! Alat yang akurat lahir dari tangan yang teliti. Semangat!',
+    'Bip! Kalibrasi dan PM tercatat. Kerja rutin seperti ini yang menjaga scan tetap tajam. Keren!',
+    'Satu lokasi sudah terkalibrasi. Tetap fokus dan teliti, hasilnya terasa di setiap pemeriksaan!',
+  ],
+  kegiatan: [
+    'Laporan kegiatan terkirim! Setiap langkah kecil di lapangan berarti besar. Semangat terus!',
+    'Bip! Kegiatan hari ini sudah tercatat. Kerja kerasmu terlihat, terima kasih ya!',
+    'Kegiatan tercatat rapi. Terus jaga ritme, tim bangga dengan kerja kalian!',
+  ],
+  ba_serah_terima: [
+    'Berita Acara terkirim! Serah terima yang tertib bikin semua pihak tenang. Kerja bagus!',
+    'Bip bip! Tanda tangan lengkap, barang tercatat jelas. Rapi dan bertanggung jawab, mantap!',
+    'Serah terima selesai! Ketelitianmu menjaga aset tetap aman. Terima kasih, semangat!',
+  ],
+  report: [
+    'Laporan shift terkirim! Terima kasih sudah menjaga Terminal 2 sepanjang dinas. Istirahat yang cukup ya!',
+    'Bip! Rekap shift sudah sampai ke tim berikutnya. Kerja kerasmu hari ini luar biasa!',
+    'Shift report selesai. Serah terima yang rapi adalah penutup dinas terbaik. Hormat dariku!',
+  ],
+  tip: [
+    'Laporan TIP terkirim! Mata yang waspada membuat penumpang aman. Terus semangat berlatih!',
+    'Bip bip! TIP bulan ini tercatat. Konsisten sedikit demi sedikit, hasilnya pasti terasa!',
+    'Laporan TIP selesai. Ketajaman kalian adalah garis pertahanan yang paling berharga!',
+  ],
+};
+
+/**
+ * Memilih penyemangat untuk tab yang laporannya baru dibagikan.
+ *
+ * @param tab  Kunci tab (sama dengan id tab di App.tsx).
+ * @param pick Penyeleksi indeks; dapat diisi pada pengujian agar hasilnya pasti.
+ */
+export const getTabCheer = (
+  tab: TabCheerKey,
+  pick: (max: number) => number = (max) => Math.floor(Math.random() * max)
+): string => {
+  const pool = PET_TAB_CHEERS[tab];
+  return pool[Math.min(Math.max(pick(pool.length), 0), pool.length - 1)];
+};
+
 /**
  * Memilih penyemangat sesuai shift yang baru dimulai.
  *

@@ -297,7 +297,7 @@ export const TabChecklist: React.FC = () => {
     await shareToWhatsApp(message, null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
-    });
+    }, 'checklist');
   };
 
   const missingKeys = new Set(validateChecklist(checklistData).map(m => m.key));

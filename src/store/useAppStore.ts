@@ -58,13 +58,17 @@ export const useAppStore = create<AppState>((set) => ({
 
   petMessage: null,
   sayPet: (text, tone = 'info', durationMs) =>
-    set({
-      petMessage: {
-        id: ++petMessageCounter,
-        text,
-        tone,
-        durationMs: durationMs ?? DEFAULT_DURATION_MS[tone],
-      },
+    set((state) => {
+      // Kabar sukses simpan di latar belakang tidak boleh menimpa penyemangat yang sedang tampil.
+      if (tone === 'success' && state.petMessage?.tone === 'cheer') return state;
+      return {
+        petMessage: {
+          id: ++petMessageCounter,
+          text,
+          tone,
+          durationMs: durationMs ?? DEFAULT_DURATION_MS[tone],
+        },
+      };
     }),
   clearPetMessage: () => set({ petMessage: null }),
 

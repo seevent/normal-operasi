@@ -127,3 +127,36 @@ test('Kalimat maskot berbicara sebagai mesin X-Ray pemindai bagasi', () => {
   const all = [...PET_IDLE_QUOTES, ...PET_SHIFT_PAGI_CHEERS, ...PET_SHIFT_MALAM_CHEERS].join(' ').toLowerCase();
   assert.match(all, /scan|bagasi|konveyor/);
 });
+
+test('getTabCheer: setiap tab punya penyemangat sendiri yang valid', async () => {
+  const { PET_TAB_CHEERS, getTabCheer } = await import('../src/lib/data/petMessages.ts');
+  const keys = Object.keys(PET_TAB_CHEERS);
+  assert.deepEqual(
+    keys.sort(),
+    ['ba_serah_terima', 'briefing', 'checklist', 'initial', 'kalibrasi', 'kegiatan', 'perbaikan', 'report', 'storing', 'tip']
+  );
+  for (const key of keys) {
+    assert.ok(PET_TAB_CHEERS[key].length >= 2, `tab ${key} perlu beberapa variasi kalimat`);
+    assert.ok(PET_TAB_CHEERS[key].includes(getTabCheer(key, () => 0)));
+    assert.ok(PET_TAB_CHEERS[key].includes(getTabCheer(key, () => 999)));
+    assert.ok(PET_TAB_CHEERS[key].includes(getTabCheer(key, () => -3)));
+  }
+});
+
+test('Setiap tab yang membagikan ke WhatsApp mengirim kunci penyemangat tab-nya', async () => {
+  const { readFileSync } = await import('node:fs');
+  const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+  const tabs = {
+    TabBriefing: 'briefing', TabStoring: 'storing', TabChecklist: 'checklist', TabInitialReport: 'initial',
+    TabPerbaikan: 'perbaikan', TabKalibrasi: 'kalibrasi', TabKegiatan: 'kegiatan',
+    TabBASerahTerima: 'ba_serah_terima', TabShiftReport: 'report',
+  };
+  for (const [file, key] of Object.entries(tabs)) {
+    const src = read(`src/components/features/${file}.tsx`);
+    const calls = src.match(/shareToWhatsApp\(/g) || [];
+    const withCheer = src.match(new RegExp(`'${key}'\\);`, 'g')) || [];
+    assert.ok(calls.length > 0 && withCheer.length >= calls.length, `${file} harus mengirim '${key}' di setiap shareToWhatsApp`);
+  }
+  assert.match(read('src/components/features/TabTip.tsx'), /sayPet\(getTabCheer\('tip'\), 'cheer'\)/);
+  assert.match(read('src/lib/services/shareService.ts'), /cheerTab/);
+});

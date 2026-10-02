@@ -481,7 +481,7 @@ export const TabInitialReport: React.FC = () => {
     await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
-    });
+    }, 'initial');
   };
 
   return (

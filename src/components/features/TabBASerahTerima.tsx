@@ -338,7 +338,7 @@ export const TabBASerahTerima: React.FC = () => {
       await shareToWhatsApp(message, pdfFile, () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
-      });
+      }, 'ba_serah_terima');
     } catch (err) {
       console.error('Error generating/sharing PDF:', err);
       const payloadData = { ...baData, items: validItems };
@@ -346,7 +346,7 @@ export const TabBASerahTerima: React.FC = () => {
       await shareToWhatsApp(message, null, () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
-      });
+      }, 'ba_serah_terima');
     } finally {
       setIsSharingPdf(false);
     }

@@ -497,7 +497,7 @@ export const TabShiftReport: React.FC = () => {
       await shareToWhatsApp(waMessage, pdfFile, () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
-      });
+      }, 'report');
 
       setStatusMsg({ text: "Dokumen PDF & ringkasan shift berhasil dibagikan ke WhatsApp!", type: 'success' });
       setTimeout(() => setStatusMsg(null), 4000);
@@ -505,7 +505,7 @@ export const TabShiftReport: React.FC = () => {
       console.error("Gagal membuat PDF / share:", err);
       // Fallback: bagikan teks ringkasan jika PDF bermasalah
       const waMessage = generateShiftWaSummary();
-      await shareToWhatsApp(waMessage, null, () => {});
+      await shareToWhatsApp(waMessage, null, () => {}, 'report');
       setStatusMsg({ text: "WhatsApp terbuka dengan ringkasan laporan (PDF dilewati).", type: 'info' });
       setTimeout(() => setStatusMsg(null), 4000);
     } finally {

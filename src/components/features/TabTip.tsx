@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CheckSquare, Save, Share2, RefreshCw, Square, Check, Lock, Loader2, AlertTriangle } from 'lucide-react';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { supabase } from '../../lib/supabaseClient';
+import { sayPet } from '../../store/useAppStore';
+import { getTabCheer } from '../../lib/data/petMessages';
 
 export const TIP_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -263,6 +265,7 @@ export const TabTip: React.FC = () => {
             title: 'Laporan TIP T2',
             text: shareText
           });
+          sayPet(getTabCheer('tip'), 'cheer');
           return;
         } catch (err) {
           console.error('Share dibatalkan/gagal', err);
@@ -278,6 +281,7 @@ export const TabTip: React.FC = () => {
       
       const text = encodeURIComponent(shareText);
       window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+      sayPet(getTabCheer('tip'), 'cheer');
 
     } catch (error) {
       console.error('Error generating image:', error);

@@ -164,7 +164,7 @@ export const TabBriefing: React.FC = () => {
     await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
-    });
+    }, 'briefing');
 
     if (generatedCollageFile) {
       // Optional: Store to global context if needed

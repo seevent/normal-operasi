@@ -244,7 +244,7 @@ export const TabKegiatan: React.FC = () => {
     await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
-    });
+    }, 'kegiatan');
   };
 
   return (
