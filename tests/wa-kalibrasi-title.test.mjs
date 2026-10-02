@@ -8,3 +8,7 @@ test('Judul WA Kalibrasi memakai awalan LAPORAN', () => {
   assert.match(source, /'\*LAPORAN PREVENTIVE MAINTENANCE & KALIBRASI SSES T2\*'/);
   assert.doesNotMatch(source, /'\*PREVENTIVE MAINTENANCE & KALIBRASI SSES T2\*'/);
 });
+
+test('Pesan WA Kalibrasi: baris kosong setelah judul', () => {
+  assert.match(source, /let msg = `\$\{judul\}\\n\\nHari\/Tanggal\/Jam : /);
+});

@@ -396,7 +396,7 @@ export const generateWA_Kalibrasi = (kalibrasiGlobal: any, kalibrasiEntries: any
     ? '*LAPORAN PREVENTIVE MAINTENANCE & KALIBRASI SSES T2*' 
     : '*PREVENTIVE MAINTENANCE SSES T2*';
 
-  let msg = `${judul}\nHari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}`;
+  let msg = `${judul}\n\nHari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}`;
 
   kalibrasiEntries.forEach((entry) => {
     if (entry.peralatan.length === 0) return; 
