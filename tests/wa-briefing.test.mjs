@@ -9,10 +9,11 @@ test('Giat briefing unit WA cocok dengan contoh format', () => {
     generateWA_Briefing(data),
     [
       '*GIAT BRIEFING UNIT SSES T2*',
+      '',
       'Hari/Tanggal : Kamis, 01 Oktober 2026',
       'Shift : Malam',
       'Lokasi : Terminal 2'
-    ].join('\n\n')
+    ].join('\n')
   );
 });
 
@@ -26,9 +27,10 @@ test('Briefing MOT WA cocok dengan contoh format', () => {
     generateWA_Briefing({ ...data, jenis: 'MOT' }),
     [
       '*BRIEFING MOT T2*',
+      '',
       'Hari/Tanggal : Kamis, 01 Oktober 2026',
       'Shift : Malam',
       'Lokasi : Terminal 2'
-    ].join('\n\n')
+    ].join('\n')
   );
 });
