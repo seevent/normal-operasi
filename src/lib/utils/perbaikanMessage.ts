@@ -13,7 +13,7 @@ export const generateWA_Perbaikan = (formData: any, isVerifikasiETD: boolean) =>
     : [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }];
 
   const lokasiFinal = formatLokasiRows(locList);
-  const judulLaporan = isVerifikasiETD ? '*LAPORAN VERIFIKASI*' : '*LAPORAN CORRECTIVE MAINTENANCE*';
+  const judulLaporan = isVerifikasiETD ? '*LAPORAN VERIFIKASI*' : '*LAPORAN CORRECTIVE MAINTENANCE SSES T2*';
 
   const statusIcon = (formData.status === 'Pekerjaan Selesai' || formData.status === 'Normal Operasi') ? '✅' : '⚠️';
 

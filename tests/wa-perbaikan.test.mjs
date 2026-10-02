@@ -19,7 +19,7 @@ const formData = {
 
 test('Laporan Corrective Maintenance WA cocok dengan contoh format', () => {
   const expected = [
-    '*LAPORAN CORRECTIVE MAINTENANCE*',
+    '*LAPORAN CORRECTIVE MAINTENANCE SSES T2*',
     '',
     'Peralatan : X-Ray Rapiscan 620DV',
     'Lokasi : PSCP F 3',
