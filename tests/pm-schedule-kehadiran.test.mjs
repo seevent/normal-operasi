@@ -106,7 +106,7 @@ test('PM Display Settings Filter: can disable specific categories or equipment t
   const records = [
     { lokasi: 'PSCP D', titik: '1', jenis: 'WTMD', tipe: 'WTMD CEIA', kategori_pm: 'PM Mingguan', shift: 'PS' },
     { lokasi: 'PSCP D', titik: '2', jenis: 'X-Ray', tipe: 'X-Ray Rapiscan 620DV', kategori_pm: 'Kalibrasi & PM Bulanan (PS)', shift: 'PS' },
-    { lokasi: 'Breakdown E1', titik: '-', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: 'PM Mingguan', shift: 'PS' }
+    { lokasi: 'Breakdown E1', titik: '-', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: 'Kalibrasi & PM Bulanan (PS)', shift: 'PS' }
   ];
 
   // 1. Disable Access Control type
@@ -120,8 +120,25 @@ test('PM Display Settings Filter: can disable specific categories or equipment t
   const filterNoMingguan = filterActivePm(records, 'PS', {
     categories: { 'PM Mingguan': false }
   });
-  assert.equal(filterNoMingguan.length, 1);
-  assert.equal(filterNoMingguan[0].kategori_pm, 'Kalibrasi & PM Bulanan (PS)');
+  assert.equal(filterNoMingguan.length, 2);
+  assert.ok(filterNoMingguan.every(r => r.kategori_pm === 'Kalibrasi & PM Bulanan (PS)'));
+});
+
+test('Access Control PM Mingguan tampil pada shift M, bukan shift PS', () => {
+  const records = [
+    { lokasi: 'Breakdown E1', titik: '-', jenis: 'Access Control', tipe: 'Access Control', kategori_pm: 'PM Mingguan', shift: 'PS' },
+    { lokasi: 'PSCP D', titik: '1', jenis: 'WTMD', tipe: 'WTMD CEIA', kategori_pm: 'PM Mingguan', shift: 'PS' }
+  ];
+
+  const ps = filterActivePm(records, 'PS');
+  assert.deepEqual(ps.map(r => r.jenis), ['WTMD']);
+
+  const m = filterActivePm(records, 'M');
+  assert.deepEqual(m.map(r => r.jenis), ['Access Control']);
+
+  // Pengaturan tampilan tetap berlaku di shift M
+  assert.equal(filterActivePm(records, 'M', { categories: { 'PM Mingguan': false } }).length, 0);
+  assert.equal(filterActivePm(records, 'M', { types: { 'Access Control': false } }).length, 0);
 });
 
 test('TabKehadiran & PmScheduleUploader integration: uses pmDisplaySettings and filterActivePm', () => {
