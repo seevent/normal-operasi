@@ -6,7 +6,7 @@ const source = readFileSync(new URL('../src/lib/utils/waGenerator.ts', import.me
 
 test('Judul WA Checklist dan Storing sama-sama bercetak tebal', () => {
   const checklist = source.slice(source.indexOf('export const generateWA_Checklist'));
-  assert.match(checklist, /let result = `\*KEGIATAN STORING PERALATAN SSES T2\*\\n`;/);
+  assert.match(checklist, /let result = `\*KEGIATAN STORING PERALATAN SSES T2\*\\n\\n`;/);
   // tidak boleh ada judul polos (tanpa tanda bintang) di pesan manapun
   assert.doesNotMatch(source, /(^|[^*])KEGIATAN STORING PERALATAN SSES T2(?!\*)/);
 });

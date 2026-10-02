@@ -55,7 +55,7 @@ export const generateWA_Checklist = (checklistData: any, checklistDataMaster: an
   const jamMulai = checklistData.waktuMulai || '...';
   const jamSelesai = checklistData.waktuSelesai || '...';
   
-  let result = `*KEGIATAN STORING PERALATAN SSES T2*\n`;
+  let result = `*KEGIATAN STORING PERALATAN SSES T2*\n\n`;
   result += `Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}\n\n`;
 
   checklistDataMaster.forEach((block) => {
