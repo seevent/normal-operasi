@@ -356,7 +356,7 @@ export function filterActivePm(
   });
 }
 
-export const RENCANA_KEGIATAN_DASAR = '- Monitoring Ops\n- Storing Peralatan';
+export const RENCANA_KEGIATAN_DASAR = '- Monitoring Operasional\n- Storing Peralatan';
 export const RENCANA_KEGIATAN_PM = '- Preventive Maintenance & Kalibrasi Peralatan';
 
 type PmItem = { lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string };

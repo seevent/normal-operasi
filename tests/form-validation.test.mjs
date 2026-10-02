@@ -8,7 +8,7 @@ import {
 const keys = (list) => list.map(m => m.key);
 
 test('Kehadiran: wajib minimal 1 personel API dan 1 personel OM, tlp ruangan, rencana kegiatan', () => {
-  const ok = { tanggal: '2026-09-30', tlpRuangan: '021', rencanaKegiatan: '- Monitoring Ops', apiList: [{ name: 'A' }], omList: [{ name: 'B' }] };
+  const ok = { tanggal: '2026-09-30', tlpRuangan: '021', rencanaKegiatan: '- Monitoring Operasional', apiList: [{ name: 'A' }], omList: [{ name: 'B' }] };
   assert.deepEqual(validateKehadiran(ok), []);
   assert.deepEqual(keys(validateKehadiran({ ...ok, apiList: [{ name: '' }], omList: [] })), ['apiList', 'omList']);
   assert.deepEqual(keys(validateKehadiran({ ...ok, tlpRuangan: ' ', rencanaKegiatan: '' })), ['tlpRuangan', 'rencanaKegiatan']);

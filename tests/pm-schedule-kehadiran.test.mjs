@@ -268,7 +268,7 @@ test('Laporan Kehadiran WA matches user template', () => {
     '- 021 550 5910',
     '',
     '*Rencana Kegiatan :*',
-    '- Monitoring Ops',
+    '- Monitoring Operasional',
     '- Storing Peralatan',
     '- Preventive Maintenance & Kalibrasi Peralatan',
     ''
@@ -278,6 +278,6 @@ test('Laporan Kehadiran WA matches user template', () => {
 });
 
 test('Rencana Kegiatan tanpa jadwal PM: shift Pagi tetap ada baris PM, shift Malam tidak', () => {
-  assert.equal(buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, [], true), '- Monitoring Ops\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Peralatan');
-  assert.equal(buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, [], false), '- Monitoring Ops\n- Storing Peralatan');
+  assert.equal(buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, [], true), '- Monitoring Operasional\n- Storing Peralatan\n- Preventive Maintenance & Kalibrasi Peralatan');
+  assert.equal(buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, [], false), '- Monitoring Operasional\n- Storing Peralatan');
 });
