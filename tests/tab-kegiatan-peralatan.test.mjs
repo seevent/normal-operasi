@@ -8,6 +8,7 @@ const base = { tanggal: '2026-09-30', waktuMulai: '09:00', waktuSelesai: '10:00'
 test('Laporan Kegiatan tanpa peralatan tidak mencantumkan baris Peralatan', () => {
   const expected = [
     '*KEGIATAN SSES T2*',
+    '',
     'Hari/Tanggal/Jam : Rabu, 30 September 2026, 09:00 - 10:00',
     'Lokasi : Terminal D',
     'Kegiatan : Mendampingi Audit dari Otban'
@@ -22,6 +23,7 @@ test('Laporan Kegiatan dengan peralatan mencantumkannya tepat di atas Lokasi', (
     generateWA_Kegiatan({ ...base, peralatan: 'X-Ray Rapiscan 620DV' }),
     [
       '*KEGIATAN SSES T2*',
+      '',
       'Hari/Tanggal/Jam : Rabu, 30 September 2026, 09:00 - 10:00',
       'Peralatan : X-Ray Rapiscan 620DV',
       'Lokasi : Terminal D',

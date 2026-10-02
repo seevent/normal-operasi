@@ -14,5 +14,5 @@ export const generateWA_Kegiatan = (kegiatanData: any) => {
   const peralatan = String(kegiatanData.peralatan ?? '').trim();
   const peralatanLine = peralatan ? `Peralatan : ${peralatan}\n` : '';
 
-  return `*KEGIATAN SSES T2*\nHari/Tanggal/Jam : ${formattedDate}, ${waktuText}\n${peralatanLine}Lokasi : ${normalizeLokasi(kegiatanData.lokasi)}\nKegiatan : ${kegiatanData.kegiatan}`;
+  return `*KEGIATAN SSES T2*\n\nHari/Tanggal/Jam : ${formattedDate}, ${waktuText}\n${peralatanLine}Lokasi : ${normalizeLokasi(kegiatanData.lokasi)}\nKegiatan : ${kegiatanData.kegiatan}`;
 };
