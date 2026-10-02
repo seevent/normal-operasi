@@ -7,12 +7,12 @@ import { formatTanggalIndo } from './dateFormat.ts';
 export const generateWA_Briefing = (briefingData: any, selectedSpareparts: any[] = []) => {
   const formattedDate = formatTanggalIndo(briefingData.tanggal);
   const judul = briefingData.jenis === 'Unit' ? '*GIAT BRIEFING UNIT SSES T2*' : '*BRIEFING MOT T2*';
-  let text = [
-    judul,
+  const detail = [
     `Hari/Tanggal : ${formattedDate}`,
     `Shift : ${briefingData.shift}`,
     `Lokasi : ${briefingData.lokasi}`
-  ].join('\n\n');
+  ].join('\n');
+  let text = `${judul}\n\n${detail}`;
 
   if (briefingData.jenis === 'Unit' && selectedSpareparts && selectedSpareparts.length > 0) {
     const sparepartsText = selectedSpareparts
