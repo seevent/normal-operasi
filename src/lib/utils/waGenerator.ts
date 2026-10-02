@@ -38,13 +38,15 @@ export const generateWA_Storing = (storingData: any) => {
         const val = supMap[locKey] || (supervisorLocs.length === 1 ? storingData.supervisorAvsec : '');
         return `Supervisor Avsec ${locKey} : ${val || '-'}`;
       });
-    supervisorAvsecLine = '\n' + lines.join('\n');
+    supervisorAvsecLine = '\n\n' + lines.join('\n');
   }
-  
+
   return `*KEGIATAN STORING PERALATAN SSES T2*
+
 Hari/Tanggal/Jam : ${formattedDate}, ${jamMulai} - ${jamSelesai}
 Peralatan : ${equipString}
 Lokasi : ${locString}
+
 Hasil : ${storingData.hasil}${supervisorAvsecLine}`;
 };
 
