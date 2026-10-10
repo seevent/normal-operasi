@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ShareItem } from '../lib/utils/shareBatches';
 
 /**
  * Nada pesan yang ditampilkan maskot. Menentukan warna balon dialog dan
@@ -48,11 +49,14 @@ interface AppState {
   setBottomInset: (px: number) => void;
 
   /**
-   * Gelombang media WhatsApp yang belum terkirim (tanpa caption). Tiap gelombang butuh
-   * ketukan baru dari pengguna, jadi dikirim lewat tombol di PendingShareBar.
+   * Kiriman WhatsApp yang belum terkirim (tanpa caption). Tiap kiriman butuh ketukan baru
+   * dari pengguna, jadi dikirim lewat tombol di PendingShareBar.
    */
-  pendingShareBatches: File[][];
-  setPendingShareBatches: (batches: File[][]) => void;
+  pendingShareBatches: ShareItem[];
+  setPendingShareBatches: (batches: ShareItem[]) => void;
+  /** Kiriman campur foto + video terakhir; bila WhatsApp menolaknya, pengguna bisa mengirim ulang terpisah. */
+  shareRetry: ShareItem | null;
+  setShareRetry: (item: ShareItem | null) => void;
 }
 
 let petMessageCounter = 0;
@@ -84,6 +88,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   pendingShareBatches: [],
   setPendingShareBatches: (batches) => set({ pendingShareBatches: batches }),
+  shareRetry: null,
+  setShareRetry: (item) => set({ shareRetry: item }),
 }));
 
 /**

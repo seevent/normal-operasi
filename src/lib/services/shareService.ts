@@ -1,7 +1,7 @@
 // src/lib/services/shareService.ts
 import { isAbortError } from '../utils/errorUtils';
 import { sayPet, useAppStore } from '../../store/useAppStore';
-import { buildShareBatches } from '../utils/shareBatches';
+import { buildShareBatches, isRiskyBatch, splitMediaSafely } from '../utils/shareBatches';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
 
 export const triggerFileDownload = (file: File) => {
@@ -95,8 +95,9 @@ export const shareToWhatsApp = async (
 
 /**
  * Membagikan laporan beserta lampiran per grup kolase.
- * Laporan hanya menjadi caption gelombang pertama (Grup Kolase 1); sisanya dikirim
- * tanpa caption lewat PendingShareBar, satu gelombang per ketukan.
+ * Laporan hanya menjadi caption kiriman pertama (Grup Kolase 1); media grup lain dikirim
+ * tanpa caption lewat PendingShareBar. Foto dan video boleh campur dalam satu kiriman;
+ * bila WhatsApp iOS menolaknya, PendingShareBar menawarkan kirim ulang terpisah.
  */
 export const shareReportWithMedia = async (
   message: string,
@@ -104,35 +105,59 @@ export const shareReportWithMedia = async (
   setIsCopied: (v: boolean) => void,
   cheerTab?: TabCheerKey
 ) => {
+  const { setPendingShareBatches, setShareRetry } = useAppStore.getState();
+  setPendingShareBatches([]);
+  setShareRetry(null);
+
   const [first, ...rest] = buildShareBatches(groups);
   const result = await shareToWhatsApp(message, first ?? null, setIsCopied, cheerTab);
-  if (result === 'aborted' || rest.length === 0) return;
+  if (result === 'aborted') return;
 
   if (result === 'fallback') {
     // Tanpa Web Share API tidak ada kotak share: unduh semua sisa berkas agar bisa dilampirkan manual.
     rest.flat().forEach(triggerFileDownload);
     return;
   }
-  useAppStore.getState().setPendingShareBatches(rest);
+  setPendingShareBatches(rest.map((files) => ({ files })));
+  if (first && isRiskyBatch(first)) setShareRetry({ files: first, caption: message });
 };
 
-/** Mengirim gelombang media berikutnya (tanpa caption). Harus dipanggil dari ketukan pengguna. */
+/** Mengirim kiriman berikutnya di antrean. Harus dipanggil dari ketukan pengguna. */
 export const shareNextPendingBatch = async () => {
-  const { pendingShareBatches, setPendingShareBatches } = useAppStore.getState();
+  const { pendingShareBatches, setPendingShareBatches, setShareRetry } = useAppStore.getState();
   const [next, ...rest] = pendingShareBatches;
   if (!next) return;
 
   try {
-    if (navigator.canShare && navigator.canShare({ files: next })) {
-      await navigator.share({ files: next, title: 'Laporan SSES T2' });
+    if (navigator.canShare && navigator.canShare({ files: next.files })) {
+      await navigator.share({
+        files: next.files,
+        title: 'Laporan SSES T2',
+        ...(next.caption ? { text: next.caption } : {}),
+      });
     } else {
-      next.forEach(triggerFileDownload);
+      next.files.forEach(triggerFileDownload);
     }
   } catch (err) {
     console.error('Share media lanjutan dibatalkan atau gagal', err);
     if (isAbortError(err)) return;
-    next.forEach(triggerFileDownload);
+    next.files.forEach(triggerFileDownload);
   }
   setPendingShareBatches(rest);
+  setShareRetry(isRiskyBatch(next.files) ? next : null);
 };
 
+/** Mengirim ulang kiriman campur foto + video secara terpisah (foto sekali, tiap video sendiri). */
+export const retryShareSeparately = async () => {
+  const { shareRetry, pendingShareBatches, setPendingShareBatches, setShareRetry } = useAppStore.getState();
+  if (!shareRetry) return;
+
+  const [first, ...more] = splitMediaSafely(shareRetry.files);
+  setShareRetry(null);
+  setPendingShareBatches([
+    { files: first, caption: shareRetry.caption },
+    ...more.map((files) => ({ files })),
+    ...pendingShareBatches,
+  ]);
+  await shareNextPendingBatch();
+};

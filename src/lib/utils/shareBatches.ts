@@ -2,33 +2,33 @@
 
 type FileLike = { type: string };
 
+/** Satu kiriman WhatsApp: berkas yang dibagikan bersama, dengan caption opsional. */
+export interface ShareItem {
+  files: File[];
+  caption?: string;
+}
+
 const isVideo = (f: FileLike) => f.type.startsWith('video/');
 
 /**
- * Membagi lampiran per grup kolase menjadi gelombang share WhatsApp.
+ * Membagi lampiran per grup kolase menjadi paling banyak dua kiriman WhatsApp.
  *
- * - Gelombang pertama membawa laporan sebagai caption: gambar Grup Kolase 1,
- *   atau video pertama Grup 1 bila grup itu tidak punya gambar.
- * - Gelombang berikutnya dikirim tanpa caption: gambar grup lain digabung,
- *   lalu tiap video sendiri-sendiri.
- *
- * Satu gelombang hanya berisi gambar atau satu video, sebab WhatsApp iOS gagal
- * ("Tidak dapat mengirim 2 pesan") bila satu share memuat lebih dari satu video
- * atau campuran video dan foto.
+ * - Kiriman pertama membawa laporan sebagai caption: seluruh media Grup Kolase 1
+ *   (foto dan video boleh campur).
+ * - Kiriman kedua tanpa caption: seluruh media grup lainnya.
  */
 export const buildShareBatches = <T extends FileLike>(groups: T[][]): T[][] => {
-  const firstGroup = groups[0] ?? [];
-  const firstImages = firstGroup.filter((f) => !isVideo(f));
-  const otherImages = groups.slice(1).flat().filter((f) => !isVideo(f));
-  const videoBatches = groups.flat().filter(isVideo).map((v) => [v]);
-
-  let batches: T[][];
-  if (firstImages.length > 0) {
-    batches = [firstImages, otherImages, ...videoBatches];
-  } else if (firstGroup.some(isVideo)) {
-    batches = [videoBatches[0], otherImages, ...videoBatches.slice(1)];
-  } else {
-    batches = [otherImages, ...videoBatches];
-  }
-  return batches.filter((b) => b.length > 0);
+  const [first = [], ...others] = groups;
+  return [first, others.flat()].filter((b) => b.length > 0);
 };
+
+/** Kiriman yang memuat video bersama berkas lain paling mungkin gagal di WhatsApp iOS. */
+export const isRiskyBatch = (files: FileLike[]): boolean =>
+  files.length > 1 && files.some(isVideo);
+
+/**
+ * Memecah berkas menjadi kiriman yang paling aman untuk WhatsApp iOS:
+ * semua foto dalam satu kiriman, lalu tiap video sendiri-sendiri.
+ */
+export const splitMediaSafely = <T extends FileLike>(files: T[]): T[][] =>
+  [files.filter((f) => !isVideo(f)), ...files.filter(isVideo).map((v) => [v])].filter((b) => b.length > 0);
