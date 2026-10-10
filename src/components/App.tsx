@@ -19,6 +19,7 @@ import { TabKegiatan } from './features/TabKegiatan';
 import { TabShiftReport } from './features/TabShiftReport';
 import { TabBASerahTerima } from './features/TabBASerahTerima';
 import { AntigravityPet } from './features/AntigravityPet';
+import { PendingShareBar } from './shared/PendingShareBar';
 import { useAppStore } from '../store/useAppStore';
 import { useMasterDataStore } from '../store/useMasterDataStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -451,6 +452,7 @@ export default function App() {
 
       {/* Floating Antigravity Pet (maskot mesin X-Ray) */}
       <AntigravityPet />
+      <PendingShareBar />
     </div>
   );
 }

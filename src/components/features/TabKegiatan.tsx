@@ -3,7 +3,7 @@ import { Briefcase, Calendar, MapPin, Clock, Share2, CheckCircle, FileText, Clip
 import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
-import { shareToWhatsApp } from '../../lib/services/shareService';
+import { shareReportWithMedia } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
@@ -241,7 +241,7 @@ export const TabKegiatan: React.FC = () => {
 
     const message = generateWA_Kegiatan(kegiatanData);
 
-    await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
+    await shareReportWithMedia(message, [finalFilesToShare], () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     }, 'kegiatan');

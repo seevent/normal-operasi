@@ -1,6 +1,7 @@
 // src/lib/services/shareService.ts
 import { isAbortError } from '../utils/errorUtils';
-import { sayPet } from '../../store/useAppStore';
+import { sayPet, useAppStore } from '../../store/useAppStore';
+import { buildShareBatches } from '../utils/shareBatches';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
 
 export const triggerFileDownload = (file: File) => {
@@ -42,12 +43,14 @@ export const fallbackShare = async (message: string, files: File[], setIsCopied:
   }
 };
 
+export type ShareResult = 'shared' | 'fallback' | 'aborted';
+
 export const shareToWhatsApp = async (
   message: string,
   filesArray: File[] | File | null,
   setIsCopied: (v: boolean) => void,
   cheerTab?: TabCheerKey
-) => {
+): Promise<ShareResult> => {
   let finalFiles: File[] = [];
   if (filesArray) {
     if (Array.isArray(filesArray)) finalFiles = filesArray;
@@ -69,7 +72,7 @@ export const shareToWhatsApp = async (
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2500);
       if (cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
-      return;
+      return 'shared';
     } else if (finalFiles.length === 0 && navigator.share) {
       await navigator.share({
         title: 'Laporan SSES T2',
@@ -78,14 +81,58 @@ export const shareToWhatsApp = async (
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2500);
       if (cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
-      return;
+      return 'shared';
     }
   } catch (err) {
     console.error('Share dibatalkan atau gagal', err);
-    if (isAbortError(err)) return;
+    if (isAbortError(err)) return 'aborted';
   }
 
   await fallbackShare(message, finalFiles, setIsCopied);
   if (cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
+  return 'fallback';
+};
+
+/**
+ * Membagikan laporan beserta lampiran per grup kolase.
+ * Laporan hanya menjadi caption gelombang pertama (Grup Kolase 1); sisanya dikirim
+ * tanpa caption lewat PendingShareBar, satu gelombang per ketukan.
+ */
+export const shareReportWithMedia = async (
+  message: string,
+  groups: File[][],
+  setIsCopied: (v: boolean) => void,
+  cheerTab?: TabCheerKey
+) => {
+  const [first, ...rest] = buildShareBatches(groups);
+  const result = await shareToWhatsApp(message, first ?? null, setIsCopied, cheerTab);
+  if (result === 'aborted' || rest.length === 0) return;
+
+  if (result === 'fallback') {
+    // Tanpa Web Share API tidak ada kotak share: unduh semua sisa berkas agar bisa dilampirkan manual.
+    rest.flat().forEach(triggerFileDownload);
+    return;
+  }
+  useAppStore.getState().setPendingShareBatches(rest);
+};
+
+/** Mengirim gelombang media berikutnya (tanpa caption). Harus dipanggil dari ketukan pengguna. */
+export const shareNextPendingBatch = async () => {
+  const { pendingShareBatches, setPendingShareBatches } = useAppStore.getState();
+  const [next, ...rest] = pendingShareBatches;
+  if (!next) return;
+
+  try {
+    if (navigator.canShare && navigator.canShare({ files: next })) {
+      await navigator.share({ files: next, title: 'Laporan SSES T2' });
+    } else {
+      next.forEach(triggerFileDownload);
+    }
+  } catch (err) {
+    console.error('Share media lanjutan dibatalkan atau gagal', err);
+    if (isAbortError(err)) return;
+    next.forEach(triggerFileDownload);
+  }
+  setPendingShareBatches(rest);
 };
 

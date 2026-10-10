@@ -6,7 +6,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec, getStoringSupervisorLocations } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
-import { shareToWhatsApp } from '../../lib/services/shareService';
+import { shareReportWithMedia } from '../../lib/services/shareService';
 import { saveStoringToChecklistSync } from '../../lib/services/checklistSyncService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
@@ -299,7 +299,7 @@ export const TabStoring: React.FC = () => {
     const message = generateWA_Storing(storingData);
 
     try {
-      await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
+      await shareReportWithMedia(message, [finalFilesToShare], () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
       }, 'storing');

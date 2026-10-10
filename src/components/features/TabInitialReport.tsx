@@ -7,7 +7,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
 import { generateWA_InitialReport } from '../../lib/utils/waGenerator';
-import { shareToWhatsApp } from '../../lib/services/shareService';
+import { shareReportWithMedia } from '../../lib/services/shareService';
 import { processPhotosToCollage } from '../../lib/utils/canvasUtils';
 import { usePhotoGroups } from '../../lib/hooks/usePhotoGroups';
 import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
@@ -452,12 +452,14 @@ export const TabInitialReport: React.FC = () => {
     }
 
     const customFilesArray: File[] = [];
+    const shareGroups: File[][] = [];
 
     // Process photos for each group
     for (let i = 0; i < photoGroups.length; i++) {
       const group: any = photoGroups[i];
       const imagePhotos = group.photos.filter((p: any) => !p.file?.type?.startsWith('video/'));
       const videoFiles = group.photos.filter((p: any) => p.file?.type?.startsWith('video/')).map((p: any) => p.file);
+      const groupStart = customFilesArray.length;
 
       if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {
@@ -474,11 +476,12 @@ export const TabInitialReport: React.FC = () => {
       if (videoFiles.length > 0) {
         customFilesArray.push(...videoFiles);
       }
+      shareGroups.push(customFilesArray.slice(groupStart));
     }
 
     const message = generateWA_InitialReport(formData);
 
-    await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
+    await shareReportWithMedia(message, shareGroups, () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     }, 'initial');

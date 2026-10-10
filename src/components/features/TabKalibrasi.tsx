@@ -6,7 +6,7 @@ import { reportMissingFields } from '../../lib/utils/missingFields';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
 import { generateWA_Kalibrasi, formatKalibrasiEntryKegiatanDanCatatan } from '../../lib/utils/waGenerator';
-import { shareToWhatsApp } from '../../lib/services/shareService';
+import { shareReportWithMedia } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { PhotoUploader } from '../shared/PhotoUploader';
@@ -394,12 +394,14 @@ export const TabKalibrasi: React.FC = () => {
     }
     
     const customFilesArray: File[] = [];
+    const shareGroups: File[][] = [];
     
     // Process photos for each group
     for (let i = 0; i < kalibrasiPhotoGroups.length; i++) {
       const group: any = kalibrasiPhotoGroups[i];
       const imagePhotos = group.photos.filter((p: any) => !p.file?.type?.startsWith('video/'));
       const videoFiles = group.photos.filter((p: any) => p.file?.type?.startsWith('video/')).map((p: any) => p.file);
+      const groupStart = customFilesArray.length;
 
       if (imagePhotos.length > 1) {
         if (group.autoCollageFile) {
@@ -416,6 +418,7 @@ export const TabKalibrasi: React.FC = () => {
       if (videoFiles.length > 0) {
         customFilesArray.push(...videoFiles);
       }
+      shareGroups.push(customFilesArray.slice(groupStart));
     }
 
     // Jalankan upload foto & simpan ke Supabase di background secara non-blocking
@@ -474,7 +477,7 @@ export const TabKalibrasi: React.FC = () => {
     const message = generateWA_Kalibrasi(kalibrasiGlobal, kalibrasiEntries);
 
     try {
-      await shareToWhatsApp(message, customFilesArray.length > 0 ? customFilesArray : null, () => {
+      await shareReportWithMedia(message, shareGroups, () => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 3000);
       }, 'kalibrasi');

@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_Briefing } from '../../lib/utils/waGenerator';
-import { shareToWhatsApp } from '../../lib/services/shareService';
+import { shareReportWithMedia } from '../../lib/services/shareService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { validateBriefing } from '../../lib/utils/formValidation';
@@ -161,7 +161,7 @@ export const TabBriefing: React.FC = () => {
 
     const message = generateWA_Briefing(briefingData, selectedSpareparts);
     
-    await shareToWhatsApp(message, finalFilesToShare.length > 0 ? finalFilesToShare : null, () => {
+    await shareReportWithMedia(message, [finalFilesToShare], () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 3000);
     }, 'briefing');

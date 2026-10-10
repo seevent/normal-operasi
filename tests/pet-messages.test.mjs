@@ -153,9 +153,9 @@ test('Setiap tab yang membagikan ke WhatsApp mengirim kunci penyemangat tab-nya'
   };
   for (const [file, key] of Object.entries(tabs)) {
     const src = read(`src/components/features/${file}.tsx`);
-    const calls = src.match(/shareToWhatsApp\(/g) || [];
+    const calls = src.match(/share(?:ToWhatsApp|ReportWithMedia)\(/g) || [];
     const withCheer = src.match(new RegExp(`'${key}'\\);`, 'g')) || [];
-    assert.ok(calls.length > 0 && withCheer.length >= calls.length, `${file} harus mengirim '${key}' di setiap shareToWhatsApp`);
+    assert.ok(calls.length > 0 && withCheer.length >= calls.length, `${file} harus mengirim '${key}' di setiap pemanggilan share`);
   }
   assert.match(read('src/components/features/TabTip.tsx'), /sayPet\(getTabCheer\('tip'\), 'cheer'\)/);
   assert.match(read('src/lib/services/shareService.ts'), /cheerTab/);

@@ -46,6 +46,13 @@ interface AppState {
    */
   bottomInset: number;
   setBottomInset: (px: number) => void;
+
+  /**
+   * Gelombang media WhatsApp yang belum terkirim (tanpa caption). Tiap gelombang butuh
+   * ketukan baru dari pengguna, jadi dikirim lewat tombol di PendingShareBar.
+   */
+  pendingShareBatches: File[][];
+  setPendingShareBatches: (batches: File[][]) => void;
 }
 
 let petMessageCounter = 0;
@@ -74,6 +81,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   bottomInset: 0,
   setBottomInset: (px) => set({ bottomInset: Math.max(0, Math.round(px)) }),
+
+  pendingShareBatches: [],
+  setPendingShareBatches: (batches) => set({ pendingShareBatches: batches }),
 }));
 
 /**
