@@ -135,6 +135,7 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * Tombol per peralatan: **Upload** → (berhasil) **Edit** untuk menimpa foto; (gagal) lencana "Gagal tersimpan" + **Retry**. Tidak ada fallback maupun antrean luring.
   * Foto disimpan di Cloudinary `PRIMA/PREVENTIVE/MAINTENANCE/{DAILY|WEEKLY|MONTHLY}/{JENIS}/{EquipmentNumber}_{YYYYMMDD}`; foto lama otomatis tertimpa.
   * Reset status pukul 07.00 WIB: Daily tiap hari, Weekly tiap Minggu, Monthly tiap tanggal 1. Tanggal pada nama file Weekly/Monthly adalah tanggal awal periode.
+  * **Kompresi wajib sebelum kirim**: setiap foto didekode, diperkecil (sisi terpanjang 1280 px), dan di-encode JPEG kualitas 0.8 di perangkat. Tanpa fallback ke foto asli: bila gagal, status "Gagal tersimpan" + Retry. Server memverifikasi di Cloudinary (format JPEG, ≤ 1280 px, ≤ 2 MB) sebelum mencatat "tersimpan".
   * Tamu (tanpa login) boleh mengunggah.
 
 ### 3.14. Maskot Asisten (AntigravityPet)

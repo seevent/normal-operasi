@@ -168,6 +168,10 @@ const resource = (over = {}) => {
     public_id: PUBLIC_ID,
     version,
     asset_folder: FOLDER,
+    format: 'jpg',
+    width: 1280,
+    height: 960,
+    bytes: 250_000,
     secure_url: `https://res.cloudinary.com/wha6e7fj/image/upload/v${version}/${PUBLIC_ID}.jpg`,
     ...over,
   };
@@ -259,4 +263,29 @@ test('versi bukan bilangan bulat positif ditolak sebelum jaringan', async () => 
     await rejects(confirmUpload({ period: 'DAILY', equipmentNumber: EQ, version }, deps(f, NOW)), 'bad_request');
   }
   assert.equal(f.calls.length, 0);
+});
+
+test('foto yang tidak terkompresi (format/dimensi/ukuran) ditolak di server, tidak dicatat', async () => {
+  const bad = [
+    { format: 'png' },
+    { format: 'heic' },
+    { width: 4032, height: 3024 },
+    { width: 1000, height: 3000 },
+    { bytes: 5_000_000 },
+    { bytes: undefined },
+    { width: undefined },
+  ];
+  for (const over of bad) {
+    const f = fakeFetch({ cloudinary: () => json(resource(over)) });
+    await rejects(confirmUpload({ period: 'DAILY', equipmentNumber: EQ, version: NOW_S - 20 }, deps(f, NOW)), 'verify_failed');
+    assert.ok(!f.calls.some((c) => c.url.includes('/rpc/')), JSON.stringify(over));
+  }
+});
+
+test('foto terkompresi sesuai batas (<=1280 px, JPEG, <=2 MB) diterima', async () => {
+  for (const over of [{ width: 1280, height: 720, bytes: 1_999_999 }, { width: 600, height: 1280, bytes: 90_000 }, { format: 'jpeg' }]) {
+    const f = fakeFetch({ cloudinary: () => json(resource(over)) });
+    const r = await confirmUpload({ period: 'DAILY', equipmentNumber: EQ, version: NOW_S - 20 }, deps(f, NOW));
+    assert.equal(r.ok, true, JSON.stringify(over));
+  }
 });

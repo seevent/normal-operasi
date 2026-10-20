@@ -10,7 +10,7 @@
 // Status "tersimpan" di UI hanya berasal dari hasil langkah 2.
 
 import { createHash } from 'node:crypto';
-import { PERIOD_CODE, PREVENTIVE_PERIODS } from '../data/preventiveTypes.ts';
+import { MAX_PHOTO_BYTES, MAX_PHOTO_EDGE, PERIOD_CODE, PREVENTIVE_PERIODS } from '../data/preventiveTypes.ts';
 import type { ConfirmResult, PreventivePeriod, UploadTicket } from '../data/preventiveTypes.ts';
 import { buildFolder, buildPublicId, isValidEquipmentNumber, periodKey } from '../utils/preventivePeriod.ts';
 
@@ -184,6 +184,10 @@ interface CloudinaryResource {
   version?: unknown;
   asset_folder?: unknown;
   secure_url?: unknown;
+  format?: unknown;
+  width?: unknown;
+  height?: unknown;
+  bytes?: unknown;
 }
 
 export const confirmUpload = async (
@@ -232,6 +236,18 @@ export const confirmUpload = async (
     resource.version === version &&
     Math.abs(nowSeconds - version) <= MAX_VERSION_SKEW_SECONDS &&
     typeof resource.secure_url === 'string';
+  // Bukti kompresi dari sisi server: JPEG, sisi terpanjang <= 1280 px, ukuran wajar.
+  const compressed =
+    (resource.format === 'jpg' || resource.format === 'jpeg') &&
+    typeof resource.width === 'number' &&
+    typeof resource.height === 'number' &&
+    Math.max(resource.width, resource.height) <= MAX_PHOTO_EDGE &&
+    typeof resource.bytes === 'number' &&
+    resource.bytes > 0 &&
+    resource.bytes <= MAX_PHOTO_BYTES;
+  if (verified && !compressed) {
+    throw new PreventiveServerError('verify_failed', 'Foto belum terkompresi dengan benar. Coba unggah ulang.');
+  }
   if (!verified) {
     throw new PreventiveServerError('verify_failed', 'Foto di Cloudinary tidak cocok dengan unggahan ini. Coba unggah ulang.');
   }

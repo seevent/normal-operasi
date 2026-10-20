@@ -18,7 +18,7 @@ test('alur unggah Preventive tidak memakai jalur fallback (Supabase Storage / un
   const files = ['src/lib/services/preventivePhotoService.ts', 'src/store/usePreventiveStore.ts', 'src/components/features/TabPreventive.tsx'];
   for (const f of files) {
     const src = code(f);
-    assert.doesNotMatch(src, /uploadPhotoToCloudinary|uploadPhotoToGoogleDrive|storage\.from\(|localStorage|upload_preset/, f);
+    assert.doesNotMatch(src, /uploadPhotoToCloudinary|uploadPhotoToGoogleDrive|storage\.from\(|localStorage|upload_preset|compressImage|cloudinaryService/, f);
   }
 });
 

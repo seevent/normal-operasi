@@ -5,7 +5,9 @@
 //   compress -> ticket (server tanda tangan) -> upload (browser -> Cloudinary langsung) -> confirm (server verifikasi + catat log)
 // "Tersimpan" hanya bila confirm berhasil.
 
+import { MAX_PHOTO_EDGE, PHOTO_JPEG_QUALITY } from '../data/preventiveTypes.ts';
 import type { ConfirmResult, UploadTicket } from '../data/preventiveTypes.ts';
+import { fitWithin } from '../utils/preventiveImage.ts';
 
 export type UploadStep = 'compress' | 'ticket' | 'upload' | 'confirm';
 
@@ -29,21 +31,39 @@ const UPLOAD_TIMEOUT_MS = 60_000;
 
 const messageOf = (e: unknown, fallback: string): string => (e instanceof Error && e.message ? e.message : fallback);
 
-const base64ToBlob = (base64: string, mimeType: string): Blob => {
-  const bin = atob(base64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: mimeType });
+/**
+ * Kompresi WAJIB dan ketat: gambar didekode, diperkecil (sisi terpanjang 1280 px) lalu di-encode ulang ke JPEG.
+ * Bila salah satu langkah gagal, galat dilempar. Tidak pernah mengembalikan berkas asli
+ * (berbeda dengan compressImage umum yang diam-diam jatuh ke berkas asli).
+ */
+export const compressPhotoStrict = async (file: Blob): Promise<Blob> => {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    try {
+      await img.decode();
+    } catch {
+      throw new Error('Format foto tidak didukung. Ambil ulang foto dengan kamera (JPEG).');
+    }
+    const { width, height } = fitWithin(img.naturalWidth, img.naturalHeight, MAX_PHOTO_EDGE);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Foto tidak dapat dikompres di perangkat ini.');
+    ctx.drawImage(img, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', PHOTO_JPEG_QUALITY));
+    if (!blob || blob.size === 0) throw new Error('Foto gagal dikompres.');
+    return blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 };
 
 /** Dependensi bawaan (dimuat saat dipakai agar modul ini tetap bisa diuji di Node tanpa React/TanStack). */
 export const defaultUploadDeps = (): UploadDeps => ({
-  compress: async (file) => {
-    const { compressImage } = await import('./cloudinaryService.ts');
-    const { base64, mimeType } = await compressImage(file);
-    if (!base64) throw new Error('Foto tidak dapat diproses.');
-    return base64ToBlob(base64, mimeType);
-  },
+  compress: compressPhotoStrict,
   getTicket: async (input) => {
     const { getPreventiveUploadTicket } = await import('../server/preventive.functions.ts');
     return getPreventiveUploadTicket({ data: input });
@@ -69,7 +89,11 @@ export async function uploadPreventivePhoto(
   try {
     blob = await deps.compress(file);
   } catch (e) {
-    throw new PreventiveUploadError('compress', messageOf(e, 'Foto tidak dapat diproses.'));
+    throw new PreventiveUploadError('compress', messageOf(e, 'Foto tidak dapat dikompres.'));
+  }
+  // Pagar kedua: yang boleh dikirim hanya JPEG hasil kompresi yang tidak kosong.
+  if (blob.size === 0 || blob.type !== 'image/jpeg') {
+    throw new PreventiveUploadError('compress', 'Foto gagal dikompres. Coba ambil ulang.');
   }
 
   let ticket: UploadTicket;

@@ -156,3 +156,20 @@ test('Retry = memanggil ulang fungsi yang sama dengan berkas yang sama; tidak ad
   assert.equal(ok.ok, true);
   assert.equal(attempts, 2);
 });
+
+test('hasil kompresi yang kosong atau bukan JPEG ditolak: foto asli tidak pernah dikirim', async () => {
+  for (const out of [new Blob([], { type: 'image/jpeg' }), new Blob([new Uint8Array([1])], { type: 'image/png' }), new Blob([new Uint8Array([1])])]) {
+    const deps = makeDeps({ compress: async () => out });
+    await failsAt(uploadPreventivePhoto('DAILY', EQ, photo(), deps), 'compress');
+    assert.ok(!deps.log.includes('ticket') && !deps.log.includes('upload'));
+  }
+});
+
+test('yang diunggah selalu keluaran compress, bukan berkas asli', async () => {
+  const original = new File([new Uint8Array(500_000)], 'besar.jpg', { type: 'image/jpeg' });
+  const deps = makeDeps();
+  await uploadPreventivePhoto('DAILY', EQ, original, deps);
+  const sent = deps.uploadInit.body.get('file');
+  assert.equal(sent.size, 2);
+  assert.notEqual(sent.size, original.size);
+});
