@@ -92,6 +92,12 @@ test('gagal kompres -> berhenti sebelum meminta tiket', async () => {
   assert.ok(!deps.log.includes('ticket'));
 });
 
+test('type kosong (pemilih foto Android tertentu) tidak ditolak di awal: dekode yang menentukan', async () => {
+  const deps = makeDeps();
+  const r = await uploadPreventivePhoto('DAILY', EQ, new File([new Uint8Array([1, 2, 3])], 'IMG_1.jpg', { type: '' }), deps);
+  assert.equal(r.ok, true);
+});
+
 test('berkas bukan gambar ditolak', async () => {
   const deps = makeDeps();
   await failsAt(uploadPreventivePhoto('DAILY', EQ, new File(['x'], 'a.pdf', { type: 'application/pdf' }), deps), 'compress');

@@ -51,7 +51,7 @@ export const periodKey = (period: string, now: Date): string => {
 };
 
 /** 'YYYY-MM-DD' -> 'YYYYMMDD' (format tanggal pada nama file). */
-export const compactKey = (key: string): string => key.replaceAll('-', '');
+export const compactKey = (key: string): string => key.replace(/-/g, '');
 
 /** Instan reset berikutnya (07.00 WIB) untuk periode ini. */
 export const nextResetAt = (period: string, now: Date): Date => {

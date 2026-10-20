@@ -7,7 +7,7 @@
 
 import { MAX_PHOTO_EDGE, PHOTO_JPEG_QUALITY } from '../data/preventiveTypes.ts';
 import type { ConfirmResult, UploadTicket } from '../data/preventiveTypes.ts';
-import { fitWithin } from '../utils/preventiveImage.ts';
+import { fitWithin, isAcceptableImage, isHeicLike } from '../utils/preventiveImage.ts';
 
 export type UploadStep = 'compress' | 'ticket' | 'upload' | 'confirm';
 
@@ -29,35 +29,75 @@ export interface UploadDeps {
 
 const UPLOAD_TIMEOUT_MS = 60_000;
 
+/** AbortSignal.timeout tidak ada di Safari iOS < 16; pakai AbortController. */
+const timeoutSignal = (ms: number): { signal: AbortSignal; clear: () => void } => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(new DOMException('Waktu habis', 'TimeoutError')), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(id) };
+};
+
 const messageOf = (e: unknown, fallback: string): string => (e instanceof Error && e.message ? e.message : fallback);
+
+interface Decoded {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  release: () => void;
+}
+
+/** Dekode lewat <img> (paling luas didukung, menghormati orientasi EXIF); bila gagal coba createImageBitmap. */
+const decodeImage = async (file: Blob): Promise<Decoded> => {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('decode'));
+      img.src = url;
+    });
+    return { source: img, width: img.naturalWidth, height: img.naturalHeight, release: () => URL.revokeObjectURL(url) };
+  } catch {
+    URL.revokeObjectURL(url);
+    if (typeof createImageBitmap === 'function') {
+      const bmp = await createImageBitmap(file);
+      return { source: bmp, width: bmp.width, height: bmp.height, release: () => bmp.close() };
+    }
+    throw new Error('decode');
+  }
+};
 
 /**
  * Kompresi WAJIB dan ketat: gambar didekode, diperkecil (sisi terpanjang 1280 px) lalu di-encode ulang ke JPEG.
  * Bila salah satu langkah gagal, galat dilempar. Tidak pernah mengembalikan berkas asli
  * (berbeda dengan compressImage umum yang diam-diam jatuh ke berkas asli).
  */
-export const compressPhotoStrict = async (file: Blob): Promise<Blob> => {
-  const url = URL.createObjectURL(file);
+export const compressPhotoStrict = async (file: Blob & { name?: string }): Promise<Blob> => {
+  let decoded: Decoded;
   try {
-    const img = new Image();
-    img.src = url;
-    try {
-      await img.decode();
-    } catch {
-      throw new Error('Format foto tidak didukung. Ambil ulang foto dengan kamera (JPEG).');
-    }
-    const { width, height } = fitWithin(img.naturalWidth, img.naturalHeight, MAX_PHOTO_EDGE);
-    const canvas = document.createElement('canvas');
+    decoded = await decodeImage(file);
+  } catch {
+    throw new Error(
+      isHeicLike({ type: file.type, name: file.name ?? '' })
+        ? 'Foto HEIC tidak bisa dibaca di perangkat ini. Di iPhone: Pengaturan > Kamera > Format > Paling Kompatibel, lalu ambil foto lagi.'
+        : 'Foto tidak bisa dibaca. Ambil ulang foto dengan kamera.',
+    );
+  }
+  const canvas = document.createElement('canvas');
+  try {
+    const { width, height } = fitWithin(decoded.width, decoded.height, MAX_PHOTO_EDGE);
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Foto tidak dapat dikompres di perangkat ini.');
-    ctx.drawImage(img, 0, 0, width, height);
+    ctx.drawImage(decoded.source, 0, 0, width, height);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', PHOTO_JPEG_QUALITY));
     if (!blob || blob.size === 0) throw new Error('Foto gagal dikompres.');
     return blob;
   } finally {
-    URL.revokeObjectURL(url);
+    // Safari iOS membatasi total memori canvas; tanpa dilepas, puluhan foto berturut-turut mulai gagal.
+    canvas.width = 0;
+    canvas.height = 0;
+    decoded.release();
   }
 };
 
@@ -81,7 +121,7 @@ export async function uploadPreventivePhoto(
   file: Blob,
   deps: UploadDeps = defaultUploadDeps(),
 ): Promise<ConfirmResult> {
-  if (!file.type.startsWith('image/')) {
+  if (!isAcceptableImage({ type: file.type, name: (file as File).name ?? '' })) {
     throw new PreventiveUploadError('compress', 'Berkas yang dipilih bukan gambar.');
   }
 
@@ -114,11 +154,12 @@ export async function uploadPreventivePhoto(
   form.append('invalidate', 'true');
 
   let version: number;
+  const timer = timeoutSignal(UPLOAD_TIMEOUT_MS);
   try {
     const res = await deps.fetch(ticket.uploadUrl, {
       method: 'POST',
       body: form,
-      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+      signal: timer.signal,
     });
     const body = (await res.json().catch(() => ({}))) as { version?: unknown; error?: { message?: string } };
     if (!res.ok) {
@@ -136,6 +177,8 @@ export async function uploadPreventivePhoto(
         ? 'Koneksi terputus saat mengunggah. Periksa sinyal lalu coba lagi.'
         : messageOf(e, 'Unggahan ke Cloudinary gagal.');
     throw new PreventiveUploadError('upload', message);
+  } finally {
+    timer.clear();
   }
 
   try {

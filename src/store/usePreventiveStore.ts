@@ -4,6 +4,7 @@ import { fetchPhotoLog, fetchPreventiveAssets, fetchServerClock } from '../lib/s
 import { PreventiveUploadError, uploadPreventivePhoto } from '../lib/services/preventivePhotoService';
 import type { PreventivePeriod } from '../lib/data/preventiveTypes';
 import type { PreventiveAsset, RowStatus } from '../lib/utils/preventiveGrouping';
+import { createLimiter } from '../lib/utils/preventiveImage';
 import { buildSavedMap, deriveStatus, pruneStaleLocals, rowKey } from '../lib/utils/preventiveStatus';
 import type { LocalEntry, PeriodKeys, SavedEntry } from '../lib/utils/preventiveStatus';
 
@@ -31,6 +32,8 @@ interface PreventiveState {
  */
 const pendingFiles = new Map<string, Blob>();
 let refreshInFlight: Promise<void> | null = null;
+/** Kompresi foto berat di memori ponsel dan jaringan lapangan tidak stabil: maksimal 2 foto diproses bersamaan. */
+const limitUploads = createLimiter(2);
 
 export const statusOf = (s: Pick<PreventiveState, 'keys' | 'saved' | 'locals'>, period: PreventivePeriod, equipmentNumber: string): RowStatus => {
   if (!s.keys) return 'idle';
@@ -92,7 +95,7 @@ export const usePreventiveStore = create<PreventiveState>((set, get) => ({
     set((s) => ({ locals: { ...s.locals, [k]: { status: 'uploading', periodKey: startKey } } }));
 
     try {
-      const result = await uploadPreventivePhoto(period, asset.equipmentNumber, file);
+      const result = await limitUploads(() => uploadPreventivePhoto(period, asset.equipmentNumber, file));
       pendingFiles.delete(k);
       set((s) => {
         const { [k]: _done, ...rest } = s.locals;

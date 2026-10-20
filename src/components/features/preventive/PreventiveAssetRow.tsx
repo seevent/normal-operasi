@@ -76,7 +76,7 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         capture="environment"
         className="hidden"
         aria-label={`Foto ${asset.name}`}

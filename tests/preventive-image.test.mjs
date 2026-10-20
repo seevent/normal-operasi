@@ -33,3 +33,48 @@ test('hasil selalu bilangan bulat >= 1 dan tidak melebihi batas', () => {
   assert.equal(r.width, 1280);
   assert.ok(r.height >= 1 && Number.isInteger(r.height));
 });
+
+import { isAcceptableImage, isHeicLike, parseServerTime, createLimiter } from '../src/lib/utils/preventiveImage.ts';
+
+test('isAcceptableImage: image/* atau type kosong (beberapa pemilih foto Android) diterima; selain itu ditolak', () => {
+  assert.equal(isAcceptableImage({ type: 'image/jpeg', name: 'a.jpg' }), true);
+  assert.equal(isAcceptableImage({ type: 'image/heic', name: 'a.heic' }), true);
+  assert.equal(isAcceptableImage({ type: '', name: 'IMG_0001.JPG' }), true);
+  assert.equal(isAcceptableImage({ type: '', name: 'IMG_0001.HEIC' }), true);
+  assert.equal(isAcceptableImage({ type: '', name: 'catatan' }), false);
+  assert.equal(isAcceptableImage({ type: 'application/pdf', name: 'a.pdf' }), false);
+  assert.equal(isAcceptableImage({ type: 'video/mp4', name: 'a.mp4' }), false);
+});
+
+test('isHeicLike mengenali HEIC/HEIF dari type atau nama berkas', () => {
+  assert.equal(isHeicLike({ type: 'image/heic', name: 'x' }), true);
+  assert.equal(isHeicLike({ type: 'image/heif', name: 'x' }), true);
+  assert.equal(isHeicLike({ type: '', name: 'IMG_1.HEIC' }), true);
+  assert.equal(isHeicLike({ type: 'image/jpeg', name: 'IMG_1.jpg' }), false);
+});
+
+test('parseServerTime tahan format mikrodetik dari Postgres (Safari) dan tidak pernah NaN', () => {
+  assert.equal(parseServerTime('2026-10-20T06:02:53.426441+00:00'), Date.parse('2026-10-20T06:02:53.426Z'));
+  assert.equal(parseServerTime('2026-10-20T06:02:53+00:00'), Date.parse('2026-10-20T06:02:53Z'));
+  assert.equal(parseServerTime('2026-10-20T06:02:53.4Z'), Date.parse('2026-10-20T06:02:53.400Z'));
+  assert.equal(parseServerTime('bukan tanggal'), null);
+  assert.equal(parseServerTime(''), null);
+});
+
+test('createLimiter menjalankan paling banyak N tugas bersamaan, urut kedatangan, dan lepas saat galat', async () => {
+  const limit = createLimiter(2);
+  let running = 0, peak = 0;
+  const order = [];
+  const task = (id, ms, fail = false) => limit(async () => {
+    running += 1; peak = Math.max(peak, running); order.push(`mulai${id}`);
+    await new Promise((r) => setTimeout(r, ms));
+    running -= 1;
+    if (fail) throw new Error(`gagal${id}`);
+    return id;
+  });
+  const results = await Promise.allSettled([task(1, 30), task(2, 30, true), task(3, 10), task(4, 10), task(5, 10)]);
+  assert.equal(peak, 2);
+  assert.deepEqual(results.map((r) => r.status), ['fulfilled', 'rejected', 'fulfilled', 'fulfilled', 'fulfilled']);
+  assert.deepEqual(order.slice(0, 2), ['mulai1', 'mulai2']);
+  assert.equal(order.length, 5, 'tugas setelah yang gagal tetap berjalan');
+});

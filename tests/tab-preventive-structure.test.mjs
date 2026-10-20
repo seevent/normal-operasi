@@ -46,7 +46,8 @@ test('rahasia server dibaca tanpa awalan VITE_ (tidak ikut ke bundel browser)', 
 
 test('input foto memakai kamera belakang dan target sentuh minimal 44px', () => {
   const row = read('src/components/features/preventive/PreventiveAssetRow.tsx');
-  assert.match(row, /accept="image\/\*"/);
+  // Tanpa "image/*": iOS Safari mengubah HEIC menjadi JPEG hanya bila accept menyebut format spesifik.
+  assert.match(row, /accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(row, /capture="environment"/);
   assert.match(row, /min-h-\[44px\]/);
   const tab = read('src/components/features/TabPreventive.tsx');

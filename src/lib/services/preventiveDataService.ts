@@ -4,6 +4,7 @@
 import { supabase } from '../supabaseClient';
 import type { PreventiveAsset } from '../utils/preventiveGrouping';
 import type { PeriodKeys, PhotoLogRow } from '../utils/preventiveStatus';
+import { parseServerTime } from '../utils/preventiveImage';
 
 interface AssetRow {
   equipment_number: string;
@@ -47,11 +48,11 @@ export async function fetchServerClock(): Promise<ServerClock> {
   const t1 = Date.now();
   if (error || !data) throw new Error('Waktu server tidak dapat dibaca.');
   const k = data as { now: string; daily: string; weekly: string; monthly: string };
-  const serverNow = new Date(k.now).getTime();
-  if (!Number.isFinite(serverNow)) throw new Error('Waktu server tidak valid.');
+  // Kunci periode (tanggal) tetap sah walau jam server tak terbaca; selisih jam hanya dipakai untuk penjadwalan ulang.
+  const serverNow = parseServerTime(String(k.now));
   return {
     keys: { DAILY: k.daily, WEEKLY: k.weekly, MONTHLY: k.monthly },
-    offsetMs: serverNow - (t0 + t1) / 2,
+    offsetMs: serverNow === null ? 0 : serverNow - (t0 + t1) / 2,
   };
 }
 
