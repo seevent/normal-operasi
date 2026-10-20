@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { fetchChecklistShiftData, saveChecklistSupervisorDirect } from '../../lib/services/checklistSyncService';
 import { calculateChecklistSummary, saveChecklistSummary } from '../../lib/services/operationalReportService';
 import { validateChecklist } from '../../lib/utils/formValidation';
-import { reportMissingFields } from '../../lib/utils/missingFields';
+import { reportMissingFields, reportTimeRangeError, warnTimeRange } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
 export const TabChecklist: React.FC = () => {
@@ -196,6 +196,13 @@ export const TabChecklist: React.FC = () => {
         return;
       }
     }
+    if (name === 'waktuMulai' || name === 'waktuSelesai') {
+      warnTimeRange(
+        name === 'waktuMulai' ? value : checklistData.waktuMulai,
+        name === 'waktuSelesai' ? value : checklistData.waktuSelesai,
+        'pukul'
+      );
+    }
     if (name === 'tanggal' && value) {
       let resetWaktuMulai = false;
       let resetWaktuSelesai = false;
@@ -270,6 +277,10 @@ export const TabChecklist: React.FC = () => {
     if (missing.length > 0) {
       setShowErrors(true);
       reportMissingFields(missing);
+      return;
+    }
+
+    if (reportTimeRangeError(checklistData.waktuMulai, checklistData.waktuSelesai, 'pukul')) {
       return;
     }
 

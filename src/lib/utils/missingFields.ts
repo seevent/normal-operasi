@@ -4,6 +4,7 @@
 
 import { sayPet } from '../../store/useAppStore';
 import { buildMissingPetMessage, type MissingField } from './formValidation.ts';
+import { isStartAfterEnd, buildTimeRangeMessage } from './timeRange.ts';
 
 const findField = (key: string): HTMLElement | null => {
   const k = CSS.escape(key);
@@ -28,4 +29,18 @@ export const reportMissingFields = (missing: MissingField[]): void => {
   const message = buildMissingPetMessage(missing);
   if (message) sayPet(message, 'warning');
   focusFirstMissing(missing);
+};
+
+/** Maskot memperingatkan bila pukul mulai melebihi pukul selesai. Mengembalikan `true` bila terbalik. */
+export const warnTimeRange = (start: string, end: string, noun = 'pukul'): boolean => {
+  if (!isStartAfterEnd(start, end)) return false;
+  sayPet(buildTimeRangeMessage(start, end, noun), 'warning');
+  return true;
+};
+
+/** Seperti warnTimeRange, ditambah fokus ke isian pukul mulai. Dipakai saat laporan akan dibagikan. */
+export const reportTimeRangeError = (start: string, end: string, noun = 'pukul'): boolean => {
+  if (!warnTimeRange(start, end, noun)) return false;
+  focusFirstMissing([{ key: 'waktuMulai', label: `${noun} mulai` }]);
+  return true;
 };

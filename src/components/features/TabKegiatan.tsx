@@ -11,7 +11,7 @@ import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/servic
 import { useTipePeralatanOptions } from '../../lib/hooks/useTipePeralatanOptions';
 import { normalizeLokasi } from '../../lib/utils/lokasiFormat';
 import { validateKegiatan } from '../../lib/utils/formValidation';
-import { reportMissingFields } from '../../lib/utils/missingFields';
+import { reportMissingFields, reportTimeRangeError, warnTimeRange } from '../../lib/utils/missingFields';
 
 export const TabKegiatan: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -80,6 +80,13 @@ export const TabKegiatan: React.FC = () => {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
+    }
+    if (name === 'waktuMulai' || name === 'waktuSelesai') {
+      warnTimeRange(
+        name === 'waktuMulai' ? value : kegiatanData.waktuMulai,
+        name === 'waktuSelesai' ? value : kegiatanData.waktuSelesai,
+        'pukul'
+      );
     }
     if (name === 'tanggal' && value) {
       let resetWaktuMulai = false;
@@ -170,6 +177,10 @@ export const TabKegiatan: React.FC = () => {
     if (missing.length > 0) {
       setShowErrors(true);
       reportMissingFields(missing);
+      return;
+    }
+
+    if (reportTimeRangeError(kegiatanData.waktuMulai, kegiatanData.waktuSelesai, 'pukul')) {
       return;
     }
     

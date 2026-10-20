@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Cpu, FileText, MapPin, User, Clock, Calendar, AlertCircle, Share2, CheckCircle, Plus, X, Wrench, Camera, Move, Trash2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { validatePerbaikan } from '../../lib/utils/formValidation';
-import { reportMissingFields } from '../../lib/utils/missingFields';
+import { reportMissingFields, reportTimeRangeError, warnTimeRange } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 import { PhotoUploader } from '../shared/PhotoUploader';
 import { getLokasi2Options, getGeneralLokasiOptions } from '../../lib/utils/locationRules';
@@ -156,6 +156,13 @@ export const TabPerbaikan: React.FC = () => {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
+    }
+    if (name === 'waktuMulai' || name === 'waktuSelesai') {
+      warnTimeRange(
+        name === 'waktuMulai' ? value : formData.waktuMulai,
+        name === 'waktuSelesai' ? value : formData.waktuSelesai,
+        'pukul'
+      );
     }
     if (name === 'tanggal' && value) {
       let resetWaktuMulai = false;
@@ -414,6 +421,10 @@ export const TabPerbaikan: React.FC = () => {
     if (missing.length > 0) {
       setShowErrors(true);
       reportMissingFields(missing);
+      return;
+    }
+
+    if (reportTimeRangeError(formData.waktuMulai, formData.waktuSelesai, 'pukul')) {
       return;
     }
 

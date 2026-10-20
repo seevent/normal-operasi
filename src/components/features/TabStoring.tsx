@@ -14,7 +14,7 @@ import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 import { formatLokasi, normalizeLokasi } from '../../lib/utils/lokasiFormat';
 import { validateStoring } from '../../lib/utils/formValidation';
-import { reportMissingFields } from '../../lib/utils/missingFields';
+import { reportMissingFields, reportTimeRangeError, warnTimeRange } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
 
 export const TabStoring: React.FC = () => {
@@ -76,6 +76,13 @@ export const TabStoring: React.FC = () => {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
+    }
+    if (name === 'waktuMulai' || name === 'waktuSelesai') {
+      warnTimeRange(
+        name === 'waktuMulai' ? value : storingData.waktuMulai,
+        name === 'waktuSelesai' ? value : storingData.waktuSelesai,
+        'pukul'
+      );
     }
     if (name === 'tanggal' && value) {
       let resetWaktuMulai = false;
@@ -213,6 +220,11 @@ export const TabStoring: React.FC = () => {
     if (missing.length > 0) {
       setShowErrors(true);
       reportMissingFields(missing);
+      unlock();
+      return;
+    }
+
+    if (reportTimeRangeError(storingData.waktuMulai, storingData.waktuSelesai, 'pukul')) {
       unlock();
       return;
     }

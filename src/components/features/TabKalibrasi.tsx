@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Clock, Calendar, MapPin, Trash2, Cpu, Plus, Share2, CheckCircle, FileText, Camera, Move, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { validateKalibrasi } from '../../lib/utils/formValidation';
-import { reportMissingFields } from '../../lib/utils/missingFields';
+import { reportMissingFields, reportTimeRangeError, warnTimeRange } from '../../lib/utils/missingFields';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
 import { generateWA_Kalibrasi, formatKalibrasiEntryKegiatanDanCatatan } from '../../lib/utils/waGenerator';
@@ -93,6 +93,13 @@ export const TabKalibrasi: React.FC = () => {
         alert(`Pukul Selesai tidak boleh melebihi waktu saat ini (${currentTimeStr})`);
         return;
       }
+    }
+    if (name === 'waktuMulai' || name === 'waktuSelesai') {
+      warnTimeRange(
+        name === 'waktuMulai' ? value : kalibrasiGlobal.waktuMulai,
+        name === 'waktuSelesai' ? value : kalibrasiGlobal.waktuSelesai,
+        'pukul'
+      );
     }
     if (name === 'tanggal' && value) {
       let resetWaktuMulai = false;
@@ -389,6 +396,11 @@ export const TabKalibrasi: React.FC = () => {
     if (missing.length > 0) {
       setShowErrors(true);
       reportMissingFields(missing);
+      unlock();
+      return;
+    }
+
+    if (reportTimeRangeError(kalibrasiGlobal.waktuMulai, kalibrasiGlobal.waktuSelesai, 'pukul')) {
       unlock();
       return;
     }
