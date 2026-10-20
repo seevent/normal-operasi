@@ -9,7 +9,7 @@ Aplikasi **SSES T2 Generator Laporan** dibangun menggunakan arsitektur **Single 
 
 ```mermaid
 graph TD
-    User([User / Mobile Browser]) --> UI[React 19 Mobile-First UI\n12 Modul Tab + Touch Swipe Navigation + AntigravityPet Mascot]
+    User([User / Mobile Browser]) --> UI[React 19 Mobile-First UI\n13 Modul Tab + Touch Swipe Navigation + AntigravityPet Mascot]
     UI --> Router[TanStack Router]
     UI --> Store[Zustand Stores\nuseAppStore | useAuthStore | useMasterDataStore]
     UI --> Services[Service Layer\noperationalReportService | cloudinaryService | pdfService | shareService | checklistSyncService]
@@ -59,8 +59,8 @@ graph TD
 ```
 src/
 ├── components/
-│   ├── App.tsx                     # Root Layout: Header status, Tab Navigation (12 tab), Floating Share, & AntigravityPet
-│   ├── features/                   # Komponen Fitur (12 Tab Modul, Admin CRUD, Mascot)
+│   ├── App.tsx                     # Root Layout: Header status, Tab Navigation (13 tab), Floating Share, & AntigravityPet
+│   ├── features/                   # Komponen Fitur (13 Tab Modul, Admin CRUD, Mascot)
 │   │   ├── AntigravityPet.tsx      # Maskot mesin X-Ray: pelapor status operasional (konsumen `useAppStore.petMessage`)
 │   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) di Tab Data
 │   │   ├── TabKehadiran.tsx        # Laporan kehadiran shift (API & OM IAS)

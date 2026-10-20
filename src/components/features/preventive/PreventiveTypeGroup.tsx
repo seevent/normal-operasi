@@ -1,0 +1,92 @@
+import React from 'react';
+import { CheckCircle2, ChevronDown, MapPin } from 'lucide-react';
+import { ASSET_TYPE_LABEL } from '../../../lib/data/preventiveTypes';
+import type { PreventiveAssetType, PreventivePeriod } from '../../../lib/data/preventiveTypes';
+import type { PreventiveAsset, RowStatus, TypeGroup } from '../../../lib/utils/preventiveGrouping';
+import { rowKey } from '../../../lib/utils/preventiveStatus';
+import type { LocalEntry, SavedEntry } from '../../../lib/utils/preventiveStatus';
+import { PreventiveAssetRow } from './PreventiveAssetRow';
+
+interface Props {
+  period: PreventivePeriod;
+  group: TypeGroup;
+  open: boolean;
+  onToggle: (assetType: string) => void;
+  statusFor: (asset: PreventiveAsset) => RowStatus;
+  saved: Record<string, SavedEntry>;
+  locals: Record<string, LocalEntry>;
+  disabled: boolean;
+  onPick: (asset: PreventiveAsset, file: File) => void;
+  onRetry: (asset: PreventiveAsset) => Promise<boolean>;
+}
+
+const percent = (saved: number, total: number): number => (total === 0 ? 0 : Math.round((saved / total) * 100));
+
+export const PreventiveTypeGroup: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, disabled, onPick, onRetry }) => {
+  const label = ASSET_TYPE_LABEL[group.assetType as PreventiveAssetType] ?? group.assetType;
+  const complete = group.total > 0 && group.saved === group.total;
+  const panelId = `prev-${period}-${group.assetType.replace(/\s+/g, '-')}`;
+
+  return (
+    <section className="rounded-2xl border border-slate-300 bg-white shadow-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onToggle(group.assetType)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className={`w-full min-h-[56px] flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${complete ? 'bg-emerald-50 hover:bg-emerald-100' : 'bg-slate-50 hover:bg-slate-100'}`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">{label}</h3>
+            {complete && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" aria-label="Semua tersimpan" />}
+          </div>
+          <div className="mt-1.5 flex items-center gap-2">
+            <div className="h-1.5 flex-1 rounded-full bg-slate-200 overflow-hidden" aria-hidden="true">
+              <div className={`h-full rounded-full transition-all ${complete ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${percent(group.saved, group.total)}%` }} />
+            </div>
+            <span className="text-xs font-bold tabular-nums text-slate-700 shrink-0">
+              {group.saved}/{group.total}
+            </span>
+          </div>
+        </div>
+        <ChevronDown className={`w-5 h-5 text-slate-500 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div id={panelId} className="border-t border-slate-300">
+          {group.locations.map((loc) => (
+            <div key={loc.location}>
+              <div className="flex items-center justify-between gap-2 bg-blue-50/70 px-3.5 py-1.5 border-b border-slate-200">
+                <h4 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-blue-900 min-w-0">
+                  <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{loc.location}</span>
+                </h4>
+                <span className="text-[11px] font-bold tabular-nums text-blue-900 shrink-0">
+                  {loc.saved}/{loc.total}
+                </span>
+              </div>
+              <ul>
+                {loc.assets.map((asset) => {
+                  const k = rowKey(period, asset.equipmentNumber);
+                  return (
+                    <PreventiveAssetRow
+                      key={asset.equipmentNumber}
+                      asset={asset}
+                      status={statusFor(asset)}
+                      error={locals[k]?.error}
+                      saved={saved[k]}
+                      disabled={disabled}
+                      onPick={onPick}
+                      onRetry={onRetry}
+                    />
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};

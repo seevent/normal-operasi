@@ -276,6 +276,28 @@ Menyimpan rekapitulasi ringkasan kelaikan peralatan (*serviceability summary*) p
 
 ---
 
+### 3.15. Tabel `prima_assets` (Preventive)
+Salinan daftar peralatan PRIMA Terminal 2 (171 aset). Disinkronkan dari PRIMA oleh pemelihara; aplikasi hanya membaca.
+
+| Nama Kolom | Tipe Data | Keterangan |
+|---|---|---|
+| `equipment_number` | `TEXT` **PK** | Pola `^ESE[0-9]{12}$`, sama dengan Equipment Number di PRIMA. |
+| `name` | `TEXT` | Nama peralatan. |
+| `asset_type` | `TEXT` | Salah satu dari 7 jenis (ACCESS CONTROL SYSTEM, BODY SCANNER, ETD DESKTOP, HANDHELD METAL DETECTOR, WALK THROUGH METAL DETECTOR, X-RAY BAGASI, X-RAY KABIN); sama dengan nama folder Cloudinary. |
+| `terminal`, `location_group`, `location_override` | `TEXT` | Lokasi hasil parse nama; `location_override` boleh diisi pengguna login untuk koreksi. |
+| `periods` | `TEXT[]` | Kode jadwal PRIMA (D, W, M, …); Daily/Weekly/Monthly memakai D/W/M. |
+| `active` | `BOOLEAN` | Aset nonaktif tidak tampil. |
+
+RLS: `SELECT` untuk `anon` & `authenticated`; tidak ada policy tulis untuk tamu (hanya `location_override` yang bisa di-UPDATE pengguna login).
+
+### 3.16. Tabel `preventive_photo_log` dan fungsi periode
+Satu baris per (`period`, `equipment_number`, `period_key`): `period` ∈ DAILY/WEEKLY/MONTHLY, `period_key` = tanggal awal periode, `public_id`, `secure_url`, `cloudinary_version`, `uploaded_at`. PK `(period, equipment_number, period_key)`. Status "tersimpan" di UI = ada baris untuk kunci periode berjalan; reset 07.00 terjadi karena kunci berganti (tanpa cron).
+
+* RLS: `SELECT` publik; **tulis hanya lewat** `record_preventive_photo(p_period, p_equipment, p_version, p_secure_url)` (`SECURITY DEFINER`, `EXECUTE` hanya untuk `service_role`; memvalidasi periode, aset aktif, versi ≤ 15 menit, dan pola URL Cloudinary).
+* Fungsi waktu (otoritas server): `preventive_operational_day()`, `preventive_period_key()`, `preventive_current_keys()` (dipanggil browser untuk kunci periode). Logikanya identik dengan `src/lib/utils/preventivePeriod.ts` dan dijaga oleh tes paritas.
+
+---
+
 ### 3.14. Supabase Storage Bucket: `dokumentasi`
 Bucket penyimpanan objek publik yang digunakan sebagai fail-safe secondary tier penyimpanan foto laporan operasional.
 

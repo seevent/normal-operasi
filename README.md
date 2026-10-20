@@ -1,6 +1,6 @@
 # SSES T2 - Generator Laporan Operasional
 
-Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **12 fitur tab** terintegrasi, dukungan tanda tangan digital, anotasi foto, serta sinkronisasi cloud real-time ke **Supabase** dan CDN penyimpanan foto **Cloudinary**.
+Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Services (SSES T2)** di Bandara Soekarno-Hatta Terminal 2. Aplikasi ini memudahkan pembuatan, pemantauan, dan pengiriman laporan harian melalui WhatsApp dengan **13 fitur tab** terintegrasi, dukungan tanda tangan digital, anotasi foto, serta sinkronisasi cloud real-time ke **Supabase** dan CDN penyimpanan foto **Cloudinary**.
 
 ---
 
@@ -8,14 +8,14 @@ Aplikasi web *mobile-first* untuk personel **T2 Safety & Security Electronic Ser
 
 Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan panduan pengembang AI/Human telah tersedia pada berkas-berkas berikut:
 
-* 📄 **[Product Requirements Document (PRD)](prd.md)**: Spesifikasi produk, visi, daftar 12 fitur tab, target pengguna, dan Kebutuhan Non-Fungsional (NFR).
+* 📄 **[Product Requirements Document (PRD)](prd.md)**: Spesifikasi produk, visi, daftar 13 fitur tab, target pengguna, dan Kebutuhan Non-Fungsional (NFR).
 * 🏗️ **[System Architecture Document](architecture.md)**: Arsitektur SPA, diagram alur data, stack teknologi, state management (Zustand), dan pipeline Canvas Konva / Signature Pad.
 * 🗄️ **[Database & Data Schema Specification](database.md)**: Skema tabel Supabase PostgreSQL (termasuk Unit Peralatan, Sparepart, NIK Personel), ERD relasional peralatan-lokasi, dan struktur JSONB `master_configs`.
 * 🤖 **[AI Agent & Developer Guidelines](agent.md)**: Panduan konvensi pengkodean, aturan mobile-first, isolasi komponen tab, dan checklist verifikasi untuk AI Assistant.
 
 ---
 
-## ✨ Fitur Utama (12 Tab Modul Operasional)
+## ✨ Fitur Utama (13 Tab Modul Operasional)
 
 | Tab | Fungsi & Deskripsi Utama |
 |---|---|
@@ -28,6 +28,7 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 | **Kalibrasi** | Generator laporan PM & kalibrasi multi-lokasi dengan parameter pengujian dinamis (X-Ray, WTMD, Body Scanner, ETD, HHMD, Access Control, serta Extension Conveyor), terintegrasi upload foto dual-tier cloud storage (Cloudinary + Supabase Storage fallback). |
 | **Kegiatan** | Generator laporan kegiatan harian personel di lapangan. |
 | **BA Serah Terima** | Generator Berita Acara (BA) Serah Terima Barang & Material. Dilengkapi **Digital Signature Canvas (Pad Tanda Tangan)** untuk Pihak 1, Pihak 2, dan Supervisor yang bertugas dinas, multi-item serial number, lampiran foto, format cetak default **A4 Portrait**, serta ekspor format WA & PDF teroptimasi (`pdfService.ts`). |
+| **Preventive** | Bukti foto *preventive maintenance* **Daily / Weekly / Monthly** per peralatan. Daftar peralatan = salinan daftar PRIMA Terminal 2 (tabel `prima_assets`, 171 aset), dikelompokkan per jenis → lokasi, dengan pencarian & filter status. Tiap baris punya tombol **Upload → Edit** (timpa foto lama) atau **Retry** bila gagal, **tanpa fallback**. Foto masuk Cloudinary `PRIMA/PREVENTIVE/MAINTENANCE/{PERIODE}/{JENIS}/{EquipmentNumber}_{YYYYMMDD}`. Status reset otomatis: Daily tiap hari 07.00, Weekly tiap Minggu 07.00, Monthly tiap tanggal 1 pukul 07.00 (WIB). Unggah memakai *server function* bertanda tangan (API secret hanya di server). |
 | **Shift Report** | Rekapitulasi laporan pergantian shift (*Shift Handover Report*). Dilengkapi **Interactive Serviceability Diagram** dengan sinkronisasi koordinat denah Terminal 2 (sub-terminal D, E, F), hitungan total & off peralatan yang dapat diedit, persentase kelaikan dinamis, format cetak default **A4 Landscape**, lembar terpisah khusus untuk checklist & diagram serviceability (`.serviceability-page-sheet`), fitur CRUD entri log dengan **lampiran foto langsung (in-modal upload/edit)**, dan persistensi otomatis ke database (`laporan_operasional`, `laporan_checklist`). |
 | **TIP** | Tracker TIP (*Threat Image Projection*) Performance bulanan/tahunan dengan visualisasi skor dan ekspor gambar. Data tersimpan ke Supabase Cloud. |
 | **Data** | Panel admin (login required) untuk mengelola master data, penempatan relasional aset, unit peralatan per lokasi, sparepart, konfigurasi Cloudinary CDN, upload jadwal Excel, dan konfigurasi personel (termasuk NIK). |
@@ -61,8 +62,8 @@ Dokumentasi lengkap mengenai arsitektur, kebutuhan sistem, skema database, dan p
 ```
 src/
 ├── components/
-│   ├── App.tsx                    # Root layout: Header, Navigation 12 tab (pagination & touch swipe), Floating WA share, & AntigravityPet
-│   ├── features/                  # Komponen per-fitur (12 Tab Modul, Admin CRUD, Mascot)
+│   ├── App.tsx                    # Root layout: Header, Navigation 13 tab (pagination & touch swipe), Floating WA share, & AntigravityPet
+│   ├── features/                  # Komponen per-fitur (13 Tab Modul, Admin CRUD, Mascot)
 │   │   ├── AntigravityPet.tsx     # Maskot mesin X-Ray: pelapor status operasional & validasi (baca useAppStore.petMessage)
 │   │   ├── CloudinarySettingsPanel.tsx # Pengaturan Cloudinary CDN (Cloud Name & Upload Preset) & sync foto
 │   │   ├── TabKehadiran.tsx       # Tab laporan kehadiran shift
@@ -144,7 +145,15 @@ src/
    VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
    VITE_CLOUDINARY_CLOUD_NAME=<your-cloudinary-cloud-name>
    VITE_CLOUDINARY_UPLOAD_PRESET=<your-unsigned-upload-preset>
+
+   # Khusus tab Preventive (dibaca SERVER saja; jangan diawali VITE_ dan jangan di-commit)
+   CLOUDINARY_CLOUD_NAME=<your-cloudinary-cloud-name>
+   CLOUDINARY_API_KEY=<your-cloudinary-api-key>
+   CLOUDINARY_API_SECRET=<your-cloudinary-api-secret>
+   SUPABASE_URL=<your-supabase-url>            # opsional: bila kosong memakai VITE_SUPABASE_URL
+   SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
    ```
+   Untuk produksi (Netlify), isi lima variabel server di atas pada *Site configuration → Environment variables*. Tanpa itu tab Preventive menampilkan "Gagal tersimpan" dengan pesan konfigurasi server belum lengkap.
 
 ---
 

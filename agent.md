@@ -17,7 +17,7 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 * **Ukuran Touch Target**: Area sentuh tombol dan elemen interaktif minimal **44px x 44px**.
 
 ### 2.2. Isolasi Komponen Tab (`src/components/features/`)
-* Setiap tab dari 12 modul utama memiliki file komponen khusus di `src/components/features/Tab<NamaFitur>.tsx`.
+* Setiap tab dari 13 modul utama memiliki file komponen khusus di `src/components/features/Tab<NamaFitur>.tsx`.
 * **Jangan menggabungkan logika antar-tab** ke dalam satu file raksasa. Jika terdapat UI reusable (seperti uploader foto, signature pad, modal editor, atau icon), tempatkan di `src/components/shared/`.
 
 ### 2.3. Manajemen State Relasional (`useMasterDataStore.ts`)
@@ -62,13 +62,13 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
 
 | Path File | Fungsi Utama | Perhatian Khusus bagi Agent |
 |---|---|---|
-| [`src/components/App.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/App.tsx) | Navigation root, tab bar, & mascot | Menangani navigasi 12 tab, swipe touch, floating WA share, dan mount `AntigravityPet`. |
+| [`src/components/App.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/App.tsx) | Navigation root, tab bar, & mascot | Menangani navigasi 13 tab, swipe touch, floating WA share, dan mount `AntigravityPet`. |
 | [`src/components/features/AntigravityPet.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/AntigravityPet.tsx) | Interactive mascot widget | Maskot mesin X-Ray terapung (zero-g float, glow, dan kabar operasional lewat `useAppStore.sayPet`). |
 | [`src/components/features/TabShiftReport.tsx`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/components/features/TabShiftReport.tsx) | Shift report & serviceability | Interactive Serviceability Diagram (Zone D, E, F), in-modal photo upload/attachment, dan sinkronisasi kelaikan peralatan. |
 | [`src/lib/services/operationalReportService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/operationalReportService.ts) | Layanan persistensi operasional | Menyimpan & memfilter log operasional shift (dengan deduplikasi) dan kelaikan peralatan ke Supabase. |
 | [`src/lib/services/cloudinaryService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/cloudinaryService.ts) | Layanan cloud upload Cloudinary | Mengunggah foto dokumentasi ke Cloudinary via Unsigned Upload Preset. |
 | [`src/lib/services/pdfService.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/services/pdfService.ts) | Layanan ekspor PDF | Ekspor dokumen non-blocking menggunakan dynamic import `html2pdf.js`. |
-| [`src/lib/utils/waGenerator.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/waGenerator.ts) | Template pesan WA | Memiliki generator khusus per-tab untuk seluruh 12 modul operasional. |
+| [`src/lib/utils/waGenerator.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/waGenerator.ts) | Template pesan WA | Memiliki generator khusus per-tab untuk seluruh modul operasional pembuat laporan WA (tab Preventive tidak menghasilkan pesan WA). |
 | [`src/lib/utils/locationRules.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/lib/utils/locationRules.ts) | Helper relasi lokasi & peralatan | Memfilter dropdown lokasi berdasarkan peralatan terpilih. |
 | [`src/store/useMasterDataStore.ts`](file:///c:/Users/Yuli%20Syarif/normal-operasi/src/store/useMasterDataStore.ts) | Zustand store master data | Mengelola pencocokan Supabase, spareparts, & local cache. |
 

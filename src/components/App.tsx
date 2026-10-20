@@ -2,7 +2,7 @@ import React, { useState, useEffect, cloneElement } from 'react';
 import { 
   Wrench, Users, Megaphone, CheckSquare, Settings, AlertTriangle, 
   RefreshCw, Check, Database, CheckCircle, FileText, Briefcase, FileWarning,
-  ChevronLeft, ChevronRight, Package, ExternalLink, FileCheck
+  ChevronLeft, ChevronRight, Package, ExternalLink, FileCheck, ClipboardCheck
 } from 'lucide-react';
 import { MonitorSearchIcon } from './shared/MonitorSearchIcon';
 
@@ -18,6 +18,7 @@ import { TabData } from './features/TabData';
 import { TabKegiatan } from './features/TabKegiatan';
 import { TabShiftReport } from './features/TabShiftReport';
 import { TabBASerahTerima } from './features/TabBASerahTerima';
+import { TabPreventive } from './features/TabPreventive';
 import { AntigravityPet } from './features/AntigravityPet';
 import { PendingShareBar } from './shared/PendingShareBar';
 import { useAppStore } from '../store/useAppStore';
@@ -95,6 +96,13 @@ const ALL_TABS: TabItem[] = [
     icon: <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.2]" />,
     gradient: 'from-teal-400 via-teal-500 to-emerald-600',
     shadowColor: '#0f766e'
+  },
+  { 
+    id: 'preventive', 
+    label: 'Preventive', 
+    icon: <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.2]" />,
+    gradient: 'from-lime-400 via-green-500 to-emerald-600',
+    shadowColor: '#15803d'
   },
   { 
     id: 'report', 
@@ -447,6 +455,7 @@ export default function App() {
         {activeTab === 'data' && <TabData key={`data-${tabResetKeys['data'] || 0}`} />}
         {activeTab === 'kegiatan' && <TabKegiatan key={`kegiatan-${tabResetKeys['kegiatan'] || 0}`} />}
         {activeTab === 'ba_serah_terima' && <TabBASerahTerima key={`ba_serah_terima-${tabResetKeys['ba_serah_terima'] || 0}`} />}
+        {activeTab === 'preventive' && <TabPreventive key={`preventive-${tabResetKeys['preventive'] || 0}`} />}
 
       </div>
 

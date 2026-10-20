@@ -22,7 +22,7 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
 
 ---
 
-## 3. Fitur Utama (12 Tab Modul Operasional)
+## 3. Fitur Utama (13 Tab Modul Operasional)
 
 ### 3.1. Tab Kehadiran
 * **Fungsi**: Generator laporan kehadiran shift personel (API T2 & OM IAS T2).
@@ -127,7 +127,17 @@ Dengan aplikasi ini, personel teknisi dan supervisor dapat menyusun laporan berf
   * **Checklist Editor**: Pengaturan parameter checklist operasi.
   * **Personel Editor**: Manajemen data personel teknisi termasuk NIK dan unit kerja.
 
-### 3.13. Maskot Asisten (AntigravityPet)
+### 3.13. Tab Preventive
+* **Fungsi**: Mengumpulkan bukti foto *preventive maintenance* peralatan Terminal 2 pada sub tab **Daily**, **Weekly**, dan **Monthly**.
+* **Sumber data**: daftar peralatan mengacu pada PRIMA (Preventive → Maintenance → Electronica → Soekarno-Hatta → Terminal 2), disalin ke tabel `prima_assets`; nomor equipment (`ESE…`) selalu dari PRIMA.
+* **Fitur Utama**:
+  * Daftar dikelompokkan per jenis aset (urutan tetap) lalu per lokasi; ada kotak cari (nama / nomor / lokasi), filter Semua / Belum / Gagal / Tersimpan, dan progres "x / N tersimpan".
+  * Tombol per peralatan: **Upload** → (berhasil) **Edit** untuk menimpa foto; (gagal) lencana "Gagal tersimpan" + **Retry**. Tidak ada fallback maupun antrean luring.
+  * Foto disimpan di Cloudinary `PRIMA/PREVENTIVE/MAINTENANCE/{DAILY|WEEKLY|MONTHLY}/{JENIS}/{EquipmentNumber}_{YYYYMMDD}`; foto lama otomatis tertimpa.
+  * Reset status pukul 07.00 WIB: Daily tiap hari, Weekly tiap Minggu, Monthly tiap tanggal 1. Tanggal pada nama file Weekly/Monthly adalah tanggal awal periode.
+  * Tamu (tanpa login) boleh mengunggah.
+
+### 3.14. Maskot Asisten (AntigravityPet)
 * **Fungsi**: Widget asisten mengambang interaktif berbasis karakter mesin X-Ray pemindai bagasi di layout utama aplikasi, yang berperan sebagai pelapor kabar operasional.
 * **Fitur Utama**:
   * Gerak melayang (zero-gravity float) dengan glow hangat di belakang karakter; dapat digeser dan di-minimize.
