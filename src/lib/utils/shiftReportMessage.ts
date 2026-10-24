@@ -66,6 +66,26 @@ const formatPreventiveBody = (r: any, getDefaultUraian: DefaultUraianFn): string
   return (start !== -1 ? raw.slice(start) : raw).trim();
 };
 
+/**
+ * Butir perbaikan: judul "Perbaikan <peralatan> di <lokasi>", lalu Permasalahan (satu butir sebaris,
+ * beberapa butir sebagai daftar) dan Tindak lanjut sebagai daftar; status menempel pada langkah terakhir.
+ */
+const formatCorrectiveItem = (r: any, peralatan: string, lokasi: string, status: string): string => {
+  const header = `Perbaikan ${peralatan}`.trim() + (lokasi ? ` di ${lokasi}` : '');
+
+  // Permasalahan diisi per butir berawalan "•"; tanda itu tidak ikut ke pesan.
+  const masalah = tindakLanjutSteps(r.Uraian);
+  const permasalahan =
+    masalah.length === 0 ? 'Permasalahan : -'
+    : masalah.length === 1 ? `Permasalahan : ${masalah[0]}`
+    : `Permasalahan :\n${masalah.map(m => `- ${m}`).join('\n')}`;
+
+  const steps = tindakLanjutSteps(r.TindakLanjut).filter(step => step.toLowerCase() !== status.toLowerCase());
+  const lines = steps.length > 0 ? [...steps.slice(0, -1), `${steps[steps.length - 1]}, ${status}`] : [status];
+
+  return `${header}\n${permasalahan}\nTindak lanjut  :\n${lines.map(l => `- ${l}`).join('\n')}`;
+};
+
 const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => {
   const status = cleanField(r.Status) || 'Normal Operasi';
   const peralatan = cleanField(r.Peralatan);
@@ -79,12 +99,7 @@ const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => 
     return `${header}\n${formatPreventiveBody(r, getDefaultUraian)}`;
   }
 
-  if (isCorrectiveReport(r)) {
-    const steps = tindakLanjutSteps(r.TindakLanjut).filter(step => step.toLowerCase() !== status.toLowerCase());
-    // Permasalahan diisi per butir berawalan "•"; tanda itu tidak ikut ke pesan.
-    const permasalahan = tindakLanjutSteps(r.Uraian).join(', ');
-    return joinParts([`Perbaikan ${peralatan}`.trim(), lokasiPart, permasalahan, steps.join(', '), status]);
-  }
+  if (isCorrectiveReport(r)) return formatCorrectiveItem(r, peralatan, lokasi, status);
 
   const judul = peralatan || cleanField(r.Jenis) || 'Kegiatan';
   const steps = tindakLanjutSteps(r.TindakLanjut).filter(step => step.toLowerCase() !== status.toLowerCase());
@@ -122,9 +137,31 @@ const personelNames = (rows: any[], shiftCode: string): string[] =>
 
 const formatNameList = (names: string[]): string => (names.length ? names.map(n => `- ${n}`).join('\n') : '- -');
 
+const personelBlock = (date: string, code: string, api: string[], ias: string[]): string =>
+  `Daftar Personil :\nHari/Tanggal/Dinas : ${formatHariTanggalIndo(date)}/${code}\n\n` +
+  `Personel API T2 :\n${formatNameList(api)}\n\n` +
+  `Personel OM IAS T2 :\n${formatNameList(ias)}`;
+
+/** Shift yang menerima serah terima: PS -> M di hari yang sama; M atau semua shift -> PS esok hari. */
+export const nextShiftOf = (date: string, shift: string): { date: string; shift: 'PS' | 'M' } => {
+  if (shift === 'PS') return { date, shift: 'M' };
+  const [y, m, d] = (date || '').split('-').map(Number);
+  if (!y || !m || !d) return { date, shift: 'PS' };
+  return { date: new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10), shift: 'PS' };
+};
+
+/** Jadwal shift berikutnya (baris jadwal_shift per unit) untuk blok serah terima di akhir pesan. */
+export interface NextShiftPersonel {
+  date: string;
+  shift: 'PS' | 'M';
+  api: any[];
+  ias: any[];
+}
+
 /**
- * Pesan WhatsApp laporan harian format "Closing briefing". Satu blok per shift
- * (PS lalu M) berisi daftar personel per unit dan kegiatan shift tersebut.
+ * Pesan WhatsApp laporan harian format "Closing Briefing". Satu blok per shift
+ * (PS lalu M) berisi daftar personel per unit dan kegiatan shift tersebut, diakhiri blok
+ * personel shift berikutnya bila `next` diberikan.
  */
 export const buildShiftReportMessage = (
   date: string,
@@ -132,7 +169,8 @@ export const buildShiftReportMessage = (
   apiPersonil: any[],
   iasPersonil: any[],
   reports: any[],
-  getDefaultUraian: DefaultUraianFn
+  getDefaultUraian: DefaultUraianFn,
+  next?: NextShiftPersonel
 ): string => {
   const shiftCodes = shift === 'PS' || shift === 'M' ? [shift] : ['PS', 'M'];
   const reportShift = (r: any): string => {
@@ -147,10 +185,7 @@ export const buildShiftReportMessage = (
     const shiftReports = shiftCodes.length === 1 ? reports : reports.filter(r => reportShift(r) === code);
     if (shiftCodes.length > 1 && api.length === 0 && ias.length === 0 && shiftReports.length === 0) return;
 
-    let block = `Daftar Personil :\nHari/Tanggal/Dinas : ${formatHariTanggalIndo(date)}/${code}\n\n`;
-    block += `Personel API T2 :\n${formatNameList(api)}\n\n`;
-    block += `Personel OM IASS T2 :\n${formatNameList(ias)}`;
-
+    let block = personelBlock(date, code, api, ias);
     const items = buildKegiatanItems(shiftReports, getDefaultUraian);
     if (items.length > 0) {
       block += `\n\nKegiatan :\n\n${items.map((item, i) => `${i + 1}. ${item}`).join('\n\n')}`;
@@ -158,9 +193,13 @@ export const buildShiftReportMessage = (
     blocks.push(block);
   });
 
+  if (next) {
+    blocks.push(personelBlock(next.date, next.shift, personelNames(next.api, next.shift), personelNames(next.ias, next.shift)));
+  }
+
   return [
-    'Assalamualaikum Warahmatullahi Wabarakatuh\nIzin menyampaikan Closing briefing tim T2 SSES',
+    'Assalamualaikum Warahmatullahi Wabarakatuh\nIzin menyampaikan _Closing Briefing_ Unit SSES T2',
     ...blocks,
-    'Demikian disampaikan laporan kegiatan unit T2 SSES.\nTerima Kasih\n\nWassalamualaikum Warahmatullahi Wabarakatuh\n#salam sehat, salam sejahtera 🤲🤲🤲',
+    'Demikian disampaikan laporan kegiatan unit SSES T2.\nTerima Kasih\n\nWassalamualaikum Warahmatullahi Wabarakatuh\n#salam sehat, salam sejahtera 🤲🤲🤲',
   ].join('\n\n');
 };

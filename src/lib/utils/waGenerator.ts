@@ -1,7 +1,7 @@
 // src/lib/utils/waGenerator.ts
 
 import { formatTanggalIndo, getStoringSupervisorLocations, getValidXRayModels, getValidModels, parseLokasiDanTitik } from './locationRules';
-import { buildShiftReportMessage } from './shiftReportMessage';
+import { buildShiftReportMessage, type NextShiftPersonel } from './shiftReportMessage';
 import { formatLokasi, formatLokasiRows, formatStoringLokasi } from './lokasiFormat.ts';
 import { formatXRayParams, formatWtmdParams, XRAY_ARCHIVE_DEFAULT } from './kalibrasiParams.ts';
 
@@ -499,6 +499,7 @@ export const generateWA_ShiftReport = (
   shift: string,
   apiPersonil: any[],
   iasPersonil: any[],
-  reports: any[]
-): string => buildShiftReportMessage(date, shift, apiPersonil, iasPersonil, reports, getDefaultKalibrasiUraian);
+  reports: any[],
+  next?: NextShiftPersonel
+): string => buildShiftReportMessage(date, shift, apiPersonil, iasPersonil, reports, getDefaultKalibrasiUraian, next);
 

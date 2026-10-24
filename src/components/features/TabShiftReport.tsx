@@ -24,7 +24,9 @@ import {
   isPreventiveReport as isPreventive,
   isStoringReport as isStoring,
   isCorrectiveReport as isCorrective,
-  sortPersonelRows
+  sortPersonelRows,
+  nextShiftOf,
+  type NextShiftPersonel
 } from '../../lib/utils/shiftReportMessage';
 import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
 import {
@@ -163,50 +165,63 @@ export const TabShiftReport: React.FC = () => {
 
   const [apiPersonil, setApiPersonil] = useState<any[]>([]);
   const [iasPersonil, setIasPersonil] = useState<any[]>([]);
+  const [nextPersonil, setNextPersonil] = useState<NextShiftPersonel | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   // Load Personil On Duty & Shift Data
   useEffect(() => {
+    let cancelled = false;
+
+    // Daftar personel hadir per unit untuk satu tanggal/shift; null bila query gagal.
+    const fetchShiftPersonil = async (targetDate: string, targetShift: string) => {
+      // Jabatan dan urutan dipakai untuk mengurutkan personel seperti di tab Kehadiran;
+      // bila kolomnya belum ada di database, pakai pilihan kolom yang lebih sedikit.
+      const personelColumns = [
+        'id, nama, no_hp, jabatan, urutan, unit_kerja(nama)',
+        'id, nama, no_hp, jabatan, unit_kerja(nama)',
+        'id, nama, no_hp, unit_kerja(nama)',
+      ];
+      let data: any[] | null = null;
+      let error: unknown = null;
+      for (const columns of personelColumns) {
+        let query = supabase
+          .from('jadwal_shift')
+          .select(`id, shift, status_kehadiran, personel:personel_id (${columns})`)
+          .eq('tanggal', targetDate);
+        if (targetShift !== 'ALL') {
+          query = query.eq('shift', targetShift);
+        }
+        const res = await query;
+        data = res.data as any[] | null;
+        error = res.error;
+        if (!error && data) break;
+      }
+      if (error || !data) return null;
+
+      const hadir = data.filter(d => d.status_kehadiran !== 'Off' && d.status_kehadiran !== 'Cuti' && d.status_kehadiran !== 'Sakit' && d.status_kehadiran !== 'Izin');
+      const api = hadir.filter((d: any) => {
+        const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
+        return u === 'API T2' || u.includes('API') || u.includes('ANGKASA PURA');
+      });
+      const ias = hadir.filter((d: any) => {
+        const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
+        return u === 'OM/IAS T2' || u.includes('IAS') || u.includes('INJOURNEY');
+      });
+      return { api: sortPersonelRows(api), ias: sortPersonelRows(ias) };
+    };
+
     const fetchPersonil = async () => {
       try {
-        // Jabatan dan urutan dipakai untuk mengurutkan personel seperti di tab Kehadiran;
-        // bila kolomnya belum ada di database, pakai pilihan kolom yang lebih sedikit.
-        const personelColumns = [
-          'id, nama, no_hp, jabatan, urutan, unit_kerja(nama)',
-          'id, nama, no_hp, jabatan, unit_kerja(nama)',
-          'id, nama, no_hp, unit_kerja(nama)',
-        ];
-        let data: any[] | null = null;
-        let error: unknown = null;
-        for (const columns of personelColumns) {
-          let query = supabase
-            .from('jadwal_shift')
-            .select(`id, shift, status_kehadiran, personel:personel_id (${columns})`)
-            .eq('tanggal', date);
-          if (shift !== 'ALL') {
-            query = query.eq('shift', shift);
-          }
-          const res = await query;
-          data = res.data as any[] | null;
-          error = res.error;
-          if (!error && data) break;
+        const current = await fetchShiftPersonil(date, shift);
+        if (current && !cancelled) {
+          setApiPersonil(current.api);
+          setIasPersonil(current.ias);
         }
 
-        if (!error && data) {
-          const hadir = data.filter(d => d.status_kehadiran !== 'Off' && d.status_kehadiran !== 'Cuti' && d.status_kehadiran !== 'Sakit' && d.status_kehadiran !== 'Izin');
-          
-          const apiList = hadir.filter((d: any) => {
-             const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
-             return u === 'API T2' || u.includes('API') || u.includes('ANGKASA PURA');
-          });
-          const iasList = hadir.filter((d: any) => {
-             const u = d.personel?.unit_kerja?.nama?.toUpperCase() || '';
-             return u === 'OM/IAS T2' || u.includes('IAS') || u.includes('INJOURNEY');
-          });
-
-          setApiPersonil(sortPersonelRows(apiList));
-          setIasPersonil(sortPersonelRows(iasList));
-        }
+        // Personel shift berikutnya untuk blok serah terima di akhir pesan WhatsApp
+        const nxt = nextShiftOf(date, shift);
+        const nextRes = await fetchShiftPersonil(nxt.date, nxt.shift);
+        if (!cancelled) setNextPersonil(nextRes ? { ...nxt, ...nextRes } : null);
       } catch (err) {
         console.error("Gagal fetch personil", err);
       }
@@ -214,6 +229,7 @@ export const TabShiftReport: React.FC = () => {
 
     fetchPersonil();
     loadShiftReports(date, shift);
+    return () => { cancelled = true; };
   }, [date, shift]);
 
   // Auto-switch saat jam 10:00 (ke tanggal hari ini & PS) dan jam 22:00 (ke tanggal hari ini & M)
@@ -432,8 +448,8 @@ export const TabShiftReport: React.FC = () => {
 
   // Format Pesan WhatsApp Executive Summary
   const waMessagePreview = React.useMemo(
-    () => generateWA_ShiftReport(date, shift, apiPersonil, iasPersonil, reports),
-    [date, shift, apiPersonil, iasPersonil, reports]
+    () => generateWA_ShiftReport(date, shift, apiPersonil, iasPersonil, reports, nextPersonil ?? undefined),
+    [date, shift, apiPersonil, iasPersonil, reports, nextPersonil]
   );
   const generateShiftWaSummary = () => waMessagePreview;
 
