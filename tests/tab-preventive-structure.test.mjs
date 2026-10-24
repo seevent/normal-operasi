@@ -44,11 +44,15 @@ test('rahasia server dibaca tanpa awalan VITE_ (tidak ikut ke bundel browser)', 
   assert.match(src, /SUPABASE_SERVICE_ROLE_KEY/);
 });
 
-test('input foto memakai kamera belakang dan target sentuh minimal 44px', () => {
+test('foto bisa dari kamera belakang ATAU berkas (galeri/PC), dan target sentuh minimal 44px', () => {
   const row = read('src/components/features/preventive/PreventiveAssetRow.tsx');
   // Tanpa "image/*": iOS Safari mengubah HEIC menjadi JPEG hanya bila accept menyebut format spesifik.
-  assert.match(row, /accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(row, /capture="environment"/);
+  const inputs = row.match(/<input[\s\S]*?\/>/g) ?? [];
+  assert.equal(inputs.length, 2, 'satu input kamera dan satu input berkas');
+  for (const input of inputs) assert.match(input, /accept="image\/jpeg,image\/png,image\/webp"/);
+  assert.equal(inputs.filter((i) => /capture="environment"/.test(i)).length, 1, 'hanya input kamera yang memakai capture');
+  assert.equal(inputs.filter((i) => !/capture=/.test(i)).length, 1, 'input berkas tanpa capture agar galeri/PC tersedia');
+  assert.match(row, /Pilih file/);
   assert.match(row, /min-h-\[44px\]/);
   const tab = read('src/components/features/TabPreventive.tsx');
   assert.match(tab, /fontSize: '16px'/);

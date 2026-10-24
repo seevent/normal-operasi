@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { AlertCircle, Camera, CheckCircle2, Circle, ExternalLink, Loader2, Pencil, RotateCcw } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Camera, CheckCircle2, Circle, ExternalLink, FolderOpen, Loader2, Pencil, RotateCcw } from 'lucide-react';
 import type { PreventiveAsset, RowStatus } from '../../../lib/utils/preventiveGrouping';
 import type { SavedEntry } from '../../../lib/utils/preventiveStatus';
 
@@ -8,6 +8,8 @@ interface Props {
   status: RowStatus;
   error?: string;
   saved?: SavedEntry;
+  /** Foto tersimpan, tetapi tanggalnya mencurigakan (hanya peringatan). */
+  warning?: string;
   /** Data periode belum dimuat: tombol dinonaktifkan agar foto tidak masuk ke periode yang salah. */
   disabled: boolean;
   onPick: (asset: PreventiveAsset, file: File) => void;
@@ -22,19 +24,21 @@ const BADGE: Record<RowStatus, { label: string; className: string; icon: React.R
   failed: { label: 'Gagal tersimpan', className: 'bg-red-50 text-red-800 border-red-300', icon: <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" /> },
 };
 
-const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, disabled, onPick, onRetry }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, warning, disabled, onPick, onRetry }) => {
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const badge = BADGE[status];
   const busy = status === 'uploading';
-  const openPicker = () => inputRef.current?.click();
+  const openCamera = () => cameraRef.current?.click();
+  const openFile = () => fileRef.current?.click();
 
   const handleButton = async () => {
     if (status === 'failed') {
       const resumed = await onRetry(asset);
-      if (!resumed) openPicker();
+      if (!resumed) openCamera();
       return;
     }
-    openPicker();
+    openCamera();
   };
 
   const button =
@@ -42,7 +46,7 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
       ? { label: 'Retry', icon: <RotateCcw className="w-4 h-4" aria-hidden="true" />, className: 'bg-red-600 text-white border-red-700 hover:bg-red-700' }
       : status === 'saved'
         ? { label: 'Edit', icon: <Pencil className="w-4 h-4" aria-hidden="true" />, className: 'bg-white text-blue-800 border-blue-300 hover:bg-blue-50' }
-        : { label: 'Upload', icon: <Camera className="w-4 h-4" aria-hidden="true" />, className: 'bg-blue-700 text-white border-blue-800 hover:bg-blue-800' };
+        : { label: 'Kamera', icon: <Camera className="w-4 h-4" aria-hidden="true" />, className: 'bg-blue-700 text-white border-blue-800 hover:bg-blue-800' };
 
   return (
     <li className="flex items-start gap-3 px-3 py-3 border-t border-slate-200 first:border-t-0">
@@ -66,6 +70,12 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
             </a>
           )}
         </div>
+        {warning && status !== 'uploading' && (
+          <p role="status" className="mt-1.5 flex items-start gap-1 text-xs font-medium text-amber-800 leading-snug">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />
+            {warning}
+          </p>
+        )}
         {status === 'failed' && error && (
           <p role="alert" className="mt-1.5 text-xs font-medium text-red-700 leading-snug">
             {error}
@@ -73,29 +83,55 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
         )}
       </div>
 
+      {/* Tanpa "image/*": iOS Safari mengubah HEIC menjadi JPEG hanya bila accept menyebut format spesifik.
+          Kamera memakai capture; Pilih file tidak, sehingga HP menawarkan galeri/berkas dan PC membuka dialog file. */}
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
         capture="environment"
         className="hidden"
-        aria-label={`Foto ${asset.name}`}
+        aria-label={`Foto kamera ${asset.name}`}
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = '';
           if (file) onPick(asset, file);
         }}
       />
-      <button
-        type="button"
-        onClick={handleButton}
-        disabled={busy || disabled}
-        aria-label={`${button.label} foto ${asset.name}`}
-        className={`shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[92px] rounded-xl border px-3 text-sm font-bold shadow-sm transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${button.className}`}
-      >
-        {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : button.icon}
-        {busy ? 'Tunggu' : button.label}
-      </button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        aria-label={`Foto dari berkas ${asset.name}`}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (file) onPick(asset, file);
+        }}
+      />
+      <div className="shrink-0 flex flex-col gap-1.5">
+        <button
+          type="button"
+          onClick={handleButton}
+          disabled={busy || disabled}
+          aria-label={`${button.label} foto ${asset.name}`}
+          className={`inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[104px] rounded-xl border px-3 text-sm font-bold shadow-sm transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${button.className}`}
+        >
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : button.icon}
+          {busy ? 'Tunggu' : button.label}
+        </button>
+        <button
+          type="button"
+          onClick={openFile}
+          disabled={busy || disabled}
+          aria-label={`Pilih file foto ${asset.name}`}
+          className="inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[104px] rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <FolderOpen className="w-4 h-4" aria-hidden="true" />
+          Pilih file
+        </button>
+      </div>
     </li>
   );
 };

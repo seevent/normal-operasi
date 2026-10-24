@@ -27,7 +27,7 @@ const formatReset = (at: Date): string => {
 };
 
 export const TabPreventive: React.FC = () => {
-  const { assets, keys, clockOffsetMs, saved, locals, loadState, loadError, refresh, upload, retry } = usePreventiveStore();
+  const { assets, keys, clockOffsetMs, saved, locals, warnings, loadState, loadError, refresh, upload, retry } = usePreventiveStore();
   const [period, setPeriod] = useState<PreventivePeriod>('DAILY');
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -268,6 +268,7 @@ export const TabPreventive: React.FC = () => {
               statusFor={statusFor}
               saved={currentSaved}
               locals={locals}
+              warnings={warnings}
               disabled={!ready}
               onPick={onPick}
               onRetry={onRetry}

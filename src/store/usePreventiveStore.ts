@@ -5,6 +5,8 @@ import { PreventiveUploadError, uploadPreventivePhoto } from '../lib/services/pr
 import type { PreventivePeriod } from '../lib/data/preventiveTypes';
 import type { PreventiveAsset, RowStatus } from '../lib/utils/preventiveGrouping';
 import { createLimiter } from '../lib/utils/preventiveImage';
+import { EXIF_READ_BYTES, photoDateWarning, readExifTakenAt } from '../lib/utils/photoExif';
+import { nextResetAt } from '../lib/utils/preventivePeriod';
 import { buildSavedMap, deriveStatus, pruneStaleLocals, rowKey } from '../lib/utils/preventiveStatus';
 import type { LocalEntry, PeriodKeys, SavedEntry } from '../lib/utils/preventiveStatus';
 
@@ -17,6 +19,8 @@ interface PreventiveState {
   clockOffsetMs: number;
   saved: Record<string, SavedEntry>;
   locals: Record<string, LocalEntry>;
+  /** Peringatan tanggal foto per baris (tidak memblokir); hanya di memori halaman. */
+  warnings: Record<string, string>;
   loadState: LoadState;
   loadError: string | null;
 
@@ -47,6 +51,7 @@ export const usePreventiveStore = create<PreventiveState>((set, get) => ({
   clockOffsetMs: 0,
   saved: {},
   locals: {},
+  warnings: {},
   loadState: 'idle',
   loadError: null,
 
@@ -93,6 +98,20 @@ export const usePreventiveStore = create<PreventiveState>((set, get) => ({
 
     pendingFiles.set(k, file);
     set((s) => ({ locals: { ...s.locals, [k]: { status: 'uploading', periodKey: startKey } } }));
+
+    // Hanya peringatan: tanggal EXIF dibaca dari berkas asli sebelum kompresi membuangnya. Gagal membaca tidak menghalangi unggahan.
+    let warning: string | null = null;
+    try {
+      const head = await file.slice(0, EXIF_READ_BYTES).arrayBuffer();
+      const nextReset = nextResetAt(period, new Date(Date.now() + get().clockOffsetMs)).getTime();
+      warning = photoDateWarning(readExifTakenAt(head), startKey, nextReset);
+    } catch {
+      warning = null;
+    }
+    set((s) => {
+      const { [k]: _old, ...rest } = s.warnings;
+      return { warnings: warning ? { ...rest, [k]: warning } : rest };
+    });
 
     try {
       const result = await limitUploads(() => uploadPreventivePhoto(period, asset.equipmentNumber, file));

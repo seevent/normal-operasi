@@ -15,6 +15,7 @@ interface Props {
   statusFor: (asset: PreventiveAsset) => RowStatus;
   saved: Record<string, SavedEntry>;
   locals: Record<string, LocalEntry>;
+  warnings: Record<string, string>;
   disabled: boolean;
   onPick: (asset: PreventiveAsset, file: File) => void;
   onRetry: (asset: PreventiveAsset) => Promise<boolean>;
@@ -22,7 +23,7 @@ interface Props {
 
 const percent = (saved: number, total: number): number => (total === 0 ? 0 : Math.round((saved / total) * 100));
 
-export const PreventiveTypeGroup: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, disabled, onPick, onRetry }) => {
+export const PreventiveTypeGroup: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, warnings, disabled, onPick, onRetry }) => {
   const label = ASSET_TYPE_LABEL[group.assetType as PreventiveAssetType] ?? group.assetType;
   const complete = group.total > 0 && group.saved === group.total;
   const panelId = `prev-${period}-${group.assetType.replace(/\s+/g, '-')}`;
@@ -76,6 +77,7 @@ export const PreventiveTypeGroup: React.FC<Props> = ({ period, group, open, onTo
                       status={statusFor(asset)}
                       error={locals[k]?.error}
                       saved={saved[k]}
+                      warning={warnings[k]}
                       disabled={disabled}
                       onPick={onPick}
                       onRetry={onRetry}
