@@ -293,7 +293,7 @@ RLS: `SELECT` untuk `anon` & `authenticated`; tidak ada policy tulis untuk tamu 
 ### 3.16. Tabel `preventive_photo_log` dan fungsi periode
 Satu baris per (`period`, `equipment_number`, `period_key`): `period` ∈ DAILY/WEEKLY/MONTHLY, `period_key` = tanggal awal periode, `public_id`, `secure_url`, `cloudinary_version`, `uploaded_at`. PK `(period, equipment_number, period_key)`. Status "tersimpan" di UI = ada baris untuk kunci periode berjalan; reset 07.00 terjadi karena kunci berganti (tanpa cron).
 
-* RLS: `SELECT` publik; **tulis hanya lewat** `record_preventive_photo(p_period, p_equipment, p_version, p_secure_url)` (`SECURITY DEFINER`, `EXECUTE` hanya untuk `service_role`; memvalidasi periode, aset aktif, versi ≤ 15 menit, dan pola URL Cloudinary).
+* RLS: `SELECT` publik; **tulis hanya lewat** `record_preventive_photo(p_period, p_equipment, p_version, p_secure_url)` (`SECURITY DEFINER`, `EXECUTE` hanya untuk `service_role`; memvalidasi periode, aset aktif, versi ≤ 15 menit, dan pola URL Cloudinary). Pola URL dibandingkan dengan `public_id` yang spasinya ditulis `%20`, karena Cloudinary menulis spasi nama folder (mis. `ETD DESKTOP`) sebagai `%20` pada `secure_url`; SQL-nya ada di `supabase/migrations/20261024083206_fix_record_preventive_photo_url_encoding.sql`.
 * Fungsi waktu (otoritas server): `preventive_operational_day()`, `preventive_period_key()`, `preventive_current_keys()` (dipanggil browser untuk kunci periode). Logikanya identik dengan `src/lib/utils/preventivePeriod.ts` dan dijaga oleh tes paritas.
 
 ---
