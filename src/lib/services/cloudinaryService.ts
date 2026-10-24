@@ -1,6 +1,12 @@
 import { supabase } from '../supabaseClient';
 import { getErrorMessage } from '../utils/errorUtils';
 import { sayPet } from '../../store/useAppStore';
+import {
+  DOCUMENTATION_ROOT_FOLDER,
+  isDocumentationCategory,
+  nextDocumentationPhotoTarget,
+  type DocumentationCategory,
+} from '../utils/documentationPhoto';
 
 export interface UploadResult {
   status: 'success' | 'error';
@@ -9,6 +15,11 @@ export interface UploadResult {
   fileId?: string;
   fileName?: string;
   message?: string;
+}
+
+export interface UploadPhotoOptions {
+  /** Jenis dokumentasi: menentukan folder tujuan dan awalan nama file. */
+  category?: DocumentationCategory;
 }
 
 export interface CloudinaryConfig {
@@ -316,8 +327,13 @@ async function uploadToSupabaseStorageFallback(
  */
 export const uploadPhotoToCloudinary = async (
   input: File | Blob | string,
-  fileName?: string
+  fileNameArg?: string,
+  options?: UploadPhotoOptions
 ): Promise<UploadResult> => {
+  // Dengan `category`: foto masuk ke SSES_T2_Dokumentasi/{category} bernama {category}_YYYY-MM-DD_HHmmss
+  // (waktu saat foto disimpan). Tanpa `category`: perilaku lama (folder SSES_T2_Dokumentasi, nama dari Cloudinary).
+  const target = isDocumentationCategory(options?.category) ? nextDocumentationPhotoTarget(options.category) : null;
+  const fileName = target ? `${target.fileName}.jpg` : fileNameArg;
   let { cloudName, uploadPreset } = getCloudinaryConfig();
 
   // Jika belum ada di memori/localStorage, coba muat dari cloud database Supabase
@@ -339,7 +355,14 @@ export const uploadPhotoToCloudinary = async (
     const formData = new FormData();
     formData.append('file', dataUrl);
     formData.append('upload_preset', uploadPreset);
-    formData.append('folder', 'SSES_T2_Dokumentasi');
+    if (target) {
+      // Akun memakai dynamic folder mode (sama seperti Preventive): asset_folder menentukan folder tampilan,
+      // public_id memuat path folder agar unik global.
+      formData.append('asset_folder', target.folder);
+      formData.append('public_id', target.publicId);
+    } else {
+      formData.append('folder', DOCUMENTATION_ROOT_FOLDER);
+    }
 
     const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
       method: 'POST',
@@ -354,7 +377,7 @@ export const uploadPhotoToCloudinary = async (
         url: data.secure_url,
         viewUrl: data.secure_url,
         fileId: data.public_id,
-        fileName: data.original_filename || fileName
+        fileName: target ? fileName : data.original_filename || fileName
       };
     }
 

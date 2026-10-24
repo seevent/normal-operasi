@@ -259,7 +259,7 @@ export const TabStoring: React.FC = () => {
       if (finalFilesToShare.length > 0) {
         for (const file of finalFilesToShare) {
           try {
-            const res = await uploadPhotoToCloudinary(file, `Storing_${storingData.peralatan.join('_')}_${Date.now()}.jpg`);
+            const res = await uploadPhotoToCloudinary(file, undefined, { category: 'Storing' });
             if (res && res.status === 'success' && res.url) {
               uploadedPhotoUrls.push(res.url);
             } else if (res && res.status === 'error') {

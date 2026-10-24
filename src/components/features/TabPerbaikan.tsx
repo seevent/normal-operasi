@@ -463,7 +463,7 @@ export const TabPerbaikan: React.FC = () => {
       if (customFilesArray.length > 0) {
         for (const file of customFilesArray) {
           try {
-            const res = await uploadPhotoToCloudinary(file, `Perbaikan_${formData.peralatan.replace(/\s+/g, '_')}_${Date.now()}.jpg`);
+            const res = await uploadPhotoToCloudinary(file, undefined, { category: 'Perbaikan' });
             if (res && res.status === 'success' && res.url) {
               uploadedPhotoUrls.push(res.url);
             } else if (res && res.status === 'error') {

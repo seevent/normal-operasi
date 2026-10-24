@@ -441,7 +441,7 @@ export const TabKalibrasi: React.FC = () => {
       if (imageFiles.length > 0) {
         for (const file of imageFiles) {
           try {
-            const res = await uploadPhotoToCloudinary(file, `Kalibrasi_${Date.now()}.jpg`);
+            const res = await uploadPhotoToCloudinary(file, undefined, { category: 'Kalibrasi' });
             if (res && res.status === 'success' && res.url) {
               uploadedPhotoUrls.push(res.url);
             } else if (res && res.status === 'error') {
