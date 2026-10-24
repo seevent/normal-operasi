@@ -4,10 +4,16 @@
 
 import { createLimiter, fitWithin } from '../utils/preventiveImage';
 import {
+  buildServiceabilityChartSpec,
   buildShiftReportWorkbook,
   type LoadedPhoto,
   type ShiftReportWorkbookInput,
 } from '../utils/shiftReportWorkbook';
+import { embedServiceabilityChart } from '../utils/serviceabilityChart';
+// `?inline` menanam logo sebagai data URI; Excel tidak mendukung webp, jadi dipakai salinan PNG.
+import logoPng from '../../assets/logo-injourney-airports-excel.png?inline';
+
+const LOGO: LoadedPhoto = { dataUrl: logoPng, width: 360, height: 114, extension: 'png' };
 
 const MAX_EDGE = 480;
 const JPEG_QUALITY = 0.8;
@@ -69,6 +75,7 @@ export interface ShiftReportXlsxInput {
   /** URL foto per baris data (tanpa header). */
   photoUrls: string[][];
   kesiapanRows: ShiftReportWorkbookInput['kesiapanRows'];
+  kop: ShiftReportWorkbookInput['kop'];
 }
 
 export const createShiftReportXlsx = async (
@@ -86,11 +93,19 @@ export const createShiftReportXlsx = async (
 
   const mod = await import('exceljs');
   const ExcelJS = (mod as any).default ?? mod;
-  const wb = buildShiftReportWorkbook(ExcelJS, {
+  const workbookInput: ShiftReportWorkbookInput = {
     laporanRows: input.laporanRows,
     photos,
     kesiapanRows: input.kesiapanRows,
-  });
+    kop: input.kop,
+    logo: LOGO,
+  };
+  const wb = buildShiftReportWorkbook(ExcelJS, workbookInput);
   const buffer = await wb.xlsx.writeBuffer();
-  return { file: new File([buffer], input.filename, { type: XLSX_MIME }), failedPhotos };
+  // ExcelJS tidak bisa membuat grafik: grafik batang Serviceability disisipkan langsung ke paket xlsx.
+  const chart = buildServiceabilityChartSpec(workbookInput);
+  const bytes = chart
+    ? await embedServiceabilityChart(((await import('jszip')) as any).default, buffer as ArrayBuffer, chart)
+    : buffer;
+  return { file: new File([bytes], input.filename, { type: XLSX_MIME }), failedPhotos };
 };

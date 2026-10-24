@@ -33,6 +33,7 @@ import {
   buildShiftReportFilename,
   buildLaporanSheetRows,
   buildKesiapanSheetRows,
+  buildKopData,
   fotoUrlsOf,
   resolvePreventiveText
 } from '../../lib/utils/shiftReportExport';
@@ -349,7 +350,7 @@ export const TabShiftReport: React.FC = () => {
       // 1. Upload foto jika pengguna memilih file foto baru
       let uploadedUrl: string | null = null;
       if (crudPhotoFile) {
-        const uploadRes = await uploadPhotoToCloudinary(crudPhotoFile, `${crudForm.jenis}_${Date.now()}.jpg`);
+        const uploadRes = await uploadPhotoToCloudinary(crudPhotoFile, undefined, { category: crudForm.jenis });
         if (uploadRes && uploadRes.status === 'success' && uploadRes.url) {
           uploadedUrl = uploadRes.url;
         } else if (uploadRes && uploadRes.status === 'error') {
@@ -764,7 +765,15 @@ export const TabShiftReport: React.FC = () => {
         filename: buildShiftReportFilename(shift, date, 'xlsx'),
         laporanRows,
         photoUrls: printReports.map(fotoUrlsOf),
-        kesiapanRows: buildKesiapanSheetRows(checklistSummary)
+        kesiapanRows: buildKesiapanSheetRows(checklistSummary),
+        kop: buildKopData({
+          date,
+          shift,
+          dayName: getDayName(date),
+          dateIndo: formatDateIndo(date),
+          apiPersonil,
+          iasPersonil
+        })
       });
       triggerFileDownload(file);
 

@@ -3,6 +3,7 @@
 // Modul murni tanpa akses store/jaringan supaya bisa diuji langsung.
 
 import type { DefaultUraianFn } from './shiftReportMessage.ts';
+import type { PersonilRow, ShiftReportKop } from './shiftReportWorkbook.ts';
 
 export type ShiftReportFileExt = 'pdf' | 'xlsx';
 
@@ -104,6 +105,42 @@ export const buildLaporanSheetRows = (reports: any[], shift: string, c: ShiftRep
   return [header, ...rows];
 };
 
+const MONTH_NAMES = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+
+const SHIFT_NAMES: Record<string, { shift: string; onDuty: string }> = {
+  M: { shift: 'MALAM (M)', onDuty: 'MALAM' },
+  PS: { shift: 'PAGI (PS)', onDuty: 'PAGI' },
+};
+
+const toPersonilRows = (list: any[]): PersonilRow[] =>
+  list.map(p => ({ nama: String(p?.personel?.nama ?? ''), noHp: String(p?.personel?.no_hp || '-') }));
+
+/**
+ * Isi kop sheet Laporan (judul periode, label shift, personil on duty), sama dengan kop dokumen cetak.
+ * `dayName` dan `dateIndo` sudah berformat, mis. "JUMAT" dan "23 OKTOBER 2026".
+ */
+export const buildKopData = (args: {
+  date: string;
+  shift: string;
+  dayName: string;
+  dateIndo: string;
+  apiPersonil: any[];
+  iasPersonil: any[];
+}): ShiftReportKop => {
+  const names = SHIFT_NAMES[args.shift];
+  const shiftName = names?.shift ?? 'PAGI (PS) & MALAM (M)';
+  const month = Number(args.date.split('-')[1]) - 1;
+  return {
+    onDutyLabel: `PERSONIL ON DUTY${names ? ` ${names.onDuty}` : ''}`,
+    shiftLabel: `SHIFT ${shiftName} ${args.dayName}, ${args.dateIndo}
+(D,E,F,UMROH)
+TERMINAL 2`,
+    periodLabel: MONTH_NAMES[month] ?? '',
+    api: toPersonilRows(args.apiPersonil),
+    ias: toPersonilRows(args.iasPersonil),
+  };
+};
+
 export interface ChecklistSummaryRow {
   nama: string;
   total: number;
@@ -113,8 +150,9 @@ export interface ChecklistSummaryRow {
   persenRusak: number;
 }
 
-/** Sheet "Kesiapan Fasilitas": persentase disimpan sebagai pecahan agar Excel memformatnya sebagai %. */
-export const buildKesiapanSheetRows = (summary: ChecklistSummaryRow[]): Array<string | number>[] => [
-  ['No', 'Peralatan', 'Total', 'Operasi', 'Rusak', '% Operasi', '% Rusak'],
-  ...summary.map((s, idx) => [idx + 1, s.nama, s.total, s.operasi, s.rusak, s.persenOperasi, s.persenRusak]),
-];
+/**
+ * Tabel Serviceability Peralatan pada sheet Laporan: [no, nama, operasi, rusak, total] tanpa header.
+ * Persentase tidak disimpan di sini; pembuat workbook menghitungnya sebagai rumus (operasi/total, rusak/total).
+ */
+export const buildKesiapanSheetRows = (summary: ChecklistSummaryRow[]): Array<string | number>[] =>
+  summary.map((s, idx) => [idx + 1, s.nama, s.operasi, s.rusak, s.total]);
