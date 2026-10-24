@@ -9,7 +9,9 @@ import {
   resolvePreventiveText,
   fotoUrlsOf,
 } from '../src/lib/utils/shiftReportExport.ts';
-import { layoutPhotos, rowHeightPt, buildShiftReportWorkbook, PHOTO_BOX } from '../src/lib/utils/shiftReportWorkbook.ts';
+import {
+  layoutPhotos, layoutPhotosWithin, rowHeightPt, textHeightPt, wrappedLineCount, buildShiftReportWorkbook, PHOTO_BOX,
+} from '../src/lib/utils/shiftReportWorkbook.ts';
 import ExcelJS from 'exceljs';
 import {
   isPreventiveReport,
@@ -132,11 +134,55 @@ test('layoutPhotos: kisi 2 kolom, rasio terjaga, tidak membesarkan foto, tinggi 
   assert.equal(three.heightPx, PHOTO_BOX.gap + 2 * (PHOTO_BOX.height + PHOTO_BOX.gap));
 });
 
-test('rowHeightPt: mengikuti teks terpanjang atau tinggi foto, dibatasi 409 pt', () => {
-  assert.equal(rowHeightPt(['a'], [10], 0), 17.5);
-  assert.equal(rowHeightPt(['a\nb\nc'], [10], 0), 3 * 13.5 + 4);
+test('wrappedLineCount: bungkus per kata, kapital lebih lebar, kata panjang dipatahkan', () => {
+  assert.equal(wrappedLineCount('', 70), 1);
+  assert.equal(wrappedLineCount('a\nb\nc', 70), 3);
+  assert.equal(wrappedLineCount('baris\n\nbaris', 70), 3, 'baris kosong tetap menempati satu baris');
+  // Dari tangkapan layar: judul kapital 22 karakter membungkus jadi 2 baris di kolom selebar 22
+  assert.equal(wrappedLineCount('CORRECTIVE MAINTENANCE', 22), 2);
+  // Teks huruf kecil yang sama panjang tetap muat satu baris
+  assert.equal(wrappedLineCount('corrective maintenance', 22), 1);
+  // Kata tanpa spasi lebih panjang dari kolom dipatahkan, bukan dianggap satu baris
+  assert.ok(wrappedLineCount('x'.repeat(200), 70) >= 3);
+  // Kalimat panjang membungkus di batas kata
+  assert.ok(wrappedLineCount('kata '.repeat(60).trim(), 70) >= 4);
+});
+
+test('rowHeightPt: 15 pt per baris + ruang cadangan, mengikuti teks atau foto, dibatasi 409 pt', () => {
+  assert.equal(rowHeightPt(['a'], [10], 0), 21);
+  assert.equal(rowHeightPt(['a\nb\nc'], [10], 0), 3 * 15 + 6);
   assert.equal(rowHeightPt(['a'], [10], 200), 150);
   assert.equal(rowHeightPt(['x'.repeat(100000)], [10], 0), 409);
+});
+
+test('regresi tangkapan layar: baris dengan 7 baris teks cukup tinggi sehingga "Normal Operasi" tidak terpotong', () => {
+  const uraian = 'Permasalahan : • Mirorr Regeneration in progress\nTindak lanjut :\n• Menunggu miror regeneration Selesai\n• Calibration ETD\n• Verifikasi ETD\n• test Sample\n• Normal Operasi';
+  const cells = ['4', 'HBSCP 2.5', 'ETD Leidos B220', 'CORRECTIVE MAINTENANCE', '-', '-', uraian, '09:00 - 10:15', 'Normal', ''];
+  const widths = [5, 24, 24, 22, 22, 12, 70, 16, 12, 34];
+  assert.ok(rowHeightPt(cells, widths, 90) >= 7 * 15 + 6, 'minimal 7 baris x 15 pt');
+});
+
+test('layoutPhotosWithin: foto sangat banyak diperkecil dan tidak keluar dari batas baris maupun lebar kolom', () => {
+  const sizes = Array.from({ length: 30 }, () => ({ width: 480, height: 360 }));
+  const maxPx = 409 / 0.75;
+  const { placements, heightPx } = layoutPhotosWithin(sizes, maxPx);
+  assert.ok(heightPx <= maxPx, `tinggi ${heightPx}px melewati batas ${maxPx}px`);
+
+  const colPx = 2 * (PHOTO_BOX.width + PHOTO_BOX.gap) + PHOTO_BOX.gap; // lebar kolom Dokumentasi
+  for (const p of placements) {
+    assert.ok(p.xPx >= 0 && p.xPx + p.width <= colPx, 'foto di dalam lebar kolom');
+    assert.ok(p.yPx >= 0 && p.yPx + p.height <= heightPx, 'foto di dalam tinggi baris');
+  }
+  // Tidak ada dua foto yang bertumpuk
+  for (let i = 0; i < placements.length; i++) {
+    for (let j = i + 1; j < placements.length; j++) {
+      const a = placements[i], b = placements[j];
+      const overlap = a.xPx < b.xPx + b.width && b.xPx < a.xPx + a.width && a.yPx < b.yPx + b.height && b.yPx < a.yPx + a.height;
+      assert.ok(!overlap, `foto ${i} dan ${j} bertumpuk`);
+    }
+  }
+  // Jumlah sedikit tetap 2 per baris dengan ukuran penuh
+  assert.deepEqual(layoutPhotosWithin([{ width: 480, height: 360 }]), layoutPhotos([{ width: 480, height: 360 }]));
 });
 
 // PNG 1x1 merah, valid
@@ -176,8 +222,42 @@ test('buildShiftReportWorkbook: foto tertanam di kolom Dokumentasi, bukan tautan
     assert.equal(range.tl.nativeRowOff, placements[i].yPx * 9525);
   });
   assert.ok(laporan.getRow(2).height >= 0.75 * layoutPhotos([photo, photo, photo]).heightPx, 'baris cukup tinggi untuk dua baris foto');
+  assert.ok(laporan.getRow(2).height >= textHeightPt(laporanRows[1], [5, 24, 24, 22, 22, 12, 70, 16, 12, 34]), 'baris cukup tinggi untuk teksnya');
 
   const kesiapan = back.getWorksheet('Kesiapan Fasilitas');
   assert.equal(kesiapan.getCell(2, 6).value, 0.8);
   assert.equal(kesiapan.getCell(2, 6).numFmt, '0%');
+});
+
+test('buildShiftReportWorkbook: teks lebih tinggi dari batas 409 pt dikecilkan hurufnya, bukan dipotong', () => {
+  const panjang = Array.from({ length: 40 }, (_, i) => `• Langkah pemeriksaan nomor ${i + 1} dilakukan oleh teknisi`).join('\n');
+  const header = ['No', 'Lokasi', 'Peralatan', 'Corrective Maintenance', 'Preventive Maintenance', 'Lain-lain', 'Uraian Kegiatan', 'Waktu Tindak Lanjut', 'Hasil', 'Dokumentasi'];
+  const rows = [header, ['1', 'T2 D', 'XRAY', 'CORRECTIVE MAINTENANCE', '-', '-', panjang, '08:00', 'Normal', '']];
+  const wb = buildShiftReportWorkbook(ExcelJS, { laporanRows: rows, photos: [[]], kesiapanRows: [['No']] });
+  const ws = wb.getWorksheet('Laporan');
+  assert.equal(ws.getRow(2).height, 409);
+  const size = ws.getCell(2, 7).font.size;
+  assert.ok(size < 11 && size >= 5, `ukuran huruf ${size}`);
+  const lines = wrappedLineCount(panjang, ws.getColumn(7).width);
+  assert.ok(lines * (size * 15 / 11) + 6 <= 409, `${lines} baris pada huruf ${size} pt melewati 409 pt`);
+  // Baris biasa tidak diubah hurufnya
+  const normal = buildShiftReportWorkbook(ExcelJS, { laporanRows: [header, ['1', 'a', 'b', '-', '-', '-', 'singkat', '-', 'Normal', '']], photos: [[]], kesiapanRows: [['No']] });
+  assert.equal(normal.getWorksheet('Laporan').getCell(2, 7).font?.size ?? 11, 11);
+});
+
+test('buildShiftReportWorkbook: satu paragraf sangat panjang melebarkan kolom Uraian sampai tingginya muat', () => {
+  const header = ['No', 'Lokasi', 'Peralatan', 'Corrective Maintenance', 'Preventive Maintenance', 'Lain-lain', 'Uraian Kegiatan', 'Waktu Tindak Lanjut', 'Hasil', 'Dokumentasi'];
+  const paragraf = 'kata '.repeat(400).trim();
+  const rows = [header, ['1', 'T2 D', 'XRAY', '-', '-', 'KEGIATAN', paragraf, '08:00', 'Normal', '']];
+  const wb = buildShiftReportWorkbook(ExcelJS, { laporanRows: rows, photos: [[]], kesiapanRows: [['No']] });
+  const ws = wb.getWorksheet('Laporan');
+  assert.ok(ws.getColumn(7).width > 70, 'kolom Uraian dilebarkan');
+  assert.ok(ws.getRow(2).height <= 409);
+  assert.ok(ws.getRow(2).height >= textHeightPt(rows[1], header.map((_, i) => ws.getColumn(i + 1).width)), 'tinggi cukup untuk teks pada lebar yang dipakai');
+});
+
+test('buildShiftReportWorkbook: header yang membungkus mendapat tinggi cukup', () => {
+  const header = ['No', 'Lokasi', 'Peralatan', 'Corrective Maintenance', 'Preventive Maintenance', 'Lain-lain', 'Uraian Kegiatan', 'Waktu Tindak Lanjut', 'Hasil', 'Dokumentasi'];
+  const wb = buildShiftReportWorkbook(ExcelJS, { laporanRows: [header], photos: [], kesiapanRows: [['No']] });
+  assert.ok(wb.getWorksheet('Laporan').getRow(1).height >= 36, 'dua baris judul + ruang cadangan');
 });

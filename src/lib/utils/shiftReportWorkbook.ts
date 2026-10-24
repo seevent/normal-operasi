@@ -16,7 +16,13 @@ const PX_TO_PT = 0.75;
 /** Satuan offset jangkar gambar pada berkas Excel (EMU) per piksel. */
 const EMU_PER_PX = 9525;
 const MAX_ROW_PT = 409;
-const LINE_PT = 13.5;
+/** Tinggi satu baris teks Excel untuk font standar (Calibri 11), ditambah ruang cadangan per sel. */
+const LINE_PT = 15;
+const CELL_PAD_PT = 6;
+/** Bagian lebar kolom yang dipakai perkiraan pembungkusan; sisanya cadangan agar teks tidak terpotong. */
+const WRAP_SAFETY = 0.9;
+const BASE_FONT_PT = 11;
+const MIN_FONT_PT = 5;
 
 // Lebar kolom Excel (karakter) = (piksel - 5) / 7 untuk font standar.
 const DOC_WCH = Math.ceil((PHOTO_BOX.perLine * (PHOTO_BOX.width + PHOTO_BOX.gap) + PHOTO_BOX.gap - 5) / 7);
@@ -52,19 +58,86 @@ export const layoutPhotos = (
   return { placements, heightPx: sizes.length === 0 ? 0 : box.gap + lines * (box.height + box.gap) };
 };
 
-/** Tinggi baris (pt) agar teks terpanjang dan semua foto muat; dibatasi batas Excel. */
-export const rowHeightPt = (cells: string[], widthsWch: number[], photoHeightPx: number): number => {
-  let textLines = 1;
-  cells.forEach((cell, i) => {
-    const wch = widthsWch[i] || 10;
-    const lines = String(cell ?? '')
-      .split('\n')
-      .reduce((sum, part) => sum + Math.max(1, Math.ceil(part.length / wch)), 0);
-    textLines = Math.max(textLines, lines);
-  });
-  const textPt = textLines * LINE_PT + 4;
-  return Math.min(MAX_ROW_PT, Math.max(15, textPt, photoHeightPx * PX_TO_PT));
+/**
+ * Susun foto dengan batas tinggi baris Excel (409 pt). Bila 2 foto per baris tidak muat, jumlah foto per
+ * baris dinaikkan dan kotaknya dikecilkan sehingga lebar total tetap sama dengan lebar kolom.
+ */
+export const layoutPhotosWithin = (
+  sizes: Array<{ width: number; height: number }>,
+  maxHeightPx: number = MAX_ROW_PT / PX_TO_PT
+): { placements: PhotoPlacement[]; heightPx: number } => {
+  let result = layoutPhotos(sizes);
+  const columnPx = PHOTO_BOX.perLine * (PHOTO_BOX.width + PHOTO_BOX.gap) + PHOTO_BOX.gap;
+  for (let perLine = PHOTO_BOX.perLine + 1; result.heightPx > maxHeightPx && perLine <= 8; perLine++) {
+    // Lebar kotak dihitung dari lebar kolom dikurangi semua jarak, agar baris penuh tidak melewati kolom.
+    const width = Math.floor((columnPx - PHOTO_BOX.gap * (perLine + 1)) / perLine);
+    result = layoutPhotos(sizes, {
+      width,
+      height: Math.floor((width * PHOTO_BOX.height) / PHOTO_BOX.width),
+      gap: PHOTO_BOX.gap,
+      perLine,
+    });
+  }
+  return result;
 };
+
+/**
+ * Lebar satu karakter relatif terhadap angka "0" (satuan lebar kolom Excel) pada Calibri.
+ * Perkiraan sengaja sedikit lebar: huruf kapital dan M/W jauh lebih lebar daripada huruf kecil.
+ */
+const charUnits = (ch: string): number => {
+  if (ch === ' ') return 0.45;
+  if ('il.,:;!|\'`'.includes(ch)) return 0.5;
+  if ('jtfr()[]-/\\'.includes(ch)) return 0.65;
+  if (ch === '\u2022') return 0.7;
+  if (ch === 'I') return 0.5;
+  if (ch === 'm') return 1.6;
+  if (ch === 'w') return 1.4;
+  if (ch === 'M' || ch === 'W') return 1.75;
+  if (ch === '&' || ch === '%' || ch === '@') return 1.4;
+  if (ch >= 'A' && ch <= 'Z') return 1.2;
+  if (ch >= 'a' && ch <= 'z') return 1;
+  if (ch >= '0' && ch <= '9') return 1;
+  return 1.2;
+};
+
+const wordUnits = (word: string): number => Array.from(word).reduce((sum, ch) => sum + charUnits(ch), 0);
+
+/** Jumlah baris tampilan sebuah teks pada kolom selebar `wch` karakter: bungkus per kata, kata panjang dipatahkan. */
+export const wrappedLineCount = (text: string, wch: number): number => {
+  const avail = Math.max(1, wch * WRAP_SAFETY);
+  const space = charUnits(' ');
+  let total = 0;
+  for (const paragraph of String(text ?? '').split('\n')) {
+    let lines = 1;
+    let used = 0;
+    for (const word of paragraph.split(' ').filter(Boolean)) {
+      const w = wordUnits(word);
+      if (used > 0 && used + space + w <= avail) {
+        used += space + w;
+      } else if (w <= avail) {
+        if (used > 0) lines += 1;
+        used = w;
+      } else {
+        if (used > 0) lines += 1;
+        lines += Math.ceil(w / avail) - 1;
+        used = w - (Math.ceil(w / avail) - 1) * avail;
+      }
+    }
+    total += lines;
+  }
+  return Math.max(1, total);
+};
+
+/** Tinggi (pt) yang dibutuhkan teks terpanjang di antara sel-sel satu baris. */
+export const textHeightPt = (cells: string[], widthsWch: number[]): number => {
+  const lines = cells.reduce((max, cell, i) => Math.max(max, wrappedLineCount(cell, widthsWch[i] || 10)), 1);
+  return lines * LINE_PT + CELL_PAD_PT;
+};
+
+/** Tinggi baris (pt) agar teks terpanjang dan semua foto muat; dibatasi batas Excel. */
+export const rowHeightPt = (cells: string[], widthsWch: number[], photoHeightPx: number): number =>
+  Math.min(MAX_ROW_PT, Math.max(LINE_PT, textHeightPt(cells, widthsWch), photoHeightPx * PX_TO_PT));
 
 const COLUMN_WCH: Record<string, number> = {
   No: 5,
@@ -104,27 +177,53 @@ const styleHeader = (row: any) => {
   });
 };
 
+/**
+ * Lebar kolom per judul. Kolom Uraian dilebarkan bertahap bila ada baris yang tingginya akan melewati
+ * batas Excel, supaya tidak ada teks yang tertutup.
+ */
+const pickColumnWidths = (header: string[], dataRows: string[][]): number[] => {
+  const base = header.map(h => COLUMN_WCH[h] ?? 20);
+  const uraianCol = header.indexOf('Uraian Kegiatan');
+  let widths = base;
+  for (const uraianWch of [COLUMN_WCH['Uraian Kegiatan'], 90, 110, 140, 180]) {
+    widths = base.map((w, i) => (i === uraianCol ? uraianWch : w));
+    if (dataRows.every(cells => textHeightPt(cells, widths) <= MAX_ROW_PT)) break;
+  }
+  return widths;
+};
+
 export const buildShiftReportWorkbook = (ExcelJS: any, input: ShiftReportWorkbookInput): any => {
   const wb = new ExcelJS.Workbook();
 
   // --- Sheet Laporan
   const ws = wb.addWorksheet('Laporan');
   const [header, ...dataRows] = input.laporanRows;
-  const widths = header.map(h => COLUMN_WCH[h] ?? 20);
+  const widths = pickColumnWidths(header, dataRows);
   const docCol = header.indexOf('Dokumentasi');
   ws.columns = header.map((h, i) => ({ header: h, key: `c${i}`, width: widths[i] }));
   styleHeader(ws.getRow(1));
-  ws.getRow(1).height = 30;
+  // Header tebal: lebar efektif dikurangi agar judul kolom yang membungkus tetap terlihat utuh.
+  ws.getRow(1).height = Math.max(30, textHeightPt(header, widths.map(w => w * 0.85)));
 
   dataRows.forEach((cells, i) => {
     const photos = (input.photos[i] ?? []).filter((p): p is LoadedPhoto => !!p);
-    const { placements, heightPx } = layoutPhotos(photos);
+    const { placements, heightPx } = layoutPhotosWithin(photos);
     const row = ws.addRow(cells);
     row.alignment = { vertical: 'top', wrapText: true };
     row.eachCell({ includeEmpty: true }, (cell: any) => {
       cell.border = BORDER;
     });
     row.height = rowHeightPt(cells, widths, heightPx);
+
+    // Teks lebih tinggi dari batas baris Excel (409 pt) tidak mungkin muat pada ukuran huruf biasa:
+    // kecilkan hurufnya agar seluruh isi tetap terbaca.
+    const needPt = textHeightPt(cells, widths);
+    if (needPt > MAX_ROW_PT) {
+      const size = Math.max(MIN_FONT_PT, Math.floor((BASE_FONT_PT * (MAX_ROW_PT - CELL_PAD_PT)) / (needPt - CELL_PAD_PT)));
+      row.eachCell({ includeEmpty: true }, (cell: any) => {
+        cell.font = { ...(cell.font || {}), size };
+      });
+    }
 
     placements.forEach(p => {
       const imageId = wb.addImage({ base64: photos[p.index].dataUrl, extension: photos[p.index].extension });
