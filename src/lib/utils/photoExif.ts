@@ -79,6 +79,33 @@ const parseTiff = (view: DataView, base: number, end: number): number | null => 
   return Date.UTC(y, mo - 1, d, h, mi, s) - WIB_OFFSET_HOURS * HOUR_MS;
 };
 
+const DAY_MS = 24 * HOUR_MS;
+const WA_COMPACT = /(?:IMG|VID|PTT|AUD|DOC|STK)-(\d{4})(\d{2})(\d{2})-WA\d+/i;
+const WA_LONG = /WhatsApp (?:Image|Video) (\d{4})-(\d{2})-(\d{2}) at (\d{2})\.(\d{2})\.(\d{2})/i;
+
+/**
+ * Rentang waktu dari nama berkas unduhan WhatsApp (foto WA tidak punya EXIF). Ini tanggal pesan DITERIMA, bukan foto diambil.
+ * 'IMG-20261020-WA0001.jpg' hanya memuat tanggal -> seluruh hari itu (WIB); 'WhatsApp Image 2026-10-20 at 09.30.15.jpeg' memuat jam.
+ */
+export const whatsappNameRange = (name: string): [number, number] | null => {
+  const valid = (y: number, mo: number, d: number) => y >= 2000 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31;
+  const long = WA_LONG.exec(name);
+  if (long) {
+    const [y, mo, d, h, mi, sec] = long.slice(1).map(Number);
+    if (!valid(y, mo, d)) return null;
+    const at = Date.UTC(y, mo - 1, d, h, mi, sec) - WIB_OFFSET_HOURS * HOUR_MS;
+    return [at, at];
+  }
+  const compact = WA_COMPACT.exec(name);
+  if (compact) {
+    const [y, mo, d] = compact.slice(1).map(Number);
+    if (!valid(y, mo, d)) return null;
+    const dayStart = Date.UTC(y, mo - 1, d) - WIB_OFFSET_HOURS * HOUR_MS;
+    return [dayStart, dayStart + DAY_MS];
+  }
+  return null;
+};
+
 const fmtWib = (ms: number): string =>
   new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).format(new Date(ms));
 
@@ -86,12 +113,20 @@ const fmtWib = (ms: number): string =>
  * Peringatan bila foto diambil di luar periode berjalan; null bila wajar.
  * Jendela: dari awal periode (kunci 'YYYY-MM-DD' pukul 07.00 WIB) sampai reset berikutnya, ditambah toleransi 1 jam.
  */
-export const photoDateWarning = (takenAt: number | null, periodKey: string, nextResetMs: number, opts: { heic?: boolean } = {}): string | null => {
+export const photoDateWarning = (takenAt: number | null, periodKey: string, nextResetMs: number, opts: { heic?: boolean; nameRange?: [number, number] | null } = {}): string | null => {
+  const startMs = Date.parse(`${periodKey}T00:00:00Z`); // 07.00 WIB = 00.00 UTC
+  const tolerance = HOUR_MS;
+  // Foto WhatsApp tanpa EXIF: pakai tanggal pada nama berkas sebagai cadangan.
+  if (takenAt === null && opts.nameRange) {
+    const [from, to] = opts.nameRange;
+    if (to < startMs - tolerance || from > nextResetMs + tolerance) {
+      return `Nama berkas WhatsApp menunjukkan tanggal ${fmtWib(from)} WIB, di luar periode ini. Tetap tersimpan; pastikan bukan foto lama.`;
+    }
+    return null;
+  }
   // HEIC tidak dibaca EXIF-nya di sini, jadi "tanpa tanggal" bukan tanda foto mencurigakan.
   if (takenAt === null && opts.heic) return null;
   if (takenAt === null) return 'Foto tidak memuat tanggal pengambilan (mis. screenshot). Pastikan ini foto terbaru dari peralatan.';
-  const startMs = Date.parse(`${periodKey}T00:00:00Z`); // 07.00 WIB = 00.00 UTC
-  const tolerance = HOUR_MS;
   if (takenAt < startMs - tolerance || takenAt > nextResetMs + tolerance) {
     return `Foto diambil ${fmtWib(takenAt)} WIB, di luar periode ini. Tetap tersimpan; pastikan bukan foto lama.`;
   }

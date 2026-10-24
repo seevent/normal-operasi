@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readExifTakenAt, photoDateWarning } from '../src/lib/utils/photoExif.ts';
+import { readExifTakenAt, photoDateWarning, whatsappNameRange } from '../src/lib/utils/photoExif.ts';
 
 /** JPEG minimal berisi APP1/Exif dengan DateTimeOriginal (ExifIFD) atau hanya DateTime (IFD0). */
 const buildJpeg = (stamp, { tag = 'original', little = true } = {}) => {
@@ -72,4 +72,22 @@ test('foto tanpa tanggal (screenshot/HEIC) diberi peringatan, bukan penolakan', 
 test('HEIC tanpa tanggal terbaca tidak diberi peringatan, tetapi HEIC yang tanggalnya terbaca tetap diperiksa', () => {
   assert.equal(photoDateWarning(null, '2026-10-20', NEXT, { heic: true }), null);
   assert.match(photoDateWarning(Date.UTC(2026, 9, 10, 2, 0), '2026-10-20', NEXT, { heic: true }), /di luar periode/);
+});
+
+test('whatsappNameRange: nama berkas WA diurai ke rentang WIB, selain itu null', () => {
+  assert.deepEqual(whatsappNameRange('IMG-20261020-WA0001.jpg'), [Date.UTC(2026, 9, 19, 17), Date.UTC(2026, 9, 20, 17)]);
+  assert.deepEqual(whatsappNameRange('WhatsApp Image 2026-10-20 at 09.30.15.jpeg'), [Date.UTC(2026, 9, 20, 2, 30, 15), Date.UTC(2026, 9, 20, 2, 30, 15)]);
+  assert.equal(whatsappNameRange('IMG_20261020_093000.jpg'), null);
+  assert.equal(whatsappNameRange('IMG-20261345-WA0001.jpg'), null);
+  assert.equal(whatsappNameRange(''), null);
+});
+
+test('foto WA tanpa EXIF: tanggal pada nama berkas dipakai; dalam periode tanpa peringatan, di luar periode diperingatkan', () => {
+  assert.equal(photoDateWarning(null, '2026-10-20', NEXT, { nameRange: whatsappNameRange('IMG-20261020-WA0001.jpg') }), null);
+  assert.equal(photoDateWarning(null, '2026-10-20', NEXT, { nameRange: whatsappNameRange('IMG-20261021-WA0001.jpg') }), null, 'hari yang beririsan dengan periode');
+  assert.match(photoDateWarning(null, '2026-10-20', NEXT, { nameRange: whatsappNameRange('IMG-20261010-WA0001.jpg') }), /Nama berkas WhatsApp.*di luar periode/);
+});
+
+test('EXIF tetap didahulukan atas nama berkas WA', () => {
+  assert.match(photoDateWarning(Date.UTC(2026, 9, 10, 2, 0), '2026-10-20', NEXT, { nameRange: whatsappNameRange('IMG-20261020-WA0001.jpg') }), /Foto diambil/);
 });
