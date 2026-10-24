@@ -4,7 +4,7 @@ import { fetchPhotoLog, fetchPreventiveAssets, fetchServerClock } from '../lib/s
 import { PreventiveUploadError, uploadPreventivePhoto } from '../lib/services/preventivePhotoService';
 import type { PreventivePeriod } from '../lib/data/preventiveTypes';
 import type { PreventiveAsset, RowStatus } from '../lib/utils/preventiveGrouping';
-import { createLimiter } from '../lib/utils/preventiveImage';
+import { createLimiter, isHeicLike } from '../lib/utils/preventiveImage';
 import { EXIF_READ_BYTES, photoDateWarning, readExifTakenAt } from '../lib/utils/photoExif';
 import { nextResetAt } from '../lib/utils/preventivePeriod';
 import { buildSavedMap, deriveStatus, pruneStaleLocals, rowKey } from '../lib/utils/preventiveStatus';
@@ -104,7 +104,9 @@ export const usePreventiveStore = create<PreventiveState>((set, get) => ({
     try {
       const head = await file.slice(0, EXIF_READ_BYTES).arrayBuffer();
       const nextReset = nextResetAt(period, new Date(Date.now() + get().clockOffsetMs)).getTime();
-      warning = photoDateWarning(readExifTakenAt(head), startKey, nextReset);
+      warning = photoDateWarning(readExifTakenAt(head), startKey, nextReset, {
+        heic: isHeicLike({ type: file.type, name: (file as File).name ?? '' }),
+      });
     } catch {
       warning = null;
     }

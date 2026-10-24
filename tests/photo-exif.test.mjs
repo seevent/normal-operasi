@@ -68,3 +68,8 @@ test('foto lama diberi peringatan dengan tanggalnya', () => {
 test('foto tanpa tanggal (screenshot/HEIC) diberi peringatan, bukan penolakan', () => {
   assert.match(photoDateWarning(null, '2026-10-20', NEXT), /tidak memuat tanggal/);
 });
+
+test('HEIC tanpa tanggal terbaca tidak diberi peringatan, tetapi HEIC yang tanggalnya terbaca tetap diperiksa', () => {
+  assert.equal(photoDateWarning(null, '2026-10-20', NEXT, { heic: true }), null);
+  assert.match(photoDateWarning(Date.UTC(2026, 9, 10, 2, 0), '2026-10-20', NEXT, { heic: true }), /di luar periode/);
+});

@@ -86,7 +86,9 @@ const fmtWib = (ms: number): string =>
  * Peringatan bila foto diambil di luar periode berjalan; null bila wajar.
  * Jendela: dari awal periode (kunci 'YYYY-MM-DD' pukul 07.00 WIB) sampai reset berikutnya, ditambah toleransi 1 jam.
  */
-export const photoDateWarning = (takenAt: number | null, periodKey: string, nextResetMs: number): string | null => {
+export const photoDateWarning = (takenAt: number | null, periodKey: string, nextResetMs: number, opts: { heic?: boolean } = {}): string | null => {
+  // HEIC tidak dibaca EXIF-nya di sini, jadi "tanpa tanggal" bukan tanda foto mencurigakan.
+  if (takenAt === null && opts.heic) return null;
   if (takenAt === null) return 'Foto tidak memuat tanggal pengambilan (mis. screenshot). Pastikan ini foto terbaru dari peralatan.';
   const startMs = Date.parse(`${periodKey}T00:00:00Z`); // 07.00 WIB = 00.00 UTC
   const tolerance = HOUR_MS;
