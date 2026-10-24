@@ -3,9 +3,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Calendar, FileText, Loader2, CheckCircle, Clock, Plus, 
-  Edit, Trash2, X, Share2, ExternalLink, Printer
+  Edit, Trash2, X, Share2, ExternalLink, Printer, FileSpreadsheet
 } from 'lucide-react';
-import { shareToWhatsApp } from '../../lib/services/shareService';
+import { shareToWhatsApp, triggerFileDownload } from '../../lib/services/shareService';
 import { generatePdfBlob } from '../../lib/services/pdfService';
 import { supabase } from '../../lib/supabaseClient';
 import { 
@@ -27,6 +27,14 @@ import {
   sortPersonelRows
 } from '../../lib/utils/shiftReportMessage';
 import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
+import {
+  buildShiftReportFilename,
+  buildLaporanSheetRows,
+  buildKesiapanSheetRows,
+  fotoUrlsOf,
+  resolvePreventiveText
+} from '../../lib/utils/shiftReportExport';
+import { createShiftReportXlsx } from '../../lib/services/excelExportService';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { useAppStore } from '../../store/useAppStore';
 import { ShiftReportPrintDocument } from './shift-report/ShiftReportPrintDocument';
@@ -49,6 +57,7 @@ export const TabShiftReport: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [sharingWa, setSharingWa] = useState(false);
+  const [exportingXlsx, setExportingXlsx] = useState(false);
   const [fetchingLive, setFetchingLive] = useState(false);
   const [reports, setReports] = useState<any[]>([]);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'info' | 'success' | 'error' } | null>(null);
@@ -476,7 +485,7 @@ export const TabShiftReport: React.FC = () => {
         const element = pdfRef.current;
         await prepareImagesForPdf(element);
 
-        const filename = `SSES_T2_Laporan_Shift_${shift}_${date}.pdf`;
+        const filename = buildShiftReportFilename(shift, date, 'pdf');
         const opt = {
           margin: [5, 5, 5, 5],
           filename: filename,
@@ -558,20 +567,7 @@ export const TabShiftReport: React.FC = () => {
     }
 
     if (isPreventive(r)) {
-      let rawText = (r.Uraian && r.Uraian.includes('Kegiatan :')) 
-        ? r.Uraian 
-        : getDefaultKalibrasiUraian(r.Peralatan, r.Lokasi);
-
-      if (!rawText.includes('Catatan :')) {
-        const defaultUraian = getDefaultKalibrasiUraian(r.Peralatan, r.Lokasi);
-        const catatanIndex = defaultUraian.indexOf('Catatan :');
-        if (catatanIndex !== -1) {
-          rawText = `${rawText.trim()}\n   \n${defaultUraian.slice(catatanIndex)}`;
-        }
-      }
-
-      const kegiatanIdx = rawText.indexOf('Kegiatan :');
-      const cleanText = kegiatanIdx !== -1 ? rawText.slice(kegiatanIdx) : rawText;
+      const cleanText = resolvePreventiveText(r, getDefaultKalibrasiUraian);
 
       const parts = cleanText.split(/(Kegiatan\s*:|Catatan\s*:)/g).filter(Boolean);
       return (
@@ -735,6 +731,42 @@ export const TabShiftReport: React.FC = () => {
     return result;
   }, [reports, shift, penempatanData]);
 
+  // Ekspor tabel laporan + kesiapan fasilitas ke berkas Excel (.xlsx), foto tertanam langsung di sel
+  const handleExportExcel = async () => {
+    setExportingXlsx(true);
+    setStatusMsg({ text: 'Menyiapkan Excel dan memuat foto...', type: 'info' });
+    try {
+      const laporanRows = buildLaporanSheetRows(printReports, shift, {
+        isCorrective,
+        isPreventive,
+        isStoring,
+        getDefaultUraian: getDefaultKalibrasiUraian,
+        formatLokasi: formatLokasiPrint,
+        formatHasil
+      });
+      const { file, failedPhotos } = await createShiftReportXlsx({
+        filename: buildShiftReportFilename(shift, date, 'xlsx'),
+        laporanRows,
+        photoUrls: printReports.map(fotoUrlsOf),
+        kesiapanRows: buildKesiapanSheetRows(checklistSummary)
+      });
+      triggerFileDownload(file);
+
+      setStatusMsg({
+        text: failedPhotos > 0
+          ? `Berkas Excel diunduh, tetapi ${failedPhotos} foto gagal dimuat dan dilewati.`
+          : 'Berkas Excel laporan shift berhasil diunduh.',
+        type: failedPhotos > 0 ? 'info' : 'success'
+      });
+    } catch (err) {
+      console.error('Gagal ekspor Excel:', err);
+      setStatusMsg({ text: 'Gagal membuat berkas Excel. Coba lagi.', type: 'error' });
+    } finally {
+      setExportingXlsx(false);
+      setTimeout(() => setStatusMsg(null), 5000);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 p-4 sm:p-6 rounded-2xl">
       
@@ -808,6 +840,18 @@ export const TabShiftReport: React.FC = () => {
             >
               <Printer className="w-4 h-4 text-amber-300" />
               <span>Cetak (Print)</span>
+            </button>
+
+            {/* Tombol Ekspor Excel (.xlsx) */}
+            <button
+              onClick={handleExportExcel}
+              type="button"
+              disabled={loading || exportingXlsx || printReports.length === 0}
+              title="Unduh laporan shift dalam format Excel (.xlsx)"
+              className="flex-1 min-w-[130px] flex justify-center items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
+            >
+              {exportingXlsx ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+              <span>Export Excel</span>
             </button>
 
             {/* Tombol Kirim ke WhatsApp */}
