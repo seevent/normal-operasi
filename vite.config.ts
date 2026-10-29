@@ -17,9 +17,7 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
-  server: {
-    https: true,
-  },
+  // HTTPS server lokal diaktifkan oleh basicSsl(); Vite 7 tidak lagi menerima `server.https: true`.
 })
 
 export default config

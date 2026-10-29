@@ -141,7 +141,9 @@ export const AssetManager: React.FC = () => {
           .eq('id_lokasi', formLokasi)
           .eq('nomor', titikStr)
           .maybeSingle();
-          
+
+        // Pencarian gagal (mis. koneksi putus) jangan dianggap "belum ada": bisa membuat titik ganda.
+        if (titikErr) throw titikErr;
         if (existingTitik) {
           titikId = existingTitik.id;
         } else {

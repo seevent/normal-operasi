@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { 
-  Plus, Edit2, Trash2, Loader2, Save, X, Search, Filter, 
+  Plus, Edit2, Trash2, Loader2, Save, X, Search, 
   Cpu, Tag, ShieldCheck, Calendar, Building2, AlertCircle, 
   CheckCircle2, Clock, Box, AlertTriangle, Layers, Zap
 } from 'lucide-react';

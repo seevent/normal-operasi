@@ -256,7 +256,9 @@ export const TabTip: React.FC = () => {
       let canShare = false; 
       try { 
         canShare = navigator.canShare && navigator.canShare({ files: [file] }); 
-      } catch(e) {} 
+      } catch {
+        // Sebagian browser melempar galat untuk canShare berkas: anggap tidak bisa berbagi berkas.
+      }
       
       if (canShare) {
         try {
