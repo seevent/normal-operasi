@@ -1,6 +1,7 @@
 // src/components/shared/PhotoUploader.tsx
-import React, { useState } from 'react';
-import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Type } from 'lucide-react';
+import React, { useState, useSyncExternalStore } from 'react';
+import { Camera, Move, ImagePlus, X, ZoomIn, ZoomOut, Type, Loader2, Check, AlertCircle } from 'lucide-react';
+import { getVideoPrepStatus, subscribeVideoPrep } from '../../lib/services/whatsappVideoService';
 import { PhotoTextEditorModal } from './PhotoTextEditorModal';
 
 export type PhotoAnnotation = {
@@ -30,6 +31,20 @@ type PhotoUploaderProps = {
   onEdit?: (index: number, updatedPhoto: Photo) => void;
   listType: string;
   hideHeader?: boolean;
+};
+
+/** Lencana status konversi video ke format WhatsApp (berjalan di latar belakang sejak video dipilih). */
+const VideoPrepBadge: React.FC<{ file: File }> = ({ file }) => {
+  const status = useSyncExternalStore(subscribeVideoPrep, () => getVideoPrepStatus(file));
+  if (!status) return null;
+  const tone = status === 'ready' ? 'bg-emerald-600' : status === 'failed' ? 'bg-rose-600' : 'bg-slate-700';
+  return (
+    <div className={`absolute bottom-1 left-1 z-10 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-white ${tone}`}>
+      {status === 'preparing' && <><Loader2 className="w-3 h-3 animate-spin" /> Menyiapkan…</>}
+      {status === 'ready' && <><Check className="w-3 h-3" /> Siap</>}
+      {status === 'failed' && <><AlertCircle className="w-3 h-3" /> Gagal</>}
+    </div>
+  );
 };
 
 export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
@@ -186,6 +201,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                {photo.file?.type?.startsWith('video/') && <VideoPrepBadge file={photo.file} />}
 
                 {!photo.file?.type?.startsWith('video/') && (
                   <>

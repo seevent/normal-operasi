@@ -30,18 +30,31 @@ test('Grup 1 kosong: kiriman pertama diisi media grup berikutnya', () => {
   assert.deepEqual(names(buildShareBatches([[], [img('k2')]])), [['k2']]);
 });
 
-test('isRiskyBatch: hanya kiriman dengan video bersama berkas lain', () => {
+test('isRiskyBatch: kiriman berisi video bersama berkas lain atau caption', () => {
   assert.equal(isRiskyBatch([img('a')]), false);
+  assert.equal(isRiskyBatch([img('a')], 'laporan'), false);
   assert.equal(isRiskyBatch([vid('v')]), false);
+  assert.equal(isRiskyBatch([vid('v')], 'laporan'), true);
   assert.equal(isRiskyBatch([img('a'), img('b')]), false);
   assert.equal(isRiskyBatch([img('a'), vid('v')]), true);
   assert.equal(isRiskyBatch([vid('v1'), vid('v2')]), true);
 });
 
-test('splitMediaSafely: foto jadi satu kiriman, tiap video sendiri', () => {
-  const out = splitMediaSafely([img('a'), vid('v1'), img('b'), vid('v2')]);
-  assert.deepEqual(names(out), [['a', 'b'], ['v1'], ['v2']]);
-  assert.deepEqual(splitMediaSafely([]), []);
+const items = (list) => list.map((i) => ({ files: i.files.map((f) => f.name), caption: i.caption }));
+
+test('splitMediaSafely: caption bersama foto, lalu tiap video sendiri tanpa caption', () => {
+  const out = splitMediaSafely({ files: [img('a'), vid('v1'), img('b'), vid('v2')], caption: 'laporan' });
+  assert.deepEqual(items(out), [
+    { files: ['a', 'b'], caption: 'laporan' },
+    { files: ['v1'], caption: undefined },
+    { files: ['v2'], caption: undefined },
+  ]);
+});
+
+test('splitMediaSafely: tanpa foto, laporan dikirim sebagai teks saja sebelum video', () => {
+  const out = splitMediaSafely({ files: [vid('v1')], caption: 'laporan' });
+  assert.deepEqual(items(out), [{ files: [], caption: 'laporan' }, { files: ['v1'], caption: undefined }]);
+  assert.deepEqual(splitMediaSafely({ files: [] }), []);
 });
 
 test('Tab yang melampirkan media memakai shareReportWithMedia', () => {
@@ -53,4 +66,14 @@ test('Tab yang melampirkan media memakai shareReportWithMedia', () => {
   }
   assert.match(read('src/components/App.tsx'), /<PendingShareBar \/>/);
   assert.match(read('src/components/shared/PendingShareBar.tsx'), /retryShareSeparately/);
+});
+
+test('Video diubah ke MP4 ramah WhatsApp sebelum laporan dibagikan', () => {
+  const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+  const service = read('src/lib/services/shareService.ts');
+  assert.match(service, /prepareVideoForWhatsApp\(video, category\)/);
+  assert.match(service, /caption: message, cheerTab/);
+  assert.match(read('src/components/shared/PendingShareBar.tsx'), /Menyiapkan video/);
+  // Video harus lewat endpoint video Cloudinary, bukan endpoint gambar.
+  assert.match(read('src/lib/services/cloudinaryService.ts'), /\/video\/upload`/);
 });

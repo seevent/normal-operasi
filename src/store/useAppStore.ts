@@ -49,14 +49,17 @@ interface AppState {
   setBottomInset: (px: number) => void;
 
   /**
-   * Kiriman WhatsApp yang belum terkirim (tanpa caption). Tiap kiriman butuh ketukan baru
-   * dari pengguna, jadi dikirim lewat tombol di PendingShareBar.
+   * Kiriman WhatsApp yang belum terkirim. Tiap kiriman butuh ketukan baru dari pengguna,
+   * jadi dikirim lewat tombol di PendingShareBar.
    */
   pendingShareBatches: ShareItem[];
   setPendingShareBatches: (batches: ShareItem[]) => void;
   /** Kiriman campur foto + video terakhir; bila WhatsApp menolaknya, pengguna bisa mengirim ulang terpisah. */
   shareRetry: ShareItem | null;
   setShareRetry: (item: ShareItem | null) => void;
+  /** Kemajuan konversi video ke format WhatsApp sebelum laporan bisa dibagikan; null bila tidak ada. */
+  videoPrep: { done: number; total: number } | null;
+  setVideoPrep: (prep: { done: number; total: number } | null) => void;
 }
 
 let petMessageCounter = 0;
@@ -90,6 +93,8 @@ export const useAppStore = create<AppState>((set) => ({
   setPendingShareBatches: (batches) => set({ pendingShareBatches: batches }),
   shareRetry: null,
   setShareRetry: (item) => set({ shareRetry: item }),
+  videoPrep: null,
+  setVideoPrep: (prep) => set({ videoPrep: prep }),
 }));
 
 /**

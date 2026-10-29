@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { compressImageFile } from '../utils/canvasUtils';
+import { prefetchVideosForWhatsApp } from '../services/whatsappVideoService';
+import type { DocumentationCategory } from '../utils/documentationPhoto';
 
 export interface PhotoGroupPhoto {
   id: number;
@@ -29,9 +31,10 @@ export const createEmptyPhotoGroup = (): PhotoGroup => ({
  * tambah/hapus grup) yang dipakai bersama oleh tab-tab laporan operasional.
  *
  * Hook ini juga membebaskan object URL blob saat komponen dilepas agar preview
- * foto tidak membocorkan memori.
+ * foto tidak membocorkan memori. `videoCategory` menentukan folder Cloudinary video yang
+ * dikonversi di latar belakang untuk WhatsApp.
  */
-export const usePhotoGroups = () => {
+export const usePhotoGroups = (videoCategory?: DocumentationCategory) => {
   const [photoGroups, setPhotoGroups] = useState<any[]>([createEmptyPhotoGroup()]);
 
   const photoGroupsRef = React.useRef(photoGroups);
@@ -53,6 +56,7 @@ export const usePhotoGroups = () => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const compressedResults = await Promise.all(files.map((f) => compressImageFile(f)));
+      prefetchVideosForWhatsApp(compressedResults.map((res) => res.file), videoCategory);
       const newPhotos = compressedResults.map((res) => ({
         id: Date.now() + Math.random(),
         file: res.file,
