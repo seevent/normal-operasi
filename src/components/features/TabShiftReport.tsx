@@ -30,6 +30,7 @@ import {
   type NextShiftPersonel
 } from '../../lib/utils/shiftReportMessage';
 import { formatPreventivePeralatan } from '../../lib/utils/locationRules';
+import { kalibrasiPrintLocations } from '../../lib/utils/kalibrasiLocations';
 import {
   buildShiftReportFilename,
   buildLaporanSheetRows,
@@ -662,29 +663,10 @@ export const TabShiftReport: React.FC = () => {
   };
 
   // Helper memecah lokasi kalibrasi yang jamak (jika lebih dari satu lokasi dibikin baris baru)
-  const splitKalibrasiLocations = (lokasiStr: string): string[] => {
-    if (!lokasiStr || lokasiStr === '-') return ['-'];
-    if (lokasiStr.includes(',')) {
-      return lokasiStr.split(',').map(s => s.trim()).filter(Boolean);
-    }
-    if (lokasiStr.includes(' & ') && !lokasiStr.toUpperCase().includes('AVIO & BL')) {
-      const parts = lokasiStr.split(' & ').map(s => s.trim()).filter(Boolean);
-      if (parts.length > 1) {
-        const matchPrefix = parts[0].match(/^(.*?)(\s+\bNo\.?\s*\d+|\s+\d+)/i);
-        const prefix = matchPrefix ? matchPrefix[1].trim() : '';
-        return parts.map((p, idx) => {
-          if (idx > 0 && prefix && !p.toLowerCase().includes(prefix.toLowerCase())) {
-            return `${prefix} ${p}`.trim();
-          }
-          return p;
-        });
-      }
-    }
-    return [lokasiStr.trim()];
-  };
 
   // Menggabungkan seluruh kegiatan storing menjadi 1 baris untuk tabel cetak / PDF
-  // dan memecah preventive maintenance yang memiliki multi-lokasi menjadi baris baru
+  // dan memecah preventive maintenance yang memiliki multi-lokasi menjadi baris baru (kecuali Access Control:
+  // satu baris dengan lokasi digabung)
   const printReports = React.useMemo(() => {
     const storingItems = reports.filter(isStoring);
     const firstStoringIndex = reports.findIndex(isStoring);
@@ -725,7 +707,7 @@ export const TabShiftReport: React.FC = () => {
           result.push(mergedStoringReport);
         }
       } else if (isPreventive(item)) {
-        const subLocs = splitKalibrasiLocations(item.Lokasi);
+        const subLocs = kalibrasiPrintLocations(item.Peralatan, item.Lokasi);
         if (subLocs.length > 1) {
           subLocs.forEach((loc, sIdx) => {
             const formattedEquip = formatPreventivePeralatan(item.Peralatan, loc);
