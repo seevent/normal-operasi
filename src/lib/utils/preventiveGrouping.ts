@@ -1,5 +1,7 @@
 // src/lib/utils/preventiveGrouping.ts
-// Pengelompokan, pencarian, dan filter daftar aset tab Preventive: tipe aset -> lokasi -> aset.
+// Pengelompokan, pencarian, dan filter daftar aset tab Preventive:
+//   - Access Control System: tipe aset -> lokasi -> aset (groupAssets).
+//   - Peralatan pemeriksaan (X-Ray, WTMD, ETD, HHMD, Body Scanner): tempat -> tipe aset -> aset (groupAssetsByPlace).
 // Modul murni agar bisa diuji langsung.
 
 import { PERIOD_CODE, PREVENTIVE_ASSET_TYPES } from '../data/preventiveTypes.ts';
@@ -119,6 +121,110 @@ export const groupAssets = (
   }
 
   return groups.sort((x, y) => typeRank(x.assetType) - typeRank(y.assetType) || x.assetType.localeCompare(y.assetType));
+};
+
+/** Peralatan pemeriksaan yang disusun per tempat, dalam urutan tampil di dalam tempat. */
+export const PLACE_ASSET_TYPES = [
+  'X-RAY KABIN',
+  'X-RAY BAGASI',
+  'WALK THROUGH METAL DETECTOR',
+  'ETD DESKTOP',
+  'HANDHELD METAL DETECTOR',
+  'BODY SCANNER',
+] as const;
+
+export const isPlaceAssetType = (assetType: string): boolean => (PLACE_ASSET_TYPES as readonly string[]).includes(assetType);
+
+/** Urutan tempat mengikuti alur di lapangan; tempat lain menyusul menurut abjad. */
+export const PLACE_ORDER = [
+  'PSCP D', 'PSCP E', 'PSCP F', 'PSCP Umrah',
+  'SSCP E', 'SSCP F',
+  'Transfer Desk D', 'Transfer Desk E',
+  'HBSCP', 'HBSCP Umrah',
+  'Breakdown Umrah', 'Red Lane', 'Arrival F',
+] as const;
+
+const PLACE_PREFIX: Record<string, string> = { pscp: 'PSCP', sscp: 'SSCP', 'transfer desk': 'Transfer Desk' };
+
+/** "PSCP 2D" dan "PSCP D" adalah tempat yang sama; begitu juga 2E/2F, SSCP 2E/2F, Transfer Desk 2D/2E. */
+export const canonicalPlace = (location: string): string => {
+  const m = location.trim().match(/^(PSCP|SSCP|Transfer\s+Desk)\s+2?\s*([DEF])$/i);
+  return m ? `${PLACE_PREFIX[m[1].toLowerCase().replace(/\s+/g, ' ')]} ${m[2].toUpperCase()}` : location.trim();
+};
+
+const placeRank = (location: string): number => {
+  const i = (PLACE_ORDER as readonly string[]).indexOf(location);
+  return i === -1 ? PLACE_ORDER.length : i;
+};
+
+const comparePlace = (a: string, b: string): number => {
+  if (a === UNMAPPED_LOCATION || b === UNMAPPED_LOCATION) return compareLocation(a, b);
+  return placeRank(a) - placeRank(b) || collator.compare(a, b);
+};
+
+export interface PlaceTypeSection {
+  assetType: string;
+  /** Jumlah aset jenis ini di tempat ini pada periode terpilih (tidak terpengaruh pencarian/filter). */
+  total: number;
+  saved: number;
+  /** Aset yang lolos pencarian dan filter. */
+  assets: PreventiveAsset[];
+}
+
+export interface PlaceGroup {
+  location: string;
+  total: number;
+  saved: number;
+  types: PlaceTypeSection[];
+}
+
+/** Peralatan pemeriksaan per tempat: tempat -> tipe aset -> aset. Access Control System tidak termasuk. */
+export const groupAssetsByPlace = (
+  assets: PreventiveAsset[],
+  period: PreventivePeriod,
+  statusOf: (asset: PreventiveAsset) => RowStatus,
+  options: GroupOptions,
+): PlaceGroup[] => {
+  const q = options.query.trim().toLowerCase();
+  const byPlace = new Map<string, Map<string, { all: PreventiveAsset[]; visible: PreventiveAsset[] }>>();
+
+  for (const asset of assetsForPeriod(assets, period)) {
+    if (!isPlaceAssetType(asset.assetType)) continue;
+    const place = canonicalPlace(effectiveLocation(asset));
+    let typeMap = byPlace.get(place);
+    if (!typeMap) byPlace.set(place, (typeMap = new Map()));
+    let bucket = typeMap.get(asset.assetType);
+    if (!bucket) typeMap.set(asset.assetType, (bucket = { all: [], visible: [] }));
+    bucket.all.push(asset);
+    if ((q === '' || matchesQuery(asset, q)) && matchesFilter(statusOf(asset), options.filter)) {
+      bucket.visible.push(asset);
+    }
+  }
+
+  const places: PlaceGroup[] = [];
+  for (const [location, typeMap] of byPlace) {
+    const types: PlaceTypeSection[] = [];
+    let total = 0;
+    let saved = 0;
+    for (const [assetType, bucket] of typeMap) {
+      const typeSaved = bucket.all.filter((a) => statusOf(a) === 'saved').length;
+      total += bucket.all.length;
+      saved += typeSaved;
+      if (bucket.visible.length === 0) continue;
+      types.push({
+        assetType,
+        total: bucket.all.length,
+        saved: typeSaved,
+        assets: [...bucket.visible].sort((x, y) => collator.compare(x.name, y.name) || x.equipmentNumber.localeCompare(y.equipmentNumber)),
+      });
+    }
+    if (types.length === 0) continue;
+    const order = PLACE_ASSET_TYPES as readonly string[];
+    types.sort((x, y) => order.indexOf(x.assetType) - order.indexOf(y.assetType));
+    places.push({ location, total, saved, types });
+  }
+
+  return places.sort((x, y) => comparePlace(x.location, y.location));
 };
 
 export interface Summary {

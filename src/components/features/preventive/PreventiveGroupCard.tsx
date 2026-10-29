@@ -1,15 +1,35 @@
 import React from 'react';
-import { CheckCircle2, ChevronDown, MapPin } from 'lucide-react';
-import { ASSET_TYPE_LABEL } from '../../../lib/data/preventiveTypes';
-import type { PreventiveAssetType, PreventivePeriod } from '../../../lib/data/preventiveTypes';
-import type { PreventiveAsset, RowStatus, TypeGroup } from '../../../lib/utils/preventiveGrouping';
+import { CheckCircle2, ChevronDown, MapPin, ScanLine } from 'lucide-react';
+import type { PreventivePeriod } from '../../../lib/data/preventiveTypes';
+import type { PreventiveAsset, RowStatus } from '../../../lib/utils/preventiveGrouping';
 import { rowKey } from '../../../lib/utils/preventiveStatus';
 import type { LocalEntry, SavedEntry } from '../../../lib/utils/preventiveStatus';
 import { PreventiveAssetRow } from './PreventiveAssetRow';
 
+export interface CardSection {
+  key: string;
+  label: string;
+  total: number;
+  saved: number;
+  assets: PreventiveAsset[];
+}
+
+/**
+ * Satu kartu yang bisa dibuka/tutup. Access Control System: judul jenis, bagian per lokasi.
+ * Peralatan pemeriksaan: judul tempat, bagian per jenis peralatan.
+ */
+export interface CardGroup {
+  key: string;
+  title: string;
+  total: number;
+  saved: number;
+  sectionKind: 'lokasi' | 'jenis';
+  sections: CardSection[];
+}
+
 interface Props {
   period: PreventivePeriod;
-  group: TypeGroup;
+  group: CardGroup;
   open: boolean;
   onToggle: (assetType: string) => void;
   statusFor: (asset: PreventiveAsset) => RowStatus;
@@ -23,16 +43,17 @@ interface Props {
 
 const percent = (saved: number, total: number): number => (total === 0 ? 0 : Math.round((saved / total) * 100));
 
-export const PreventiveTypeGroup: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, warnings, disabled, onPick, onRetry }) => {
-  const label = ASSET_TYPE_LABEL[group.assetType as PreventiveAssetType] ?? group.assetType;
+export const PreventiveGroupCard: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, warnings, disabled, onPick, onRetry }) => {
+  const label = group.title;
   const complete = group.total > 0 && group.saved === group.total;
-  const panelId = `prev-${period}-${group.assetType.replace(/\s+/g, '-')}`;
+  const panelId = `prev-${period}-${group.key.replace(/[^A-Za-z0-9]+/g, '-')}`;
+  const SectionIcon = group.sectionKind === 'lokasi' ? MapPin : ScanLine;
 
   return (
     <section className="rounded-2xl border border-slate-300 bg-white shadow-sm overflow-hidden">
       <button
         type="button"
-        onClick={() => onToggle(group.assetType)}
+        onClick={() => onToggle(group.key)}
         aria-expanded={open}
         aria-controls={panelId}
         className={`w-full min-h-[56px] flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${complete ? 'bg-emerald-50 hover:bg-emerald-100' : 'bg-slate-50 hover:bg-slate-100'}`}
@@ -56,12 +77,12 @@ export const PreventiveTypeGroup: React.FC<Props> = ({ period, group, open, onTo
 
       {open && (
         <div id={panelId} className="border-t border-slate-300">
-          {group.locations.map((loc) => (
-            <div key={loc.location}>
+          {group.sections.map((loc) => (
+            <div key={loc.key}>
               <div className="flex items-center justify-between gap-2 bg-blue-50/70 px-3.5 py-1.5 border-b border-slate-200">
                 <h4 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-blue-900 min-w-0">
-                  <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{loc.location}</span>
+                  <SectionIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{loc.label}</span>
                 </h4>
                 <span className="text-[11px] font-bold tabular-nums text-blue-900 shrink-0">
                   {loc.saved}/{loc.total}

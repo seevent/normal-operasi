@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CalendarClock, Loader2, RefreshCw, Search, X } from 'lucide-react';
-import { PERIOD_LABEL, PERIOD_RESET_TEXT, PREVENTIVE_PERIODS } from '../../lib/data/preventiveTypes';
-import type { PreventivePeriod } from '../../lib/data/preventiveTypes';
-import { groupAssets, summarize } from '../../lib/utils/preventiveGrouping';
+import { ASSET_TYPE_LABEL, PERIOD_LABEL, PERIOD_RESET_TEXT, PREVENTIVE_PERIODS } from '../../lib/data/preventiveTypes';
+import type { PreventiveAssetType, PreventivePeriod } from '../../lib/data/preventiveTypes';
+import { groupAssets, groupAssetsByPlace, isPlaceAssetType, summarize } from '../../lib/utils/preventiveGrouping';
 import type { PreventiveAsset, RowStatus, StatusFilter } from '../../lib/utils/preventiveGrouping';
 import { nextResetAt } from '../../lib/utils/preventivePeriod';
 import type { SavedEntry } from '../../lib/utils/preventiveStatus';
 import { statusOf, usePreventiveStore } from '../../store/usePreventiveStore';
-import { PreventiveTypeGroup } from './preventive/PreventiveTypeGroup';
+import { PreventiveGroupCard } from './preventive/PreventiveGroupCard';
+import type { CardGroup } from './preventive/PreventiveGroupCard';
 
 const FOCUS_REFRESH_MIN_GAP_MS = 20_000;
 const POLL_MS = 60_000;
@@ -75,10 +76,32 @@ export const TabPreventive: React.FC = () => {
   );
   const summary = summaries[period];
 
-  const groups = useMemo(
-    () => groupAssets(assets, period, makeStatusFor(period), { query, filter }),
-    [assets, period, makeStatusFor, query, filter],
-  );
+  const typeLabel = (assetType: string) => ASSET_TYPE_LABEL[assetType as PreventiveAssetType] ?? assetType;
+  // Access Control System tetap per jenis lalu lokasi; peralatan pemeriksaan per tempat lalu jenis.
+  const groups = useMemo((): CardGroup[] => {
+    const statusFor = makeStatusFor(period);
+    const options = { query, filter };
+    const byType = groupAssets(assets.filter((a) => !isPlaceAssetType(a.assetType)), period, statusFor, options);
+    const byPlace = groupAssetsByPlace(assets, period, statusFor, options);
+    return [
+      ...byType.map((g) => ({
+        key: g.assetType,
+        title: typeLabel(g.assetType),
+        total: g.total,
+        saved: g.saved,
+        sectionKind: 'lokasi' as const,
+        sections: g.locations.map((l) => ({ key: l.location, label: l.location, total: l.total, saved: l.saved, assets: l.assets })),
+      })),
+      ...byPlace.map((p) => ({
+        key: `tempat:${p.location}`,
+        title: p.location,
+        total: p.total,
+        saved: p.saved,
+        sectionKind: 'jenis' as const,
+        sections: p.types.map((t) => ({ key: t.assetType, label: typeLabel(t.assetType), total: t.total, saved: t.saved, assets: t.assets })),
+      })),
+    ];
+  }, [assets, period, makeStatusFor, query, filter]);
 
   // Hanya foto milik periode berjalan yang boleh tampil sebagai "Lihat foto".
   const currentSaved = useMemo(() => {
@@ -89,16 +112,16 @@ export const TabPreventive: React.FC = () => {
   }, [saved, keys]);
 
   const searching = query.trim() !== '' || filter !== 'all';
-  const isOpen = (assetType: string) => searching || open.has(assetType);
-  const toggle = useCallback((assetType: string) => {
+  const isOpen = (key: string) => searching || open.has(key);
+  const toggle = useCallback((key: string) => {
     setOpen((prev) => {
       const next = new Set(prev);
-      if (next.has(assetType)) next.delete(assetType);
-      else next.add(assetType);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }, []);
-  const allOpen = groups.length > 0 && groups.every((g) => isOpen(g.assetType));
+  const allOpen = groups.length > 0 && groups.every((g) => isOpen(g.key));
 
   const onPick = useCallback((a: PreventiveAsset, file: File) => void upload(period, a, file), [upload, period]);
   const onRetry = useCallback((a: PreventiveAsset) => retry(period, a), [retry, period]);
@@ -217,10 +240,10 @@ export const TabPreventive: React.FC = () => {
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => setOpen(allOpen ? new Set() : new Set(groups.map((g) => g.assetType)))}
+              onClick={() => setOpen(allOpen ? new Set() : new Set(groups.map((g) => g.key)))}
               className="min-h-[44px] px-2 text-xs font-bold text-blue-700 hover:text-blue-900"
             >
-              {allOpen ? 'Tutup semua jenis' : 'Buka semua jenis'}
+              {allOpen ? 'Tutup semua' : 'Buka semua'}
             </button>
           </div>
         )}
@@ -259,11 +282,11 @@ export const TabPreventive: React.FC = () => {
       {ready && (
         <div className="space-y-2.5">
           {groups.map((g) => (
-            <PreventiveTypeGroup
-              key={`${period}-${g.assetType}`}
+            <PreventiveGroupCard
+              key={`${period}-${g.key}`}
               period={period}
               group={g}
-              open={isOpen(g.assetType)}
+              open={isOpen(g.key)}
               onToggle={toggle}
               statusFor={statusFor}
               saved={currentSaved}
