@@ -86,6 +86,34 @@ const formatCorrectiveItem = (r: any, peralatan: string, lokasi: string, status:
   return `${header}\n${permasalahan}\nTindak lanjut  :\n${lines.map(l => `- ${l}`).join('\n')}`;
 };
 
+const isKegiatanReport = (r: any): boolean => r.Jenis === 'Kegiatan' || r.kategori_maintenance === 'KEGIATAN';
+
+/** Nilai peralatan bawaan bila tidak dipilih di tab Kegiatan; tidak ditulis di pesan WhatsApp. */
+const PERALATAN_BAWAAN = 'all faskampen';
+
+/**
+ * Butir kegiatan: "[peralatan, ]Lokasi ..., Kegiatan : ...[, tindak lanjut]." tanpa status.
+ * Tab Kegiatan menyimpan isi kegiatan dua kali (uraian "Kegiatan : X" dan tindak lanjut "X"); yang
+ * kedua tidak ditulis ulang. Hanya pesan WhatsApp; ekspor PDF/Excel memakai shiftReportExport.ts.
+ */
+const KEGIATAN_PREFIX = /^(Kegiatan\s*:\s*)+/i;
+
+/** Untuk membandingkan isi: satu baris, tanpa awalan "Kegiatan :", tanpa tanda baca akhir, huruf kecil. */
+const comparable = (v: unknown): string => cleanField(v).replace(KEGIATAN_PREFIX, '').replace(/[.,;]+$/, '').toLowerCase();
+
+const formatKegiatanItem = (r: any, peralatan: string, lokasiPart: string): string => {
+  // Awalan ganda karena salah input ("Kegiatan : Kegiatan : ...") ditulis sekali.
+  const uraian = cleanField(r.Uraian).replace(KEGIATAN_PREFIX, 'Kegiatan : ');
+  const kegiatan = comparable(uraian);
+  // Tindak lanjut yang isinya sama dengan kegiatan (termasuk yang bertingkat baris) tidak ditulis ulang.
+  const steps = comparable(r.TindakLanjut) === kegiatan
+    ? []
+    : tindakLanjutSteps(r.TindakLanjut).filter(step => comparable(step) !== kegiatan);
+  const judul = peralatan.toLowerCase() === PERALATAN_BAWAAN ? '' : peralatan;
+  const text = joinParts([judul, lokasiPart, uraian, steps.join(', ')]) || 'Kegiatan';
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
+
 const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => {
   const status = cleanField(r.Status) || 'Normal Operasi';
   const peralatan = cleanField(r.Peralatan);
@@ -100,6 +128,8 @@ const formatReportItem = (r: any, getDefaultUraian: DefaultUraianFn): string => 
   }
 
   if (isCorrectiveReport(r)) return formatCorrectiveItem(r, peralatan, lokasi, status);
+
+  if (isKegiatanReport(r)) return formatKegiatanItem(r, peralatan, lokasiPart);
 
   const judul = peralatan || cleanField(r.Jenis) || 'Kegiatan';
   const steps = tindakLanjutSteps(r.TindakLanjut).filter(step => step.toLowerCase() !== status.toLowerCase());
