@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_Kegiatan } from '../../lib/utils/waGenerator';
 import { shareReportWithMedia } from '../../lib/services/shareService';
+import { prefetchVideosForWhatsApp } from '../../lib/services/whatsappVideoService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
@@ -114,6 +115,7 @@ export const TabKegiatan: React.FC = () => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
+      prefetchVideosForWhatsApp(compressedResults.map(res => res.file), 'Kegiatan');
       const newPhotos = compressedResults.map(res => ({
         id: Date.now() + Math.random(),
         file: res.file,

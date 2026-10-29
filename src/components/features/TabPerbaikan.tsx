@@ -111,7 +111,7 @@ export const TabPerbaikan: React.FC = () => {
     handlePhotoDrop,
     addPhotoGroup,
     removePhotoGroup,
-  } = usePhotoGroups();
+  } = usePhotoGroups('Perbaikan');
 
   const permasalahanRef = useAutoResizeTextarea(formData.permasalahan);
   const tindakLanjutRef = useAutoResizeTextarea(formData.tindakLanjut);

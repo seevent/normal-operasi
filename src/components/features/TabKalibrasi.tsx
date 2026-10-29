@@ -7,6 +7,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { getValidXRayModels, getValidModels, getGeneralLokasiOptions, getIntersectedLocations, getLokasi2Options } from '../../lib/utils/locationRules';
 import { generateWA_Kalibrasi, formatKalibrasiEntryKegiatanDanCatatan } from '../../lib/utils/waGenerator';
 import { shareReportWithMedia } from '../../lib/services/shareService';
+import { prefetchVideosForWhatsApp } from '../../lib/services/whatsappVideoService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { PhotoUploader } from '../shared/PhotoUploader';
@@ -224,6 +225,7 @@ export const TabKalibrasi: React.FC = () => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
+      prefetchVideosForWhatsApp(compressedResults.map(res => res.file), 'Kalibrasi');
       const newPhotos = compressedResults.map(res => ({
         id: Date.now() + Math.random(),
         file: res.file,

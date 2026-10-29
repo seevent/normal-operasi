@@ -7,6 +7,7 @@ import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { getStoringValidLocations, getGeneralLokasiOptions, getAcNomorOptions, checkNeedsStoringSupervisorAvsec, getStoringSupervisorLocations } from '../../lib/utils/locationRules';
 import { generateWA_Storing } from '../../lib/utils/waGenerator';
 import { shareReportWithMedia } from '../../lib/services/shareService';
+import { prefetchVideosForWhatsApp } from '../../lib/services/whatsappVideoService';
 import { saveStoringToChecklistSync } from '../../lib/services/checklistSyncService';
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
@@ -137,6 +138,7 @@ export const TabStoring: React.FC = () => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const compressedResults = await Promise.all(files.map(f => compressImageFile(f)));
+      prefetchVideosForWhatsApp(compressedResults.map(res => res.file), 'Storing');
       const newPhotos = compressedResults.map(res => ({
         id: Date.now() + Math.random(),
         file: res.file,

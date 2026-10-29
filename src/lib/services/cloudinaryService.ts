@@ -7,7 +7,7 @@ import {
   nextDocumentationPhotoTarget,
   type DocumentationCategory,
 } from '../utils/documentationPhoto';
-import { uploadChunkRanges } from '../utils/whatsappVideo';
+import { buildUncategorizedVideoPublicId, uploadChunkRanges } from '../utils/whatsappVideo';
 
 export interface UploadResult {
   status: 'success' | 'error';
@@ -346,6 +346,7 @@ async function uploadVideoInChunks(file: Blob, options?: UploadPhotoOptions): Pr
   const originalName = file instanceof File ? file.name : 'video.mp4';
   const ranges = uploadChunkRanges(file.size);
   const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const uncategorizedPublicId = buildUncategorizedVideoPublicId(DOCUMENTATION_ROOT_FOLDER, Date.now(), Math.random());
 
   try {
     let data: CloudinaryVideoResponse | null = null;
@@ -357,7 +358,8 @@ async function uploadVideoInChunks(file: Blob, options?: UploadPhotoOptions): Pr
         formData.append('asset_folder', target.folder);
         formData.append('public_id', target.publicId);
       } else {
-        formData.append('folder', DOCUMENTATION_ROOT_FOLDER);
+        formData.append('asset_folder', DOCUMENTATION_ROOT_FOLDER);
+        formData.append('public_id', uncategorizedPublicId);
       }
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
         method: 'POST',

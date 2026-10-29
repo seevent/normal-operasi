@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  buildUncategorizedVideoPublicId,
   buildWhatsAppVideoUrl,
   uploadChunkRanges,
   whatsappVideoFileName,
@@ -32,4 +33,11 @@ test('uploadChunkRanges: potongan 20 MB, potongan terakhir sisa', () => {
   assert.deepEqual(uploadChunkRanges(5 * MB), [[0, 5 * MB]]);
   assert.deepEqual(uploadChunkRanges(45 * MB), [[0, 20 * MB], [20 * MB, 40 * MB], [40 * MB, 45 * MB]]);
   assert.deepEqual(uploadChunkRanges(0), []);
+});
+
+test('buildUncategorizedVideoPublicId: unik per unggahan walau nama berkas asli sama', () => {
+  const a = buildUncategorizedVideoPublicId('SSES_T2_Dokumentasi', 1793249206000, 0.123456789);
+  const b = buildUncategorizedVideoPublicId('SSES_T2_Dokumentasi', 1793249206000, 0.987654321);
+  assert.match(a, /^SSES_T2_Dokumentasi\/Video_1793249206000_[a-z0-9]{1,6}$/);
+  assert.notEqual(a, b);
 });

@@ -22,6 +22,14 @@ export const buildWhatsAppVideoUrl = (secureUrl: string): string => {
 export const whatsappVideoFileName = (originalName: string): string =>
   `${originalName.replace(/\.[^./]+$/, '') || 'video'}.mp4`;
 
+/**
+ * public_id unik untuk video tanpa kategori dokumentasi. Nama berkas asli (mis. IMG_1234) bisa sama
+ * antar perangkat, dan unggahan tanpa tanda tangan tidak boleh menimpa berkas lama: tanpa ID unik,
+ * Cloudinary mengembalikan video milik orang lain.
+ */
+export const buildUncategorizedVideoPublicId = (rootFolder: string, now: number, random: number): string =>
+  `${rootFolder}/Video_${now}_${random.toString(36).slice(2, 8)}`;
+
 /** Rentang byte [awal, akhir) tiap potongan unggah. */
 export const uploadChunkRanges = (size: number, chunkBytes = VIDEO_UPLOAD_CHUNK_BYTES): [number, number][] => {
   const ranges: [number, number][] = [];

@@ -4,7 +4,7 @@ import { sayPet, useAppStore } from '../../store/useAppStore';
 import { buildShareBatches, isRiskyBatch, isVideo, splitMediaSafely } from '../utils/shareBatches';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
 import type { DocumentationCategory } from '../utils/documentationPhoto';
-import { prepareVideoForWhatsApp } from './whatsappVideoService';
+import { getPreparedVideo, prepareVideoForWhatsApp } from './whatsappVideoService';
 
 export const triggerFileDownload = (file: File) => {
   const url = URL.createObjectURL(file);
@@ -116,8 +116,9 @@ export const clearPendingShare = () => {
 };
 
 /**
- * Mengubah semua video ke MP4 ramah WhatsApp, lalu mengantrekan laporan + media sebagai satu
- * kiriman yang dibagikan lewat tombol PendingShareBar (ketukan baru, karena konversi memakan waktu).
+ * Menunggu semua video selesai diubah ke MP4 ramah WhatsApp (umumnya sudah berjalan sejak video
+ * dipilih), lalu mengantrekan laporan + media sebagai satu kiriman yang dibagikan lewat tombol
+ * PendingShareBar (ketukan baru, karena menunggu membuat izin ketukan Kirim kedaluwarsa).
  */
 const queueReportWithConvertedVideos = async (
   message: string,
@@ -154,9 +155,9 @@ const queueReportWithConvertedVideos = async (
 /**
  * Membagikan laporan beserta lampiran per grup kolase.
  * Laporan hanya menjadi caption kiriman pertama (Grup Kolase 1); media grup lain dikirim
- * tanpa caption lewat PendingShareBar. Bila ada video, video lebih dulu diubah ke MP4 H.264
- * lewat Cloudinary (rekaman asli iPhone ditolak WhatsApp iOS), lalu laporan + foto + video
- * dibagikan bersama dari tombol PendingShareBar.
+ * tanpa caption lewat PendingShareBar. Video diubah ke MP4 H.264 lewat Cloudinary (rekaman asli
+ * iPhone ditolak WhatsApp iOS). Bila konversi sudah selesai, laporan + foto + video langsung
+ * dibagikan; bila belum, dibagikan dari tombol PendingShareBar setelah konversi selesai.
  */
 export const shareReportWithMedia = async (
   message: string,
@@ -169,8 +170,13 @@ export const shareReportWithMedia = async (
 
   const videos = groups.flat().filter(isVideo);
   if (videos.length > 0 && typeof navigator.canShare === 'function') {
-    await queueReportWithConvertedVideos(message, groups, videos, cheerTab);
-    return;
+    // Video dikonversi di latar belakang sejak dipilih. Bila semuanya sudah siap, langsung bagikan
+    // (masih dalam ketukan Kirim); bila belum, tunggu dulu lewat PendingShareBar.
+    if (!videos.every((v) => getPreparedVideo(v))) {
+      await queueReportWithConvertedVideos(message, groups, videos, cheerTab);
+      return;
+    }
+    groups = groups.map((g) => g.map((f) => getPreparedVideo(f) ?? f));
   }
 
   const [first, ...rest] = buildShareBatches(groups);
