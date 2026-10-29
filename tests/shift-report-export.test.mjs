@@ -319,3 +319,14 @@ test('buildShiftReportWorkbook: judul tabel tidak terpotong, tingginya mengikuti
   assert.equal(ws.getCell('M14').value, 'WAKTU TINDAK LANJUT');
   assert.equal(ws.getCell('M14').alignment.wrapText, true);
 });
+
+test('Excel: Kegiatan tanpa peralatan (tersimpan "All Faskampen") ditulis "-" di kolom Peralatan', () => {
+  const rows = buildLaporanSheetRows([
+    { shift: 'PS', Jenis: 'Kegiatan', kategori_maintenance: 'KEGIATAN', Peralatan: 'All Faskampen', Lokasi: 'PSCP D', Uraian: 'Kegiatan : Import user Rapiscan', Status: 'Normal' },
+    { shift: 'PS', Jenis: 'Kegiatan', kategori_maintenance: 'KEGIATAN', Peralatan: 'X-Ray Rapiscan 620DV', Lokasi: 'PSCP E', Uraian: 'Kegiatan : Upload user', Status: 'Normal' },
+    { shift: 'PS', Jenis: 'Kegiatan', kategori_maintenance: 'KEGIATAN', Peralatan: '  ', Lokasi: 'PSCP F', Uraian: 'Kegiatan : x', Status: 'Normal' },
+    { shift: 'PS', Jenis: 'Storing', kategori_maintenance: 'STORING', Peralatan: 'All Faskampen', Lokasi: 'PSCP D', Uraian: 'Storing Peralatan', Status: 'Normal Operasi' },
+  ], 'PS', classifiers);
+  const peralatan = rows.slice(1).map((r) => r[2]);
+  assert.deepEqual(peralatan, ['-', 'X-Ray Rapiscan 620DV', '-', 'All Faskampen']);
+});

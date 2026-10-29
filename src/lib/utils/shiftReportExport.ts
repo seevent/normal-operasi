@@ -78,6 +78,14 @@ export const fotoUrlsOf = (r: any): string[] => {
   return Array.from(new Set(urls.filter(Boolean)));
 };
 
+/** Kegiatan tanpa peralatan dipilih tersimpan "All Faskampen"; di Excel cukup ditulis "-". */
+const peralatanCell = (r: any): string => {
+  const value = String(r.Peralatan ?? '').trim();
+  const kegiatan = r.Jenis === 'Kegiatan' || r.kategori_maintenance === 'KEGIATAN';
+  if (kegiatan && (value === '' || value.toLowerCase() === 'all faskampen')) return '-';
+  return r.Peralatan ?? '-';
+};
+
 /**
  * Sheet "Laporan": satu baris per baris tabel cetak. Kolom Shift hanya ada saat shift = ALL.
  * Sel Dokumentasi dikosongkan; fotonya ditanam sebagai gambar oleh pembuat workbook.
@@ -91,7 +99,7 @@ export const buildLaporanSheetRows = (reports: any[], shift: string, c: ShiftRep
     const cols = [
       String(idx + 1),
       c.formatLokasi(r.Lokasi),
-      r.Peralatan ?? '-',
+      peralatanCell(r),
       corrective ? 'CORRECTIVE MAINTENANCE' : '-',
       preventive ? 'PREVENTIVE MAINTENANCE' : '-',
       corrective || preventive ? '-' : 'KEGIATAN',
