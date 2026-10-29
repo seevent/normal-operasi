@@ -321,3 +321,51 @@ test('TabShiftReport mengambil jadwal shift berikutnya untuk blok serah terima',
   assert.match(src, /nextShiftOf\(date, shift\)/);
   assert.match(src, /generateWA_ShiftReport\(date, shift, apiPersonil, iasPersonil, reports, nextPersonil \?\? undefined\)/);
 });
+
+// Baris dari tab Kegiatan tanpa peralatan dipilih: tersimpan "All Faskampen", uraian "Kegiatan : X",
+// tindak lanjut X, status Normal.
+const kegiatanRow = (over = {}) => ({
+  shift: 'PS', Jenis: 'Kegiatan', kategori_maintenance: 'KEGIATAN', Peralatan: 'All Faskampen',
+  Lokasi: 'PSCP D, PSCP E, PSCP F, PSCP Umrah, HBSCP 1.1-1.6, HBSCP 2.1-2.6',
+  Uraian: 'Kegiatan : Import user Rapiscan', TindakLanjut: 'Import user Rapiscan', Status: 'Normal', ...over,
+});
+const kegiatanMsg = (row) => buildShiftReportMessage('2026-10-29', 'PS', [], [], [row], getDefaultUraian);
+
+test('Kegiatan tanpa peralatan: tanpa "All Faskampen", tanpa kegiatan ganda, tanpa status Normal, diakhiri titik', () => {
+  const msg = kegiatanMsg(kegiatanRow());
+  assert.match(msg, /1\. Lokasi PSCP D, PSCP E, PSCP F, PSCP Umrah, HBSCP 1\.1-1\.6, HBSCP 2\.1-2\.6, Kegiatan : Import user Rapiscan\.(\n|$)/);
+  assert.doesNotMatch(msg, /All Faskampen/);
+  assert.doesNotMatch(msg, /Rapiscan, Import user Rapiscan/);
+  assert.doesNotMatch(msg, /, Normal/);
+});
+
+test('Kegiatan dengan peralatan dipilih: nama peralatan tetap ditulis', () => {
+  const msg = kegiatanMsg(kegiatanRow({ Peralatan: 'X-Ray Rapiscan 620DV' }));
+  assert.match(msg, /1\. X-Ray Rapiscan 620DV, Lokasi PSCP D, PSCP E, PSCP F, PSCP Umrah, HBSCP 1\.1-1\.6, HBSCP 2\.1-2\.6, Kegiatan : Import user Rapiscan\.(\n|$)/);
+});
+
+test('Kegiatan: tindak lanjut yang berbeda dari kegiatan tetap ditulis', () => {
+  const msg = kegiatanMsg(kegiatanRow({ Uraian: 'Kegiatan : Mendampingi audit', TindakLanjut: 'Laporan diserahkan ke supervisor' }));
+  assert.match(msg, /Kegiatan : Mendampingi audit, Laporan diserahkan ke supervisor\.(\n|$)/);
+});
+
+test('Format PDF/Excel laporan Kegiatan tidak berubah (berkas ekspor tidak memakai format WhatsApp)', () => {
+  const exportSrc = readFileSync(new URL('../src/lib/utils/shiftReportExport.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(exportSrc, /formatReportItem|buildShiftReportMessage/);
+});
+
+test('Kegiatan bertingkat baris dan awalan ganda: tetap ditulis sekali', () => {
+  const multi = kegiatanMsg(kegiatanRow({
+    Peralatan: 'X-Ray Rapiscan 620DV', Lokasi: 'PSCP 2D 4',
+    Uraian: 'Kegiatan : Test Control Generator\nS/N : SA15-32-06\nS/N : SA08-23-05',
+    TindakLanjut: 'Test Control Generator\nS/N : SA15-32-06\nS/N : SA08-23-05',
+  }));
+  assert.match(multi, /1\. X-Ray Rapiscan 620DV, Lokasi PSCP 2D 4, Kegiatan : Test Control Generator S\/N : SA15-32-06 S\/N : SA08-23-05\.(\n|$)/);
+
+  const ganda = kegiatanMsg(kegiatanRow({
+    Peralatan: 'ATRS', Lokasi: 'PSCP F 4',
+    Uraian: 'Kegiatan : Kegiatan : Pengecekan X-Ray ATRS- Rapiscan 620DV',
+    TindakLanjut: 'Kegiatan : Pengecekan X-Ray ATRS- Rapiscan 620DV',
+  }));
+  assert.match(ganda, /1\. ATRS, Lokasi PSCP F 4, Kegiatan : Pengecekan X-Ray ATRS- Rapiscan 620DV\.(\n|$)/);
+});
