@@ -7,6 +7,7 @@ import {
   nextDocumentationPhotoTarget,
   type DocumentationCategory,
 } from '../utils/documentationPhoto';
+import { uploadChunkRanges } from '../utils/whatsappVideo';
 
 export interface UploadResult {
   status: 'success' | 'error';
@@ -320,6 +321,85 @@ async function uploadToSupabaseStorageFallback(
   }
 }
 
+const isVideoInput = (input: File | Blob | string): input is Blob =>
+  typeof input !== 'string' && input.type.startsWith('video/');
+
+/** Unggahan video yang sedang/sudah berjalan per berkas, agar simpan dokumentasi dan share WhatsApp memakai satu unggahan. */
+const videoUploads = new WeakMap<Blob, Promise<UploadResult>>();
+
+interface CloudinaryVideoResponse {
+  secure_url?: string;
+  public_id?: string;
+  format?: string;
+  original_filename?: string;
+  error?: { message?: string };
+}
+
+async function uploadVideoInChunks(file: Blob, options?: UploadPhotoOptions): Promise<UploadResult> {
+  let { cloudName, uploadPreset } = getCloudinaryConfig();
+  if (!cloudName || !uploadPreset) {
+    ({ cloudName, uploadPreset } = await fetchCloudinaryConfig());
+  }
+  if (!cloudName || !uploadPreset) return { status: 'error', message: 'Cloudinary belum dikonfigurasi.' };
+
+  const target = isDocumentationCategory(options?.category) ? nextDocumentationPhotoTarget(options.category) : null;
+  const originalName = file instanceof File ? file.name : 'video.mp4';
+  const ranges = uploadChunkRanges(file.size);
+  const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  try {
+    let data: CloudinaryVideoResponse | null = null;
+    for (const [start, end] of ranges) {
+      const formData = new FormData();
+      formData.append('file', file.slice(start, end), originalName);
+      formData.append('upload_preset', uploadPreset);
+      if (target) {
+        formData.append('asset_folder', target.folder);
+        formData.append('public_id', target.publicId);
+      } else {
+        formData.append('folder', DOCUMENTATION_ROOT_FOLDER);
+      }
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+        method: 'POST',
+        body: formData,
+        // Berkas > 20 MB dikirim bertahap: tiap potongan membawa id unggahan dan rentang byte-nya.
+        headers: ranges.length > 1
+          ? { 'X-Unique-Upload-Id': uploadId, 'Content-Range': `bytes ${start}-${end - 1}/${file.size}` }
+          : undefined,
+      });
+      data = await res.json().catch(() => null);
+      if (!res.ok) return { status: 'error', message: data?.error?.message || `HTTP ${res.status}` };
+    }
+
+    if (!data?.secure_url) return { status: 'error', message: 'Cloudinary tidak mengembalikan URL video.' };
+    return {
+      status: 'success',
+      url: data.secure_url,
+      viewUrl: data.secure_url,
+      fileId: data.public_id,
+      fileName: target ? `${target.fileName}.${data.format || 'mp4'}` : data.original_filename || originalName,
+    };
+  } catch (err) {
+    return { status: 'error', message: getErrorMessage(err, 'Gagal upload video ke Cloudinary') };
+  }
+}
+
+/**
+ * Upload video ke endpoint video Cloudinary. Berkas yang sama hanya diunggah sekali;
+ * unggahan yang gagal boleh dicoba lagi pada pemanggilan berikutnya.
+ */
+export const uploadVideoToCloudinary = (file: Blob, options?: UploadPhotoOptions): Promise<UploadResult> => {
+  let pending = videoUploads.get(file);
+  if (!pending) {
+    pending = uploadVideoInChunks(file, options);
+    videoUploads.set(file, pending);
+    pending.then((r) => {
+      if (r.status !== 'success') videoUploads.delete(file);
+    });
+  }
+  return pending;
+};
+
 /**
  * Upload Foto ke Cloudinary via Unsigned Upload Preset.
  * Jika Cloud Name belum dikonfigurasi atau gagal, otomatis fallback ke Supabase Storage.
@@ -330,6 +410,14 @@ export const uploadPhotoToCloudinary = async (
   fileNameArg?: string,
   options?: UploadPhotoOptions
 ): Promise<UploadResult> => {
+  if (isVideoInput(input)) {
+    const result = await uploadVideoToCloudinary(input, options);
+    if (result.status === 'success') return result;
+    console.warn('Upload video ke Cloudinary gagal, beralih ke Supabase Storage fallback:', result.message);
+    sayPet('Video gagal diunggah ke Cloudinary — dialihkan ke penyimpanan cadangan.', 'warning');
+    return uploadToSupabaseStorageFallback(input, fileNameArg || (input instanceof File ? input.name : undefined));
+  }
+
   // Dengan `category`: foto masuk ke SSES_T2_Dokumentasi/{category} bernama {category}_YYYY-MM-DD_HHmmss
   // (waktu saat foto disimpan). Tanpa `category`: perilaku lama (folder SSES_T2_Dokumentasi, nama dari Cloudinary).
   const target = isDocumentationCategory(options?.category) ? nextDocumentationPhotoTarget(options.category) : null;

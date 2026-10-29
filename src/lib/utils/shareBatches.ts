@@ -1,4 +1,5 @@
 // src/lib/utils/shareBatches.ts
+import type { TabCheerKey } from '../data/petMessages';
 
 type FileLike = { type: string };
 
@@ -6,9 +7,11 @@ type FileLike = { type: string };
 export interface ShareItem {
   files: File[];
   caption?: string;
+  /** Tab asal laporan; maskot memberi penyemangat setelah kiriman ini dibagikan. */
+  cheerTab?: TabCheerKey;
 }
 
-const isVideo = (f: FileLike) => f.type.startsWith('video/');
+export const isVideo = (f: FileLike) => f.type.startsWith('video/');
 
 /**
  * Membagi lampiran per grup kolase menjadi paling banyak dua kiriman WhatsApp.
@@ -22,13 +25,16 @@ export const buildShareBatches = <T extends FileLike>(groups: T[][]): T[][] => {
   return [first, others.flat()].filter((b) => b.length > 0);
 };
 
-/** Kiriman yang memuat video bersama berkas lain paling mungkin gagal di WhatsApp iOS. */
-export const isRiskyBatch = (files: FileLike[]): boolean =>
-  files.length > 1 && files.some(isVideo);
+/** Kiriman yang memuat video bersama berkas lain atau caption paling mungkin gagal di WhatsApp iOS. */
+export const isRiskyBatch = (files: FileLike[], caption?: string): boolean =>
+  files.some(isVideo) && (files.length > 1 || Boolean(caption));
 
 /**
- * Memecah berkas menjadi kiriman yang paling aman untuk WhatsApp iOS:
- * semua foto dalam satu kiriman, lalu tiap video sendiri-sendiri.
+ * Memecah kiriman menjadi kiriman yang paling aman untuk WhatsApp iOS: caption bersama
+ * semua foto (atau caption saja bila tidak ada foto), lalu tiap video sendiri tanpa caption.
  */
-export const splitMediaSafely = <T extends FileLike>(files: T[]): T[][] =>
-  [files.filter((f) => !isVideo(f)), ...files.filter(isVideo).map((v) => [v])].filter((b) => b.length > 0);
+export const splitMediaSafely = <T extends FileLike>(item: { files: T[]; caption?: string }): { files: T[]; caption?: string }[] => {
+  const photos = item.files.filter((f) => !isVideo(f));
+  const head = photos.length > 0 || item.caption ? [{ files: photos, caption: item.caption }] : [];
+  return [...head, ...item.files.filter(isVideo).map((v) => ({ files: [v] }))];
+};

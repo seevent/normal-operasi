@@ -1,50 +1,64 @@
 import React, { useEffect, useRef } from 'react';
-import { Send, X } from 'lucide-react';
+import { Loader2, Send, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
-import { shareNextPendingBatch, retryShareSeparately } from '../../lib/services/shareService';
+import { clearPendingShare, shareNextPendingBatch, retryShareSeparately } from '../../lib/services/shareService';
 
 /**
- * Bilah di dasar layar untuk kiriman WhatsApp lanjutan: sisa media tanpa caption, dan
- * kirim ulang terpisah bila kiriman campur foto + video ditolak WhatsApp.
+ * Bilah di dasar layar untuk kiriman WhatsApp lanjutan: kemajuan konversi video, laporan + media
+ * setelah video siap, sisa media tanpa caption, dan kirim ulang terpisah bila WhatsApp menolak.
  * Web Share API butuh ketukan baru tiap kali, jadi tiap kiriman punya tombolnya sendiri.
  */
 export const PendingShareBar: React.FC = () => {
   const batches = useAppStore((s) => s.pendingShareBatches);
   const retry = useAppStore((s) => s.shareRetry);
-  const setPendingShareBatches = useAppStore((s) => s.setPendingShareBatches);
-  const setShareRetry = useAppStore((s) => s.setShareRetry);
+  const videoPrep = useAppStore((s) => s.videoPrep);
   const setBottomInset = useAppStore((s) => s.setBottomInset);
   const barRef = useRef<HTMLDivElement>(null);
-  const visible = batches.length > 0 || retry !== null;
+  const visible = batches.length > 0 || retry !== null || videoPrep !== null;
 
   useEffect(() => {
     setBottomInset(visible ? (barRef.current?.offsetHeight ?? 88) + 8 : 0);
     return () => setBottomInset(0);
-  }, [visible, batches.length, retry, setBottomInset]);
+  }, [visible, batches.length, retry, videoPrep, setBottomInset]);
 
   if (!visible) return null;
 
   const next = batches[0];
-  const nextLabel = next && next.files.length === 1 && next.files[0].type.startsWith('video/') ? '1 video' : `${next?.files.length} media`;
+  const mediaLabel = next && next.files.length === 1 && next.files[0].type.startsWith('video/') ? '1 video' : `${next?.files.length} media`;
+  const nextLabel = next?.caption
+    ? (next.files.length > 0 ? `Kirim laporan + ${mediaLabel}` : 'Kirim laporan')
+    : `Kirim berikutnya (${mediaLabel})`;
 
   return (
     <div
       ref={barRef}
       className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      {next && (
+      {videoPrep && (
         <p className="text-xs text-slate-600 mb-2">
-          Laporan sudah dikirim. Masih ada {batches.length} kiriman media tanpa caption.
+          Video diubah ke format WhatsApp agar bisa terkirim. Tunggu sebentar, jangan tutup aplikasi.
+        </p>
+      )}
+      {!videoPrep && next && (
+        <p className="text-xs text-slate-600 mb-2">
+          {next.caption
+            ? 'Siap dikirim. Ketuk tombol hijau untuk membagikan laporan ke WhatsApp.'
+            : `Laporan sudah dikirim. Masih ada ${batches.length} kiriman media tanpa caption.`}
         </p>
       )}
       <div className="flex gap-2">
-        {next && (
+        {videoPrep && (
+          <div className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl">
+            <Loader2 className="w-5 h-5 animate-spin" /> Menyiapkan video ({videoPrep.done}/{videoPrep.total})
+          </div>
+        )}
+        {!videoPrep && next && (
           <button
             type="button"
             onClick={() => void shareNextPendingBatch()}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl"
           >
-            <Send className="w-5 h-5" /> Kirim berikutnya ({nextLabel})
+            <Send className="w-5 h-5" /> {nextLabel}
           </button>
         )}
         {retry && (
@@ -58,10 +72,7 @@ export const PendingShareBar: React.FC = () => {
         )}
         <button
           type="button"
-          onClick={() => {
-            setPendingShareBatches([]);
-            setShareRetry(null);
-          }}
+          onClick={clearPendingShare}
           aria-label="Tutup"
           className="px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl"
         >

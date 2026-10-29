@@ -1,8 +1,10 @@
 // src/lib/services/shareService.ts
 import { isAbortError } from '../utils/errorUtils';
 import { sayPet, useAppStore } from '../../store/useAppStore';
-import { buildShareBatches, isRiskyBatch, splitMediaSafely } from '../utils/shareBatches';
+import { buildShareBatches, isRiskyBatch, isVideo, splitMediaSafely } from '../utils/shareBatches';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
+import type { DocumentationCategory } from '../utils/documentationPhoto';
+import { prepareVideoForWhatsApp } from './whatsappVideoService';
 
 export const triggerFileDownload = (file: File) => {
   const url = URL.createObjectURL(file);
@@ -93,11 +95,68 @@ export const shareToWhatsApp = async (
   return 'fallback';
 };
 
+/** Folder Cloudinary untuk video per tab; tab lain memakai folder induk dokumentasi. */
+const VIDEO_CATEGORY_BY_TAB: Partial<Record<TabCheerKey, DocumentationCategory>> = {
+  kegiatan: 'Kegiatan',
+  storing: 'Storing',
+  perbaikan: 'Perbaikan',
+  kalibrasi: 'Kalibrasi',
+};
+
+/** Naik setiap kali share baru dimulai atau dibatalkan, agar konversi video lama tidak mengisi antrean. */
+let shareSession = 0;
+
+/** Mengosongkan antrean kiriman, tombol kirim ulang, dan konversi video yang sedang berjalan. */
+export const clearPendingShare = () => {
+  shareSession += 1;
+  const { setPendingShareBatches, setShareRetry, setVideoPrep } = useAppStore.getState();
+  setPendingShareBatches([]);
+  setShareRetry(null);
+  setVideoPrep(null);
+};
+
+/**
+ * Mengubah semua video ke MP4 ramah WhatsApp, lalu mengantrekan laporan + media sebagai satu
+ * kiriman yang dibagikan lewat tombol PendingShareBar (ketukan baru, karena konversi memakan waktu).
+ */
+const queueReportWithConvertedVideos = async (
+  message: string,
+  groups: File[][],
+  videos: File[],
+  cheerTab?: TabCheerKey
+) => {
+  const session = shareSession;
+  const { setPendingShareBatches, setVideoPrep } = useAppStore.getState();
+  const category = cheerTab ? VIDEO_CATEGORY_BY_TAB[cheerTab] : undefined;
+  const converted = new Map<File, File>();
+  let failed = 0;
+
+  setVideoPrep({ done: 0, total: videos.length });
+  for (const [i, video] of videos.entries()) {
+    try {
+      converted.set(video, await prepareVideoForWhatsApp(video, category));
+    } catch (err) {
+      console.error('Konversi video untuk WhatsApp gagal', err);
+      failed += 1;
+    }
+    if (session !== shareSession) return;
+    setVideoPrep({ done: i + 1, total: videos.length });
+  }
+  setVideoPrep(null);
+  if (failed > 0) {
+    sayPet(`${failed} video gagal diubah ke format WhatsApp (cek koneksi). Video dikirim apa adanya; bila WhatsApp gagal, ketuk "Kirim ulang terpisah".`, 'warning');
+  }
+
+  const [first, ...rest] = buildShareBatches(groups.map((g) => g.map((f) => converted.get(f) ?? f)));
+  setPendingShareBatches([{ files: first, caption: message, cheerTab }, ...rest.map((files) => ({ files }))]);
+};
+
 /**
  * Membagikan laporan beserta lampiran per grup kolase.
  * Laporan hanya menjadi caption kiriman pertama (Grup Kolase 1); media grup lain dikirim
- * tanpa caption lewat PendingShareBar. Foto dan video boleh campur dalam satu kiriman;
- * bila WhatsApp iOS menolaknya, PendingShareBar menawarkan kirim ulang terpisah.
+ * tanpa caption lewat PendingShareBar. Bila ada video, video lebih dulu diubah ke MP4 H.264
+ * lewat Cloudinary (rekaman asli iPhone ditolak WhatsApp iOS), lalu laporan + foto + video
+ * dibagikan bersama dari tombol PendingShareBar.
  */
 export const shareReportWithMedia = async (
   message: string,
@@ -105,9 +164,14 @@ export const shareReportWithMedia = async (
   setIsCopied: (v: boolean) => void,
   cheerTab?: TabCheerKey
 ) => {
+  clearPendingShare();
   const { setPendingShareBatches, setShareRetry } = useAppStore.getState();
-  setPendingShareBatches([]);
-  setShareRetry(null);
+
+  const videos = groups.flat().filter(isVideo);
+  if (videos.length > 0 && typeof navigator.canShare === 'function') {
+    await queueReportWithConvertedVideos(message, groups, videos, cheerTab);
+    return;
+  }
 
   const [first, ...rest] = buildShareBatches(groups);
   const result = await shareToWhatsApp(message, first ?? null, setIsCopied, cheerTab);
@@ -119,7 +183,7 @@ export const shareReportWithMedia = async (
     return;
   }
   setPendingShareBatches(rest.map((files) => ({ files })));
-  if (first && isRiskyBatch(first)) setShareRetry({ files: first, caption: message });
+  if (first && isRiskyBatch(first, message)) setShareRetry({ files: first, caption: message });
 };
 
 /** Mengirim kiriman berikutnya di antrean. Harus dipanggil dari ketukan pengguna. */
@@ -128,13 +192,19 @@ export const shareNextPendingBatch = async () => {
   const [next, ...rest] = pendingShareBatches;
   if (!next) return;
 
+  if (next.caption && navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(next.caption).catch(() => {});
+  }
+
   try {
-    if (navigator.canShare && navigator.canShare({ files: next.files })) {
+    const hasFiles = next.files.length > 0;
+    if (!hasFiles || (navigator.canShare && navigator.canShare({ files: next.files }))) {
       await navigator.share({
-        files: next.files,
+        ...(hasFiles ? { files: next.files } : {}),
         title: 'Laporan SSES T2',
         ...(next.caption ? { text: next.caption } : {}),
       });
+      if (next.cheerTab) sayPet(getTabCheer(next.cheerTab), 'cheer');
     } else {
       next.files.forEach(triggerFileDownload);
     }
@@ -144,20 +214,15 @@ export const shareNextPendingBatch = async () => {
     next.files.forEach(triggerFileDownload);
   }
   setPendingShareBatches(rest);
-  setShareRetry(isRiskyBatch(next.files) ? next : null);
+  setShareRetry(isRiskyBatch(next.files, next.caption) ? next : null);
 };
 
-/** Mengirim ulang kiriman campur foto + video secara terpisah (foto sekali, tiap video sendiri). */
+/** Mengirim ulang kiriman berisi video secara terpisah: caption + foto sekali, lalu tiap video sendiri. */
 export const retryShareSeparately = async () => {
   const { shareRetry, pendingShareBatches, setPendingShareBatches, setShareRetry } = useAppStore.getState();
   if (!shareRetry) return;
 
-  const [first, ...more] = splitMediaSafely(shareRetry.files);
   setShareRetry(null);
-  setPendingShareBatches([
-    { files: first, caption: shareRetry.caption },
-    ...more.map((files) => ({ files })),
-    ...pendingShareBatches,
-  ]);
+  setPendingShareBatches([...splitMediaSafely(shareRetry), ...pendingShareBatches]);
   await shareNextPendingBatch();
 };
