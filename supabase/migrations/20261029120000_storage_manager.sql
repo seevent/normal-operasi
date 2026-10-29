@@ -2,24 +2,15 @@
 -- Rencana: docs/superpowers/plans/2026-10-29-cloudinary-storage-management.md
 --
 -- Aturan yang ditetapkan pengguna:
---   * Hapus laporan hanya untuk akun yang login.
---   * Laporan disimpan minimal 12 bulan; hapus per rentang hanya untuk laporan yang lebih tua.
+--   * Edit dan hapus satuan di menu Report tetap tanpa login (izin tabel tidak diubah di sini);
+--     hapus satuan kini lewat trash_report_rows agar masuk Sampah.
+--   * Hapus massal per rentang (tab Data) hanya untuk akun login, dan hanya untuk laporan
+--     yang lebih tua dari 12 bulan.
 --   * Laporan yang dihapus masuk Sampah 7 hari (bisa dipulihkan), lalu dikosongkan otomatis:
 --     baris dihapus permanen, foto/video yang tidak dipakai laporan lain dihapus dari Cloudinary/Storage.
 
 -- ---------------------------------------------------------------------------------------------
--- 1. Hapus hanya untuk akun login (sebelumnya terbuka untuk anon).
--- ---------------------------------------------------------------------------------------------
-drop policy if exists laporan_operasional_delete_public on public.laporan_operasional;
-create policy laporan_operasional_delete_authenticated on public.laporan_operasional
-  for delete to authenticated using (true);
-
-drop policy if exists laporan_checklist_delete_public on public.laporan_checklist;
-create policy laporan_checklist_delete_authenticated on public.laporan_checklist
-  for delete to authenticated using (true);
-
--- ---------------------------------------------------------------------------------------------
--- 2. Tabel job, item media, dan Sampah.
+-- 1. Tabel job, item media, dan Sampah.
 -- ---------------------------------------------------------------------------------------------
 create table public.storage_cleanup_jobs (
   id uuid primary key default gen_random_uuid(),
@@ -80,7 +71,7 @@ create policy storage_cleanup_items_select_authenticated on public.storage_clean
   for select to authenticated using (true);
 
 -- ---------------------------------------------------------------------------------------------
--- 3. Pembantu.
+-- 2. Pembantu.
 -- ---------------------------------------------------------------------------------------------
 
 -- Laporan dengan tanggal <= nilai ini sudah boleh dihapus per rentang (lebih tua dari 12 bulan).
@@ -125,7 +116,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------------------------
--- 4. Fungsi untuk akun login (dipanggil dari browser).
+-- 3. Fungsi untuk akun login (dipanggil dari browser).
 -- ---------------------------------------------------------------------------------------------
 
 -- Pratinjau rentang: hanya membaca.
@@ -224,7 +215,8 @@ begin
 end;
 $$;
 
--- Hapus satuan dari Shift Report (koreksi kesalahan input): tanpa batas 12 bulan, tetap lewat Sampah.
+-- Hapus satuan dari menu Report (koreksi kesalahan input): boleh tanpa login, tanpa batas 12 bulan,
+-- tetapi selalu lewat Sampah sehingga bisa dipulihkan 7 hari. Paling banyak 20 laporan per panggilan.
 create or replace function public.trash_report_rows(p_ids uuid[])
 returns uuid
 language plpgsql
@@ -232,10 +224,14 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := require_login();
+  v_uid uuid := auth.uid();
   v_job uuid;
   v_count integer;
 begin
+  if coalesce(cardinality(p_ids), 0) = 0 or cardinality(p_ids) > 20 then
+    raise exception 'Pilih 1 sampai 20 laporan.' using errcode = '22023';
+  end if;
+
   insert into storage_cleanup_jobs (kind, created_by, created_by_email)
   values ('satuan', v_uid, auth.jwt() ->> 'email')
   returning id into v_job;
@@ -320,7 +316,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------------------------
--- 5. Fungsi untuk server (service_role): pengosongan Sampah setelah 7 hari.
+-- 4. Fungsi untuk server (service_role): pengosongan Sampah setelah 7 hari.
 -- ---------------------------------------------------------------------------------------------
 
 -- Hapus baris job secara permanen lalu kembalikan media yang perlu dihapus. Bisa dipanggil ulang:
@@ -405,12 +401,12 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------------------------
--- 6. Hak eksekusi.
+-- 5. Hak eksekusi.
 -- ---------------------------------------------------------------------------------------------
 revoke all on function public.require_login() from public, anon;
 revoke all on function public.preview_report_range(date, date, text[]) from public, anon;
 revoke all on function public.trash_report_range(date, date, text[]) from public, anon;
-revoke all on function public.trash_report_rows(uuid[]) from public, anon;
+revoke all on function public.trash_report_rows(uuid[]) from public;
 revoke all on function public.restore_trash_job(uuid) from public, anon;
 revoke all on function public.report_storage_overview() from public, anon;
 revoke all on function public.begin_purge_job(uuid) from public, anon, authenticated;
@@ -419,7 +415,7 @@ revoke all on function public.finish_purge_job(uuid, jsonb) from public, anon, a
 grant execute on function public.require_login() to authenticated;
 grant execute on function public.preview_report_range(date, date, text[]) to authenticated;
 grant execute on function public.trash_report_range(date, date, text[]) to authenticated;
-grant execute on function public.trash_report_rows(uuid[]) to authenticated;
+grant execute on function public.trash_report_rows(uuid[]) to anon, authenticated;
 grant execute on function public.restore_trash_job(uuid) to authenticated;
 grant execute on function public.report_storage_overview() to authenticated;
 grant execute on function public.begin_purge_job(uuid) to service_role;
