@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Check, CheckCircle, Cloud, Settings, RefreshCw, AlertCircle, ExternalLink, HelpCircle, ShieldCheck, Globe } from 'lucide-react';
 import { getCloudinaryConfig, setCloudinaryConfig, testCloudinaryConnection, fetchCloudinaryConfig } from '../../lib/services/cloudinaryService';
+import { StorageManagerPanel } from './storage-manager/StorageManagerPanel';
 
 export const CloudinarySettingsPanel: React.FC = () => {
+  const [view, setView] = useState<'pengaturan' | 'penyimpanan'>('pengaturan');
   const [config, setConfig] = useState(() => getCloudinaryConfig());
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -43,6 +45,28 @@ export const CloudinarySettingsPanel: React.FC = () => {
 
   return (
     <section className="p-3 sm:p-5 md:p-6 bg-slate-50 min-h-[500px]">
+      <div className="max-w-3xl mx-auto flex gap-2 mb-3" role="tablist">
+        {([
+          ['pengaturan', 'Pengaturan'],
+          ['penyimpanan', 'Penyimpanan'],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={view === id}
+            onClick={() => setView(id)}
+            className={`flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-bold ${view === id ? 'bg-sky-600 text-white' : 'bg-white border border-slate-300 text-slate-700'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {view === 'penyimpanan' ? (
+        <div className="max-w-3xl mx-auto">
+          <StorageManagerPanel />
+        </div>
+      ) : (
       <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Header */}
         <div className="p-4 bg-gradient-to-r from-sky-600 to-indigo-700 text-white flex items-center justify-between">
@@ -200,6 +224,7 @@ export const CloudinarySettingsPanel: React.FC = () => {
           </div>
         </form>
       </div>
+      )}
     </section>
   );
 };

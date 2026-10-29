@@ -270,8 +270,20 @@ interface CloudinaryUsage {
   media_limits?: { video_max_size_bytes?: number };
 }
 
+export interface CloudinaryUsageSummary {
+  plan: string | null;
+  lastUpdated: string | null;
+  creditsUsed: number | null;
+  creditsLimit: number | null;
+  storageBytes: number | null;
+  bandwidthBytes: number | null;
+  transformations: number | null;
+  resources: number | null;
+  videoMaxBytes: number | null;
+}
+
 /** Pemakaian Cloudinary (kredit, penyimpanan, bandwidth, transformasi) untuk panel Penyimpanan. */
-export const getCloudinaryUsage = async (deps: PurgeDeps): Promise<Record<string, unknown>> => {
+export const getCloudinaryUsage = async (deps: PurgeDeps): Promise<CloudinaryUsageSummary> => {
   const cfg = readConfig(deps.env);
   const basic = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString('base64');
   const res = await call(deps, `https://api.cloudinary.com/v1_1/${cfg.cloudName}/usage`, {
@@ -280,8 +292,8 @@ export const getCloudinaryUsage = async (deps: PurgeDeps): Promise<Record<string
   if (!res.ok) throw new StoragePurgeError(`Pemakaian Cloudinary tidak dapat dibaca (HTTP ${res.status}).`);
   const u = (await res.json()) as CloudinaryUsage;
   return {
-    plan: u.plan,
-    lastUpdated: u.last_updated,
+    plan: u.plan ?? null,
+    lastUpdated: u.last_updated ?? null,
     creditsUsed: u.credits?.usage ?? null,
     creditsLimit: u.credits?.limit ?? null,
     storageBytes: u.storage?.usage ?? null,

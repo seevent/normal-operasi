@@ -6,6 +6,7 @@ import {
   Edit, Trash2, X, Share2, ExternalLink, Printer, FileSpreadsheet
 } from 'lucide-react';
 import { shareToWhatsApp, triggerFileDownload } from '../../lib/services/shareService';
+import { trashReportRows } from '../../lib/services/storageManagerService';
 import { generatePdfBlob } from '../../lib/services/pdfService';
 import { supabase } from '../../lib/supabaseClient';
 import { 
@@ -327,18 +328,22 @@ export const TabShiftReport: React.FC = () => {
     if (!window.confirm(`Hapus laporan kegiatan "${namaAlat}" ini?`)) return;
     setDeletingRowIndex(rowIndex);
     
-    // Hapus dari Supabase jika ada ID
+    // Pindahkan ke Sampah (bisa dipulihkan 7 hari di tab Data; setelah itu dihapus permanen beserta fotonya)
     const targetItem = reports.find(r => r.rowIndex === rowIndex);
     if (targetItem?.id) {
       try {
-        await supabase.from('laporan_operasional').delete().eq('id', targetItem.id);
+        await trashReportRows([targetItem.id]);
       } catch (err) {
         console.error("Gagal hapus dari DB:", err);
+        setStatusMsg({ text: `Laporan gagal dihapus: ${(err as Error).message}`, type: 'error' });
+        setDeletingRowIndex(null);
+        setTimeout(() => setStatusMsg(null), 4000);
+        return;
       }
     }
 
     setReports(prev => prev.filter(item => item.rowIndex !== rowIndex));
-    setStatusMsg({ text: "Laporan berhasil dihapus.", type: 'success' });
+    setStatusMsg({ text: "Laporan dipindah ke Sampah (bisa dipulihkan 7 hari).", type: 'success' });
     setDeletingRowIndex(null);
     setTimeout(() => setStatusMsg(null), 3000);
   };
