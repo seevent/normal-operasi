@@ -201,7 +201,7 @@ export const StorageManagerPanel: React.FC = () => {
           <strong>{tgl(cutoff)}</strong>. Laporan yang dihapus masuk <strong>Sampah 7 hari</strong> (bisa dipulihkan), lalu dihapus
           permanen beserta foto/videonya di Cloudinary dan Supabase Storage. Foto yang juga dipakai laporan lain tidak ikut dihapus.
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="text-xs font-bold text-slate-700">
             Dari tanggal
             <input type="date" value={from} max={cutoff || undefined} onChange={(e) => setFrom(e.target.value)} className="mt-1 w-full px-3 py-2 text-base border border-slate-300 rounded-lg" />
