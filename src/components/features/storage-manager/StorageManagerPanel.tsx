@@ -3,6 +3,7 @@ import { AlertTriangle, Archive, Cloud, Database, Eye, Loader2, RefreshCw, Rotat
 import { triggerFileDownload } from '../../../lib/services/shareService';
 import {
   REPORT_JENIS,
+  SUPABASE_FREE_LIMITS,
   buildRangeArchive,
   fetchCleanupJobs,
   fetchCloudinaryUsage,
@@ -18,7 +19,11 @@ import {
   type StorageOverview,
 } from '../../../lib/services/storageManagerService';
 
-const mb = (bytes: number | null | undefined) => (bytes == null ? '-' : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
+const mb = (bytes: number | null | undefined) => {
+  if (bytes == null) return '-';
+  const m = bytes / 1024 / 1024;
+  return m >= 1024 ? `${(m / 1024).toFixed(m % 1024 === 0 ? 0 : 2)} GB` : `${m.toFixed(1)} MB`;
+};
 const tgl = (iso: string | null | undefined) =>
   iso ? new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 
@@ -38,6 +43,25 @@ const Card: React.FC<{ title: string; icon: React.ReactNode; children: React.Rea
     {children}
   </div>
 );
+
+/** Batang pemakaian: biru < 70%, kuning ≥ 70%, merah ≥ 90%. */
+const UsageBar: React.FC<{ label: string; used: number; limit: number; format: (n: number) => string }> = ({ label, used, limit, format }) => {
+  const pct = limit > 0 ? (used / limit) * 100 : 0;
+  const tone = pct >= 90 ? 'bg-rose-500' : pct >= 70 ? 'bg-amber-500' : 'bg-sky-500';
+  return (
+    <div className="mb-3">
+      <div className="flex justify-between gap-2 text-xs text-slate-600 mb-1">
+        <span>{label}</span>
+        <span className="font-bold whitespace-nowrap">
+          {format(used)} / {format(limit)} ({pct.toFixed(pct < 10 ? 1 : 0)}%)
+        </span>
+      </div>
+      <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className={`h-full ${tone}`} style={{ width: `${Math.min(100, Math.max(pct, used > 0 ? 1 : 0))}%` }} />
+      </div>
+    </div>
+  );
+};
 
 const Stat: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
   <div className="bg-slate-50 rounded-lg px-3 py-2">
@@ -146,7 +170,6 @@ export const StorageManagerPanel: React.FC = () => {
   const expectedConfirm = preview ? `HAPUS ${preview.reports}` : '';
   const canTrash =
     !!preview && preview.retention_ok && preview.reports > 0 && archivedKey === rangeKey && confirmText.trim() === expectedConfirm && !busy;
-  const creditPct = usage?.creditsUsed != null && usage.creditsLimit ? (usage.creditsUsed / usage.creditsLimit) * 100 : null;
 
   return (
     <div className="space-y-4">
@@ -157,43 +180,51 @@ export const StorageManagerPanel: React.FC = () => {
       )}
       {notice && <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm">{notice}</div>}
 
-      <Card title="Pemakaian" icon={<Cloud className="w-4 h-4 text-sky-600" />}>
-        {usage ? (
-          <>
-            <div className="mb-3">
-              <div className="flex justify-between text-xs text-slate-600 mb-1">
-                <span>Kredit Cloudinary bulan ini ({usage.plan})</span>
-                <span className="font-bold">
-                  {usage.creditsUsed?.toFixed(2)} / {usage.creditsLimit}
-                </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card title="Cloudinary (foto & video)" icon={<Cloud className="w-4 h-4 text-sky-600" />}>
+          {usage ? (
+            <>
+              <UsageBar
+                label={`Kredit bulan ini (paket ${usage.plan ?? '-'})`}
+                used={usage.creditsUsed ?? 0}
+                limit={usage.creditsLimit ?? 0}
+                format={(n) => n.toFixed(2)}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Stat label="Penyimpanan" value={mb(usage.storageBytes)} />
+                <Stat label="Bandwidth" value={mb(usage.bandwidthBytes)} />
+                <Stat label="Transformasi" value={usage.transformations ?? '-'} />
+                <Stat label="Jumlah berkas" value={usage.resources ?? '-'} />
               </div>
-              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${creditPct != null && creditPct >= 90 ? 'bg-rose-500' : creditPct != null && creditPct >= 70 ? 'bg-amber-500' : 'bg-sky-500'}`}
-                  style={{ width: `${Math.min(100, creditPct ?? 0)}%` }}
-                />
+              <p className="text-[11px] text-slate-500 mt-2">
+                Diperbarui harian oleh Cloudinary (terakhir {tgl(usage.lastUpdated)}). Batas video per berkas {mb(usage.videoMaxBytes)}.
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-slate-500">{usageError ? `Pemakaian Cloudinary tidak dapat dibaca: ${usageError}` : 'Memuat pemakaian Cloudinary…'}</p>
+          )}
+        </Card>
+
+        <Card title="Supabase (database & storage)" icon={<Database className="w-4 h-4 text-emerald-600" />}>
+          {overview ? (
+            <>
+              <UsageBar label="Database" used={overview.database_bytes} limit={SUPABASE_FREE_LIMITS.databaseBytes} format={mb} />
+              <UsageBar label="Storage (foto cadangan)" used={overview.storage_bytes} limit={SUPABASE_FREE_LIMITS.storageBytes} format={mb} />
+              <div className="grid grid-cols-2 gap-2">
+                <Stat label="Laporan" value={overview.reports} />
+                <Stat label="Laporan berfoto" value={overview.reports_with_media} />
+                <Stat label="Berkas di Storage" value={overview.storage_objects} />
+                <Stat label="Di Sampah" value={overview.trash_reports} />
+                <Stat label="Laporan tertua" value={tgl(overview.oldest_report)} />
+                <Stat label="Laporan terbaru" value={tgl(overview.newest_report)} />
               </div>
-              <p className="text-[11px] text-slate-500 mt-1">Angka Cloudinary diperbarui harian (terakhir {tgl(usage.lastUpdated)}).</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <Stat label="Penyimpanan" value={mb(usage.storageBytes)} />
-              <Stat label="Bandwidth" value={mb(usage.bandwidthBytes)} />
-              <Stat label="Transformasi" value={usage.transformations ?? '-'} />
-              <Stat label="Jumlah berkas" value={usage.resources ?? '-'} />
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-slate-500">{usageError ? `Pemakaian Cloudinary tidak dapat dibaca: ${usageError}` : 'Memuat pemakaian Cloudinary…'}</p>
-        )}
-        {overview && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-            <Stat label="Database" value={mb(overview.database_bytes)} />
-            <Stat label="Laporan" value={overview.reports} />
-            <Stat label="Laporan tertua" value={tgl(overview.oldest_report)} />
-            <Stat label="Di Sampah" value={overview.trash_reports} />
-          </div>
-        )}
-      </Card>
+              <p className="text-[11px] text-slate-500 mt-2">Langsung dari database. Batas mengikuti paket Free Supabase (database 500 MB, storage 1 GB).</p>
+            </>
+          ) : (
+            <p className="text-xs text-slate-500">Memuat pemakaian Supabase…</p>
+          )}
+        </Card>
+      </div>
 
       <Card title="Hapus laporan per rentang tanggal" icon={<Database className="w-4 h-4 text-indigo-600" />}>
         <p className="text-xs text-slate-600 mb-3 leading-relaxed">

@@ -10,7 +10,7 @@ test('Cloudinary settings belong to the admin Data sub-tab', () => {
   const settingsPanel = readProjectFile('src/components/features/CloudinarySettingsPanel.tsx');
 
   assert.match(dataTab, /import \{ CloudinarySettingsPanel \} from '\.\/CloudinarySettingsPanel';/);
-  assert.match(dataTab, /\{ id: 'cloudinary', label: 'Cloudinary CDN' \}/);
+  assert.match(dataTab, /\{ id: 'cloudinary', label: 'Storage' \}/);
   assert.match(dataTab, /<CloudinarySettingsPanel\s*\/>/);
 
   assert.match(settingsPanel, /getCloudinaryConfig/);

@@ -15,7 +15,15 @@ export interface StorageOverview {
   per_bulan: Record<string, number>;
   retention_cutoff: string;
   trash_reports: number;
+  storage_bytes: number;
+  storage_objects: number;
 }
+
+/** Batas paket Free Supabase (organisasi SSES T2 memakai paket Free per 29 Okt 2026). */
+export const SUPABASE_FREE_LIMITS = {
+  databaseBytes: 500 * 1024 * 1024,
+  storageBytes: 1024 * 1024 * 1024,
+} as const;
 
 export interface RangePreview {
   reports: number;

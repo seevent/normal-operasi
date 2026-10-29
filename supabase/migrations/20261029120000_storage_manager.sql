@@ -296,7 +296,7 @@ returns jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = public, storage
 as $$
 begin
   perform require_login();
@@ -310,7 +310,9 @@ begin
     'per_bulan', coalesce((select jsonb_object_agg(bulan, n) from (
                    select to_char(tanggal, 'YYYY-MM') bulan, count(*) n from laporan_operasional group by 1) t), '{}'::jsonb),
     'retention_cutoff', report_retention_cutoff(),
-    'trash_reports', (select count(*) from laporan_operasional_sampah)
+    'trash_reports', (select count(*) from laporan_operasional_sampah),
+    'storage_bytes', (select coalesce(sum((metadata ->> 'size')::bigint), 0) from storage.objects),
+    'storage_objects', (select count(*) from storage.objects where name not like '%.emptyFolderPlaceholder')
   );
 end;
 $$;

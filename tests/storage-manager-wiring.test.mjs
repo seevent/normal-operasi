@@ -26,11 +26,15 @@ test('Hapus massal per rentang: wajib login, minimal 12 bulan, Sampah 7 hari, pe
   assert.match(sql, /status = 'dipakai_laporan_lain'/);
 });
 
-test('Panel Penyimpanan ada di tab Data › Cloudinary CDN; pengosongan terjadwal harian', () => {
+test('Panel Penyimpanan ada di tab Data › Storage; pengosongan terjadwal harian', () => {
   const panel = read('src/components/features/CloudinarySettingsPanel.tsx');
   assert.match(panel, /<StorageManagerPanel \/>/);
   const storage = read('src/components/features/storage-manager/StorageManagerPanel.tsx');
   assert.match(storage, /archivedKey === rangeKey/, 'hapus hanya setelah arsip rentang yang sama diunduh');
+  // Status penyimpanan Supabase tampil seperti Cloudinary.
+  assert.match(storage, /Supabase \(database & storage\)/);
+  assert.match(storage, /SUPABASE_FREE_LIMITS\.storageBytes/);
+  assert.match(read('supabase/migrations/20261029120000_storage_manager.sql'), /'storage_bytes', \(select coalesce\(sum\(\(metadata ->> 'size'\)::bigint\), 0\) from storage\.objects\)/);
   assert.match(storage, /HAPUS \$\{preview\.reports\}/);
   const fn = read('netlify/functions/purge-trash.mts');
   assert.match(fn, /purgeDueTrash/);
