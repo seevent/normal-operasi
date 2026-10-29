@@ -18,9 +18,6 @@ export interface LoadedPhoto {
   extension: 'jpeg' | 'png';
 }
 
-// Dua foto per baris memenuhi lebar area Dokumentasi (kolom O:Q = 319 px) pada tata letak berkas acuan.
-export const PHOTO_BOX = { width: 150, height: 112, gap: 4, perLine: 2 } as const;
-
 const PX_TO_PT = 0.75;
 /** Satuan offset jangkar gambar pada berkas Excel (EMU) per piksel. */
 const EMU_PER_PX = 9525;
@@ -33,6 +30,14 @@ const WRAP_SAFETY = 0.9;
 const BASE_FONT_PT = 11;
 const MIN_FONT_PT = 5;
 
+/** Jarak antar-foto dan ke tepi sel (px). */
+const PHOTO_GAP = 4;
+/**
+ * Tinggi baris yang disiapkan untuk foto bila teksnya pendek: cukup agar satu foto landscape 4:3 memenuhi
+ * lebar area Dokumentasi. Baris yang lebih tinggi karena teks dipakai seluruhnya oleh foto.
+ */
+export const PHOTO_ROW_PX = 240;
+
 export interface PhotoPlacement {
   index: number;
   xPx: number;
@@ -41,50 +46,66 @@ export interface PhotoPlacement {
   height: number;
 }
 
-/** Letakkan foto dalam kisi `perLine` kolom per baris; tiap foto dimuat ke kotak tetap tanpa mengubah rasio. */
-export const layoutPhotos = (
+/**
+ * Susun foto agar memenuhi sel Dokumentasi selebar `widthPx` dan setinggi baris (teks atau PHOTO_ROW_PX,
+ * maks. 409 pt). Semua pilihan jumlah foto per baris dicoba; dipilih yang membuat foto paling besar.
+ * Rasio foto terjaga, foto tidak dibesarkan melebihi ukuran aslinya, dan kumpulan foto berada di tengah sel.
+ * `heightPx` = tinggi baris yang dibutuhkan (minimal `minHeightPx`).
+ */
+export const layoutPhotosInCell = (
   sizes: Array<{ width: number; height: number }>,
-  box: { width: number; height: number; gap: number; perLine: number } = PHOTO_BOX
+  opts: { widthPx?: number; minHeightPx?: number; maxHeightPx?: number } = {}
 ): { placements: PhotoPlacement[]; heightPx: number } => {
-  const placements = sizes.map((s, index) => {
-    const scale = Math.min(box.width / s.width, box.height / s.height, 1);
-    const width = Math.max(1, Math.round(s.width * scale));
-    const height = Math.max(1, Math.round(s.height * scale));
-    const line = Math.floor(index / box.perLine);
-    const col = index % box.perLine;
+  if (sizes.length === 0) return { placements: [], heightPx: 0 };
+  const widthPx = opts.widthPx ?? DOC_WIDTH_PX;
+  const maxHeightPx = Math.floor(opts.maxHeightPx ?? MAX_ROW_PT / PX_TO_PT);
+  const minHeightPx = Math.min(maxHeightPx, Math.ceil(opts.minHeightPx ?? 0));
+  const targetPx = Math.max(minHeightPx, Math.min(PHOTO_ROW_PX, maxHeightPx));
+
+  let best: { perLine: number; boxW: number; scaled: Array<{ width: number; height: number }>; area: number } | null = null;
+  for (let perLine = 1; perLine <= sizes.length; perLine++) {
+    const lines = Math.ceil(sizes.length / perLine);
+    const boxW = Math.floor((widthPx - PHOTO_GAP * (perLine + 1)) / perLine);
+    const boxH = Math.floor((targetPx - PHOTO_GAP * (lines + 1)) / lines);
+    if (boxW < 1 || boxH < 1) break;
+    const scaled = sizes.map(s => {
+      const scale = Math.min(boxW / s.width, boxH / s.height, 1);
+      return { width: Math.max(1, Math.floor(s.width * scale)), height: Math.max(1, Math.floor(s.height * scale)) };
+    });
+    const area = scaled.reduce((sum, s) => sum + s.width * s.height, 0);
+    // Luas sama (selisih < 1%): pilih lebih banyak foto per baris agar baris lebih pendek.
+    if (!best || area > best.area * 1.01) best = { perLine, boxW, scaled, area };
+  }
+  if (!best) return { placements: [], heightPx: minHeightPx };
+
+  // Tinggi tiap baris foto = foto tertinggi di baris itu; baris foto dirapatkan lalu ditengahkan dalam sel.
+  const { perLine, boxW, scaled } = best;
+  const lineHeights: number[] = [];
+  scaled.forEach((s, i) => {
+    const line = Math.floor(i / perLine);
+    lineHeights[line] = Math.max(lineHeights[line] ?? 0, s.height);
+  });
+  const usedPx = PHOTO_GAP + lineHeights.reduce((sum, h) => sum + h + PHOTO_GAP, 0);
+  const heightPx = Math.max(minHeightPx, usedPx);
+  const top = Math.floor((heightPx - usedPx) / 2);
+  const lineTops = lineHeights.map((_, line) => top + PHOTO_GAP + lineHeights.slice(0, line).reduce((sum, h) => sum + h + PHOTO_GAP, 0));
+  // Baris foto terakhir yang tidak penuh ikut ditengahkan secara horizontal.
+  const rowWidth = (count: number) => count * boxW + (count + 1) * PHOTO_GAP;
+
+  const placements = scaled.map((s, index) => {
+    const line = Math.floor(index / perLine);
+    const col = index % perLine;
+    const count = Math.min(perLine, sizes.length - line * perLine);
+    const left = Math.floor((widthPx - rowWidth(count)) / 2);
     return {
       index,
-      xPx: box.gap + col * (box.width + box.gap) + Math.round((box.width - width) / 2),
-      yPx: box.gap + line * (box.height + box.gap) + Math.round((box.height - height) / 2),
-      width,
-      height,
+      xPx: left + PHOTO_GAP + col * (boxW + PHOTO_GAP) + Math.floor((boxW - s.width) / 2),
+      yPx: lineTops[line] + Math.floor((lineHeights[line] - s.height) / 2),
+      width: s.width,
+      height: s.height,
     };
   });
-  const lines = Math.ceil(sizes.length / box.perLine);
-  return { placements, heightPx: sizes.length === 0 ? 0 : box.gap + lines * (box.height + box.gap) };
-};
-
-/**
- * Susun foto dengan batas tinggi baris Excel (409 pt). Bila 2 foto per baris tidak muat, jumlah foto per
- * baris dinaikkan dan kotaknya dikecilkan sehingga lebar total tetap sama dengan lebar kolom.
- */
-export const layoutPhotosWithin = (
-  sizes: Array<{ width: number; height: number }>,
-  maxHeightPx: number = MAX_ROW_PT / PX_TO_PT
-): { placements: PhotoPlacement[]; heightPx: number } => {
-  let result = layoutPhotos(sizes);
-  const columnPx = PHOTO_BOX.perLine * (PHOTO_BOX.width + PHOTO_BOX.gap) + PHOTO_BOX.gap;
-  for (let perLine = PHOTO_BOX.perLine + 1; result.heightPx > maxHeightPx && perLine <= 8; perLine++) {
-    // Lebar kotak dihitung dari lebar kolom dikurangi semua jarak, agar baris penuh tidak melewati kolom.
-    const width = Math.floor((columnPx - PHOTO_BOX.gap * (perLine + 1)) / perLine);
-    result = layoutPhotos(sizes, {
-      width,
-      height: Math.floor((width * PHOTO_BOX.height) / PHOTO_BOX.width),
-      gap: PHOTO_BOX.gap,
-      perLine,
-    });
-  }
-  return result;
+  return { placements, heightPx };
 };
 
 /**
@@ -177,6 +198,8 @@ const FIELDS: Field[] = [
   { title: 'DOKUMENTASI', source: 'Dokumentasi', from: 15, to: 17 },
 ];
 const DOC_FIELD = FIELDS[FIELDS.length - 1];
+/** Lebar area Dokumentasi (kolom O:Q) dalam piksel: 64 + 64 + 191 = 319 pada berkas acuan. */
+export const DOC_WIDTH_PX = Array.from({ length: DOC_FIELD.to - DOC_FIELD.from + 1 }, (_, i) => colPx(DOC_FIELD.from - 1 + i)).reduce((a, b) => a + b, 0);
 const URAIAN_FIELD = FIELDS[6];
 /** Kolom tempat lebar tambahan diberikan bila uraian terlalu panjang (juga kolom "Total" tabel Serviceability). */
 const EXTRA_WIDTH_COL = URAIAN_FIELD.to;
@@ -394,8 +417,9 @@ export const buildShiftReportWorkbook = (ExcelJS: any, input: ShiftReportWorkboo
   dataRows.forEach((cells, i) => {
     const r = layout.firstDataRow + i;
     const photos = (input.photos[i] ?? []).filter((p): p is LoadedPhoto => !!p);
-    const { placements, heightPx } = layoutPhotosWithin(photos);
     const texts = rowTexts(cells);
+    // Foto memenuhi sel Dokumentasi: selebar kolom O:Q dan setinggi baris (yang tingginya ditentukan teks bila lebih panjang).
+    const { placements, heightPx } = layoutPhotosInCell(photos, { minHeightPx: textHeightPt(texts, heightWidths(widths)) / PX_TO_PT });
     ws.getRow(r).height = rowHeightPt(texts, heightWidths(widths), heightPx);
 
     // Teks lebih tinggi dari batas baris Excel (409 pt) tidak mungkin muat pada ukuran huruf biasa:

@@ -10,7 +10,7 @@ import {
   fotoUrlsOf,
 } from '../src/lib/utils/shiftReportExport.ts';
 import {
-  layoutPhotos, layoutPhotosWithin, rowHeightPt, textHeightPt, wrappedLineCount, buildShiftReportWorkbook, uraianCellValue, PHOTO_BOX,
+  layoutPhotosInCell, rowHeightPt, textHeightPt, wrappedLineCount, buildShiftReportWorkbook, uraianCellValue, DOC_WIDTH_PX, PHOTO_ROW_PX,
 } from '../src/lib/utils/shiftReportWorkbook.ts';
 import ExcelJS from 'exceljs';
 import {
@@ -113,24 +113,72 @@ test('TabShiftReport: tombol Export Excel dan PDF memakai format nama berkas yan
   assert.doesNotMatch(content, /SSES_T2_Laporan_Shift_/);
 });
 
-test('layoutPhotos: kisi 2 kolom, rasio terjaga, tidak membesarkan foto, tinggi baris mengikuti jumlah foto', () => {
-  assert.deepEqual(layoutPhotos([]), { placements: [], heightPx: 0 });
+const LANDSCAPE = { width: 480, height: 360 };
+const PORTRAIT = { width: 360, height: 480 };
+const area = (ps) => ps.reduce((sum, p) => sum + p.width * p.height, 0);
+const insideCell = (placements, heightPx, widthPx = DOC_WIDTH_PX) => {
+  for (const p of placements) {
+    assert.ok(p.xPx >= 0 && p.xPx + p.width <= widthPx, `foto keluar lebar kolom: ${JSON.stringify(p)}`);
+    assert.ok(p.yPx >= 0 && p.yPx + p.height <= heightPx, `foto keluar tinggi baris: ${JSON.stringify(p)} > ${heightPx}`);
+  }
+  for (let i = 0; i < placements.length; i++) {
+    for (let j = i + 1; j < placements.length; j++) {
+      const a = placements[i], b = placements[j];
+      const overlap = a.xPx < b.xPx + b.width && b.xPx < a.xPx + a.width && a.yPx < b.yPx + b.height && b.yPx < a.yPx + a.height;
+      assert.ok(!overlap, `foto ${i} dan ${j} bertumpuk`);
+    }
+  }
+};
 
-  const one = layoutPhotos([{ width: 480, height: 360 }]);
-  assert.equal(one.placements[0].width, 149); // 150/480 -> 0.3125; tinggi 112/360 -> 0.3111 menang
-  assert.equal(one.placements[0].height, 112);
-  assert.equal(one.heightPx, PHOTO_BOX.gap + PHOTO_BOX.height + PHOTO_BOX.gap);
+test('layoutPhotosInCell: area Dokumentasi O:Q = 319 px; tanpa foto tidak memakan tinggi', () => {
+  assert.equal(DOC_WIDTH_PX, 64 + 64 + 191);
+  assert.deepEqual(layoutPhotosInCell([]), { placements: [], heightPx: 0 });
+});
 
-  const small = layoutPhotos([{ width: 40, height: 30 }]);
+test('layoutPhotosInCell: satu foto memenuhi lebar kolom (sebelumnya kotak tetap 150x112)', () => {
+  const one = layoutPhotosInCell([LANDSCAPE]);
+  assert.ok(one.placements[0].width >= DOC_WIDTH_PX - 12, `lebar ${one.placements[0].width}`);
+  assert.ok(area(one.placements) >= 4 * 149 * 112, 'minimal 4x luas sebelumnya');
+  assert.ok(Math.abs(one.placements[0].width / one.placements[0].height - 4 / 3) < 0.02, 'rasio terjaga');
+  assert.ok(one.heightPx <= PHOTO_ROW_PX, 'tinggi baris tidak melebihi tinggi foto bawaan');
+  insideCell(one.placements, one.heightPx);
+
+  const portrait = layoutPhotosInCell([PORTRAIT]);
+  assert.ok(area(portrait.placements) >= 4 * 84 * 112, 'foto potret juga jauh lebih besar');
+  insideCell(portrait.placements, portrait.heightPx);
+});
+
+test('layoutPhotosInCell: baris tinggi karena teks dipakai foto untuk membesar, foto di tengah sel', () => {
+  const short = layoutPhotosInCell([PORTRAIT]);
+  const tall = layoutPhotosInCell([PORTRAIT], { minHeightPx: 400 });
+  assert.equal(tall.heightPx, 400);
+  assert.ok(tall.placements[0].height > short.placements[0].height, 'foto potret membesar mengikuti tinggi baris');
+  insideCell(tall.placements, tall.heightPx);
+  const p = tall.placements[0];
+  assert.ok(Math.abs(p.yPx - (400 - p.yPx - p.height)) <= 1, 'tengah vertikal');
+  assert.ok(Math.abs(p.xPx - (DOC_WIDTH_PX - p.xPx - p.width)) <= 1, 'tengah horizontal');
+});
+
+test('layoutPhotosInCell: foto tidak dibesarkan melebihi ukuran aslinya', () => {
+  const small = layoutPhotosInCell([{ width: 40, height: 30 }]);
   assert.equal(small.placements[0].width, 40);
   assert.equal(small.placements[0].height, 30);
+});
 
-  const three = layoutPhotos(Array.from({ length: 3 }, () => ({ width: PHOTO_BOX.width, height: PHOTO_BOX.height })));
-  assert.equal(three.placements[0].xPx, PHOTO_BOX.gap);
-  assert.equal(three.placements[1].xPx, PHOTO_BOX.gap * 2 + PHOTO_BOX.width);
-  assert.equal(three.placements[2].xPx, PHOTO_BOX.gap); // baris kedua kembali ke kolom pertama
-  assert.ok(three.placements[2].yPx > three.placements[0].yPx);
-  assert.equal(three.heightPx, PHOTO_BOX.gap + 2 * (PHOTO_BOX.height + PHOTO_BOX.gap));
+test('layoutPhotosInCell: banyak foto tetap di dalam kolom dan batas 409 pt, tanpa bertumpuk', () => {
+  const maxPx = 409 / 0.75;
+  for (const n of [2, 3, 4, 5, 7, 12, 30]) {
+    for (const size of [LANDSCAPE, PORTRAIT]) {
+      const sizes = Array.from({ length: n }, () => size);
+      const r = layoutPhotosInCell(sizes);
+      assert.ok(r.heightPx <= maxPx, `${n} foto: ${r.heightPx}px`);
+      assert.equal(r.placements.length, n);
+      insideCell(r.placements, r.heightPx);
+    }
+  }
+  // Campuran potret dan landscape
+  const mix = layoutPhotosInCell([LANDSCAPE, PORTRAIT, LANDSCAPE], { minHeightPx: 300 });
+  insideCell(mix.placements, mix.heightPx);
 });
 
 test('wrappedLineCount: bungkus per kata, kapital lebih lebar, kata panjang dipatahkan', () => {
@@ -161,29 +209,6 @@ test('regresi tangkapan layar: baris dengan 7 baris teks cukup tinggi sehingga "
   assert.ok(rowHeightPt(cells, widths, 90) >= 7 * 15 + 6, 'minimal 7 baris x 15 pt');
 });
 
-test('layoutPhotosWithin: foto sangat banyak diperkecil dan tidak keluar dari batas baris maupun lebar kolom', () => {
-  const sizes = Array.from({ length: 30 }, () => ({ width: 480, height: 360 }));
-  const maxPx = 409 / 0.75;
-  const { placements, heightPx } = layoutPhotosWithin(sizes, maxPx);
-  assert.ok(heightPx <= maxPx, `tinggi ${heightPx}px melewati batas ${maxPx}px`);
-
-  const colPx = 2 * (PHOTO_BOX.width + PHOTO_BOX.gap) + PHOTO_BOX.gap; // lebar kolom Dokumentasi
-  for (const p of placements) {
-    assert.ok(p.xPx >= 0 && p.xPx + p.width <= colPx, 'foto di dalam lebar kolom');
-    assert.ok(p.yPx >= 0 && p.yPx + p.height <= heightPx, 'foto di dalam tinggi baris');
-  }
-  // Tidak ada dua foto yang bertumpuk
-  for (let i = 0; i < placements.length; i++) {
-    for (let j = i + 1; j < placements.length; j++) {
-      const a = placements[i], b = placements[j];
-      const overlap = a.xPx < b.xPx + b.width && b.xPx < a.xPx + a.width && a.yPx < b.yPx + b.height && b.yPx < a.yPx + a.height;
-      assert.ok(!overlap, `foto ${i} dan ${j} bertumpuk`);
-    }
-  }
-  // Jumlah sedikit tetap 2 per baris dengan ukuran penuh
-  assert.deepEqual(layoutPhotosWithin([{ width: 480, height: 360 }]), layoutPhotos([{ width: 480, height: 360 }]));
-});
-
 // PNG 1x1 merah, valid
 const PNG_1X1 =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
@@ -211,20 +236,17 @@ test('buildShiftReportWorkbook: foto tertanam di area Dokumentasi (O:Q), bukan t
   assert.equal(laporan.getImages().length, 3, 'tiga foto pada baris pertama');
   assert.ok(!laporan.getCell('O15').value, 'sel Dokumentasi tidak berisi tautan/teks');
   assert.equal(laporan.getCell('J15').value.richText.map((r) => r.text).join(''), 'Permasalahan : Mati\nTindak lanjut :\nGanti');
-  const { placements } = layoutPhotos([photo, photo, photo]);
-  // Area Dokumentasi = kolom O (64 px), P (64 px), Q (191 px); offset foto dihitung ulang di dalam kolom tujuan.
+  // Area Dokumentasi = kolom O (64 px), P (64 px), Q (191 px); foto berada di dalamnya dan tidak bertumpuk.
   const colsPx = [64, 64, 191];
-  laporan.getImages().forEach(({ range }, i) => {
-    let col = 0;
-    let rem = placements[i].xPx;
-    while (col < 2 && rem >= colsPx[col]) rem -= colsPx[col++];
-    assert.equal(range.tl.nativeCol, 14 + col, 'foto berada di kolom O sampai Q');
+  const boxes = laporan.getImages().map(({ range }) => {
+    assert.ok(range.tl.nativeCol >= 14 && range.tl.nativeCol <= 16, 'foto berada di kolom O sampai Q');
     assert.equal(range.tl.nativeRow, 14, 'foto berada di baris data pertama (baris 15)');
+    const before = colsPx.slice(0, range.tl.nativeCol - 14).reduce((a, b) => a + b, 0);
     // Offset dalam EMU (9525 per piksel) agar foto tidak bertumpuk
-    assert.equal(range.tl.nativeColOff, rem * 9525);
-    assert.equal(range.tl.nativeRowOff, placements[i].yPx * 9525);
+    assert.equal(range.tl.nativeColOff % 9525, 0);
+    return { xPx: before + range.tl.nativeColOff / 9525, yPx: range.tl.nativeRowOff / 9525, width: range.ext.width, height: range.ext.height };
   });
-  assert.ok(laporan.getRow(15).height >= 0.75 * layoutPhotos([photo, photo, photo]).heightPx, 'baris cukup tinggi untuk dua baris foto');
+  insideCell(boxes, laporan.getRow(15).height / 0.75 + 1);
 });
 
 const HEADER_10 = ['No', 'Lokasi', 'Peralatan', 'Corrective Maintenance', 'Preventive Maintenance', 'Lain-lain', 'Uraian Kegiatan', 'Waktu Tindak Lanjut', 'Hasil', 'Dokumentasi'];
@@ -296,4 +318,15 @@ test('buildShiftReportWorkbook: judul tabel tidak terpotong, tingginya mengikuti
   assert.ok(ws.getRow(14).height >= 37.5);
   assert.equal(ws.getCell('M14').value, 'WAKTU TINDAK LANJUT');
   assert.equal(ws.getCell('M14').alignment.wrapText, true);
+});
+
+test('Excel: Kegiatan tanpa peralatan (tersimpan "All Faskampen") ditulis "-" di kolom Peralatan', () => {
+  const rows = buildLaporanSheetRows([
+    { shift: 'PS', Jenis: 'Kegiatan', kategori_maintenance: 'KEGIATAN', Peralatan: 'All Faskampen', Lokasi: 'PSCP D', Uraian: 'Kegiatan : Import user Rapiscan', Status: 'Normal' },
+    { shift: 'PS', Jenis: 'Kegiatan', kategori_maintenance: 'KEGIATAN', Peralatan: 'X-Ray Rapiscan 620DV', Lokasi: 'PSCP E', Uraian: 'Kegiatan : Upload user', Status: 'Normal' },
+    { shift: 'PS', Jenis: 'Kegiatan', kategori_maintenance: 'KEGIATAN', Peralatan: '  ', Lokasi: 'PSCP F', Uraian: 'Kegiatan : x', Status: 'Normal' },
+    { shift: 'PS', Jenis: 'Storing', kategori_maintenance: 'STORING', Peralatan: 'All Faskampen', Lokasi: 'PSCP D', Uraian: 'Storing Peralatan', Status: 'Normal Operasi' },
+  ], 'PS', classifiers);
+  const peralatan = rows.slice(1).map((r) => r[2]);
+  assert.deepEqual(peralatan, ['-', 'X-Ray Rapiscan 620DV', '-', 'All Faskampen']);
 });
