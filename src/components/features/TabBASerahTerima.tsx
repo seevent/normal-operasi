@@ -5,12 +5,11 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { PhotoUploader, Photo } from '../shared/PhotoUploader';
 import { generateWA_BASerahTerima } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
-import { generatePdfBlob } from '../../lib/services/pdfService';
-import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
+import { generatePdfBlob, type PdfOptions } from '../../lib/services/pdfService';
+import { compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { SignaturePad } from '../shared/SignaturePad';
 import { toTitleCase } from '../../lib/data/masterData';
-import { supabase } from '../../lib/supabaseClient';
 import { fetchOnDutyPersonnel, calculateOperationalShift } from '../../lib/services/operationalReportService';
 import { BADocumentPrint } from './ba-serah-terima/BADocumentPrint';
 import { validateBASerahTerima } from '../../lib/utils/formValidation';
@@ -107,7 +106,6 @@ export const TabBASerahTerima: React.FC = () => {
   const [signaturePenerima, setSignaturePenerima] = useState<string | null>(null);
 
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [autoCollageFile, setAutoCollageFile] = useState<File | null>(null);
   const [autoCollageUrl, setAutoCollageUrl] = useState<string | null>(null);
   const [isSharingPdf, setIsSharingPdf] = useState<boolean>(false);
   const printableBaRef = React.useRef<HTMLDivElement>(null);
@@ -319,7 +317,7 @@ export const TabBASerahTerima: React.FC = () => {
       let pdfFile: File | null = null;
 
       if (printableBaRef.current) {
-        const opt = {
+        const opt: PdfOptions = {
           margin: [10, 10, 10, 10],
           filename: `BA_Serah_Terima_${baData.tanggal}.pdf`,
           image: { type: 'jpeg' as const, quality: 0.98 },
@@ -735,8 +733,7 @@ export const TabBASerahTerima: React.FC = () => {
 
         <LiveCollagePreview
           photos={photos}
-          onCollageChange={(file, url) => {
-            setAutoCollageFile(file);
+          onCollageChange={(_file, url) => {
             setAutoCollageUrl(url);
           }}
         />

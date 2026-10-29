@@ -1,5 +1,5 @@
 // src/components/features/ba-serah-terima/BADocumentPrint.tsx
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 
 export interface ItemSerahTerima {
   id: number;

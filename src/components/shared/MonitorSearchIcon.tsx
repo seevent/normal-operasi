@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const MonitorSearchIcon = ({ className }: { className?: string }) => {
   return (
     <svg 

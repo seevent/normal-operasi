@@ -1,11 +1,12 @@
 // src/lib/services/pdfService.ts
 
 export interface PdfOptions {
-  margin?: number | number[];
+  /** Sama dengan html2pdf.js: satu angka, [vertikal, horizontal], atau [atas, kiri, bawah, kanan]. */
+  margin?: number | [number, number] | [number, number, number, number];
   filename?: string;
   image?: { type?: 'jpeg' | 'png'; quality?: number };
   html2canvas?: any;
-  jsPDF?: { unit?: string; format?: string | number[]; orientation?: 'portrait' | 'landscape' };
+  jsPDF?: { unit?: string; format?: string | [number, number]; orientation?: 'portrait' | 'landscape' };
   pagebreak?: any;
 }
 

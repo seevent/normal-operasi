@@ -6,7 +6,7 @@ import {
   Edit, Trash2, X, Share2, ExternalLink, Printer, FileSpreadsheet
 } from 'lucide-react';
 import { shareToWhatsApp, triggerFileDownload } from '../../lib/services/shareService';
-import { generatePdfBlob } from '../../lib/services/pdfService';
+import { generatePdfBlob, type PdfOptions } from '../../lib/services/pdfService';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   fetchShiftOperationalLogs, 
@@ -15,8 +15,7 @@ import {
   saveChecklistSummary,
   ChecklistSummaryItem,
   saveOperationalLog,
-  getReportDefaultDateAndShift,
-  isTimeWithinShiftBoundary
+  getReportDefaultDateAndShift
 } from '../../lib/services/operationalReportService';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { getDefaultKalibrasiUraian, generateWA_ShiftReport } from '../../lib/utils/waGenerator';
@@ -58,7 +57,6 @@ export const TabShiftReport: React.FC = () => {
   const [dailyCounts, setDailyCounts] = useState<{ ps: number; m: number; total: number }>({ ps: 0, m: 0, total: 0 });
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; title: string } | null>(null);
 
-  const [loading, setLoading] = useState(false);
   const [sharingWa, setSharingWa] = useState(false);
   const [exportingXlsx, setExportingXlsx] = useState(false);
   const [fetchingLive, setFetchingLive] = useState(false);
@@ -503,7 +501,7 @@ export const TabShiftReport: React.FC = () => {
         await prepareImagesForPdf(element);
 
         const filename = buildShiftReportFilename(shift, date, 'pdf');
-        const opt = {
+        const opt: PdfOptions = {
           margin: [5, 5, 5, 5],
           filename: filename,
           image: { type: 'jpeg' as const, quality: 0.95 },
@@ -871,7 +869,7 @@ export const TabShiftReport: React.FC = () => {
             <button
               onClick={handleExportExcel}
               type="button"
-              disabled={loading || exportingXlsx || printReports.length === 0}
+              disabled={exportingXlsx || printReports.length === 0}
               title="Unduh laporan shift dalam format Excel (.xlsx)"
               className="flex-1 min-w-[130px] flex justify-center items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
             >
@@ -882,7 +880,7 @@ export const TabShiftReport: React.FC = () => {
             {/* Tombol Kirim ke WhatsApp */}
             <button 
               onClick={handleShareWa} 
-              disabled={loading || sharingWa}
+              disabled={sharingWa}
               title="Bagikan ringkasan laporan shift ke WhatsApp"
               className="flex-1 min-w-[130px] flex justify-center items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
             >
