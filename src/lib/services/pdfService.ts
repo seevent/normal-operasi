@@ -1,5 +1,7 @@
 // src/lib/services/pdfService.ts
 
+import { inlineLegacyColors } from '../utils/pdfColors';
+
 export interface PdfOptions {
   /** Sama dengan html2pdf.js: satu angka, [vertikal, horizontal], atau [atas, kiri, bawah, kanan]. */
   margin?: number | [number, number] | [number, number, number, number];
@@ -39,7 +41,18 @@ export const generatePdfBlob = async (element: HTMLElement, opt: PdfOptions): Pr
 
   let pdfBlob: Blob;
   try {
-    pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+    // html2canvas tidak mengenal warna oklch() Tailwind v4: ubah ke rgb() pada salinan sebelum dirender.
+    const userOnclone = opt.html2canvas?.onclone;
+    const html2canvas = {
+      ...opt.html2canvas,
+      onclone: (doc: Document, el?: HTMLElement) => {
+        // Latar halaman (html/body) ikut dibaca html2canvas untuk warna dasar kanvas
+        [doc.documentElement, doc.body].forEach(e => e && inlineLegacyColors(e, false));
+        inlineLegacyColors(el ?? doc.body);
+        userOnclone?.(doc, el);
+      },
+    };
+    pdfBlob = await html2pdf().set({ ...opt, html2canvas }).from(element).output('blob');
   } finally {
     // Immediate cleanup
     purgeHtml2PdfArtifacts();
