@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CalendarClock, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { AlertCircle, CalendarClock, Camera, CheckSquare, FolderOpen, Images, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import { ASSET_TYPE_LABEL, PERIOD_LABEL, PERIOD_RESET_TEXT, PREVENTIVE_PERIODS } from '../../lib/data/preventiveTypes';
 import type { PreventiveAssetType, PreventivePeriod } from '../../lib/data/preventiveTypes';
 import { groupAssets, groupAssetsByPlace, isPlaceAssetType, summarize } from '../../lib/utils/preventiveGrouping';
 import type { PreventiveAsset, RowStatus, StatusFilter } from '../../lib/utils/preventiveGrouping';
 import { nextResetAt } from '../../lib/utils/preventivePeriod';
+import { photoDateWarning } from '../../lib/utils/photoExif';
 import type { SavedEntry } from '../../lib/utils/preventiveStatus';
 import { statusOf, usePreventiveStore } from '../../store/usePreventiveStore';
 import { PreventiveGroupCard } from './preventive/PreventiveGroupCard';
 import type { CardGroup } from './preventive/PreventiveGroupCard';
+import { BulkPhotosSheet, OnePhotoManySheet } from './preventive/PreventiveBulkSheets';
+import type { AssetOptionGroup, PhotoMeta } from './preventive/PreventiveBulkSheets';
 
 const FOCUS_REFRESH_MIN_GAP_MS = 20_000;
 const POLL_MS = 60_000;
@@ -78,7 +81,7 @@ export const TabPreventive: React.FC = () => {
 
   const typeLabel = (assetType: string) => ASSET_TYPE_LABEL[assetType as PreventiveAssetType] ?? assetType;
   // Access Control System tetap per jenis lalu lokasi; peralatan pemeriksaan per tempat lalu jenis.
-  const groups = useMemo((): CardGroup[] => {
+  const buildCards = useCallback((query: string, filter: StatusFilter): CardGroup[] => {
     const statusFor = makeStatusFor(period);
     const options = { query, filter };
     const byType = groupAssets(assets.filter((a) => !isPlaceAssetType(a.assetType)), period, statusFor, options);
@@ -101,7 +104,45 @@ export const TabPreventive: React.FC = () => {
         sections: p.types.map((t) => ({ key: t.assetType, label: typeLabel(t.assetType), total: t.total, saved: t.saved, assets: t.assets })),
       })),
     ];
-  }, [assets, period, makeStatusFor, query, filter]);
+  }, [assets, period, makeStatusFor]);
+  const groups = useMemo(() => buildCards(query, filter), [buildCards, query, filter]);
+
+  // Unggah banyak: semua peralatan periode ini (tanpa pencarian/filter); tempat dulu, Access Control di akhir.
+  const optionGroups = useMemo((): AssetOptionGroup[] => {
+    const cards = buildCards('', 'all');
+    const places = cards.filter((c) => c.sectionKind === 'jenis').map((c) => ({ title: c.title, assets: c.sections.flatMap((s) => s.assets) }));
+    const others = cards.filter((c) => c.sectionKind !== 'jenis').flatMap((c) => c.sections.map((s) => ({ title: `${c.title} · ${s.label}`, assets: s.assets })));
+    return [...places, ...others];
+  }, [buildCards]);
+  const [bulkFiles, setBulkFiles] = useState<File[] | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [onePhoto, setOnePhoto] = useState<File | null>(null);
+  useEffect(() => {
+    setSelectMode(false);
+    setSelected(new Set());
+  }, [period]);
+  const toggleSelect = useCallback((a: PreventiveAsset) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(a.equipmentNumber)) next.delete(a.equipmentNumber);
+      else next.add(a.equipmentNumber);
+      return next;
+    });
+  }, []);
+  const selection = useMemo(() => (selectMode ? { selected, toggle: toggleSelect } : null), [selectMode, selected, toggleSelect]);
+  const selectedAssets = useMemo(() => optionGroups.flatMap((g) => g.assets).filter((a) => selected.has(a.equipmentNumber)), [optionGroups, selected]);
+  const warningFor = useCallback(
+    (meta: PhotoMeta) =>
+      keys
+        ? photoDateWarning(meta.takenAt, keys[period], nextResetAt(period, new Date(Date.now() + clockOffsetMs)).getTime(), { heic: meta.heic, nameRange: meta.nameRange })
+        : null,
+    [keys, period, clockOffsetMs],
+  );
+  const sendPairs = useCallback(
+    (pairs: Array<{ asset: PreventiveAsset; file: File }>) => pairs.forEach((p) => void upload(period, p.asset, p.file)),
+    [upload, period],
+  );
 
   // Hanya foto milik periode berjalan yang boleh tampil sebagai "Lihat foto".
   const currentSaved = useMemo(() => {
@@ -191,6 +232,51 @@ export const TabPreventive: React.FC = () => {
           </p>
         )}
       </div>
+
+      {/* Unggah sekaligus: satu tombol untuk semua tempat */}
+      <div className="grid grid-cols-2 gap-2">
+        <label
+          className={`min-h-[48px] rounded-xl bg-blue-700 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 px-2 text-center shadow-sm ${
+            ready && !selectMode ? 'cursor-pointer hover:bg-blue-800' : 'opacity-50 pointer-events-none'
+          }`}
+        >
+          <Images className="w-4 h-4 shrink-0" aria-hidden="true" />
+          Unggah banyak foto
+          {/* Tanpa "image/*": iOS Safari mengubah HEIC menjadi JPEG hanya bila accept menyebut format spesifik. */}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            aria-label="Pilih banyak foto, satu foto untuk satu peralatan"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = '';
+              if (files.length > 0) setBulkFiles(files);
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={!ready}
+          aria-pressed={selectMode}
+          onClick={() => {
+            setSelectMode((v) => !v);
+            setSelected(new Set());
+          }}
+          className={`min-h-[48px] rounded-xl border-2 text-[13px] font-bold flex items-center justify-center gap-1.5 px-2 disabled:opacity-50 ${
+            selectMode ? 'bg-blue-50 border-blue-700 text-blue-900' : 'border-blue-700 text-blue-800 bg-white hover:bg-blue-50'
+          }`}
+        >
+          <CheckSquare className="w-4 h-4 shrink-0" aria-hidden="true" />
+          {selectMode ? 'Batal pilih' : '1 foto → beberapa'}
+        </button>
+      </div>
+      {selectMode && (
+        <p role="status" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
+          Centang peralatan yang terlihat di satu foto (bisa dari beberapa tempat), lalu ambil atau pilih fotonya di bawah.
+        </p>
+      )}
 
       {/* Cari & filter */}
       <div className="space-y-2">
@@ -295,9 +381,78 @@ export const TabPreventive: React.FC = () => {
               disabled={!ready}
               onPick={onPick}
               onRetry={onRetry}
+              selection={selection}
             />
           ))}
         </div>
+      )}
+
+      {selectMode && (
+        <>
+          <div className="h-28" aria-hidden="true" />
+          <div className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-slate-300 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="mx-auto max-w-2xl">
+              <p className="text-xs font-bold text-slate-700 mb-2">{selected.size} peralatan dipilih</p>
+              <div className="flex gap-2">
+                {[
+                  { label: 'Ambil 1 foto', icon: <Camera className="w-4 h-4" aria-hidden="true" />, capture: true, className: 'bg-blue-700 text-white' },
+                  { label: 'Pilih file', icon: <FolderOpen className="w-4 h-4" aria-hidden="true" />, capture: false, className: 'border border-slate-300 bg-white text-slate-800' },
+                ].map((b) => (
+                  <label
+                    key={b.label}
+                    className={`flex-1 min-h-[48px] rounded-xl text-sm font-extrabold flex items-center justify-center gap-1.5 ${b.className} ${
+                      selected.size > 0 ? 'cursor-pointer' : 'opacity-50 pointer-events-none'
+                    }`}
+                  >
+                    {b.icon}
+                    {b.label}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      {...(b.capture ? { capture: 'environment' as const } : {})}
+                      className="hidden"
+                      aria-label={`${b.label} untuk ${selected.size} peralatan`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (file) setOnePhoto(file);
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {bulkFiles && (
+        <BulkPhotosSheet
+          files={bulkFiles}
+          optionGroups={optionGroups}
+          warningFor={warningFor}
+          onSend={sendPairs}
+          statusFor={statusFor}
+          isSaved={(a) => statusFor(a) === 'saved'}
+          onRetry={onRetry}
+          onClose={() => setBulkFiles(null)}
+        />
+      )}
+      {onePhoto && (
+        <OnePhotoManySheet
+          file={onePhoto}
+          assets={selectedAssets}
+          warningFor={warningFor}
+          onSend={sendPairs}
+          statusFor={statusFor}
+          isSaved={(a) => statusFor(a) === 'saved'}
+          onRetry={onRetry}
+          onClose={() => {
+            setOnePhoto(null);
+            setSelectMode(false);
+            setSelected(new Set());
+          }}
+        />
       )}
     </div>
   );

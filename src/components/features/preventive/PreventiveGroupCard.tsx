@@ -39,11 +39,13 @@ interface Props {
   disabled: boolean;
   onPick: (asset: PreventiveAsset, file: File) => void;
   onRetry: (asset: PreventiveAsset) => Promise<boolean>;
+  /** Mode "1 foto → beberapa": alat yang dicentang (kunci = nomor equipment). */
+  selection?: { selected: Set<string>; toggle: (asset: PreventiveAsset) => void } | null;
 }
 
 const percent = (saved: number, total: number): number => (total === 0 ? 0 : Math.round((saved / total) * 100));
 
-export const PreventiveGroupCard: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, warnings, disabled, onPick, onRetry }) => {
+export const PreventiveGroupCard: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, warnings, disabled, onPick, onRetry, selection }) => {
   const label = group.title;
   const complete = group.total > 0 && group.saved === group.total;
   const panelId = `prev-${period}-${group.key.replace(/[^A-Za-z0-9]+/g, '-')}`;
@@ -102,6 +104,9 @@ export const PreventiveGroupCard: React.FC<Props> = ({ period, group, open, onTo
                       disabled={disabled}
                       onPick={onPick}
                       onRetry={onRetry}
+                      selectable={!!selection}
+                      selected={selection?.selected.has(asset.equipmentNumber)}
+                      onToggleSelect={selection?.toggle}
                     />
                   );
                 })}

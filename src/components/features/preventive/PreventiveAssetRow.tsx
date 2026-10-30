@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { AlertCircle, AlertTriangle, Camera, CheckCircle2, Circle, ExternalLink, FolderOpen, Loader2, Pencil, RotateCcw } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Camera, Check, CheckCircle2, Circle, ExternalLink, FolderOpen, Loader2, Pencil, RotateCcw } from 'lucide-react';
 import type { PreventiveAsset, RowStatus } from '../../../lib/utils/preventiveGrouping';
 import type { SavedEntry } from '../../../lib/utils/preventiveStatus';
 
@@ -15,6 +15,10 @@ interface Props {
   onPick: (asset: PreventiveAsset, file: File) => void;
   /** Mengembalikan false bila berkas percobaan sebelumnya sudah tidak ada -> baris meminta foto lagi. */
   onRetry: (asset: PreventiveAsset) => Promise<boolean>;
+  /** Mode "1 foto → beberapa": baris menampilkan kotak centang sebagai ganti tombol foto. */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (asset: PreventiveAsset) => void;
 }
 
 const BADGE: Record<RowStatus, { label: string; className: string; icon: React.ReactNode }> = {
@@ -24,7 +28,7 @@ const BADGE: Record<RowStatus, { label: string; className: string; icon: React.R
   failed: { label: 'Gagal tersimpan', className: 'bg-red-50 text-red-800 border-red-300', icon: <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" /> },
 };
 
-const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, warning, disabled, onPick, onRetry }) => {
+const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, warning, disabled, onPick, onRetry, selectable, selected, onToggleSelect }) => {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const badge = BADGE[status];
@@ -50,6 +54,21 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
 
   return (
     <li className="flex items-start gap-3 px-3 py-3 border-t border-slate-200 first:border-t-0">
+      {selectable && (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={!!selected}
+          aria-label={`Pilih ${asset.name}`}
+          onClick={() => onToggleSelect?.(asset)}
+          disabled={busy || disabled}
+          className="shrink-0 min-h-[44px] min-w-[44px] -my-1 -ml-1 inline-flex items-center justify-center disabled:opacity-50"
+        >
+          <span className={`w-7 h-7 rounded-lg border-2 inline-flex items-center justify-center ${selected ? 'bg-blue-700 border-blue-700 text-white' : 'border-slate-400 bg-white'}`}>
+            {selected && <Check className="w-5 h-5" strokeWidth={3} aria-hidden="true" />}
+          </span>
+        </button>
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold text-slate-900 leading-snug break-words">{asset.name}</p>
         <p className="mt-0.5 font-mono text-[11px] text-slate-500 tracking-tight">{asset.equipmentNumber}</p>
@@ -110,7 +129,7 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
           if (file) onPick(asset, file);
         }}
       />
-      <div className="shrink-0 flex flex-col gap-1.5">
+      <div className={`shrink-0 flex-col gap-1.5 ${selectable ? 'hidden' : 'flex'}`}>
         <button
           type="button"
           onClick={handleButton}
