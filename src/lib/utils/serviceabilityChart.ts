@@ -14,9 +14,35 @@ const TABLE_START_COL = 6;
  */
 const ROWS_BEFORE_TABLE = 3;
 /** Jangkar grafik pada berkas acuan: kolom C (+734786 EMU), satu baris di bawah tabel (+114301 EMU). */
-const CHART_ANCHOR = { col: 2, colOff: 734786, rowOff: 114301, cx: 13030200, cy: 4169682 } as const;
+export const CHART_ANCHOR = { col: 2, colOff: 734786, rowOff: 114301, cx: 13030200, cy: 4169682 } as const;
 /** Baris di bawah tabel yang ditempati grafik (tinggi 4169682 EMU = 438 px, baris 20 px), untuk area cetak. */
 export const CHART_ROWS_BELOW_TABLE = 24;
+
+/**
+ * Gaya grafik & tabel Serviceability pada berkas acuan. Dipakai bersama oleh ekspor Excel dan lembar
+ * Serviceability pada PDF agar keduanya tampil sama.
+ */
+export const SERVICEABILITY_STYLE = {
+  title: 'TABEL PERFORMA PERALATAN',
+  opsColor: '9DC3E6',
+  offColor: 'FF0000',
+  gridColor: 'B7B7B7',
+  /** Isian per kolom tabel: No, Peralatan, % OPS, OPS, % OFF, OFF, Total (tema Office, sudah dengan tint). */
+  tableFills: ['C5E0B4', 'EDEDED', '8FAADC', '8FAADC', 'FF0000', 'FF0000', 'A9D18E'],
+  /** Tinggi baris tabel (pt) pada berkas acuan. */
+  tableRowPt: 18.75,
+  /** Ukuran grafik (EMU) pada berkas acuan; perbandingan lebar:tinggi dipakai juga oleh PDF. */
+  chartCx: CHART_ANCHOR.cx,
+  chartCy: CHART_ANCHOR.cy,
+  /** Posisi judul dan area plot sebagai pecahan ukuran grafik (manualLayout Excel). */
+  titleX: 0.45662768031189083,
+  titleY: 1.7582417582417582e-2,
+  plot: { x: 6.4574833847523452e-2, y: 0.18521388441612574, w: 0.90189321729520655, h: 0.67491189975638433 },
+  /** Jarak antarkelompok batang, persen lebar satu batang. */
+  gapWidth: 150,
+  /** Ukuran huruf grafik (pt); judul Excel otomatis 1,2x. */
+  fontPt: 11,
+} as const;
 
 export interface ServiceabilityPlacement {
   /** Nomor kolom (1 = A) tempat kolom "No" tabel berada; tabel selebar 7 kolom. */
@@ -68,6 +94,7 @@ const emptyAxisTitle =
 
 /** Grafik batang berkelompok OPS (biru muda) dan OFF (merah), sumbu 0-100%, label nilai, tanpa legenda. */
 export const buildServiceabilityChartXml = (spec: ServiceabilityChartSpec): string => {
+  const S = SERVICEABILITY_STYLE;
   const { placement, categories, ops, off } = spec;
   const range = (col: number) =>
     `'${SHEET_NAME}'!$${columnLetter(col)}$${placement.firstRow}:$${columnLetter(col)}$${placement.lastRow}`;
@@ -83,21 +110,21 @@ export const buildServiceabilityChartXml = (spec: ServiceabilityChartSpec): stri
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
     '<c:date1904 val="0"/><c:lang val="en-US"/><c:roundedCorners val="1"/>' +
-    '<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:r><a:rPr lang="en-ID"/><a:t>TABEL PERFORMA PERALATAN</a:t></a:r></a:p></c:rich></c:tx>' +
-    '<c:layout><c:manualLayout><c:xMode val="edge"/><c:yMode val="edge"/><c:x val="0.45662768031189083"/><c:y val="1.7582417582417582E-2"/></c:manualLayout></c:layout><c:overlay val="0"/></c:title>' +
+    `<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:r><a:rPr lang="en-ID"/><a:t>${S.title}</a:t></a:r></a:p></c:rich></c:tx>` +
+    `<c:layout><c:manualLayout><c:xMode val="edge"/><c:yMode val="edge"/><c:x val="${S.titleX}"/><c:y val="${S.titleY}"/></c:manualLayout></c:layout><c:overlay val="0"/></c:title>` +
     '<c:autoTitleDeleted val="0"/><c:plotArea>' +
-    '<c:layout><c:manualLayout><c:layoutTarget val="inner"/><c:xMode val="edge"/><c:yMode val="edge"/><c:x val="6.4574833847523452E-2"/><c:y val="0.18521388441612574"/><c:w val="0.90189321729520655"/><c:h val="0.67491189975638433"/></c:manualLayout></c:layout>' +
+    `<c:layout><c:manualLayout><c:layoutTarget val="inner"/><c:xMode val="edge"/><c:yMode val="edge"/><c:x val="${S.plot.x}"/><c:y val="${S.plot.y}"/><c:w val="${S.plot.w}"/><c:h val="${S.plot.h}"/></c:manualLayout></c:layout>` +
     '<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="1"/>' +
-    series(0, 'OPS', '9DC3E6', placement.startCol + 2, ops) +
-    series(1, 'OFF', 'FF0000', placement.startCol + 4, off) +
+    series(0, 'OPS', S.opsColor, placement.startCol + 2, ops) +
+    series(1, 'OFF', S.offColor, placement.startCol + 4, off) +
     '<c:dLbls><c:showLegendKey val="0"/><c:showVal val="0"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>' +
-    '<c:gapWidth val="150"/><c:axId val="207428584"/><c:axId val="207423488"/></c:barChart>' +
+    `<c:gapWidth val="${S.gapWidth}"/><c:axId val="207428584"/><c:axId val="207423488"/></c:barChart>` +
     `<c:catAx><c:axId val="207428584"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/>${emptyAxisTitle}` +
     '<c:numFmt formatCode="General" sourceLinked="1"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="207423488"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="1"/></c:catAx>' +
-    `<c:valAx><c:axId val="207423488"/><c:scaling><c:orientation val="minMax"/><c:max val="1"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines><c:spPr><a:ln><a:solidFill><a:srgbClr val="B7B7B7"/></a:solidFill></a:ln></c:spPr></c:majorGridlines>${emptyAxisTitle}` +
+    `<c:valAx><c:axId val="207423488"/><c:scaling><c:orientation val="minMax"/><c:max val="1"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines><c:spPr><a:ln><a:solidFill><a:srgbClr val="${S.gridColor}"/></a:solidFill></a:ln></c:spPr></c:majorGridlines>${emptyAxisTitle}` +
     '<c:numFmt formatCode="0%" sourceLinked="1"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln/></c:spPr><c:crossAx val="207428584"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>' +
     '</c:plotArea><c:plotVisOnly val="1"/><c:dispBlanksAs val="zero"/><c:showDLblsOverMax val="1"/></c:chart>' +
-    '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1100"/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>' +
+    `<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="${S.fontPt * 100}"/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>` +
     '<c:printSettings><c:headerFooter/><c:pageMargins b="0.75" l="0.7" r="0.7" t="0.75" header="0.3" footer="0.3"/><c:pageSetup orientation="portrait"/></c:printSettings>' +
     '</c:chartSpace>'
   );

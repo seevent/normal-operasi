@@ -6,6 +6,7 @@ import {
   CHART_ROWS_BELOW_TABLE,
   columnLetter,
   getServiceabilityPlacement,
+  SERVICEABILITY_STYLE,
   type ServiceabilityChartSpec,
   type ServiceabilityPlacement,
 } from './serviceabilityChart.ts';
@@ -173,6 +174,8 @@ const COL_WCH = [7.14, 9.14, 19.57, 5.29, 12.14, 19.57, 22.14, 21.57, 15.71, 12.
 const LAST_COL = 17;
 /** Lebar piksel kolom: lebar tersimpan (termasuk ruang kosong) x 7 untuk font standar. */
 const colPx = (col: number): number => Math.round(COL_WCH[col] * 7);
+/** Lebar piksel kolom A, B, C, ... (sebelum lebar tambahan untuk uraian panjang), untuk meniru tata letak lembar. */
+export const SHEET_COLUMN_PX: readonly number[] = COL_WCH.map((_, i) => colPx(i));
 
 interface Field {
   /** Judul pada header tabel. */
@@ -468,9 +471,8 @@ export const buildShiftReportWorkbook = (ExcelJS: any, input: ShiftReportWorkboo
   return wb;
 };
 
-// Warna isian tabel Serviceability pada berkas acuan (tema Office, sudah dengan tint).
-const SERVICEABILITY_FILLS = ['FFC5E0B4', 'FFEDEDED', 'FF8FAADC', 'FF8FAADC', 'FFFF0000', 'FFFF0000', 'FFA9D18E'];
-const SERVICEABILITY_ROW_PT = 18.75;
+const SERVICEABILITY_FILLS = SERVICEABILITY_STYLE.tableFills.map(hex => `FF${hex}`);
+const SERVICEABILITY_ROW_PT = SERVICEABILITY_STYLE.tableRowPt;
 
 /**
  * Tujuh kolom tanpa judul: No, Peralatan, % OPS, jumlah OPS, % OFF, jumlah OFF, Total.

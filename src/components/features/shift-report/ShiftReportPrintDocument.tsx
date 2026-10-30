@@ -1,6 +1,7 @@
 // src/components/features/shift-report/ShiftReportPrintDocument.tsx
 import React, { forwardRef } from 'react';
 import { ChecklistSummaryItem } from '../../../lib/services/operationalReportService';
+import { ServiceabilityPrintChart } from './ServiceabilityPrintChart';
 // `?inline` menanam logo sebagai data URI. Ekspor PDF mengunduh ulang setiap
 // <img> bersumber URL dan menyembunyikannya bila gagal dalam 2 detik, sehingga
 // logo bisa hilang diam-diam dari PDF di jaringan lambat. Sumber data: dilewati.
@@ -234,134 +235,8 @@ export const ShiftReportPrintDocument = forwardRef<HTMLDivElement, ShiftReportPr
           </div>
         </div>
 
-        {/* TABEL 2: KESIAPAN FASILITAS (SERVICEABILITY CHECKLIST) */}
-        <div className="mb-2">
-          <table className="w-full border-collapse border-[2px] border-black text-[9px]">
-            <thead>
-              <tr className="bg-gray-200 font-bold text-center">
-                <th className="border-[2px] border-black py-0.5 px-1 w-[6%]">No</th>
-                <th className="border-[2px] border-black py-0.5 px-1.5 w-[32%]">Peralatan</th>
-                <th className="border-[2px] border-black py-0.5 px-1 w-[12%]">%</th>
-                <th className="border-[2px] border-black py-0.5 px-1 w-[12%]">Jumlah</th>
-                <th className="border-[2px] border-black py-0.5 px-1 w-[12%]">Rusak</th>
-                <th className="border-[2px] border-black py-0.5 px-1 w-[13%]">Rusak %</th>
-                <th className="border-[2px] border-black py-0.5 px-1 w-[13%]">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {checklistSummary.map((item) => (
-                <tr key={item.no} className="text-center font-medium">
-                  <td className="border-[2px] border-black py-0.5 px-1 font-bold">{item.no}</td>
-                  <td className="border-[2px] border-black py-0.5 px-1.5 text-left font-bold">{item.nama}</td>
-                  <td className="border-[2px] border-black py-0.5 px-1 font-bold">{Math.round(item.persenOperasi * 100)}%</td>
-                  <td className="border-[2px] border-black py-0.5 px-1">{item.operasi}</td>
-                  <td className="border-[2px] border-black py-0.5 px-1">{item.rusak}</td>
-                  <td className="border-[2px] border-black py-0.5 px-1">{Math.round(item.persenRusak * 100)}%</td>
-                  <td className="border-[2px] border-black py-0.5 px-1 font-bold">{item.total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* DIAGRAM BATANG SERVICEABILITY PADA LAPORAN PDF */}
-        <div className="border-[2px] border-black p-2.5 bg-white">
-          <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-300">
-            <span className="font-bold text-[10px] text-black uppercase tracking-wide">
-              Diagram Serviceability Peralatan
-            </span>
-            <div className="flex items-center gap-4 text-[9px] font-bold">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-2.5 bg-blue-600 inline-block border border-black"></span>
-                <span>Peralatan Normal</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-2.5 bg-red-600 inline-block border border-black"></span>
-                <span>Peralatan Off</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Area Grafik Batang */}
-          <div className="pl-9 pr-3 pt-3">
-            <div className="relative h-32 border-b-2 border-black bg-gray-50/40">
-              {/* Garis Grid Persentase */}
-              {[100, 75, 50, 25, 0].map((pct) => (
-                <div
-                  key={pct}
-                  className={`absolute left-0 right-0 pointer-events-none flex items-center ${
-                    pct === 0 ? '' : 'border-b border-dashed border-gray-300'
-                  }`}
-                  style={{ bottom: `${pct}%` }}
-                >
-                  <span className="absolute -left-8 text-[8px] text-gray-500 font-semibold w-7 text-right -translate-y-1/2 select-none">
-                    {pct}%
-                  </span>
-                </div>
-              ))}
-
-              {/* Batang per Peralatan */}
-              <div className="absolute inset-0 grid grid-cols-7 gap-2">
-                {checklistSummary.map((item) => {
-                  const persenNormal = Math.round(item.persenOperasi * 100);
-                  const persenOff = Math.round(item.persenRusak * 100);
-
-                  return (
-                    <div key={item.no} className="flex justify-center items-end gap-1.5 h-full">
-                      {/* Batang Normal (Biru) */}
-                      <div className="relative flex flex-col items-center justify-end h-full w-6 sm:w-7">
-                        <div 
-                          style={{ height: persenNormal > 0 ? `${persenNormal}%` : '2px' }}
-                          className={`relative w-full rounded-t-xs flex items-center justify-center ${
-                            persenNormal > 0 
-                              ? 'bg-blue-600 border border-blue-900' 
-                              : 'bg-gray-200 border border-gray-300'
-                          }`}
-                        >
-                          <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-blue-800 leading-none whitespace-nowrap">
-                            {persenNormal}%
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Batang Off (Merah) */}
-                      <div className="relative flex flex-col items-center justify-end h-full w-6 sm:w-7">
-                        <div 
-                          style={{ height: persenOff > 0 ? `${persenOff}%` : '2px' }}
-                          className={`relative w-full rounded-t-xs flex items-center justify-center ${
-                            persenOff > 0 
-                              ? 'bg-red-600 border border-red-900' 
-                              : 'bg-gray-200 border border-gray-300'
-                          }`}
-                        >
-                          <span className={`absolute -top-3.5 left-1/2 -translate-x-1/2 text-[8px] font-bold leading-none whitespace-nowrap ${
-                            persenOff > 0 ? 'text-red-700 font-black' : 'text-gray-400'
-                          }`}>
-                            {persenOff}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Label Bawah Batang */}
-            <div className="grid grid-cols-7 gap-2 pt-2 text-center">
-              {checklistSummary.map((item) => (
-                <div key={item.no} className="flex flex-col items-center">
-                  <span className="text-[9px] font-bold text-black uppercase leading-tight truncate w-full">
-                    {item.nama}
-                  </span>
-                  <span className="text-[8px] text-gray-600 font-semibold mt-0.5">
-                    {item.operasi}/{item.total} Unit
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* TABEL & GRAFIK SERVICEABILITY: gaya sama dengan ekspor Excel */}
+        <ServiceabilityPrintChart items={checklistSummary} />
       </div>
     </div>
   );
