@@ -148,11 +148,12 @@ const SendProgress: React.FC<CommonProps & { title: string; targets: Array<{ ass
 export const BulkPhotosSheet: React.FC<
   CommonProps & {
     files: File[];
+    title: string;
     optionGroups: AssetOptionGroup[];
     warningFor: (meta: PhotoMeta) => string | null;
     onSend: (pairs: Array<{ asset: PreventiveAsset; file: File }>) => void;
   }
-> = ({ files, optionGroups, warningFor, onSend, statusFor, isSaved, onRetry, onClose }) => {
+> = ({ title, files, optionGroups, warningFor, onSend, statusFor, isSaved, onRetry, onClose }) => {
   const ordered = useMemo(() => optionGroups.flatMap((g) => g.assets), [optionGroups]);
   const byKey = useMemo(() => new Map(ordered.map((a) => [a.equipmentNumber, a])), [ordered]);
   const [photos, setPhotos] = useState<Array<{ file: File; url: string; meta: PhotoMeta }> | null>(null);
@@ -194,7 +195,7 @@ export const BulkPhotosSheet: React.FC<
 
   return (
     <Sheet
-      title="Unggah banyak foto"
+      title={title}
       subtitle={photos ? `${photos.length} foto · diurutkan menurut waktu diambil` : 'Membaca foto…'}
       onClose={onClose}
       footer={

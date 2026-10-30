@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CalendarClock, Camera, CheckSquare, FolderOpen, Images, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { AlertCircle, CalendarClock, Camera, CheckSquare, FolderOpen, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import { ASSET_TYPE_LABEL, PERIOD_LABEL, PERIOD_RESET_TEXT, PREVENTIVE_PERIODS } from '../../lib/data/preventiveTypes';
 import type { PreventiveAssetType, PreventivePeriod } from '../../lib/data/preventiveTypes';
 import { groupAssets, groupAssetsByPlace, isPlaceAssetType, summarize } from '../../lib/utils/preventiveGrouping';
@@ -107,14 +107,17 @@ export const TabPreventive: React.FC = () => {
   }, [assets, period, makeStatusFor]);
   const groups = useMemo(() => buildCards(query, filter), [buildCards, query, filter]);
 
-  // Unggah banyak: semua peralatan periode ini (tanpa pencarian/filter); tempat dulu, Access Control di akhir.
-  const optionGroups = useMemo((): AssetOptionGroup[] => {
-    const cards = buildCards('', 'all');
-    const places = cards.filter((c) => c.sectionKind === 'jenis').map((c) => ({ title: c.title, assets: c.sections.flatMap((s) => s.assets) }));
-    const others = cards.filter((c) => c.sectionKind !== 'jenis').flatMap((c) => c.sections.map((s) => ({ title: `${c.title} · ${s.label}`, assets: s.assets })));
-    return [...places, ...others];
-  }, [buildCards]);
-  const [bulkFiles, setBulkFiles] = useState<File[] | null>(null);
+  // Semua kartu tanpa pencarian/filter: dasar unggah banyak per kartu dan daftar alat yang dicentang.
+  const allCards = useMemo(() => buildCards('', 'all'), [buildCards]);
+  const allAssets = useMemo(() => allCards.flatMap((c) => c.sections.flatMap((s) => s.assets)), [allCards]);
+  // Unggah banyak per tempat: foto hanya dipasangkan ke peralatan di kartu itu.
+  const [bulk, setBulk] = useState<{ cardKey: string; files: File[] } | null>(null);
+  const bulkCard = bulk ? allCards.find((c) => c.key === bulk.cardKey) : undefined;
+  const bulkGroups = useMemo(
+    (): AssetOptionGroup[] => (bulkCard ? bulkCard.sections.map((s) => ({ title: s.label, assets: s.assets })) : []),
+    [bulkCard],
+  );
+  const onBulkPick = useCallback((cardKey: string, files: File[]) => setBulk({ cardKey, files }), []);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [onePhoto, setOnePhoto] = useState<File | null>(null);
@@ -131,7 +134,7 @@ export const TabPreventive: React.FC = () => {
     });
   }, []);
   const selection = useMemo(() => (selectMode ? { selected, toggle: toggleSelect } : null), [selectMode, selected, toggleSelect]);
-  const selectedAssets = useMemo(() => optionGroups.flatMap((g) => g.assets).filter((a) => selected.has(a.equipmentNumber)), [optionGroups, selected]);
+  const selectedAssets = useMemo(() => allAssets.filter((a) => selected.has(a.equipmentNumber)), [allAssets, selected]);
   const warningFor = useCallback(
     (meta: PhotoMeta) =>
       keys
@@ -233,29 +236,8 @@ export const TabPreventive: React.FC = () => {
         )}
       </div>
 
-      {/* Unggah sekaligus: satu tombol untuk semua tempat */}
-      <div className="grid grid-cols-2 gap-2">
-        <label
-          className={`min-h-[48px] rounded-xl bg-blue-700 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 px-2 text-center shadow-sm ${
-            ready && !selectMode ? 'cursor-pointer hover:bg-blue-800' : 'opacity-50 pointer-events-none'
-          }`}
-        >
-          <Images className="w-4 h-4 shrink-0" aria-hidden="true" />
-          Unggah banyak foto
-          {/* Tanpa "image/*": iOS Safari mengubah HEIC menjadi JPEG hanya bila accept menyebut format spesifik. */}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            aria-label="Pilih banyak foto, satu foto untuk satu peralatan"
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? []);
-              e.target.value = '';
-              if (files.length > 0) setBulkFiles(files);
-            }}
-          />
-        </label>
+      {/* 1 foto untuk beberapa peralatan; unggah banyak foto ada di tiap kartu tempat */}
+      <div>
         <button
           type="button"
           disabled={!ready}
@@ -266,7 +248,7 @@ export const TabPreventive: React.FC = () => {
           }}
           className={`min-h-[48px] rounded-xl border-2 text-[13px] font-bold flex items-center justify-center gap-1.5 px-2 disabled:opacity-50 ${
             selectMode ? 'bg-blue-50 border-blue-700 text-blue-900' : 'border-blue-700 text-blue-800 bg-white hover:bg-blue-50'
-          }`}
+          } w-full`}
         >
           <CheckSquare className="w-4 h-4 shrink-0" aria-hidden="true" />
           {selectMode ? 'Batal pilih' : '1 foto → beberapa'}
@@ -382,6 +364,7 @@ export const TabPreventive: React.FC = () => {
               onPick={onPick}
               onRetry={onRetry}
               selection={selection}
+              onBulkPick={onBulkPick}
             />
           ))}
         </div>
@@ -426,16 +409,17 @@ export const TabPreventive: React.FC = () => {
         </>
       )}
 
-      {bulkFiles && (
+      {bulk && bulkCard && (
         <BulkPhotosSheet
-          files={bulkFiles}
-          optionGroups={optionGroups}
+          title={`Unggah banyak foto · ${bulkCard.title}`}
+          files={bulk.files}
+          optionGroups={bulkGroups}
           warningFor={warningFor}
           onSend={sendPairs}
           statusFor={statusFor}
           isSaved={(a) => statusFor(a) === 'saved'}
           onRetry={onRetry}
-          onClose={() => setBulkFiles(null)}
+          onClose={() => setBulk(null)}
         />
       )}
       {onePhoto && (

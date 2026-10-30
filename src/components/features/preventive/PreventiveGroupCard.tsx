@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, ChevronDown, MapPin, ScanLine } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Images, MapPin, ScanLine } from 'lucide-react';
 import type { PreventivePeriod } from '../../../lib/data/preventiveTypes';
 import type { PreventiveAsset, RowStatus } from '../../../lib/utils/preventiveGrouping';
 import { rowKey } from '../../../lib/utils/preventiveStatus';
@@ -41,11 +41,13 @@ interface Props {
   onRetry: (asset: PreventiveAsset) => Promise<boolean>;
   /** Mode "1 foto → beberapa": alat yang dicentang (kunci = nomor equipment). */
   selection?: { selected: Set<string>; toggle: (asset: PreventiveAsset) => void } | null;
+  /** Unggah banyak foto sekaligus, satu foto per peralatan di kartu ini. */
+  onBulkPick?: (cardKey: string, files: File[]) => void;
 }
 
 const percent = (saved: number, total: number): number => (total === 0 ? 0 : Math.round((saved / total) * 100));
 
-export const PreventiveGroupCard: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, warnings, disabled, onPick, onRetry, selection }) => {
+export const PreventiveGroupCard: React.FC<Props> = ({ period, group, open, onToggle, statusFor, saved, locals, warnings, disabled, onPick, onRetry, selection, onBulkPick }) => {
   const label = group.title;
   const complete = group.total > 0 && group.saved === group.total;
   const panelId = `prev-${period}-${group.key.replace(/[^A-Za-z0-9]+/g, '-')}`;
@@ -79,6 +81,31 @@ export const PreventiveGroupCard: React.FC<Props> = ({ period, group, open, onTo
 
       {open && (
         <div id={panelId} className="border-t border-slate-300">
+          {onBulkPick && !selection && group.total > 1 && (
+            <div className="px-3.5 py-2.5 border-b border-slate-200">
+              <label
+                className={`min-h-[44px] rounded-xl bg-blue-700 text-white text-[13px] font-bold flex items-center justify-center gap-1.5 px-2 text-center shadow-sm ${
+                  disabled ? 'opacity-50 pointer-events-none' : 'cursor-pointer hover:bg-blue-800'
+                }`}
+              >
+                <Images className="w-4 h-4 shrink-0" aria-hidden="true" />
+                Unggah banyak foto {label}
+                {/* Tanpa "image/*": iOS Safari mengubah HEIC menjadi JPEG hanya bila accept menyebut format spesifik. */}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  aria-label={`Pilih banyak foto untuk ${label}, satu foto untuk satu peralatan`}
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    e.target.value = '';
+                    if (files.length > 0) onBulkPick(group.key, files);
+                  }}
+                />
+              </label>
+            </div>
+          )}
           {group.sections.map((loc) => (
             <div key={loc.key}>
               <div className="flex items-center justify-between gap-2 bg-blue-50/70 px-3.5 py-1.5 border-b border-slate-200">
