@@ -12,7 +12,7 @@ import { saveStoringToChecklistSync } from '../../lib/services/checklistSyncServ
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
-import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { saveOperationalLog, resolveLogShift, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 import { formatLokasi, normalizeLokasi } from '../../lib/utils/lokasiFormat';
 import { validateStoring } from '../../lib/utils/formValidation';
 import { reportMissingFields, reportTimeRangeError, warnTimeRange } from '../../lib/utils/missingFields';
@@ -276,16 +276,16 @@ export const TabStoring: React.FC = () => {
       }
 
       try {
-        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
         const locString = (storingData.acLokasi && storingData.acLokasi.length > 0)
           ? normalizeLokasi(storingData.acLokasi.join(', '))
           : (storingData.lokasi ? formatLokasi(storingData.lokasi, storingData.nomor) : 'Terminal 2');
 
         const waktuRange = `${storingData.waktuMulai || ''}${storingData.waktuSelesai ? ' - ' + storingData.waktuSelesai : ''}`;
+        const { tanggal: logTanggal, shift: logShift } = resolveLogShift(storingData.tanggal, waktuRange);
 
         await saveOperationalLog({
-          tanggal: storingData.tanggal || opDate,
-          shift: opShift,
+          tanggal: logTanggal,
+          shift: logShift,
           jenis: 'Storing',
           waktu: waktuRange,
           lokasi: locString,

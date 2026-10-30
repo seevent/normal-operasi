@@ -41,6 +41,7 @@ Dokumen **`agent.md`** ini berisi instruksi khusus, prinsip pengembangan, serta 
   * Pukul `00:00 - 09:59`: Tanggal kemarin, Shift M.
   * Pukul `10:00 - 21:59`: Tanggal hari ini, Shift PS.
   * Pukul `22:00 - 23:59`: Tanggal hari ini, Shift M.
+* **Penempatan Laporan di Tab Report** (`shiftAssignment.ts`, `resolveLogShift`, `getLogReportShift`): Perbaikan, Storing, Kegiatan, dan Kalibrasi masuk ke shift tempat **pukul mulai** pekerjaan berada, bukan shift saat laporan dibuat. Bila pukul selesai melebihi **7 jam** dari batas akhir shift tersebut, laporan masuk ke shift berikutnya. Tanggal form yang ambigu untuk dini hari diselesaikan dengan `created_at`.
 * **Persistensi Data**: Selalu gunakan fungsi `saveOperationalLog` dan `saveChecklistSummary` dari `operationalReportService.ts` agar kegiatan dari setiap tab tersinkronisasi ke tabel Supabase `laporan_operasional` & `laporan_checklist`.
 
 ### 2.7. Integrasi Cloud Storage Dual-Tier & Instant Web Share (`cloudinaryService.ts`, `operationalReportService.ts`, `pdfService.ts`)

@@ -11,7 +11,7 @@ import { prefetchVideosForWhatsApp } from '../../lib/services/whatsappVideoServi
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { PhotoUploader } from '../shared/PhotoUploader';
-import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { saveOperationalLog, resolveLogShift } from '../../lib/services/operationalReportService';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
 import { KalibrasiParameterFields } from './kalibrasi/KalibrasiParameterFields';
 import { formatLokasi, normalizeLokasi } from '../../lib/utils/lokasiFormat';
@@ -456,8 +456,8 @@ export const TabKalibrasi: React.FC = () => {
       }
 
       try {
-        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
         const waktuRange = `${kalibrasiGlobal.waktuMulai || ''} - ${kalibrasiGlobal.waktuSelesai || ''}`;
+        const { tanggal: logTanggal, shift: logShift } = resolveLogShift(kalibrasiGlobal.tanggal, waktuRange);
 
         for (const entry of kalibrasiEntries) {
           if (entry.peralatan.length === 0) continue;
@@ -469,8 +469,8 @@ export const TabKalibrasi: React.FC = () => {
           const { fullText } = formatKalibrasiEntryKegiatanDanCatatan(entry);
 
           await saveOperationalLog({
-            tanggal: kalibrasiGlobal.tanggal || opDate,
-            shift: opShift,
+            tanggal: logTanggal,
+            shift: logShift,
             jenis: 'Kalibrasi',
             waktu: waktuRange,
             lokasi: locStr || 'Terminal 2',

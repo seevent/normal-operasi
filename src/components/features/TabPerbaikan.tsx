@@ -15,7 +15,7 @@ import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
-import { saveOperationalLog, getOperationalShiftAndDate, fetchOnDutyPersonnel } from '../../lib/services/operationalReportService';
+import { saveOperationalLog, resolveLogShift, getOperationalShiftAndDate, fetchOnDutyPersonnel } from '../../lib/services/operationalReportService';
 import { formatLokasiRows } from '../../lib/utils/lokasiFormat';
 
 export const TabPerbaikan: React.FC = () => {
@@ -478,15 +478,15 @@ export const TabPerbaikan: React.FC = () => {
       }
 
       try {
-        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
         const activeLocs = (formData.lokasiList || [{ lokasi1: formData.lokasi1, lokasi2: formData.lokasi2 }]).filter((l: any) => l.lokasi1);
         const lokasiFinal = formatLokasiRows(activeLocs);
 
         const waktuRange = `${formData.waktuMulai || ''}${formData.waktuSelesai ? ' - ' + formData.waktuSelesai : ''}`;
+        const { tanggal: logTanggal, shift: logShift } = resolveLogShift(formData.tanggal, waktuRange);
 
         await saveOperationalLog({
-          tanggal: formData.tanggal || opDate,
-          shift: opShift,
+          tanggal: logTanggal,
+          shift: logShift,
           jenis: 'Perbaikan',
           waktu: waktuRange,
           lokasi: lokasiFinal || formData.lokasi1 || '-',

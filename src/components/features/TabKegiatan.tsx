@@ -8,7 +8,7 @@ import { prefetchVideosForWhatsApp } from '../../lib/services/whatsappVideoServi
 import { processPhotosToCollage, compressImageFile } from '../../lib/utils/canvasUtils';
 import { LiveCollagePreview } from '../shared/LiveCollagePreview';
 import { uploadPhotoToCloudinary } from '../../lib/services/cloudinaryService';
-import { saveOperationalLog, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
+import { saveOperationalLog, resolveLogShift, getOperationalShiftAndDate } from '../../lib/services/operationalReportService';
 import { useTipePeralatanOptions } from '../../lib/hooks/useTipePeralatanOptions';
 import { normalizeLokasi } from '../../lib/utils/lokasiFormat';
 import { validateKegiatan } from '../../lib/utils/formValidation';
@@ -231,12 +231,12 @@ export const TabKegiatan: React.FC = () => {
       }
 
       try {
-        const { date: opDate, shift: opShift } = getOperationalShiftAndDate();
         const waktuRange = `${kegiatanData.waktuMulai || ''}${kegiatanData.waktuSelesai ? ' - ' + kegiatanData.waktuSelesai : ''}`;
+        const { tanggal: logTanggal, shift: logShift } = resolveLogShift(kegiatanData.tanggal, waktuRange);
 
         await saveOperationalLog({
-          tanggal: kegiatanData.tanggal || opDate,
-          shift: opShift,
+          tanggal: logTanggal,
+          shift: logShift,
           jenis: 'Kegiatan',
           waktu: waktuRange,
           lokasi: normalizeLokasi(kegiatanData.lokasi),

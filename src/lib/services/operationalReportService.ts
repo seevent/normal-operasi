@@ -3,6 +3,7 @@
 import { supabase } from '../supabaseClient.ts';
 import { formatNamaPersonel, toTitleCase } from '../data/masterData.ts';
 import { sayPet } from '../../store/useAppStore.ts';
+import { assignReportShift, shiftDateString } from '../utils/shiftAssignment.ts';
 
 export interface OperationalLog {
   id?: string;
@@ -176,6 +177,25 @@ export const calculateOperationalShift = (
   return { targetDate, targetShiftCode, shiftLabel };
 };
 
+/**
+ * Tanggal & shift yang disimpan untuk entri Perbaikan, Storing, Kegiatan, dan Kalibrasi.
+ * Shift mengikuti pukul mulai pekerjaan (lihat `assignReportShift`), bukan jam laporan dibuat.
+ * Tanpa pukul yang terbaca, kembali ke tanggal form dan shift saat ini.
+ */
+export const resolveLogShift = (
+  tanggal: string | undefined,
+  waktu: string | undefined,
+  now: Date = new Date()
+): { tanggal: string; shift: 'PS' | 'M' } => {
+  const current = getOperationalShiftAndDate(now);
+  const formDate = tanggal || current.date;
+  return assignReportShift(formDate, waktu, now) || { tanggal: formDate, shift: current.shift };
+};
+
+/** Laporan shift tempat sebuah log ditampilkan; log tanpa pukul terbaca tetap di tanggal & shift tersimpannya. */
+export const getLogReportShift = (log: OperationalLog): { tanggal: string; shift: string } =>
+  assignReportShift(log.tanggal, log.waktu, log.created_at) || { tanggal: log.tanggal, shift: log.shift };
+
 export interface OnDutyPersonel {
   id: string;
   /** Nama ringkas untuk laporan harian (Initial Report, Perbaikan). */
@@ -250,28 +270,19 @@ export const isTimeWithinShiftBoundary = (timeStr: string, shift: 'PS' | 'M' | s
 };
 
 /**
- * Mengambil semua log kegiatan operasional untuk tanggal & shift tertentu (untuk Tab Shift Report)
+ * Mengambil semua log kegiatan operasional untuk tanggal & shift tertentu (untuk Tab Shift Report).
+ * Log dikelompokkan menurut `getLogReportShift`, sehingga laporan yang dibuat di luar jam shift
+ * (atau tersimpan dengan tanggal kalender) tetap masuk ke shift tempat pekerjaannya dimulai.
  */
 export const fetchShiftOperationalLogs = async (tanggal: string, shift: string): Promise<OperationalLog[]> => {
   try {
-    let query = supabase
+    // Log sebuah shift bisa tersimpan di tanggal sebelum/sesudahnya (dini hari Shift M, selesai lewat 7 jam)
+    const { data, error } = await supabase
       .from('laporan_operasional')
-      .select('*');
-
-    if (shift === 'ALL') {
-      query = query.eq('tanggal', tanggal);
-    } else if (shift === 'M') {
-      // Ambil data tanggal D shift M dan toleransi dini hari D+1 shift M
-      const d = new Date(tanggal);
-      const nextD = new Date(d);
-      nextD.setDate(nextD.getDate() + 1);
-      const nextDateStr = getLocalDateString(nextD);
-      query = query.or(`and(tanggal.eq.${tanggal},shift.eq.M),and(tanggal.eq.${nextDateStr},shift.eq.M)`);
-    } else {
-      query = query.eq('tanggal', tanggal).eq('shift', shift);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: true });
+      .select('*')
+      .gte('tanggal', shiftDateString(tanggal, -1))
+      .lte('tanggal', shiftDateString(tanggal, 1))
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error fetchShiftOperationalLogs:', error);
@@ -279,7 +290,10 @@ export const fetchShiftOperationalLogs = async (tanggal: string, shift: string):
     }
 
     const logs = (data as OperationalLog[]) || [];
-    return logs.filter(item => isTimeWithinShiftBoundary(item.waktu || '', shift));
+    return logs.filter(item => {
+      const target = getLogReportShift(item);
+      return target.tanggal === tanggal && (shift === 'ALL' || target.shift === shift);
+    });
   } catch (err) {
     console.error('Catch fetchShiftOperationalLogs:', err);
     return [];
