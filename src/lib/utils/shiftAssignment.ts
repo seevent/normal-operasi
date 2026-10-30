@@ -86,7 +86,11 @@ export const assignReportShift = (
   const assigned = shiftAt(start);
   let result = { day: assigned.day, shift: assigned.shift };
 
-  if (range.end !== null) {
+  // Selesai lebih awal dari mulai hanya sah untuk Shift Malam yang melewati tengah malam
+  // (aturan form, lihat isStartAfterEnd di timeRange.ts); selain itu salah ketik, jadi diabaikan.
+  const crossesMidnight = range.end !== null && range.end < range.start;
+  const validOvernight = range.start >= M_START && range.end !== null && range.end < PS_START;
+  if (range.end !== null && (!crossesMidnight || validOvernight)) {
     const end = start + ((range.end - range.start + DAY) % DAY);
     if (end - assigned.end > OVERRUN_LIMIT_MINUTES) result = nextShift(assigned.day, assigned.shift);
   }

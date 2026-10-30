@@ -34,9 +34,17 @@ test('selesai lebih dari 7 jam setelah batas shift: masuk shift berikutnya', () 
   // Shift M 30 Okt berakhir 31 Okt 08:00; batas toleransi 15:00
   assert.deepEqual(assignReportShift('2026-10-31', '07:00 - 15:00', at(2026, 10, 31, 16)), { tanggal: '2026-10-30', shift: 'M' });
   assert.deepEqual(assignReportShift('2026-10-31', '07:00 - 15:01', at(2026, 10, 31, 16)), { tanggal: '2026-10-31', shift: 'PS' });
-  // Shift PS 30 Okt berakhir 20:00; batas toleransi 03:00 dini hari
-  assert.deepEqual(assignReportShift('2026-10-30', '19:00 - 03:00', at(2026, 10, 31, 4)), { tanggal: '2026-10-30', shift: 'PS' });
-  assert.deepEqual(assignReportShift('2026-10-30', '19:00 - 03:30', at(2026, 10, 31, 4)), { tanggal: '2026-10-30', shift: 'M' });
+  // Shift PS: selesai sebelum tengah malam tidak pernah lewat 7 jam dari 20:00
+  assert.deepEqual(assignReportShift('2026-10-30', '19:00 - 23:59', at(2026, 10, 31, 1)), { tanggal: '2026-10-30', shift: 'PS' });
+});
+
+test('selesai lebih awal dari mulai di luar Shift Malam dianggap salah ketik: ikut pukul mulai saja', () => {
+  // Data nyata: "10:20 - 10:05" tidak boleh dibaca sebagai kerja hampir 24 jam
+  assert.deepEqual(assignReportShift('2026-09-23', '10:20 - 10:05', at(2026, 9, 23, 11, 3)), { tanggal: '2026-09-23', shift: 'PS' });
+  assert.deepEqual(assignReportShift('2026-10-14', '00:40 - 00:05', at(2026, 10, 14, 1, 8)), { tanggal: '2026-10-13', shift: 'M' });
+  assert.deepEqual(assignReportShift('2026-10-30', '19:00 - 03:30', at(2026, 10, 31, 4)), { tanggal: '2026-10-30', shift: 'PS' });
+  // Shift Malam yang sah melewati tengah malam tetap dihitung
+  assert.deepEqual(assignReportShift('2026-10-15', '22:03 - 07:40', at(2026, 10, 16, 8, 7)), { tanggal: '2026-10-15', shift: 'M' });
 });
 
 test('dibuat di dalam shift tetap seperti sebelumnya', () => {
