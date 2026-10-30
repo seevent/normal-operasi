@@ -1,7 +1,7 @@
 // src/lib/services/shareService.ts
 import { isAbortError } from '../utils/errorUtils';
 import { sayPet, useAppStore } from '../../store/useAppStore';
-import { buildShareBatches, isRiskyBatch, isVideo, splitMediaSafely } from '../utils/shareBatches';
+import { buildShareBatches, isAppleMobile, isRiskyBatch, isVideo, planShareItems, splitMediaSafely } from '../utils/shareBatches';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
 import type { DocumentationCategory } from '../utils/documentationPhoto';
 import { getPreparedVideo, prepareVideoForWhatsApp } from './whatsappVideoService';
@@ -66,9 +66,9 @@ export const shareToWhatsApp = async (
 
   try {
     if (finalFiles.length > 0 && navigator.canShare && navigator.canShare({ files: finalFiles })) {
+      // Tanpa title: WhatsApp iOS bisa gagal mengirim berkas yang dibagikan bersama title.
       await navigator.share({
         files: finalFiles,
-        title: 'Laporan SSES T2',
         text: message
       });
       setIsCopied(true);
@@ -102,6 +102,10 @@ const VIDEO_CATEGORY_BY_TAB: Partial<Record<TabCheerKey, DocumentationCategory>>
   perbaikan: 'Perbaikan',
   kalibrasi: 'Kalibrasi',
 };
+
+/** Di iPhone/iPad video dibagikan sendiri-sendiri, tanpa caption dan tanpa berkas lain. */
+const shouldSeparateVideos = (): boolean =>
+  typeof navigator !== 'undefined' && isAppleMobile(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
 
 /** Naik setiap kali share baru dimulai atau dibatalkan, agar konversi video lama tidak mengisi antrean. */
 let shareSession = 0;
@@ -148,8 +152,12 @@ const queueReportWithConvertedVideos = async (
     sayPet(`${failed} video gagal diubah ke format WhatsApp (cek koneksi). Video dikirim apa adanya; bila WhatsApp gagal, ketuk "Kirim ulang terpisah".`, 'warning');
   }
 
-  const [first, ...rest] = buildShareBatches(groups.map((g) => g.map((f) => converted.get(f) ?? f)));
-  setPendingShareBatches([{ files: first, caption: message, cheerTab }, ...rest.map((files) => ({ files }))]);
+  const [head, ...rest] = planShareItems(
+    buildShareBatches(groups.map((g) => g.map((f) => converted.get(f) ?? f))),
+    message,
+    shouldSeparateVideos()
+  );
+  setPendingShareBatches([{ ...head, cheerTab }, ...rest]);
 };
 
 /**
@@ -179,17 +187,17 @@ export const shareReportWithMedia = async (
     groups = groups.map((g) => g.map((f) => getPreparedVideo(f) ?? f));
   }
 
-  const [first, ...rest] = buildShareBatches(groups);
-  const result = await shareToWhatsApp(message, first ?? null, setIsCopied, cheerTab);
+  const [head, ...rest] = planShareItems(buildShareBatches(groups), message, shouldSeparateVideos());
+  const result = await shareToWhatsApp(message, head.files.length > 0 ? head.files : null, setIsCopied, cheerTab);
   if (result === 'aborted') return;
 
   if (result === 'fallback') {
     // Tanpa Web Share API tidak ada kotak share: unduh semua sisa berkas agar bisa dilampirkan manual.
-    rest.flat().forEach(triggerFileDownload);
+    rest.flatMap((item) => item.files).forEach(triggerFileDownload);
     return;
   }
-  setPendingShareBatches(rest.map((files) => ({ files })));
-  if (first && isRiskyBatch(first, message)) setShareRetry({ files: first, caption: message });
+  setPendingShareBatches(rest);
+  if (isRiskyBatch(head.files, message)) setShareRetry({ files: head.files, caption: message });
 };
 
 /** Mengirim kiriman berikutnya di antrean. Harus dipanggil dari ketukan pengguna. */
@@ -206,8 +214,7 @@ export const shareNextPendingBatch = async () => {
     const hasFiles = next.files.length > 0;
     if (!hasFiles || (navigator.canShare && navigator.canShare({ files: next.files }))) {
       await navigator.share({
-        ...(hasFiles ? { files: next.files } : {}),
-        title: 'Laporan SSES T2',
+        ...(hasFiles ? { files: next.files } : { title: 'Laporan SSES T2' }),
         ...(next.caption ? { text: next.caption } : {}),
       });
       if (next.cheerTab) sayPet(getTabCheer(next.cheerTab), 'cheer');

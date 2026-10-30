@@ -38,3 +38,22 @@ export const splitMediaSafely = <T extends FileLike>(item: { files: T[]; caption
   const head = photos.length > 0 || item.caption ? [{ files: photos, caption: item.caption }] : [];
   return [...head, ...item.files.filter(isVideo).map((v) => ({ files: [v] }))];
 };
+
+/**
+ * Urutan kiriman WhatsApp untuk satu laporan. Kiriman pertama membawa caption laporan.
+ * Dengan `separateVideos` (iPhone/iPad), video tidak pernah digabung dengan caption atau berkas lain:
+ * WhatsApp iOS menampilkan video itu tetapi gagal mengirim ("Tidak dapat mengirim pesan").
+ */
+export const planShareItems = <T extends FileLike>(
+  batches: T[][],
+  caption: string,
+  separateVideos: boolean
+): { files: T[]; caption?: string }[] => {
+  const [first = [], ...rest] = batches;
+  if (!separateVideos) return [{ files: first, caption }, ...rest.map((files) => ({ files }))];
+  return [...splitMediaSafely({ files: first, caption }), ...rest.flatMap((files) => splitMediaSafely({ files }))];
+};
+
+/** iPhone/iPad, termasuk Chrome/Firefox iOS (semuanya WebKit) dan iPadOS yang mengaku Mac. */
+export const isAppleMobile = (userAgent: string, platform = '', maxTouchPoints = 0): boolean =>
+  /iPhone|iPad|iPod/.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);

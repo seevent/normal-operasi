@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { buildShareBatches, isRiskyBatch, splitMediaSafely } from '../src/lib/utils/shareBatches.ts';
+import { buildShareBatches, isAppleMobile, isRiskyBatch, planShareItems, splitMediaSafely } from '../src/lib/utils/shareBatches.ts';
 
 const img = (name) => ({ name, type: 'image/jpeg' });
 const vid = (name) => ({ name, type: 'video/mp4' });
@@ -72,8 +72,55 @@ test('Video diubah ke MP4 ramah WhatsApp sebelum laporan dibagikan', () => {
   const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
   const service = read('src/lib/services/shareService.ts');
   assert.match(service, /prepareVideoForWhatsApp\(video, category\)/);
-  assert.match(service, /caption: message, cheerTab/);
+  assert.match(service, /setPendingShareBatches\(\[\{ \.\.\.head, cheerTab \}, \.\.\.rest\]\)/, 'kiriman pertama membawa caption laporan + cheerTab');
   assert.match(read('src/components/shared/PendingShareBar.tsx'), /Menyiapkan video/);
   // Video harus lewat endpoint video Cloudinary, bukan endpoint gambar.
   assert.match(read('src/lib/services/cloudinaryService.ts'), /\/video\/upload`/);
+});
+
+const plan = (items) => items.map((i) => ({ files: i.files.map((f) => f.name), ...(i.caption ? { caption: i.caption } : {}) }));
+
+test('planShareItems Android: laporan + foto + video tetap satu kiriman, grup lain tanpa caption', () => {
+  const items = planShareItems([[img('a'), vid('v1')], [img('b'), vid('v2')]], 'laporan', false);
+  assert.deepEqual(plan(items), [
+    { files: ['a', 'v1'], caption: 'laporan' },
+    { files: ['b', 'v2'] },
+  ]);
+});
+
+test('planShareItems iPhone: video tidak pernah bersama caption atau berkas lain', () => {
+  const items = planShareItems([[img('a'), vid('v1'), img('c')], [img('b'), vid('v2')]], 'laporan', true);
+  assert.deepEqual(plan(items), [
+    { files: ['a', 'c'], caption: 'laporan' },
+    { files: ['v1'] },
+    { files: ['b'] },
+    { files: ['v2'] },
+  ]);
+  for (const item of items) assert.equal(isRiskyBatch(item.files, item.caption), false);
+});
+
+test('planShareItems iPhone: laporan dengan video saja = teks dulu, lalu video', () => {
+  assert.deepEqual(plan(planShareItems([[vid('v1')]], 'laporan', true)), [{ files: [], caption: 'laporan' }, { files: ['v1'] }]);
+  assert.deepEqual(plan(planShareItems([[img('a')]], 'laporan', true)), [{ files: ['a'], caption: 'laporan' }]);
+  assert.deepEqual(plan(planShareItems([], 'laporan', true)), [{ files: [], caption: 'laporan' }]);
+});
+
+test('isAppleMobile: Safari & Chrome iPhone, iPad (termasuk iPadOS bermode desktop); bukan Android/Mac', () => {
+  const chromeIphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0.7390.96 Mobile/15E148 Safari/604.1';
+  const safariIphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1';
+  const ipadDesktop = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15';
+  const android = 'Mozilla/5.0 (Linux; Android 14; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
+  assert.equal(isAppleMobile(chromeIphone, 'iPhone', 5), true);
+  assert.equal(isAppleMobile(safariIphone, 'iPhone', 5), true);
+  assert.equal(isAppleMobile(ipadDesktop, 'MacIntel', 5), true);
+  assert.equal(isAppleMobile(ipadDesktop, 'MacIntel', 0), false, 'Mac sungguhan');
+  assert.equal(isAppleMobile(android, 'Linux armv8l', 5), false);
+});
+
+test('shareService: berkas dibagikan tanpa title; iPhone memakai planShareItems dengan video terpisah', () => {
+  const src = readFileSync(new URL('../src/lib/services/shareService.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /files: finalFiles,\s*title:/);
+  assert.match(src, /hasFiles \? \{ files: next\.files \} : \{ title: 'Laporan SSES T2' \}/);
+  assert.equal((src.match(/planShareItems\(/g) ?? []).length, 2, 'share langsung dan share setelah konversi');
+  assert.equal((src.match(/shouldSeparateVideos\(\)/g) ?? []).length, 2);
 });
