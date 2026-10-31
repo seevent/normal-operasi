@@ -41,7 +41,7 @@ export function mapExcelLocationToSupabase(locRaw: string, merkRaw: string): Arr
   const lUpper = locRaw.trim().toUpperCase();
   const mUpper = merkRaw.trim().toUpperCase();
 
-  // 1. HBSCP
+  // 1. HBSCP (Breakdown HBS 11-26) dan HBSCP Umrah (HBS 27-28), sesuai nama tempat di tab Preventive
   if (lUpper.includes('BREAKDOWN HBS')) {
     const digits = lUpper.replace('BREAKDOWN HBS', '').replace(/[^0-9]/g, '');
     const dotNum = digits.length === 2 ? `${digits[0]}.${digits[1]}` : digits;
@@ -50,25 +50,23 @@ export function mapExcelLocationToSupabase(locRaw: string, merkRaw: string): Arr
   if (lUpper.includes('HBS') && (lUpper.includes('27') || lUpper.includes('28'))) {
     const digits = lUpper.replace(/[^0-9]/g, '');
     const dotNum = digits.length >= 2 ? `${digits.slice(-2, -1)}.${digits.slice(-1)}` : digits;
-    return [{ lokasi: 'HBSCP', titik: dotNum }];
+    return [{ lokasi: 'HBSCP Umrah', titik: dotNum }];
   }
 
-  // 2. X-Ray Conveyor Belt (Umroh bea cukai arrival 15, 16)
+  // 2. Red Lane (Redline bea cukai arrival): No.1 Arrival F, No.2 Arrival Umroh
+  if (lUpper.includes('REDLINE') || lUpper.includes('RED LANE')) {
+    if (lUpper.includes('UMROH') || lUpper.includes('UMRAH')) return [{ lokasi: 'Red Lane', titik: 'No.2 Arr Umroh' }];
+    if (lUpper.includes('ARRIVAL F') || lUpper.includes('ARR F')) return [{ lokasi: 'Red Lane', titik: 'No.1 Arr F' }];
+  }
+
+  // 3. Breakdown Umrah Belt 15/16 (Umroh bea cukai arrival No 15/16)
   if (lUpper.includes('BEA CUKAI') && (lUpper.includes('15') || lUpper.includes('16'))) {
     const digits = lUpper.replace(/[^0-9]/g, '');
-    return [{ lokasi: 'X-Ray Conveyor Belt', titik: digits }];
+    return [{ lokasi: 'Breakdown Umrah', titik: `Belt ${digits}` }];
   }
   if (lUpper.includes('CONVEYOR BELT')) {
     const digits = lUpper.replace(/[^0-9]/g, '');
     return [{ lokasi: 'X-Ray Conveyor Belt', titik: digits || '-' }];
-  }
-
-  // 3. Redline Arrival
-  if (lUpper.includes('REDLINE') && lUpper.includes('ARRIVAL F')) {
-    return [{ lokasi: 'Redline Arrival F', titik: '1' }];
-  }
-  if (lUpper.includes('REDLINE') && (lUpper.includes('UMROH') || lUpper.includes('UMRAH'))) {
-    return [{ lokasi: 'Redline Arrival Umrah', titik: '2' }];
   }
 
   // 4. PSCP D, E, F
@@ -96,9 +94,9 @@ export function mapExcelLocationToSupabase(locRaw: string, merkRaw: string): Arr
   if (lUpper.includes('SSCP F') || lUpper.includes('MEETING POINT F')) return [{ lokasi: 'SSCP F', titik: '-' }];
   if (lUpper.includes('SSCP UMROH') || lUpper.includes('SSCP UMRAH')) return [{ lokasi: 'SSCP Umrah', titik: '-' }];
 
-  // 8. Arrival Hall
+  // 8. Arrival F (X-Ray Kabin Arrival Rampout F1)
   if (lUpper.includes('ARRIVAL RAMPOUT F1') || lUpper.includes('ARRIVAL HALL F')) {
-    return [{ lokasi: 'Arrival Hall F', titik: '-' }];
+    return [{ lokasi: 'Arrival F', titik: '-' }];
   }
 
   // 9. Access Control Honeywell
@@ -135,6 +133,42 @@ export function mapExcelLocationToSupabase(locRaw: string, merkRaw: string): Arr
 
   // Fallback
   return [{ lokasi: locRaw.trim(), titik: '-' }];
+}
+
+export interface ScheduleEquipment {
+  lokasi: string;
+  titik: string;
+  jenis: string;
+  tipe: string;
+}
+
+/** Baris judul, legenda, atau tanda tangan di bawah tabel jadwal, bukan baris peralatan. */
+export function isScheduleFooterRow(locVal: string): boolean {
+  const lUpper = locVal.trim().toUpperCase();
+  return (
+    lUpper.startsWith('KALIBRASI') ||
+    lUpper.startsWith('PM') ||
+    lUpper.startsWith('GENERAL ANNUAL CHECK') ||
+    lUpper.startsWith('TINDAK LANJUT') ||
+    lUpper.startsWith('TANGERANG') ||
+    lUpper.startsWith('DINAS') ||
+    lUpper.includes('DEPARTMENT HEAD')
+  );
+}
+
+/** Satu baris Excel (LOKASI + MERK/TYPE) menjadi daftar peralatan per lokasi standar Supabase. */
+export function expandScheduleRow(locVal: string, merkVal: string): ScheduleEquipment[] {
+  // Pisahkan peralatan gabungan, mis. "X-Ray Rapiscan 620 DV & WTMD CEIA"
+  const equipParts = merkVal.split('&').map(p => p.trim()).filter(Boolean);
+  const mappedLocs = mapExcelLocationToSupabase(locVal, merkVal);
+  const items: ScheduleEquipment[] = [];
+  for (const locItem of mappedLocs) {
+    for (const ep of equipParts) {
+      const mappedEquip = EQUIP_MAP[ep] || { jenis: 'Peralatan', tipe: ep };
+      items.push({ lokasi: locItem.lokasi, titik: locItem.titik, jenis: mappedEquip.jenis, tipe: mappedEquip.tipe });
+    }
+  }
+  return items;
 }
 
 // Parsing single worksheet
@@ -188,20 +222,9 @@ export function parseSheetPm(ws: XLSX.WorkSheet, bulan: number, tahun: number): 
     const merkVal = String(merkCell?.v || '').trim();
 
     if (!locVal || !merkVal) continue;
-    const lUpper = locVal.toUpperCase();
-    if (
-      lUpper.startsWith('KALIBRASI') ||
-      lUpper.startsWith('PM') ||
-      lUpper.startsWith('TANGERANG') ||
-      lUpper.startsWith('DINAS') ||
-      lUpper.includes('DEPARTMENT HEAD')
-    ) {
-      continue;
-    }
+    if (isScheduleFooterRow(locVal)) continue;
 
-    // Split compound equipments, e.g. "X-Ray Rapiscan 620 DV & WTMD CEIA"
-    const equipParts = merkVal.split('&').map(p => p.trim()).filter(Boolean);
-    const mappedLocs = mapExcelLocationToSupabase(locVal, merkVal);
+    const equipment = expandScheduleRow(locVal, merkVal);
 
     for (const dc of dateCols) {
       const cellAddress = XLSX.utils.encode_cell({ r, c: dc.col });
@@ -247,21 +270,8 @@ export function parseSheetPm(ws: XLSX.WorkSheet, bulan: number, tahun: number): 
         const dayStr = String(dc.dateNum).padStart(2, '0');
         const tanggalStr = `${tahun}-${monthStr}-${dayStr}`;
 
-        for (const locItem of mappedLocs) {
-          for (const ep of equipParts) {
-            const mappedEquip = EQUIP_MAP[ep] || { jenis: 'Peralatan', tipe: ep };
-            records.push({
-              tanggal: tanggalStr,
-              bulan,
-              tahun,
-              lokasi: locItem.lokasi,
-              titik: locItem.titik,
-              jenis: mappedEquip.jenis,
-              tipe: mappedEquip.tipe,
-              kategori_pm: kategoriPm,
-              shift
-            });
-          }
+        for (const item of equipment) {
+          records.push({ tanggal: tanggalStr, bulan, tahun, ...item, kategori_pm: kategoriPm, shift });
         }
       }
     }
@@ -271,7 +281,9 @@ export function parseSheetPm(ws: XLSX.WorkSheet, bulan: number, tahun: number): 
 }
 
 // Menyisipkan foreign keys (id_lokasi, id_titik, id_tipe) dari Supabase
-export async function enrichRecordsWithSupabaseIds(records: JadwalPmRecord[]): Promise<JadwalPmRecord[]> {
+type SupabaseIds = { id_lokasi?: string | null; id_titik?: string | null; id_tipe?: string | null };
+
+export async function enrichRecordsWithSupabaseIds<T extends ScheduleEquipment>(records: T[]): Promise<Array<T & SupabaseIds>> {
   try {
     const [lokasiRes, titikRes, tipeRes] = await Promise.all([
       supabase.from('lokasi').select('id, nama'),
@@ -358,6 +370,7 @@ export function filterActivePm(
 
 export const RENCANA_KEGIATAN_DASAR = '- Monitoring Operasional\n- Storing Peralatan';
 export const RENCANA_KEGIATAN_PM = '- Preventive Maintenance & Kalibrasi Peralatan';
+export const RENCANA_KEGIATAN_GAC = '- General Annual Check Peralatan';
 
 type PmItem = { lokasi: string; titik?: string; tipe: string; kategori_pm?: string; jenis?: string };
 
@@ -422,10 +435,31 @@ export function formatPmRencanaKegiatan(activePm: PmItem[]): string {
   return sections.join('\n\n');
 }
 
-// Susun isi Rencana Kegiatan: kegiatan dasar, lalu (jika ada) baris PM dan blok jadwal PM
-export function buildRencanaKegiatan(base: string, activePm: Parameters<typeof formatPmRencanaKegiatan>[0], includePmLine: boolean): string {
-  if (activePm.length > 0) {
-    return `${base}\n${RENCANA_KEGIATAN_PM}\n\n${formatPmRencanaKegiatan(activePm)}`;
-  }
-  return includePmLine ? `${base}\n${RENCANA_KEGIATAN_PM}` : base;
+// Susun isi Rencana Kegiatan: kegiatan dasar, baris PM (jika ada / diminta), baris GAC (jika ada),
+// lalu blok jadwal PM dan blok jadwal General Annual Check.
+export function buildRencanaKegiatan(
+  base: string,
+  activePm: Parameters<typeof formatPmRencanaKegiatan>[0],
+  includePmLine: boolean,
+  activeGac: PmItem[] = []
+): string {
+  const lines = [base];
+  if (activePm.length > 0 || includePmLine) lines.push(RENCANA_KEGIATAN_PM);
+  if (activeGac.length > 0) lines.push(RENCANA_KEGIATAN_GAC);
+
+  const blocks: string[] = [];
+  if (activePm.length > 0) blocks.push(formatPmRencanaKegiatan(activePm));
+  if (activeGac.length > 0) blocks.push(formatPmSection('*Jadwal General Annual Check :*', activeGac));
+
+  const head = lines.join('\n');
+  return blocks.length > 0 ? `${head}\n\n${blocks.join('\n\n')}` : head;
+}
+
+/** Bagian Rencana Kegiatan yang diketik/diubah pengguna: teks sebelum baris PM atau GAC beserta blok jadwalnya. */
+export function rencanaKegiatanBase(text: string): string {
+  const cuts = [RENCANA_KEGIATAN_PM, RENCANA_KEGIATAN_GAC]
+    .map(marker => text.indexOf(marker))
+    .filter(i => i !== -1);
+  if (cuts.length === 0) return text.trim();
+  return text.substring(0, Math.min(...cuts)).trim();
 }

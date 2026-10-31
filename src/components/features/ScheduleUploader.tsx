@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { Calendar, FileSpreadsheet, Loader2, CheckCircle, AlertTriangle, Trash2, Clock } from 'lucide-react';
 import { PmScheduleUploader } from './PmScheduleUploader';
+import { GacScheduleUploader } from './GacScheduleUploader';
 import { getErrorMessage } from '../../lib/utils/errorUtils';
 
 export const ScheduleUploader: React.FC = () => {
@@ -293,6 +294,9 @@ export const ScheduleUploader: React.FC = () => {
 
       {/* Bagian Upload Jadwal PM */}
       <PmScheduleUploader />
+
+      {/* Bagian Upload Jadwal GAC (General Annual Check) */}
+      <GacScheduleUploader />
     </div>
   );
 };

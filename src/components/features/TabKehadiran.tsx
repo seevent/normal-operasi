@@ -7,12 +7,22 @@ import { generateWA_Kehadiran } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { toTitleCase, sortPersonelByJabatan } from '../../lib/data/masterData';
-import { filterActivePm, buildRencanaKegiatan, RENCANA_KEGIATAN_DASAR, RENCANA_KEGIATAN_PM } from '../../lib/utils/pmScheduleParser';
+import { filterActivePm, buildRencanaKegiatan, rencanaKegiatanBase, RENCANA_KEGIATAN_DASAR, RENCANA_KEGIATAN_PM } from '../../lib/utils/pmScheduleParser';
 import { getErrorMessage } from '../../lib/utils/errorUtils';
 import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
 import { validateKehadiran } from '../../lib/utils/formValidation';
 import { reportMissingFields } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
+
+/** Jadwal General Annual Check pada tanggal ini; tampil di Rencana Kegiatan untuk semua shift. */
+const fetchJadwalGac = async (tanggal: string) => {
+  const { data, error } = await supabase
+    .from('jadwal_gac')
+    .select('lokasi, titik, jenis, tipe')
+    .eq('tanggal', tanggal);
+  if (error) console.warn('Gagal memuat jadwal GAC:', error.message);
+  return data || [];
+};
 
 export const TabKehadiran: React.FC = () => {
   const { isCopied, setIsCopied } = useAppStore();
@@ -150,15 +160,18 @@ export const TabKehadiran: React.FC = () => {
           .map(r => ({ id: r.jadwal_id, personel_id: r.personel_id }))
       );
 
-      // Fetch Jadwal PM untuk tanggal & shift terpilih
-      const { data: pmData } = await supabase
-        .from('jadwal_pm')
-        .select('lokasi, titik, jenis, tipe, kategori_pm, shift')
-        .eq('tanggal', attendanceData.tanggal);
+      // Fetch Jadwal PM (sesuai shift) dan Jadwal GAC (semua shift) untuk tanggal terpilih
+      const [{ data: pmData }, activeGac] = await Promise.all([
+        supabase
+          .from('jadwal_pm')
+          .select('lokasi, titik, jenis, tipe, kategori_pm, shift')
+          .eq('tanggal', attendanceData.tanggal),
+        fetchJadwalGac(attendanceData.tanggal)
+      ]);
 
       const activePm = filterActivePm(pmData || [], targetShiftCode, pmDisplaySettings);
 
-      const newKegiatan = buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, activePm, targetShiftCode === 'PS');
+      const newKegiatan = buildRencanaKegiatan(RENCANA_KEGIATAN_DASAR, activePm, targetShiftCode === 'PS', activeGac);
 
       setAttendanceData(prev => ({
         ...prev,
@@ -445,12 +458,12 @@ export const TabKehadiran: React.FC = () => {
                 <button 
                   type="button" 
                   onClick={async () => {
+                    // Teks yang diketik pengguna (sebelum baris PM/GAC) dipertahankan; jadwal GAC tetap ada.
+                    const base = rencanaKegiatanBase(attendanceData.rencanaKegiatan) || RENCANA_KEGIATAN_DASAR;
+                    const activeGac = await fetchJadwalGac(attendanceData.tanggal);
                     if (hasPM) {
-                      // Buang baris PM beserta blok jadwal PM di bawahnya
-                      const text = attendanceData.rencanaKegiatan;
-                      const lineStart = text.lastIndexOf('\n', text.indexOf(RENCANA_KEGIATAN_PM));
-                      const newText = (lineStart !== -1 ? text.substring(0, lineStart) : '').trim();
-                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newText || RENCANA_KEGIATAN_DASAR }));
+                      // Buang baris PM beserta blok jadwal PM
+                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: buildRencanaKegiatan(base, [], false, activeGac) }));
                     } else {
                       const targetShiftCode = attendanceData.shift.includes('Pagi') || attendanceData.shift.includes('PS') ? 'PS' : 'M';
                       const { data: pmData } = await supabase
@@ -459,10 +472,7 @@ export const TabKehadiran: React.FC = () => {
                         .eq('tanggal', attendanceData.tanggal);
 
                       const activePm = filterActivePm(pmData || [], targetShiftCode, pmDisplaySettings);
-
-                      const current = attendanceData.rencanaKegiatan.trim() || RENCANA_KEGIATAN_DASAR;
-                      const newKegiatan = buildRencanaKegiatan(current, activePm, true);
-                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: newKegiatan }));
+                      setAttendanceData(prev => ({ ...prev, rencanaKegiatan: buildRencanaKegiatan(base, activePm, true, activeGac) }));
                     }
                   }}
                   className="mt-2 flex items-center gap-1.5 text-sm font-medium transition-colors"
