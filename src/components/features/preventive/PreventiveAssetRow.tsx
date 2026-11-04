@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { AlertCircle, AlertTriangle, Camera, Check, CheckCircle2, Circle, ExternalLink, FolderOpen, Loader2, Pencil, RotateCcw } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Camera, Check, CheckCircle2, Circle, ExternalLink, FolderOpen, Loader2, Pencil, QrCode, RotateCcw } from 'lucide-react';
 import type { PreventiveAsset, RowStatus } from '../../../lib/utils/preventiveGrouping';
 import type { SavedEntry } from '../../../lib/utils/preventiveStatus';
 
@@ -8,6 +8,8 @@ interface Props {
   status: RowStatus;
   error?: string;
   saved?: SavedEntry;
+  /** URL gambar QR code peralatan di Cloudinary (PRIMA/QR CODE); kosong bila belum ada. */
+  qrUrl?: string;
   /** Foto tersimpan, tetapi tanggalnya mencurigakan (hanya peringatan). */
   warning?: string;
   /** Data periode belum dimuat: tombol dinonaktifkan agar foto tidak masuk ke periode yang salah. */
@@ -28,7 +30,7 @@ const BADGE: Record<RowStatus, { label: string; className: string; icon: React.R
   failed: { label: 'Gagal tersimpan', className: 'bg-red-50 text-red-800 border-red-300', icon: <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" /> },
 };
 
-const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, warning, disabled, onPick, onRetry, selectable, selected, onToggleSelect }) => {
+const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, qrUrl, warning, disabled, onPick, onRetry, selectable, selected, onToggleSelect }) => {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const badge = BADGE[status];
@@ -86,6 +88,18 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
             >
               Lihat foto
               <ExternalLink className="w-3 h-3" aria-hidden="true" />
+            </a>
+          )}
+          {qrUrl && (
+            <a
+              href={qrUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Lihat QR code ${asset.name}`}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 underline-offset-2 hover:underline"
+            >
+              <QrCode className="w-3 h-3" aria-hidden="true" />
+              QR code
             </a>
           )}
         </div>

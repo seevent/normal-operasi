@@ -66,3 +66,21 @@ export async function fetchPhotoLog(keys: PeriodKeys): Promise<PhotoLogRow[]> {
   if (error) throw new Error('Status foto tidak dapat dimuat.');
   return (data ?? []) as PhotoLogRow[];
 }
+
+let qrCodesPromise: Promise<Record<string, string>> | null = null;
+
+/**
+ * Peta nomor equipment → URL gambar QR code di Cloudinary. Diambil sekali per sesi lewat server function
+ * (Search API butuh API secret); bila gagal, panggilan berikutnya mencoba lagi.
+ */
+export function fetchPreventiveQrCodes(): Promise<Record<string, string>> {
+  if (!qrCodesPromise) {
+    qrCodesPromise = import('../server/preventive.functions.ts')
+      .then(({ getPreventiveQrCodes }) => getPreventiveQrCodes())
+      .catch((err: unknown) => {
+        qrCodesPromise = null;
+        throw err;
+      });
+  }
+  return qrCodesPromise;
+}

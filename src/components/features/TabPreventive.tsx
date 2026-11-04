@@ -8,6 +8,7 @@ import { nextResetAt } from '../../lib/utils/preventivePeriod';
 import { photoDateWarning } from '../../lib/utils/photoExif';
 import type { SavedEntry } from '../../lib/utils/preventiveStatus';
 import { statusOf, usePreventiveStore } from '../../store/usePreventiveStore';
+import { fetchPreventiveQrCodes } from '../../lib/services/preventiveDataService';
 import { PreventiveGroupCard } from './preventive/PreventiveGroupCard';
 import type { CardGroup } from './preventive/PreventiveGroupCard';
 import { BulkPhotosSheet, OnePhotoManySheet } from './preventive/PreventiveBulkSheets';
@@ -41,6 +42,20 @@ export const TabPreventive: React.FC = () => {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // QR code peralatan di Cloudinary: cukup sekali per sesi; gagal = tautan QR tidak ditampilkan.
+  const [qrUrls, setQrUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    fetchPreventiveQrCodes()
+      .then((map) => {
+        if (alive) setQrUrls(map);
+      })
+      .catch((err: unknown) => console.warn('QR code peralatan tidak dapat dimuat:', err));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let last = Date.now();
@@ -360,6 +375,7 @@ export const TabPreventive: React.FC = () => {
               saved={currentSaved}
               locals={locals}
               warnings={warnings}
+              qrUrls={qrUrls}
               disabled={!ready}
               onPick={onPick}
               onRetry={onRetry}

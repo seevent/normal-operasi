@@ -5,6 +5,7 @@
 
 import { createServerFn } from '@tanstack/react-start';
 import { confirmUpload, createUploadTicket } from './preventiveUpload.server.ts';
+import { listPreventiveQrCodes } from './preventiveQr.server.ts';
 import type { ConfirmResult, UploadTicket } from '../data/preventiveTypes.ts';
 
 interface TicketInput {
@@ -31,3 +32,7 @@ export const getPreventiveUploadTicket = createServerFn({ method: 'POST' })
 export const confirmPreventiveUpload = createServerFn({ method: 'POST' })
   .validator((data: ConfirmInput) => data)
   .handler(async ({ data }): Promise<ConfirmResult> => confirmUpload(data, serverDeps()));
+
+/** Peta nomor equipment → URL gambar QR code peralatan di Cloudinary (folder PRIMA/QR CODE). */
+export const getPreventiveQrCodes = createServerFn({ method: 'POST' })
+  .handler(async (): Promise<Record<string, string>> => listPreventiveQrCodes(serverDeps()));
