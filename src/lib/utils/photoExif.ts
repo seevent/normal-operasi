@@ -106,6 +106,27 @@ export const whatsappNameRange = (name: string): [number, number] | null => {
   return null;
 };
 
+export interface DeviceInfo {
+  userAgent: string;
+  platform?: string;
+  maxTouchPoints?: number;
+}
+
+/**
+ * iPhone/iPad (Safari maupun Chrome/Edge iOS, semuanya WebKit). iPad mode desktop melapor "Macintosh",
+ * jadi dikenali dari layar sentuh: Mac sungguhan tidak punya titik sentuh.
+ */
+export const isAppleMobile = (d: DeviceInfo): boolean =>
+  /iPhone|iPad|iPod/i.test(d.userAgent) || (/Macintosh/i.test(d.userAgent) && (d.maxTouchPoints ?? 0) > 1);
+
+/**
+ * Safari iOS membuat ulang foto sebagai JPEG saat dipilih lewat input berkas (galeri maupun kamera) dan sering
+ * membuang EXIF termasuk tanggal pengambilan, sehingga JPEG tanpa tanggal dari iPhone/iPad adalah hal biasa.
+ * PNG tidak termasuk: screenshot iPhone berformat PNG, jadi tetap diberi peringatan.
+ */
+export const exifStrippedFor = (f: { type: string; name: string }, appleMobile: boolean): boolean =>
+  appleMobile && (/^image\/jpe?g$/i.test(f.type) || /\.jpe?g$/i.test(f.name));
+
 const fmtWib = (ms: number): string =>
   new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).format(new Date(ms));
 
@@ -113,7 +134,7 @@ const fmtWib = (ms: number): string =>
  * Peringatan bila foto diambil di luar periode berjalan; null bila wajar.
  * Jendela: dari awal periode (kunci 'YYYY-MM-DD' pukul 07.00 WIB) sampai reset berikutnya, ditambah toleransi 1 jam.
  */
-export const photoDateWarning = (takenAt: number | null, periodKey: string, nextResetMs: number, opts: { heic?: boolean; nameRange?: [number, number] | null } = {}): string | null => {
+export const photoDateWarning = (takenAt: number | null, periodKey: string, nextResetMs: number, opts: { heic?: boolean; nameRange?: [number, number] | null; exifStripped?: boolean } = {}): string | null => {
   const startMs = Date.parse(`${periodKey}T00:00:00Z`); // 07.00 WIB = 00.00 UTC
   const tolerance = HOUR_MS;
   // Foto WhatsApp tanpa EXIF: pakai tanggal pada nama berkas sebagai cadangan.
@@ -126,6 +147,8 @@ export const photoDateWarning = (takenAt: number | null, periodKey: string, next
   }
   // HEIC tidak dibaca EXIF-nya di sini, jadi "tanpa tanggal" bukan tanda foto mencurigakan.
   if (takenAt === null && opts.heic) return null;
+  // JPEG dari iPhone/iPad: Safari membuang EXIF saat unggah, jadi "tanpa tanggal" bukan tanda screenshot.
+  if (takenAt === null && opts.exifStripped) return null;
   if (takenAt === null) return 'Foto tidak memuat tanggal pengambilan (mis. screenshot). Pastikan ini foto terbaru dari peralatan.';
   if (takenAt < startMs - tolerance || takenAt > nextResetMs + tolerance) {
     return `Foto diambil ${fmtWib(takenAt)} WIB, di luar periode ini. Tetap tersimpan; pastikan bukan foto lama.`;

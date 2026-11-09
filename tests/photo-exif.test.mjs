@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { readExifTakenAt, photoDateWarning, whatsappNameRange } from '../src/lib/utils/photoExif.ts';
 
@@ -90,4 +91,39 @@ test('foto WA tanpa EXIF: tanggal pada nama berkas dipakai; dalam periode tanpa 
 
 test('EXIF tetap didahulukan atas nama berkas WA', () => {
   assert.match(photoDateWarning(Date.UTC(2026, 9, 10, 2, 0), '2026-10-20', NEXT, { nameRange: whatsappNameRange('IMG-20261020-WA0001.jpg') }), /Foto diambil/);
+});
+
+test('iPhone/iPad: JPEG tanpa tanggal tidak diberi peringatan (Safari iOS membuang EXIF saat unggah)', async () => {
+  const { isAppleMobile } = await import('../src/lib/utils/photoExif.ts');
+  assert.equal(photoDateWarning(null, '2026-10-20', NEXT, { exifStripped: true }), null);
+  // Tanggal yang terbaca tetap diperiksa.
+  assert.match(photoDateWarning(Date.UTC(2026, 9, 10, 2, 0), '2026-10-20', NEXT, { exifStripped: true }), /di luar periode/);
+  // Perangkat lain tetap diberi peringatan.
+  assert.match(photoDateWarning(null, '2026-10-20', NEXT, { exifStripped: false }), /tidak memuat tanggal/);
+
+  const iphone = { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', platform: 'iPhone', maxTouchPoints: 5 };
+  const chromeIos = { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0 Mobile/15E148 Safari/604.1', platform: 'iPhone', maxTouchPoints: 5 };
+  const ipadDesktopMode = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15', platform: 'MacIntel', maxTouchPoints: 5 };
+  const mac = { userAgent: ipadDesktopMode.userAgent, platform: 'MacIntel', maxTouchPoints: 0 };
+  const android = { userAgent: 'Mozilla/5.0 (Linux; Android 15; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36', platform: 'Linux armv81', maxTouchPoints: 5 };
+  assert.equal(isAppleMobile(iphone), true);
+  assert.equal(isAppleMobile(chromeIos), true);
+  assert.equal(isAppleMobile(ipadDesktopMode), true);
+  assert.equal(isAppleMobile(mac), false);
+  assert.equal(isAppleMobile(android), false);
+});
+
+test('exifStrippedFor: hanya JPEG di iPhone/iPad; PNG (format screenshot iPhone) tetap diperiksa', async () => {
+  const { exifStrippedFor } = await import('../src/lib/utils/photoExif.ts');
+  assert.equal(exifStrippedFor({ type: 'image/jpeg', name: 'image.jpg' }, true), true);
+  assert.equal(exifStrippedFor({ type: '', name: 'IMG_0001.JPG' }, true), true);
+  assert.equal(exifStrippedFor({ type: 'image/png', name: 'IMG_0002.PNG' }, true), false);
+  assert.equal(exifStrippedFor({ type: 'image/jpeg', name: 'image.jpg' }, false), false);
+});
+
+test('pemanggil peringatan tanggal memakai aturan EXIF iOS', () => {
+  for (const f of ['src/store/usePreventiveStore.ts', 'src/components/features/TabPreventive.tsx']) {
+    const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+    assert.match(src, /exifStripped/, f);
+  }
 });

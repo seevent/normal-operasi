@@ -5,7 +5,7 @@ import { PreventiveUploadError, uploadPreventivePhoto } from '../lib/services/pr
 import type { PreventivePeriod } from '../lib/data/preventiveTypes';
 import type { PreventiveAsset, RowStatus } from '../lib/utils/preventiveGrouping';
 import { createLimiter, isHeicLike } from '../lib/utils/preventiveImage';
-import { EXIF_READ_BYTES, photoDateWarning, readExifTakenAt, whatsappNameRange } from '../lib/utils/photoExif';
+import { EXIF_READ_BYTES, exifStrippedFor, isAppleMobile, photoDateWarning, readExifTakenAt, whatsappNameRange } from '../lib/utils/photoExif';
 import { nextResetAt } from '../lib/utils/preventivePeriod';
 import { buildSavedMap, deriveStatus, pruneStaleLocals, rowKey } from '../lib/utils/preventiveStatus';
 import type { LocalEntry, PeriodKeys, SavedEntry } from '../lib/utils/preventiveStatus';
@@ -107,6 +107,7 @@ export const usePreventiveStore = create<PreventiveState>((set, get) => ({
       warning = photoDateWarning(readExifTakenAt(head), startKey, nextReset, {
         heic: isHeicLike({ type: file.type, name: (file as File).name ?? '' }),
         nameRange: whatsappNameRange((file as File).name ?? ''),
+        exifStripped: exifStrippedFor({ type: file.type, name: (file as File).name ?? '' }, isAppleMobile(navigator)),
       });
     } catch {
       warning = null;

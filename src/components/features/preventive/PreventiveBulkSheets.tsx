@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Circle, Loader2, X } from 'lucide-react';
 import type { PreventiveAsset, RowStatus } from '../../../lib/utils/preventiveGrouping';
 import { defaultAssignment, defaultStartKey, orderPhotos, reassign } from '../../../lib/utils/preventiveBulk';
-import { EXIF_READ_BYTES, readExifTakenAt, whatsappNameRange } from '../../../lib/utils/photoExif';
+import { EXIF_READ_BYTES, exifStrippedFor, isAppleMobile, readExifTakenAt, whatsappNameRange } from '../../../lib/utils/photoExif';
 import { isHeicLike } from '../../../lib/utils/preventiveImage';
 
 /** Data foto untuk peringatan tanggal (dibaca dari berkas asli sebelum dikompres). */
@@ -10,15 +10,18 @@ export interface PhotoMeta {
   takenAt: number | null;
   nameRange: [number, number] | null;
   heic: boolean;
+  /** JPEG dari iPhone/iPad: Safari biasanya membuang EXIF, jadi tanpa tanggal itu wajar. */
+  exifStripped: boolean;
 }
 
 const readPhotoMeta = async (file: File): Promise<PhotoMeta> => {
   const nameRange = whatsappNameRange(file.name ?? '');
   const heic = isHeicLike({ type: file.type, name: file.name ?? '' });
+  const exifStripped = exifStrippedFor({ type: file.type, name: file.name ?? '' }, isAppleMobile(navigator));
   try {
-    return { takenAt: readExifTakenAt(await file.slice(0, EXIF_READ_BYTES).arrayBuffer()), nameRange, heic };
+    return { takenAt: readExifTakenAt(await file.slice(0, EXIF_READ_BYTES).arrayBuffer()), nameRange, heic, exifStripped };
   } catch {
-    return { takenAt: null, nameRange, heic };
+    return { takenAt: null, nameRange, heic, exifStripped };
   }
 };
 

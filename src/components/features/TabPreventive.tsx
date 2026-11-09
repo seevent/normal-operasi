@@ -161,7 +161,7 @@ export const TabPreventive: React.FC = () => {
   const warningFor = useCallback(
     (meta: PhotoMeta) =>
       keys
-        ? photoDateWarning(meta.takenAt, keys[period], nextResetAt(period, new Date(Date.now() + clockOffsetMs)).getTime(), { heic: meta.heic, nameRange: meta.nameRange })
+        ? photoDateWarning(meta.takenAt, keys[period], nextResetAt(period, new Date(Date.now() + clockOffsetMs)).getTime(), { heic: meta.heic, nameRange: meta.nameRange, exifStripped: meta.exifStripped })
         : null,
     [keys, period, clockOffsetMs],
   );
