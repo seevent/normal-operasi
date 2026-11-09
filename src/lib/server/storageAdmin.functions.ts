@@ -6,6 +6,8 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getCloudinaryUsage, purgeDueTrash, requireLoggedIn } from './storagePurge.server.ts';
 import type { CloudinaryUsageSummary, JobSummary } from './storagePurge.server.ts';
+import { getNetlifyCredits } from './netlifyUsage.server.ts';
+import type { NetlifyCredits } from './netlifyUsage.server.ts';
 
 interface TokenInput {
   accessToken: string;
@@ -24,6 +26,15 @@ export const fetchCloudinaryUsage = createServerFn({ method: 'POST' })
     const deps = serverDeps();
     await requireLoggedIn(data.accessToken, deps);
     return getCloudinaryUsage(deps);
+  });
+
+/** Kredit Netlify (jatah, terpakai, tersedia, periode tagihan). Token Netlify hanya ada di server. */
+export const fetchNetlifyCredits = createServerFn({ method: 'POST' })
+  .validator((data: TokenInput) => data)
+  .handler(async ({ data }): Promise<NetlifyCredits> => {
+    const deps = serverDeps();
+    await requireLoggedIn(data.accessToken, deps);
+    return getNetlifyCredits(deps);
   });
 
 /**

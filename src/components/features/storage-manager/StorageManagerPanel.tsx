@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Archive, Cloud, Database, Eye, Loader2, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
+import { AlertTriangle, Archive, Cloud, Database, ExternalLink, Eye, Globe, Loader2, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import { triggerFileDownload } from '../../../lib/services/shareService';
 import {
   REPORT_JENIS,
@@ -7,6 +7,7 @@ import {
   buildRangeArchive,
   fetchCleanupJobs,
   fetchCloudinaryUsage,
+  fetchNetlifyCredits,
   fetchStorageOverview,
   previewReportRange,
   restoreTrashJob,
@@ -15,6 +16,7 @@ import {
   type ArchiveProgress,
   type CleanupJob,
   type CloudinaryUsage,
+  type NetlifyCredits,
   type RangePreview,
   type StorageOverview,
 } from '../../../lib/services/storageManagerService';
@@ -70,10 +72,61 @@ const Stat: React.FC<{ label: string; value: React.ReactNode }> = ({ label, valu
   </div>
 );
 
+const kredit = (n: number) => n.toLocaleString('id-ID', { maximumFractionDigits: 1 });
+
+/** Isi kartu Netlify: kredit tersedia di periode tagihan berjalan, atau petunjuk bila token belum diatur. */
+const NetlifyCreditsBody: React.FC<{ credits: NetlifyCredits | null; error: string | null }> = ({ credits, error }) => {
+  if (!credits) {
+    return <p className="text-xs text-slate-500">{error ? `Kredit Netlify tidak dapat dibaca: ${error}` : 'Memuat kredit Netlify…'}</p>;
+  }
+  if (!credits.configured) {
+    return (
+      <p className="text-xs text-slate-600 leading-relaxed">
+        Belum diatur. Buat <b>Personal access token</b> di Netlify (User settings → Applications), simpan sebagai environment variable{' '}
+        <code className="font-mono bg-slate-100 px-1 rounded">{credits.tokenEnv}</code> di situs Netlify, lalu deploy ulang.
+      </p>
+    );
+  }
+  const billingUrl = credits.teamSlug ? `https://app.netlify.com/teams/${encodeURIComponent(credits.teamSlug)}/billing` : 'https://app.netlify.com/';
+  return (
+    <>
+      {credits.usageExceeded && (
+        <div className="mb-3 p-2.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 text-xs font-semibold flex gap-1.5">
+          <AlertTriangle className="w-4 h-4 shrink-0" /> Kredit habis: Netlify memblokir deploy baru sampai periode berikutnya atau kredit ditambah.
+        </div>
+      )}
+      <div className="mb-3">
+        <div className="text-[11px] text-slate-500">Kredit tersedia</div>
+        <div className="text-2xl font-black text-slate-900 tabular-nums leading-tight">
+          {credits.creditsAvailable != null ? kredit(credits.creditsAvailable) : '-'}
+          <span className="text-sm font-bold text-slate-500"> / {credits.creditsIncluded != null ? kredit(credits.creditsIncluded) : '-'}</span>
+        </div>
+      </div>
+      {credits.creditsUsed != null && credits.creditsIncluded != null && credits.creditsIncluded > 0 && (
+        <UsageBar label="Kredit terpakai periode ini" used={credits.creditsUsed} limit={credits.creditsIncluded} format={kredit} />
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Stat label="Paket" value={credits.plan ?? '-'} />
+        <Stat label="Kredit direset" value={tgl(credits.periodEnd)} />
+        <Stat label="Periode tagihan" value={credits.periodStart || credits.periodEnd ? `${tgl(credits.periodStart)} – ${tgl(credits.periodEnd)}` : '-'} />
+        <Stat label="Status deploy" value={credits.usageExceeded ? <span className="text-rose-700">Diblokir</span> : <span className="text-emerald-700">Normal</span>} />
+      </div>
+      <p className="text-[11px] text-slate-500 mt-2">
+        Dari API Netlify; angka terpakai bisa tertinggal dari halaman Usage &amp; Billing.{' '}
+        <a href={billingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-semibold text-blue-700 hover:underline">
+          Buka Usage &amp; Billing <ExternalLink className="w-3 h-3" />
+        </a>
+      </p>
+    </>
+  );
+};
+
 export const StorageManagerPanel: React.FC = () => {
   const [overview, setOverview] = useState<StorageOverview | null>(null);
   const [usage, setUsage] = useState<CloudinaryUsage | null>(null);
   const [usageError, setUsageError] = useState<string | null>(null);
+  const [netlify, setNetlify] = useState<NetlifyCredits | null>(null);
+  const [netlifyError, setNetlifyError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<CleanupJob[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -103,6 +156,12 @@ export const StorageManagerPanel: React.FC = () => {
         setUsageError(null);
       })
       .catch((err) => setUsageError((err as Error).message));
+    fetchNetlifyCredits()
+      .then((n) => {
+        setNetlify(n);
+        setNetlifyError(null);
+      })
+      .catch((err) => setNetlifyError((err as Error).message));
   }, []);
 
   useEffect(() => {
@@ -180,7 +239,7 @@ export const StorageManagerPanel: React.FC = () => {
       )}
       {notice && <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm">{notice}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <Card title="Cloudinary (foto & video)" icon={<Cloud className="w-4 h-4 text-sky-600" />}>
           {usage ? (
             <>
@@ -223,6 +282,10 @@ export const StorageManagerPanel: React.FC = () => {
           ) : (
             <p className="text-xs text-slate-500">Memuat pemakaian Supabase…</p>
           )}
+        </Card>
+
+        <Card title="Netlify (hosting & fungsi server)" icon={<Globe className="w-4 h-4 text-teal-600" />}>
+          <NetlifyCreditsBody credits={netlify} error={netlifyError} />
         </Card>
       </div>
 

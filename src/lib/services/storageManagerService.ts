@@ -57,6 +57,7 @@ export interface CleanupJob {
 }
 
 export type { CloudinaryUsageSummary as CloudinaryUsage } from '../server/storagePurge.server.ts';
+export type { NetlifyCredits } from '../server/netlifyUsage.server.ts';
 
 const jenisParam = (jenis: string[]) => (jenis.length === 0 || jenis.length === REPORT_JENIS.length ? null : jenis);
 
@@ -77,6 +78,11 @@ export const fetchStorageOverview = async (): Promise<StorageOverview> =>
 
 export const fetchCloudinaryUsage = async () => {
   const { fetchCloudinaryUsage: call } = await import('../server/storageAdmin.functions.ts');
+  return call({ data: { accessToken: await accessToken() } });
+};
+
+export const fetchNetlifyCredits = async () => {
+  const { fetchNetlifyCredits: call } = await import('../server/storageAdmin.functions.ts');
   return call({ data: { accessToken: await accessToken() } });
 };
 
