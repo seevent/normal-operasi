@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CalendarClock, Camera, CheckSquare, FolderOpen, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import { ASSET_TYPE_LABEL, PERIOD_LABEL, PERIOD_RESET_TEXT, PREVENTIVE_PERIODS } from '../../lib/data/preventiveTypes';
 import type { PreventiveAssetType, PreventivePeriod } from '../../lib/data/preventiveTypes';
-import { groupAssets, groupAssetsByPlace, isPlaceAssetType, summarize } from '../../lib/utils/preventiveGrouping';
+import { groupAssets, groupAssetsByPlace, groupWarehouse, isPlaceAssetType, summarize } from '../../lib/utils/preventiveGrouping';
 import type { PreventiveAsset, RowStatus, StatusFilter } from '../../lib/utils/preventiveGrouping';
 import { nextResetAt } from '../../lib/utils/preventivePeriod';
 import { photoDateWarning } from '../../lib/utils/photoExif';
@@ -11,12 +11,14 @@ import { statusOf, usePreventiveStore } from '../../store/usePreventiveStore';
 import { fetchPreventiveQrCodes } from '../../lib/services/preventiveDataService';
 import { PreventiveGroupCard } from './preventive/PreventiveGroupCard';
 import type { CardGroup } from './preventive/PreventiveGroupCard';
+import { PreventiveWarehouseCard } from './preventive/PreventiveWarehouseCard';
 import { BulkPhotosSheet, OnePhotoManySheet } from './preventive/PreventiveBulkSheets';
 import type { AssetOptionGroup, PhotoMeta } from './preventive/PreventiveBulkSheets';
 
 const FOCUS_REFRESH_MIN_GAP_MS = 20_000;
 const POLL_MS = 60_000;
 const MAX_TIMEOUT_MS = 2_000_000_000;
+const WAREHOUSE_KEY = 'gudang';
 
 const FILTERS: Array<{ id: StatusFilter; label: string }> = [
   { id: 'all', label: 'Semua' },
@@ -121,6 +123,9 @@ export const TabPreventive: React.FC = () => {
     ];
   }, [assets, period, makeStatusFor]);
   const groups = useMemo(() => buildCards(query, filter), [buildCards, query, filter]);
+  // Peralatan di gudang: tampil terpisah, tidak masuk hitungan maupun unggah foto.
+  const warehouse = useMemo(() => groupWarehouse(assets, period, { query, filter }), [assets, period, query, filter]);
+  const showWarehouse = warehouse.types.length > 0;
 
   // Semua kartu tanpa pencarian/filter: dasar unggah banyak per kartu dan daftar alat yang dicentang.
   const allCards = useMemo(() => buildCards('', 'all'), [buildCards]);
@@ -180,7 +185,8 @@ export const TabPreventive: React.FC = () => {
       return next;
     });
   }, []);
-  const allOpen = groups.length > 0 && groups.every((g) => isOpen(g.key));
+  const cardKeys = useMemo(() => [...groups.map((g) => g.key), ...(showWarehouse ? [WAREHOUSE_KEY] : [])], [groups, showWarehouse]);
+  const allOpen = cardKeys.length > 0 && cardKeys.every((k) => isOpen(k));
 
   const onPick = useCallback((a: PreventiveAsset, file: File) => void upload(period, a, file), [upload, period]);
   const onRetry = useCallback((a: PreventiveAsset) => retry(period, a), [retry, period]);
@@ -242,6 +248,9 @@ export const TabPreventive: React.FC = () => {
         <div className="h-2.5 rounded-full bg-slate-200 overflow-hidden" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progres foto tersimpan">
           <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${percent}%` }} />
         </div>
+        {ready && warehouse.total > 0 && (
+          <p className="text-[11px] font-semibold text-amber-800">{warehouse.total} peralatan di gudang tidak dihitung.</p>
+        )}
         {ready && (summary.failed > 0 || summary.uploading > 0) && (
           <p className="text-xs font-bold">
             {summary.failed > 0 && <span className="text-red-700">{summary.failed} gagal tersimpan</span>}
@@ -319,11 +328,11 @@ export const TabPreventive: React.FC = () => {
             );
           })}
         </div>
-        {!searching && groups.length > 0 && (
+        {!searching && cardKeys.length > 0 && (
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => setOpen(allOpen ? new Set() : new Set(groups.map((g) => g.key)))}
+              onClick={() => setOpen(allOpen ? new Set() : new Set(cardKeys))}
               className="min-h-[44px] px-2 text-xs font-bold text-blue-700 hover:text-blue-900"
             >
               {allOpen ? 'Tutup semua' : 'Buka semua'}
@@ -357,7 +366,7 @@ export const TabPreventive: React.FC = () => {
       )}
 
       {/* Daftar */}
-      {ready && groups.length === 0 && (
+      {ready && groups.length === 0 && !showWarehouse && (
         <p className="rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-sm font-medium text-slate-500">
           {searching ? 'Tidak ada peralatan yang cocok dengan pencarian atau filter ini.' : 'Tidak ada peralatan terjadwal pada periode ini.'}
         </p>
@@ -383,6 +392,9 @@ export const TabPreventive: React.FC = () => {
               onBulkPick={onBulkPick}
             />
           ))}
+          {showWarehouse && (
+            <PreventiveWarehouseCard group={warehouse} open={isOpen(WAREHOUSE_KEY)} onToggle={() => toggle(WAREHOUSE_KEY)} typeLabel={typeLabel} qrUrls={qrUrls} />
+          )}
         </div>
       )}
 

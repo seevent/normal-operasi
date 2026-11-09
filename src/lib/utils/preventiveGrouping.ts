@@ -2,6 +2,7 @@
 // Pengelompokan, pencarian, dan filter daftar aset tab Preventive:
 //   - Access Control System: tipe aset -> lokasi -> aset (groupAssets).
 //   - Peralatan pemeriksaan (X-Ray, WTMD, ETD, HHMD, Body Scanner): tempat -> tipe aset -> aset (groupAssetsByPlace).
+//   - Aset di gudang (location_override = 'Gudang'): tidak dihitung preventif, tampil di area tersendiri (groupWarehouse).
 // Modul murni agar bisa diuji langsung.
 
 import { PERIOD_CODE, PREVENTIVE_ASSET_TYPES } from '../data/preventiveTypes.ts';
@@ -49,9 +50,19 @@ const collator = new Intl.Collator('id', { numeric: true, sensitivity: 'base' })
 export const effectiveLocation = (asset: Pick<PreventiveAsset, 'locationGroup' | 'locationOverride'>): string =>
   asset.locationOverride?.trim() || asset.locationGroup;
 
-/** Aset aktif yang terjadwal pada periode ini di PRIMA. */
+/** Aset aktif yang terjadwal pada periode ini di PRIMA (termasuk yang di gudang). */
 export const assetsForPeriod = (assets: PreventiveAsset[], period: PreventivePeriod): PreventiveAsset[] =>
   assets.filter((a) => a.active && a.periods.includes(PERIOD_CODE[period]));
+
+/** Lokasi untuk peralatan yang disimpan, bukan dioperasikan. Diisi lewat prima_assets.location_override. */
+export const WAREHOUSE_LOCATION = 'Gudang';
+
+export const isInWarehouse = (asset: Pick<PreventiveAsset, 'locationGroup' | 'locationOverride'>): boolean =>
+  effectiveLocation(asset).trim().toLowerCase() === WAREHOUSE_LOCATION.toLowerCase();
+
+/** Aset yang dihitung untuk preventif pada periode ini: terjadwal dan tidak berada di gudang. */
+export const countedAssetsForPeriod = (assets: PreventiveAsset[], period: PreventivePeriod): PreventiveAsset[] =>
+  assetsForPeriod(assets, period).filter((a) => !isInWarehouse(a));
 
 const matchesQuery = (asset: PreventiveAsset, q: string): boolean =>
   asset.equipmentNumber.toLowerCase().includes(q) ||
@@ -86,7 +97,7 @@ export const groupAssets = (
   const q = options.query.trim().toLowerCase();
   const byType = new Map<string, Map<string, { all: PreventiveAsset[]; visible: PreventiveAsset[] }>>();
 
-  for (const asset of assetsForPeriod(assets, period)) {
+  for (const asset of countedAssetsForPeriod(assets, period)) {
     const loc = effectiveLocation(asset);
     let locMap = byType.get(asset.assetType);
     if (!locMap) byType.set(asset.assetType, (locMap = new Map()));
@@ -188,7 +199,7 @@ export const groupAssetsByPlace = (
   const q = options.query.trim().toLowerCase();
   const byPlace = new Map<string, Map<string, { all: PreventiveAsset[]; visible: PreventiveAsset[] }>>();
 
-  for (const asset of assetsForPeriod(assets, period)) {
+  for (const asset of countedAssetsForPeriod(assets, period)) {
     if (!isPlaceAssetType(asset.assetType)) continue;
     const place = canonicalPlace(effectiveLocation(asset));
     let typeMap = byPlace.get(place);
@@ -241,7 +252,7 @@ export const summarize = (
   statusOf: (asset: PreventiveAsset) => RowStatus,
 ): Summary => {
   const s: Summary = { total: 0, saved: 0, failed: 0, uploading: 0, pending: 0 };
-  for (const asset of assetsForPeriod(assets, period)) {
+  for (const asset of countedAssetsForPeriod(assets, period)) {
     s.total += 1;
     const st = statusOf(asset);
     if (st === 'saved') s.saved += 1;
@@ -250,6 +261,45 @@ export const summarize = (
     else s.pending += 1;
   }
   return s;
+};
+
+export interface WarehouseTypeSection {
+  assetType: string;
+  assets: PreventiveAsset[];
+}
+
+export interface WarehouseGroup {
+  /** Jumlah aset gudang pada periode terpilih (tidak terpengaruh pencarian). */
+  total: number;
+  /** Aset yang lolos pencarian, per jenis. Kosong bila filter status aktif. */
+  types: WarehouseTypeSection[];
+}
+
+/**
+ * Aset di gudang: tidak dihitung preventif, tetapi tetap ditampilkan agar terlihat di mana peralatan itu.
+ * Filter status (Belum/Gagal/Tersimpan) hanya berlaku untuk aset yang dihitung, jadi area gudang ikut tersembunyi.
+ */
+export const groupWarehouse = (assets: PreventiveAsset[], period: PreventivePeriod, options: GroupOptions): WarehouseGroup => {
+  const q = options.query.trim().toLowerCase();
+  const stored = assetsForPeriod(assets, period).filter(isInWarehouse);
+  const byType = new Map<string, PreventiveAsset[]>();
+  if (options.filter === 'all') {
+    for (const asset of stored) {
+      if (q !== '' && !matchesQuery(asset, q)) continue;
+      let list = byType.get(asset.assetType);
+      if (!list) byType.set(asset.assetType, (list = []));
+      list.push(asset);
+    }
+  }
+  const placeOrder = PLACE_ASSET_TYPES as readonly string[];
+  const rank = (t: string) => (placeOrder.includes(t) ? placeOrder.indexOf(t) : placeOrder.length + typeRank(t));
+  const types = [...byType]
+    .map(([assetType, list]) => ({
+      assetType,
+      assets: list.sort((x, y) => collator.compare(x.name, y.name) || x.equipmentNumber.localeCompare(y.equipmentNumber)),
+    }))
+    .sort((x, y) => rank(x.assetType) - rank(y.assetType));
+  return { total: stored.length, types };
 };
 
 export type { PreventiveAssetType };
