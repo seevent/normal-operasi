@@ -14,13 +14,14 @@ interface AssetRow {
   location_override: string | null;
   periods: string[] | null;
   active: boolean;
+  synced_at: string | null;
 }
 
 /** Daftar peralatan = salinan daftar PRIMA (Preventive > Maintenance > Electronica > Soekarno-Hatta > Terminal 2). */
 export async function fetchPreventiveAssets(): Promise<PreventiveAsset[]> {
   const { data, error } = await supabase
     .from('prima_assets')
-    .select('equipment_number,name,asset_type,location_group,location_override,periods,active')
+    .select('equipment_number,name,asset_type,location_group,location_override,periods,active,synced_at')
     .order('name', { ascending: true })
     .limit(2000);
   if (error) throw new Error('Daftar peralatan tidak dapat dimuat.');
@@ -32,6 +33,7 @@ export async function fetchPreventiveAssets(): Promise<PreventiveAsset[]> {
     locationOverride: r.location_override,
     periods: r.periods ?? [],
     active: r.active,
+    syncedAt: r.synced_at,
   }));
 }
 

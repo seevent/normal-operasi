@@ -22,6 +22,8 @@ export interface PreventiveAsset {
   /** Kode periode terjadwal di PRIMA, misal ['D','W','M','3M']. */
   periods: string[];
   active: boolean;
+  /** Waktu baris ini terakhir disalin dari PRIMA (prima_assets.synced_at). */
+  syncedAt?: string | null;
 }
 
 export interface LocationGroup {

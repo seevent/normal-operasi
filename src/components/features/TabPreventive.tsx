@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CalendarClock, Camera, CheckSquare, FolderOpen, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CalendarClock, Camera, CheckSquare, DatabaseZap, FolderOpen, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import { ASSET_TYPE_LABEL, PERIOD_LABEL, PERIOD_RESET_TEXT, PREVENTIVE_PERIODS } from '../../lib/data/preventiveTypes';
 import type { PreventiveAssetType, PreventivePeriod } from '../../lib/data/preventiveTypes';
 import { groupAssets, groupAssetsByPlace, groupWarehouse, isPlaceAssetType, summarize } from '../../lib/utils/preventiveGrouping';
 import type { PreventiveAsset, RowStatus, StatusFilter } from '../../lib/utils/preventiveGrouping';
 import { nextResetAt } from '../../lib/utils/preventivePeriod';
+import { formatSyncAge, formatSyncTime, lastSyncInfo } from '../../lib/utils/preventiveSync';
 import { photoDateWarning } from '../../lib/utils/photoExif';
 import type { SavedEntry } from '../../lib/utils/preventiveStatus';
 import { statusOf, usePreventiveStore } from '../../store/usePreventiveStore';
@@ -95,6 +96,8 @@ export const TabPreventive: React.FC = () => {
     [assets, makeStatusFor],
   );
   const summary = summaries[period];
+  // Kapan daftar peralatan terakhir disalin dari PRIMA; jam server dipakai agar umur sync tidak salah karena jam HP.
+  const sync = useMemo(() => lastSyncInfo(assets, Date.now() + clockOffsetMs), [assets, clockOffsetMs]);
 
   const typeLabel = (assetType: string) => ASSET_TYPE_LABEL[assetType as PreventiveAssetType] ?? assetType;
   // Access Control System tetap per jenis lalu lokasi; peralatan pemeriksaan per tempat lalu jenis.
@@ -248,6 +251,20 @@ export const TabPreventive: React.FC = () => {
         <div className="h-2.5 rounded-full bg-slate-200 overflow-hidden" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progres foto tersimpan">
           <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${percent}%` }} />
         </div>
+        {ready && sync.at !== null && sync.ageDays !== null && (
+          <p
+            role={sync.stale ? 'status' : undefined}
+            className={`flex items-start gap-1.5 rounded-lg px-2 py-1.5 text-[11px] font-semibold leading-snug ${
+              sync.stale ? 'bg-amber-50 border border-amber-300 text-amber-900' : 'bg-slate-50 border border-slate-200 text-slate-600'
+            }`}
+          >
+            {sync.stale ? <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" /> : <DatabaseZap className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />}
+            <span>
+              Sync PRIMA terakhir: {formatSyncTime(sync.at)} ({formatSyncAge(sync.ageDays)})
+              {sync.stale && <span className="block font-medium">Daftar peralatan mungkin belum sama dengan OPTIMA.</span>}
+            </span>
+          </p>
+        )}
         {ready && warehouse.total > 0 && (
           <p className="text-[11px] font-semibold text-amber-800">{warehouse.total} peralatan di gudang tidak dihitung.</p>
         )}
