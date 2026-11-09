@@ -5,7 +5,9 @@
 // Netlify belum mendokumentasikan endpoint saldo kredit. Data dibaca dari GET /api/v1/accounts/{slug}:
 //   type_name, plan_credits / capabilities.credits.included (jatah), capabilities.credits.used (terpakai),
 //   current_billing_period_start, next_billing_period_start, usages_exceeded (deploy diblokir).
-// Pengguna API melaporkan `used` bisa tertinggal dari halaman Usage & Billing, jadi panel menautkan ke sana.
+// `capabilities.credits.used` selalu 0 berapa pun pemakaiannya (bug Netlify, github.com/netlify/open-api/issues/640),
+// jadi nilai 0 dianggap TIDAK DIKETAHUI agar kartu tidak menampilkan "300 / 300 tersedia" yang menyesatkan.
+// Netlify belum punya endpoint saldo kredit; angka sebenarnya ada di halaman Usage & Billing yang ditautkan panel.
 
 export interface NetlifyDeps {
   env: Record<string, string | undefined>;
@@ -66,7 +68,8 @@ export const getNetlifyCredits = async (deps: NetlifyDeps): Promise<NetlifyCredi
   const a = await get<NetlifyAccount>(deps, token, `/accounts/${encodeURIComponent(slug)}`);
 
   const included = num(a.plan_credits) ?? num(a.capabilities?.credits?.included);
-  const used = num(a.capabilities?.credits?.used);
+  const rawUsed = num(a.capabilities?.credits?.used);
+  const used = rawUsed !== null && rawUsed > 0 ? rawUsed : null;
   return {
     configured: true,
     teamSlug: str(a.slug) ?? slug,

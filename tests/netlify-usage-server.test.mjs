@@ -83,3 +83,16 @@ test('panel Penyimpanan menampilkan kartu Netlify lewat server function yang waj
   assert.match(panel, /Kredit tersedia/);
   assert.doesNotMatch(panel, /NETLIFY_API_TOKEN['"]?\s*[:=]/);
 });
+
+test('used = 0 dari API dianggap tidak diketahui (bug Netlify open-api #640), bukan 300 tersedia', async () => {
+  const r = await getNetlifyCredits(deps(async () => json({ ...ACCOUNT, capabilities: { credits: { included: 300, used: 0 } } }), { NETLIFY_API_TOKEN: TOKEN, NETLIFY_ACCOUNT_SLUG: 'seevent-777' }));
+  assert.equal(r.creditsIncluded, 300);
+  assert.equal(r.creditsUsed, null);
+  assert.equal(r.creditsAvailable, null);
+});
+
+test('panel: bila kredit terpakai tidak diketahui, tidak menampilkan angka tersedia dan menautkan ke Usage & Billing', () => {
+  const panel = readFileSync(new URL('../src/components/features/storage-manager/StorageManagerPanel.tsx', import.meta.url), 'utf8');
+  assert.match(panel, /creditsAvailable != null \?/);
+  assert.match(panel, /Lihat sisa kredit di Netlify/);
+});

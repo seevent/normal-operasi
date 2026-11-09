@@ -97,10 +97,27 @@ const NetlifyCreditsBody: React.FC<{ credits: NetlifyCredits | null; error: stri
       )}
       <div className="mb-3">
         <div className="text-[11px] text-slate-500">Kredit tersedia</div>
-        <div className="text-2xl font-black text-slate-900 tabular-nums leading-tight">
-          {credits.creditsAvailable != null ? kredit(credits.creditsAvailable) : '-'}
-          <span className="text-sm font-bold text-slate-500"> / {credits.creditsIncluded != null ? kredit(credits.creditsIncluded) : '-'}</span>
-        </div>
+        {credits.creditsAvailable != null ? (
+          <div className="text-2xl font-black text-slate-900 tabular-nums leading-tight">
+            {kredit(credits.creditsAvailable)}
+            <span className="text-sm font-bold text-slate-500"> / {credits.creditsIncluded != null ? kredit(credits.creditsIncluded) : '-'}</span>
+          </div>
+        ) : (
+          <>
+            <div className="text-sm font-bold text-slate-700 leading-snug">
+              Belum bisa dibaca dari API{credits.creditsIncluded != null && <span className="font-semibold text-slate-500"> · jatah {kredit(credits.creditsIncluded)} kredit</span>}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500 leading-snug">API Netlify selalu melaporkan 0 kredit terpakai, jadi sisa kredit sebenarnya hanya terlihat di dashboard Netlify.</p>
+            <a
+              href={billingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 min-h-[44px] w-full rounded-xl border border-teal-300 bg-teal-50 text-teal-900 text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-teal-100"
+            >
+              Lihat sisa kredit di Netlify <ExternalLink className="w-4 h-4" />
+            </a>
+          </>
+        )}
       </div>
       {credits.creditsUsed != null && credits.creditsIncluded != null && credits.creditsIncluded > 0 && (
         <UsageBar label="Kredit terpakai periode ini" used={credits.creditsUsed} limit={credits.creditsIncluded} format={kredit} />
@@ -111,12 +128,14 @@ const NetlifyCreditsBody: React.FC<{ credits: NetlifyCredits | null; error: stri
         <Stat label="Periode tagihan" value={credits.periodStart || credits.periodEnd ? `${tgl(credits.periodStart)} – ${tgl(credits.periodEnd)}` : '-'} />
         <Stat label="Status deploy" value={credits.usageExceeded ? <span className="text-rose-700">Diblokir</span> : <span className="text-emerald-700">Normal</span>} />
       </div>
-      <p className="text-[11px] text-slate-500 mt-2">
-        Dari API Netlify; angka terpakai bisa tertinggal dari halaman Usage &amp; Billing.{' '}
-        <a href={billingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-semibold text-blue-700 hover:underline">
-          Buka Usage &amp; Billing <ExternalLink className="w-3 h-3" />
-        </a>
-      </p>
+      {credits.creditsAvailable != null && (
+        <p className="text-[11px] text-slate-500 mt-2">
+          Dari API Netlify; angka resmi ada di halaman Usage &amp; Billing.{' '}
+          <a href={billingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-semibold text-blue-700 hover:underline">
+            Buka Usage &amp; Billing <ExternalLink className="w-3 h-3" />
+          </a>
+        </p>
+      )}
     </>
   );
 };
