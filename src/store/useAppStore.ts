@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ShareItem } from '../lib/utils/shareBatches';
+import type { ShareFailure } from '../lib/utils/shareFlow';
 
 /**
  * Nada pesan yang ditampilkan maskot. Menentukan warna balon dialog dan
@@ -57,9 +58,11 @@ interface AppState {
   /** Kiriman campur foto + video terakhir; bila WhatsApp menolaknya, pengguna bisa mengirim ulang terpisah. */
   shareRetry: ShareItem | null;
   setShareRetry: (item: ShareItem | null) => void;
-  /** Kemajuan konversi video ke format WhatsApp sebelum laporan bisa dibagikan; null bila tidak ada. */
-  videoPrep: { done: number; total: number } | null;
-  setVideoPrep: (prep: { done: number; total: number } | null) => void;
+  /** Kiriman terdepan ditolak peramban pada percobaan terakhir; kiriman tetap di antrean. */
+  shareFailure: ShareFailure | null;
+  /** Kiriman terdepan sudah dicoba tetapi peramban belum melaporkan selesai (di iOS bisa tidak pernah). */
+  shareAttempted: boolean;
+  setShareState: (patch: Partial<Pick<AppState, 'pendingShareBatches' | 'shareRetry' | 'shareFailure' | 'shareAttempted'>>) => void;
 }
 
 let petMessageCounter = 0;
@@ -93,8 +96,9 @@ export const useAppStore = create<AppState>((set) => ({
   setPendingShareBatches: (batches) => set({ pendingShareBatches: batches }),
   shareRetry: null,
   setShareRetry: (item) => set({ shareRetry: item }),
-  videoPrep: null,
-  setVideoPrep: (prep) => set({ videoPrep: prep }),
+  shareFailure: null,
+  shareAttempted: false,
+  setShareState: (patch) => set(patch),
 }));
 
 /**

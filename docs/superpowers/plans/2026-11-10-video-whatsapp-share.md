@@ -1,6 +1,7 @@
 # Rencana: lampiran video ikut terkirim ke WhatsApp
 
-Tanggal: 10 Nov 2026. Status: rencana, belum dikerjakan.
+Tanggal: 10 Nov 2026. Status: Fase 1–4 selesai di kode (10 Nov 2026); menunggu uji di iPhone dan Android
+lewat sub-tab Uji Share WA untuk memutuskan strategi iPhone.
 
 **Tujuan:** setiap video yang dilampirkan di tab Kegiatan, Storing, Perbaikan, Kalibrasi,
 Initial Report, dan Briefing sampai di WhatsApp, atau pengguna diberi tahu dengan jelas bahwa
@@ -67,27 +68,27 @@ Keduanya diubah bersamaan dan tidak pernah diuji terpisah.
 
 ### Fase 1 — Kembalikan perilaku yang dulu berfungsi
 
-- [ ] Kirim ditekan = **satu share saat itu juga**: laporan + foto + video, di semua perangkat,
+- [x] Kirim ditekan = **satu share saat itu juga**: laporan + foto + video, di semua perangkat,
       seperti kode awal. Tidak pernah menunggu unggah atau konversi.
-- [ ] Video memakai salinan MP4 bila sudah "Siap"; bila belum, **video asli** yang dikirim.
-- [ ] Unggah video untuk dokumentasi tetap berjalan di latar belakang (tidak menghalangi share).
-- [ ] Tombol "WhatsApp gagal? Kirim ulang terpisah" disiapkan **sebelum** share dipanggil, bukan
+- [x] Video memakai salinan MP4 bila sudah "Siap"; bila belum, **video asli** yang dikirim.
+- [x] Unggah video untuk dokumentasi tetap berjalan di latar belakang (tidak menghalangi share).
+- [x] Tombol "WhatsApp gagal? Kirim ulang terpisah" disiapkan **sebelum** share dipanggil, bukan
       setelah promise selesai, supaya selalu tersedia.
 
 ### Fase 2 — Pengaman
 
-- [ ] Kiriman lanjutan yang gagal **tetap di antrean** dengan tombol Coba lagi; tidak ada unduhan
+- [x] Kiriman lanjutan yang gagal **tetap di antrean** dengan tombol Coba lagi; tidak ada unduhan
       diam-diam dan tidak dibuang.
-- [ ] Jalan cadangan: "Kirim tautan video" (URL MP4 Cloudinary sebagai pesan teks) dan
+- [x] Jalan cadangan: "Kirim tautan video" (URL MP4 Cloudinary sebagai pesan teks) dan
       "Simpan video".
-- [ ] Unggah video diberi batas waktu dan status gagal yang jelas di lencana.
+- [x] Unggah video diberi batas waktu dan status gagal yang jelas di lencana.
 
 ### Fase 3 — Ukur di perangkat (bersamaan dengan Fase 1)
 
-- [ ] Tabel `share_log` (insert publik, baca login): waktu, tab, langkah, jumlah foto/video,
+- [x] Tabel `share_log` (insert publik, baca login): waktu, tab, langkah, jumlah foto/video,
       ukuran, video asli atau konversi, hasil (`resolved`/`rejected`/`timeout`), nama error,
       lama, user agent. Tanpa isi laporan.
-- [ ] Halaman "Uji share WhatsApp" di tab Data: pilih mode (satu share video asli / satu share
+- [x] Halaman "Uji share WhatsApp" di tab Data: pilih mode (satu share video asli / satu share
       video konversi / video terpisah), kirim, lalu jawab "Sampai di WhatsApp?". Dijalankan di
       iPhone dan Android, ±10 menit.
 - [ ] Bila di iPhone satu share terbukti ditolak WhatsApp, iPhone pindah ke mode yang lolos uji.
@@ -95,11 +96,10 @@ Keduanya diubah bersamaan dan tidak pernah diuji terpisah.
 
 ### Fase 4 — Uji dan dokumentasi
 
-- [ ] Skrip reproduksi di atas dijadikan tes: 6 skenario (Android/iPhone × siap/belum siap ×
-      promise selesai/menggantung) harus selalu menghasilkan share yang memuat video atau tombol
-      yang terlihat.
-- [ ] Tes unit `shareBatches` dan `share-report` diperbarui.
-- [ ] `agent.md` §2.7: aturan share video dan hasil uji perangkat.
+- [x] Enam skenario reproduksi dijadikan tes tetap di `tests/share-flow.test.mjs` (alur share
+      diuji di Node lewat `shareFlow.ts` dengan navigator tiruan).
+- [x] Tes unit `shareBatches` dan `share-report` diperbarui.
+- [x] `agent.md` §2.7: aturan share video dan hasil uji perangkat.
 
 ## 5. Bukti bahwa perbaikan berhasil (bukan dari pembuatnya)
 

@@ -81,7 +81,7 @@ test('Video dikonversi di latar belakang sejak dipilih di setiap tab pengirim me
   }
   assert.match(read('src/lib/hooks/usePhotoGroups.ts'), /prefetchVideosForWhatsApp\(.*videoCategory\)/);
   assert.match(read('src/components/features/TabPerbaikan.tsx'), /usePhotoGroups\('Perbaikan'\)/);
-  // Bila semua video sudah siap, share langsung dibuka tanpa menunggu tombol di PendingShareBar.
-  assert.match(read('src/lib/services/shareService.ts'), /videos\.every\(\(v\) => getPreparedVideo\(v\)\)/);
+  // Share tidak pernah menunggu konversi: MP4 dipakai bila sudah siap, selain itu berkas asli.
+  assert.match(read('src/lib/services/shareService.ts'), /preparedVideo: getPreparedVideo/);
   assert.match(read('src/components/shared/PhotoUploader.tsx'), /<VideoPrepBadge file=\{photo\.file\} \/>/);
 });

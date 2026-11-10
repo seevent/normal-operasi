@@ -68,12 +68,12 @@ test('Tab yang melampirkan media memakai shareReportWithMedia', () => {
   assert.match(read('src/components/shared/PendingShareBar.tsx'), /retryShareSeparately/);
 });
 
-test('Video diubah ke MP4 ramah WhatsApp sebelum laporan dibagikan', () => {
+test('Video dikonversi lewat endpoint video Cloudinary; share memakai MP4 bila siap tanpa menunggu', () => {
   const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
   const service = read('src/lib/services/shareService.ts');
-  assert.match(service, /prepareVideoForWhatsApp\(video, category\)/);
-  assert.match(service, /setPendingShareBatches\(\[\{ \.\.\.head, cheerTab \}, \.\.\.rest\]\)/, 'kiriman pertama membawa caption laporan + cheerTab');
-  assert.match(read('src/components/shared/PendingShareBar.tsx'), /Menyiapkan video/);
+  assert.match(service, /preparedVideo: getPreparedVideo/);
+  assert.doesNotMatch(service, /await prepareVideoForWhatsApp/, 'share tidak boleh menunggu konversi');
+  assert.doesNotMatch(read('src/components/shared/PendingShareBar.tsx'), /Menyiapkan video/);
   // Video harus lewat endpoint video Cloudinary, bukan endpoint gambar.
   assert.match(read('src/lib/services/cloudinaryService.ts'), /\/video\/upload`/);
 });
@@ -117,10 +117,11 @@ test('isAppleMobile: Safari & Chrome iPhone, iPad (termasuk iPadOS bermode deskt
   assert.equal(isAppleMobile(android, 'Linux armv8l', 5), false);
 });
 
-test('shareService: berkas dibagikan tanpa title; iPhone memakai planShareItems dengan video terpisah', () => {
+test('shareService: iPhone dan Android sama-sama satu share (gabung); berkas dibagikan tanpa title', () => {
   const src = readFileSync(new URL('../src/lib/services/shareService.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /files: finalFiles,\s*title:/);
-  assert.match(src, /hasFiles \? \{ files: next\.files \} : \{ title: 'Laporan SSES T2' \}/);
-  assert.equal((src.match(/planShareItems\(/g) ?? []).length, 2, 'share langsung dan share setelah konversi');
-  assert.equal((src.match(/shouldSeparateVideos\(\)/g) ?? []).length, 2);
+  assert.match(src, /SHARE_MODE_BY_PLATFORM[^=]*= \{ apple: 'gabung', other: 'gabung' \}/);
+  const flow = readFileSync(new URL('../src/lib/utils/shareFlow.ts', import.meta.url), 'utf8');
+  assert.match(flow, /hasFiles \? \{ files: item\.files \} : \{ title: TEXT_SHARE_TITLE \}/);
+  assert.match(flow, /planShareItems\(buildShareBatches\(chosen\), message, mode === 'pisah'\)/);
 });

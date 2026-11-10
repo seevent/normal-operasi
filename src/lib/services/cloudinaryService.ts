@@ -324,6 +324,11 @@ async function uploadToSupabaseStorageFallback(
 const isVideoInput = (input: File | Blob | string): input is Blob =>
   typeof input !== 'string' && input.type.startsWith('video/');
 
+/** Batas waktu satu potongan unggah video (≤ 20 MB). Tanpa batas, unggahan di jaringan putus menggantung selamanya. */
+const VIDEO_CHUNK_TIMEOUT_MS = 5 * 60 * 1000;
+const chunkTimeout = (): AbortSignal | undefined =>
+  typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(VIDEO_CHUNK_TIMEOUT_MS) : undefined;
+
 /** Unggahan video yang sedang/sudah berjalan per berkas, agar simpan dokumentasi dan share WhatsApp memakai satu unggahan. */
 const videoUploads = new WeakMap<Blob, Promise<UploadResult>>();
 
@@ -364,6 +369,7 @@ async function uploadVideoInChunks(file: Blob, options?: UploadPhotoOptions): Pr
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
         method: 'POST',
         body: formData,
+        signal: chunkTimeout(),
         // Berkas > 20 MB dikirim bertahap: tiap potongan membawa id unggahan dan rentang byte-nya.
         headers: ranges.length > 1
           ? { 'X-Unique-Upload-Id': uploadId, 'Content-Range': `bytes ${start}-${end - 1}/${file.size}` }

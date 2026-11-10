@@ -1,10 +1,13 @@
 // src/lib/services/shareService.ts
 import { isAbortError } from '../utils/errorUtils';
 import { sayPet, useAppStore } from '../../store/useAppStore';
-import { buildShareBatches, isAppleMobile, isRiskyBatch, isVideo, planShareItems, splitMediaSafely } from '../utils/shareBatches';
+import { isAppleMobile, isVideo } from '../utils/shareBatches';
+import type { ShareItem } from '../utils/shareBatches';
+import { retrySeparately, shareNext, skipNext, startReportShare, videoLinkMessage } from '../utils/shareFlow';
+import type { ShareFlowDeps, ShareFlowState, ShareMode, ShareSession, StartShareResult, VideoChoice } from '../utils/shareFlow';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
-import type { DocumentationCategory } from '../utils/documentationPhoto';
-import { getPreparedVideo, prepareVideoForWhatsApp } from './whatsappVideoService';
+import { getPreparedVideo, getVideoLink } from './whatsappVideoService';
+import { logShare, logShareNote } from './shareLogService';
 
 export const triggerFileDownload = (file: File) => {
   const url = URL.createObjectURL(file);
@@ -95,77 +98,77 @@ export const shareToWhatsApp = async (
   return 'fallback';
 };
 
-/** Folder Cloudinary untuk video per tab; tab lain memakai folder induk dokumentasi. */
-const VIDEO_CATEGORY_BY_TAB: Partial<Record<TabCheerKey, DocumentationCategory>> = {
-  kegiatan: 'Kegiatan',
-  storing: 'Storing',
-  perbaikan: 'Perbaikan',
-  kalibrasi: 'Kalibrasi',
-};
-
-/** Di iPhone/iPad video dibagikan sendiri-sendiri, tanpa caption dan tanpa berkas lain. */
-const shouldSeparateVideos = (): boolean =>
-  typeof navigator !== 'undefined' && isAppleMobile(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
-
-/** Naik setiap kali share baru dimulai atau dibatalkan, agar konversi video lama tidak mengisi antrean. */
-let shareSession = 0;
-
-/** Mengosongkan antrean kiriman, tombol kirim ulang, dan konversi video yang sedang berjalan. */
-export const clearPendingShare = () => {
-  shareSession += 1;
-  const { setPendingShareBatches, setShareRetry, setVideoPrep } = useAppStore.getState();
-  setPendingShareBatches([]);
-  setShareRetry(null);
-  setVideoPrep(null);
-};
-
 /**
- * Menunggu semua video selesai diubah ke MP4 ramah WhatsApp (umumnya sudah berjalan sejak video
- * dipilih), lalu mengantrekan laporan + media sebagai satu kiriman yang dibagikan lewat tombol
- * PendingShareBar (ketukan baru, karena menunggu membuat izin ketukan Kirim kedaluwarsa).
+ * Strategi share video per platform. 'gabung' = laporan + foto + video dalam satu share, seperti kode
+ * awal yang berfungsi di iPhone dan Android. Ubah hanya berdasar tabel share_log / halaman Uji share
+ * (tab Data), bukan dugaan: lihat docs/superpowers/plans/2026-11-10-video-whatsapp-share.md.
  */
-const queueReportWithConvertedVideos = async (
-  message: string,
-  groups: File[][],
-  videos: File[],
-  cheerTab?: TabCheerKey
-) => {
-  const session = shareSession;
-  const { setPendingShareBatches, setVideoPrep } = useAppStore.getState();
-  const category = cheerTab ? VIDEO_CATEGORY_BY_TAB[cheerTab] : undefined;
-  const converted = new Map<File, File>();
-  let failed = 0;
+export const SHARE_MODE_BY_PLATFORM: { apple: ShareMode; other: ShareMode } = { apple: 'gabung', other: 'gabung' };
 
-  setVideoPrep({ done: 0, total: videos.length });
-  for (const [i, video] of videos.entries()) {
-    try {
-      converted.set(video, await prepareVideoForWhatsApp(video, category));
-    } catch (err) {
-      console.error('Konversi video untuk WhatsApp gagal', err);
-      failed += 1;
+const defaultShareMode = (): ShareMode =>
+  typeof navigator !== 'undefined' && isAppleMobile(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
+    ? SHARE_MODE_BY_PLATFORM.apple
+    : SHARE_MODE_BY_PLATFORM.other;
+
+/** Sesi share yang sedang berjalan (id percobaan, tab, langkah) untuk pencatatan share_log. */
+let currentSession: ShareSession | undefined;
+
+const newAttemptId = (): string =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+const copyText = (text: string) => {
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(() => {});
+};
+
+/** Menyambungkan alur share (shareFlow.ts) ke peramban, store aplikasi, dan pencatatan. */
+const flowDeps = (setIsCopied: (v: boolean) => void = () => {}): ShareFlowDeps => ({
+  nav: {
+    share: typeof navigator.share === 'function' ? (data) => navigator.share(data as ShareData) : undefined,
+    canShare: typeof navigator.canShare === 'function' ? (data) => navigator.canShare(data as ShareData) : undefined,
+  },
+  getState: (): ShareFlowState => {
+    const s = useAppStore.getState();
+    return { queue: s.pendingShareBatches, retry: s.shareRetry, failure: s.shareFailure, attempted: s.shareAttempted, session: currentSession };
+  },
+  setState: (patch) => {
+    if ('session' in patch) currentSession = patch.session;
+    useAppStore.getState().setShareState({
+      ...('queue' in patch ? { pendingShareBatches: patch.queue } : {}),
+      ...('retry' in patch ? { shareRetry: patch.retry } : {}),
+      ...('failure' in patch ? { shareFailure: patch.failure } : {}),
+      ...('attempted' in patch ? { shareAttempted: patch.attempted } : {}),
+    });
+  },
+  preparedVideo: getPreparedVideo,
+  log: logShare,
+  now: () => Date.now(),
+  newId: newAttemptId,
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  onShared: (item) => {
+    if (item.caption) {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2500);
     }
-    if (session !== shareSession) return;
-    setVideoPrep({ done: i + 1, total: videos.length });
-  }
-  setVideoPrep(null);
-  if (failed > 0) {
-    sayPet(`${failed} video gagal diubah ke format WhatsApp (cek koneksi). Video dikirim apa adanya; bila WhatsApp gagal, ketuk "Kirim ulang terpisah".`, 'warning');
-  }
+    if (item.cheerTab) sayPet(getTabCheer(item.cheerTab), 'cheer');
+  },
+  fallback: (message, files) => fallbackShare(message, files, setIsCopied),
+  download: triggerFileDownload,
+  copyText,
+});
 
-  const [head, ...rest] = planShareItems(
-    buildShareBatches(groups.map((g) => g.map((f) => converted.get(f) ?? f))),
-    message,
-    shouldSeparateVideos()
-  );
-  setPendingShareBatches([{ ...head, cheerTab }, ...rest]);
+/** Mengosongkan antrean kiriman dan tombol kirim ulang. */
+export const clearPendingShare = () => {
+  currentSession = undefined;
+  useAppStore.getState().setShareState({ pendingShareBatches: [], shareRetry: null, shareFailure: null, shareAttempted: false });
 };
 
 /**
- * Membagikan laporan beserta lampiran per grup kolase.
- * Laporan hanya menjadi caption kiriman pertama (Grup Kolase 1); media grup lain dikirim
- * tanpa caption lewat PendingShareBar. Video diubah ke MP4 H.264 lewat Cloudinary (rekaman asli
- * iPhone ditolak WhatsApp iOS). Bila konversi sudah selesai, laporan + foto + video langsung
- * dibagikan; bila belum, dibagikan dari tombol PendingShareBar setelah konversi selesai.
+ * Membagikan laporan beserta lampiran per grup kolase. Menu share WhatsApp dibuka SEKETIKA saat Kirim
+ * ditekan: laporan + media Grup Kolase 1 (foto dan video) dalam satu share; media grup lain lewat
+ * tombol PendingShareBar. Video memakai salinan MP4 hasil konversi bila sudah siap, selain itu berkas
+ * asli: share tidak pernah menunggu unggah atau konversi.
  */
 export const shareReportWithMedia = async (
   message: string,
@@ -173,69 +176,64 @@ export const shareReportWithMedia = async (
   setIsCopied: (v: boolean) => void,
   cheerTab?: TabCheerKey
 ) => {
-  clearPendingShare();
-  const { setPendingShareBatches, setShareRetry } = useAppStore.getState();
-
-  const videos = groups.flat().filter(isVideo);
-  if (videos.length > 0 && typeof navigator.canShare === 'function') {
-    // Video dikonversi di latar belakang sejak dipilih. Bila semuanya sudah siap, langsung bagikan
-    // (masih dalam ketukan Kirim); bila belum, tunggu dulu lewat PendingShareBar.
-    if (!videos.every((v) => getPreparedVideo(v))) {
-      await queueReportWithConvertedVideos(message, groups, videos, cheerTab);
-      return;
-    }
-    groups = groups.map((g) => g.map((f) => getPreparedVideo(f) ?? f));
-  }
-
-  const [head, ...rest] = planShareItems(buildShareBatches(groups), message, shouldSeparateVideos());
-  const result = await shareToWhatsApp(message, head.files.length > 0 ? head.files : null, setIsCopied, cheerTab);
-  if (result === 'aborted') return;
-
-  if (result === 'fallback') {
-    // Tanpa Web Share API tidak ada kotak share: unduh semua sisa berkas agar bisa dilampirkan manual.
-    rest.flatMap((item) => item.files).forEach(triggerFileDownload);
-    return;
-  }
-  setPendingShareBatches(rest);
-  if (isRiskyBatch(head.files, message)) setShareRetry({ files: head.files, caption: message });
+  const { result } = await startReportShare(flowDeps(setIsCopied), { message, groups, cheerTab, mode: defaultShareMode() });
+  if (result === 'fallback' && cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
 };
+
+/** Halaman Uji share (tab Data): satu percobaan dengan mode dan pilihan video tertentu. */
+export const shareTestReport = (options: {
+  test: string;
+  message: string;
+  groups: File[][];
+  mode: ShareMode;
+  video: VideoChoice;
+}): Promise<{ result: StartShareResult; attemptId: string }> => startReportShare(flowDeps(), { ...options, kind: 'uji' });
 
 /** Mengirim kiriman berikutnya di antrean. Harus dipanggil dari ketukan pengguna. */
-export const shareNextPendingBatch = async () => {
-  const { pendingShareBatches, setPendingShareBatches, setShareRetry } = useAppStore.getState();
-  const [next, ...rest] = pendingShareBatches;
-  if (!next) return;
+export const shareNextPendingBatch = () => shareNext(flowDeps());
 
-  if (next.caption && navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(next.caption).catch(() => {});
-  }
+/** Mengirim ulang kiriman berisi video secara terpisah: laporan + foto sekali, lalu tiap video sendiri. */
+export const retryShareSeparately = () => retrySeparately(flowDeps());
 
-  try {
-    const hasFiles = next.files.length > 0;
-    if (!hasFiles || (navigator.canShare && navigator.canShare({ files: next.files }))) {
-      await navigator.share({
-        ...(hasFiles ? { files: next.files } : { title: 'Laporan SSES T2' }),
-        ...(next.caption ? { text: next.caption } : {}),
-      });
-      if (next.cheerTab) sayPet(getTabCheer(next.cheerTab), 'cheer');
-    } else {
-      next.files.forEach(triggerFileDownload);
-    }
-  } catch (err) {
-    console.error('Share media lanjutan dibatalkan atau gagal', err);
-    if (isAbortError(err)) return;
-    next.files.forEach(triggerFileDownload);
-  }
-  setPendingShareBatches(rest);
-  setShareRetry(isRiskyBatch(next.files, next.caption) ? next : null);
+const noteHead = (note: 'tautan' | 'disimpan' | 'dilewati') => {
+  if (currentSession) logShareNote(currentSession.attemptId, note, currentSession.test);
 };
 
-/** Mengirim ulang kiriman berisi video secara terpisah: caption + foto sekali, lalu tiap video sendiri. */
-export const retryShareSeparately = async () => {
-  const { shareRetry, pendingShareBatches, setPendingShareBatches, setShareRetry } = useAppStore.getState();
-  if (!shareRetry) return;
+/** Melewati kiriman terdepan: sudah terkirim tetapi peramban tidak melapor, atau memang tidak ingin dikirim. */
+export const skipPendingShare = () => {
+  noteHead('dilewati');
+  skipNext(flowDeps());
+};
 
-  setShareRetry(null);
-  setPendingShareBatches([...splitMediaSafely(shareRetry), ...pendingShareBatches]);
-  await shareNextPendingBatch();
+/** Tautan Cloudinary untuk semua video pada kiriman; kosong bila ada video yang belum selesai diunggah. */
+export const pendingVideoLinks = (item: ShareItem | undefined): string[] => {
+  const videos = item?.files.filter(isVideo) ?? [];
+  const links = videos.map(getVideoLink).filter((url): url is string => Boolean(url));
+  return videos.length > 0 && links.length === videos.length ? links : [];
+};
+
+/**
+ * Jalan cadangan bila berkas video tidak bisa dibagikan: buka WhatsApp dengan tautan videonya.
+ * Laporan dan foto pada kiriman yang sama tetap di antrean untuk dikirim tanpa video.
+ */
+export const sendPendingVideoLinks = () => {
+  const s = useAppStore.getState();
+  const [head, ...rest] = s.pendingShareBatches;
+  const links = pendingVideoLinks(head);
+  if (!head || links.length === 0) return;
+  window.open(`https://wa.me/?text=${encodeURIComponent(videoLinkMessage(links))}`, '_blank');
+  noteHead('tautan');
+  const others = head.files.filter((f) => !isVideo(f));
+  const remainder: ShareItem[] = others.length > 0 || head.caption ? [{ ...head, files: others }] : [];
+  s.setShareState({ pendingShareBatches: [...remainder, ...rest], shareFailure: null, shareAttempted: false });
+};
+
+/** Jalan cadangan: simpan berkas kiriman terdepan ke perangkat (teks laporannya disalin), lalu lanjut. */
+export const savePendingFiles = () => {
+  const [head] = useAppStore.getState().pendingShareBatches;
+  if (!head) return;
+  if (head.caption) copyText(head.caption);
+  head.files.forEach(triggerFileDownload);
+  noteHead('disimpan');
+  skipNext(flowDeps());
 };

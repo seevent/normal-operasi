@@ -11,6 +11,9 @@ const CONVERT_MAX_ATTEMPTS = 40;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Tautan MP4 Cloudinary per berkas (asli maupun hasil konversi), untuk jalan cadangan "Kirim tautan video". */
+const videoLinks = new WeakMap<File, string>();
+
 /**
  * Mengubah video menjadi MP4 H.264/AAC ≤1280px lewat Cloudinary agar bisa dikirim WhatsApp iOS.
  * Unggahan memakai berkas yang sama dengan simpan dokumentasi, jadi video tidak diunggah dua kali.
@@ -20,11 +23,14 @@ const convertVideoForWhatsApp = async (file: File, category?: DocumentationCateg
   if (upload.status !== 'success' || !upload.url) throw new Error(upload.message || 'Upload video gagal');
 
   const url = buildWhatsAppVideoUrl(upload.url);
+  videoLinks.set(file, url);
   for (let attempt = 1; ; attempt++) {
     const res = await fetch(url);
     if (res.ok) {
       const blob = await res.blob();
-      return new File([blob], whatsappVideoFileName(file.name), { type: 'video/mp4', lastModified: file.lastModified });
+      const converted = new File([blob], whatsappVideoFileName(file.name), { type: 'video/mp4', lastModified: file.lastModified });
+      videoLinks.set(converted, url);
+      return converted;
     }
     if (res.status !== 423 || attempt >= CONVERT_MAX_ATTEMPTS) {
       throw new Error(`Konversi video gagal (HTTP ${res.status})`);
@@ -40,8 +46,9 @@ export const prepareVideoForWhatsApp = (file: File, category?: DocumentationCate
   videoCache.start(file, category);
 
 /**
- * Memulai konversi di latar belakang begitu video dipilih, supaya saat Kirim ditekan video sudah
- * siap dan menu share WhatsApp langsung terbuka. Tanpa Web Share API tidak ada yang perlu dikonversi.
+ * Memulai konversi di latar belakang begitu video dipilih. Share TIDAK menunggu konversi ini: bila MP4
+ * sudah siap saat Kirim ditekan, MP4 yang dibagikan; bila belum, berkas asli. Tanpa Web Share API tidak
+ * ada yang perlu dikonversi.
  */
 export const prefetchVideosForWhatsApp = (files: File[], category?: DocumentationCategory): void => {
   if (typeof navigator === 'undefined' || typeof navigator.canShare !== 'function') return;
@@ -49,6 +56,9 @@ export const prefetchVideosForWhatsApp = (files: File[], category?: Documentatio
     prepareVideoForWhatsApp(file, category).catch((err) => console.warn('Konversi video latar belakang gagal', err));
   });
 };
+
+/** Tautan MP4 video ini di Cloudinary bila sudah terunggah, selain itu undefined. */
+export const getVideoLink = (file: File): string | undefined => videoLinks.get(file);
 
 /** MP4 hasil konversi bila sudah siap, selain itu undefined. */
 export const getPreparedVideo = (file: File): File | undefined => videoCache.value(file);

@@ -8,6 +8,7 @@ import { AssetManager } from './AssetManager';
 import { PersonelManager } from './personel/PersonelManager';
 import { SparepartManager } from './SparepartManager';
 import { CloudinarySettingsPanel } from './CloudinarySettingsPanel';
+import { ShareTestPanel } from './ShareTestPanel';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 
 export const TabData: React.FC = () => {
@@ -134,7 +135,7 @@ const LocalDataEditor: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState('upload_jadwal');
   const subTabNavRef = useRef<HTMLDivElement>(null);
 
-  // Ada delapan sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
+  // Ada sembilan sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
   useEffect(() => {
     subTabNavRef.current
       ?.querySelector<HTMLElement>('[aria-current="true"]')
@@ -152,7 +153,8 @@ const LocalDataEditor: React.FC = () => {
           { id: 'checklist_config', label: 'Checklist Config' },
           { id: 'kalibrasi_equip', label: 'Config Peralatan Kalibrasi' },
           { id: 'tip_data_manager', label: 'Data TIP Tersimpan' },
-          { id: 'cloudinary', label: 'Storage' }
+          { id: 'cloudinary', label: 'Storage' },
+          { id: 'uji_share', label: 'Uji Share WA' }
         ].map(t => (
           <button key={t.id} aria-current={activeSubTab === t.id ? 'true' : undefined} onClick={() => setActiveSubTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeSubTab === t.id ? 'bg-blue-600' : 'hover:bg-slate-700 text-slate-300'}`}>
             {t.label}
@@ -208,6 +210,8 @@ const LocalDataEditor: React.FC = () => {
         </div>
       ) : (activeSubTab === 'cloudinary' || activeSubTab === 'google_drive') ? (
         <CloudinarySettingsPanel />
+      ) : activeSubTab === 'uji_share' ? (
+        <ShareTestPanel />
       ) : (
         <div className="p-2.5 sm:p-5 md:p-6 bg-slate-50 min-h-[500px]">
           <PersonelManager />
