@@ -3,15 +3,14 @@
 -- 1) qr_target: isi QR code peralatan (tautan OPTIMA .../equipment/activity/{uuid}), hasil decode gambar QR di
 --    Cloudinary (PRIMA/QR CODE/{TIPE}/{NO}_{Nama}). UNIQUE: satu QR hanya untuk satu peralatan, sehingga QR
 --    yang tertukar/terduplikasi ditolak database. Diisi browser setelah gambar QR yang diunggah berhasil di-decode.
--- 2) updated_at / updated_by: jejak perubahan manual, diisi trigger dari JWT (tidak bisa dipalsukan klien).
+-- 2) updated_at: waktu perubahan terakhir oleh pengguna login, diisi trigger (bukan klien).
 --    synced_at tetap berarti "terakhir disalin dari PRIMA".
 -- 3) Pengguna login boleh menambah dan mengubah peralatan (bukan menghapus: riwayat preventive_photo_log
 --    memakai nomor equipment; aset dinonaktifkan lewat kolom active). Nomor equipment tidak bisa diubah.
 
 alter table public.prima_assets
   add column if not exists qr_target text,
-  add column if not exists updated_at timestamptz,
-  add column if not exists updated_by text;
+  add column if not exists updated_at timestamptz;
 
 alter table public.prima_assets
   add constraint prima_assets_qr_target_check check (qr_target is null or qr_target ~ '^https?://\S+$');
@@ -23,13 +22,10 @@ returns trigger
 language plpgsql
 set search_path = ''
 as $$
-declare
-  editor text := auth.jwt() ->> 'email';
 begin
-  -- Hanya perubahan oleh pengguna login yang dicatat; sinkron PRIMA (service role) tidak mengubah jejak ini.
-  if editor is not null then
+  -- Hanya perubahan oleh pengguna login yang dicatat; sinkron PRIMA (service role) tidak mengubah waktu ini.
+  if auth.role() = 'authenticated' then
     new.updated_at := now();
-    new.updated_by := editor;
   end if;
   return new;
 end;
