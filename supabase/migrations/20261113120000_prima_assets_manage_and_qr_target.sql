@@ -23,5 +23,5 @@ drop policy if exists prima_assets_insert on public.prima_assets;
 create policy prima_assets_insert on public.prima_assets
   for insert to authenticated with check (true);
 
--- qr_target 172 peralatan diisi sekali dari decode seluruh gambar PRIMA/QR CODE (2026-11-13: 172 berkas,
--- 172 aset, cocok 1:1, semua tautan unik). Isi ulang kapan saja lewat tombol "Periksa QR" di tab Data.
+-- qr_target diisi dari aplikasi: saat QR diunggah, atau sekaligus lewat tombol "Periksa QR" di tab Data
+-- (decode seluruh gambar PRIMA/QR CODE; 2026-11-13: 172 berkas, 172 aset, cocok 1:1, semua tautan unik).

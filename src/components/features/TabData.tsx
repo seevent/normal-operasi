@@ -9,6 +9,7 @@ import { PersonelManager } from './personel/PersonelManager';
 import { SparepartManager } from './SparepartManager';
 import { CloudinarySettingsPanel } from './CloudinarySettingsPanel';
 import { ShareTestPanel } from './ShareTestPanel';
+import { PreventiveAssetManager } from './preventive-assets/PreventiveAssetManager';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 
 export const TabData: React.FC = () => {
@@ -135,7 +136,7 @@ const LocalDataEditor: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState('upload_jadwal');
   const subTabNavRef = useRef<HTMLDivElement>(null);
 
-  // Ada sembilan sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
+  // Ada sepuluh sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
   useEffect(() => {
     subTabNavRef.current
       ?.querySelector<HTMLElement>('[aria-current="true"]')
@@ -149,6 +150,7 @@ const LocalDataEditor: React.FC = () => {
           { id: 'upload_jadwal', label: 'Upload Jadwal Excel' },
           { id: 'sparepart_list', label: 'Sparepart List' },
           { id: 'manajemen_aset', label: 'Manajemen Aset (Lokasi & Mesin)' },
+          { id: 'peralatan_preventive', label: 'Peralatan Preventive' },
           { id: 'personel', label: 'Personel' },
           { id: 'checklist_config', label: 'Checklist Config' },
           { id: 'kalibrasi_equip', label: 'Config Peralatan Kalibrasi' },
@@ -173,6 +175,10 @@ const LocalDataEditor: React.FC = () => {
       ) : activeSubTab === 'manajemen_aset' ? (
         <div className="p-2.5 sm:p-4 md:p-6 bg-slate-50 min-h-[500px]">
           <AssetManager />
+        </div>
+      ) : activeSubTab === 'peralatan_preventive' ? (
+        <div className="p-2.5 sm:p-4 md:p-6 bg-slate-50 min-h-[500px]">
+          <PreventiveAssetManager />
         </div>
       ) : activeSubTab === 'checklist_config' ? (
         <div className="p-2 sm:p-5 md:p-6 bg-slate-50 min-h-[500px]">

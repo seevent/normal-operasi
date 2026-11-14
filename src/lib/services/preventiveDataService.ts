@@ -86,3 +86,8 @@ export function fetchPreventiveQrCodes(): Promise<Record<string, string>> {
   }
   return qrCodesPromise;
 }
+
+/** Muat ulang peta QR pada pemanggilan berikutnya (setelah QR diganti di tab Data). */
+export function resetPreventiveQrCodes(): void {
+  qrCodesPromise = null;
+}

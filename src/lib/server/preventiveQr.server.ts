@@ -72,16 +72,22 @@ export const equipmentNumberFromQrPublicId = (publicId: string): string | null =
   return isValidEquipmentNumber(eq) ? eq : null;
 };
 
+export interface QrResource {
+  publicId: string;
+  url: string;
+  createdAt: string;
+}
+
 /**
- * Peta nomor equipment → URL gambar QR (https). Bila satu peralatan punya beberapa berkas QR,
+ * Berkas QR per nomor equipment (https). Bila satu peralatan punya beberapa berkas QR,
  * yang terbaru (created_at) dipakai.
  */
-export const listPreventiveQrCodes = async (deps: QrDeps): Promise<Record<string, string>> => {
+export const listQrResources = async (deps: QrDeps): Promise<Map<string, QrResource>> => {
   const cfg = readConfig(deps.env);
   const basic = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString('base64');
   const url = `https://api.cloudinary.com/v1_1/${cfg.cloudName}/resources/search`;
 
-  const best = new Map<string, { url: string; createdAt: string }>();
+  const best = new Map<string, QrResource>();
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     let res: Response;
@@ -109,12 +115,15 @@ export const listPreventiveQrCodes = async (deps: QrDeps): Promise<Record<string
       if (!eq) continue;
       const createdAt = r.created_at ?? '';
       const prev = best.get(eq);
-      if (!prev || createdAt > prev.createdAt) best.set(eq, { url: r.secure_url, createdAt });
+      if (!prev || createdAt > prev.createdAt) best.set(eq, { publicId: r.public_id, url: r.secure_url, createdAt });
     }
 
     cursor = body.next_cursor || undefined;
     if (!cursor) break;
   }
-
-  return Object.fromEntries([...best].map(([eq, v]) => [eq, v.url]));
+  return best;
 };
+
+/** Peta nomor equipment → URL gambar QR (https). */
+export const listPreventiveQrCodes = async (deps: QrDeps): Promise<Record<string, string>> =>
+  Object.fromEntries([...(await listQrResources(deps))].map(([eq, v]) => [eq, v.url]));

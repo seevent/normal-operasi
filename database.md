@@ -277,7 +277,7 @@ Menyimpan rekapitulasi ringkasan kelaikan peralatan (*serviceability summary*) p
 ---
 
 ### 3.15. Tabel `prima_assets` (Preventive)
-Salinan daftar peralatan PRIMA Terminal 2 (171 aset). Disinkronkan dari PRIMA oleh pemelihara; aplikasi hanya membaca.
+Salinan daftar peralatan PRIMA Terminal 2 (172 aset). Disinkronkan dari PRIMA oleh pemelihara; pengguna login juga dapat menambah/mengubah peralatan di tab Data > **Peralatan Preventive**.
 
 | Nama Kolom | Tipe Data | Keterangan |
 |---|---|---|
@@ -287,8 +287,9 @@ Salinan daftar peralatan PRIMA Terminal 2 (171 aset). Disinkronkan dari PRIMA ol
 | `terminal`, `location_group`, `location_override` | `TEXT` | Lokasi hasil parse nama; `location_override` boleh diisi pengguna login untuk koreksi. |
 | `periods` | `TEXT[]` | Kode jadwal PRIMA (D, W, M, …); Daily/Weekly/Monthly memakai D/W/M. |
 | `active` | `BOOLEAN` | Aset nonaktif tidak tampil. |
+| `qr_target` | `TEXT` **UNIQUE** | Isi QR code peralatan (tautan OPTIMA `.../equipment/activity/{uuid}`), hasil decode gambar `PRIMA/QR CODE/{TIPE}/{NO}_{Nama}` di Cloudinary. Unik: satu QR hanya untuk satu peralatan. Diisi saat QR diunggah atau lewat tombol **Periksa QR**. |
 
-RLS: `SELECT` untuk `anon` & `authenticated`; tidak ada policy tulis untuk tamu (hanya `location_override` yang bisa di-UPDATE pengguna login).
+RLS: `SELECT` untuk `anon` & `authenticated`. Pengguna login boleh `INSERT` dan `UPDATE` (semua kolom kecuali `equipment_number` dan `synced_at`); tidak ada `DELETE` karena `preventive_photo_log` merujuk nomor equipment, aset cukup dinonaktifkan. Gambar QR diunggah lewat tiket bertanda tangan `getPreventiveQrUploadTicket` (wajib login; berkas QR lama peralatan yang sama ditimpa). Migrasi: `supabase/migrations/20261113120000_prima_assets_manage_and_qr_target.sql`.
 
 ### 3.16. Tabel `preventive_photo_log` dan fungsi periode
 Satu baris per (`period`, `equipment_number`, `period_key`): `period` ∈ DAILY/WEEKLY/MONTHLY, `period_key` = tanggal awal periode, `public_id`, `secure_url`, `cloudinary_version`, `uploaded_at`. PK `(period, equipment_number, period_key)`. Status "tersimpan" di UI = ada baris untuk kunci periode berjalan; reset 07.00 terjadi karena kunci berganti (tanpa cron).
