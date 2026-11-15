@@ -233,3 +233,9 @@ test('pencatatan share sudah dicabut seluruhnya', () => {
   const flow = read('src/lib/utils/shareFlow.ts');
   assert.doesNotMatch(flow, /ShareLogEntry|SHARE_HANG_MS|setTimer|VideoChoice|'uji'|deps\.log/);
 });
+
+test('migrasi menghapus tabel share_log dan dokumen tidak lagi merujuknya', () => {
+  const mig = read('supabase/migrations/20261115120000_drop_share_log.sql');
+  assert.match(mig, /drop table if exists public\.share_log;/);
+  assert.doesNotMatch(read('agent.md'), /share_log|Uji Share WA/);
+});
