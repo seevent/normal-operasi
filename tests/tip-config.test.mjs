@@ -77,3 +77,19 @@ test('Tab TIP memakai daftar yang disaring Config TIP; kode daftar TIP lama diha
   assert.doesNotMatch(store, /tipLeftCol|tipRightCol|master_tip_left|master_tip_right/);
   assert.doesNotMatch(read('src/lib/data/masterData.ts'), /DEFAULT_TIP_LEFT_COL|DEFAULT_TIP_RIGHT_COL/);
 });
+
+test('Tab Data: sub-tab "Config TIP" berisi daftar peralatan di atas data TIP tersimpan', () => {
+  const data = read('src/components/features/TabData.tsx');
+  assert.match(data, /\{ id: 'tip_data_manager', label: 'Config TIP' \}/);
+  assert.doesNotMatch(data, /Data TIP Tersimpan'/);
+  const branch = data.match(/activeSubTab === 'tip_data_manager' \? \([\s\S]*?\) : /)?.[0] ?? '';
+  const cfg = branch.indexOf('<TipEquipmentConfig />');
+  const saved = branch.indexOf('<TipDataManager />');
+  assert.ok(cfg > 0 && saved > cfg, 'TipEquipmentConfig sebelum TipDataManager');
+
+  const comp = read('src/components/features/tip-config/TipEquipmentConfig.tsx');
+  assert.match(comp, /buildTipLocations\(checklistDataMaster\)/);
+  assert.match(comp, /setTipHiddenKeys\(/);
+  assert.match(comp, /tampil di tab TIP/);
+  assert.match(comp, /Gagal menyimpan/);
+});

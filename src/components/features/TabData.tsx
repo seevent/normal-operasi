@@ -9,6 +9,7 @@ import { PersonelManager } from './personel/PersonelManager';
 import { SparepartManager } from './SparepartManager';
 import { CloudinarySettingsPanel } from './CloudinarySettingsPanel';
 import { PreventiveAssetManager } from './preventive-assets/PreventiveAssetManager';
+import { TipEquipmentConfig } from './tip-config/TipEquipmentConfig';
 import { useMasterDataStore } from '../../store/useMasterDataStore';
 
 export const TabData: React.FC = () => {
@@ -153,7 +154,7 @@ const LocalDataEditor: React.FC = () => {
           { id: 'personel', label: 'Personel' },
           { id: 'checklist_config', label: 'Checklist Config' },
           { id: 'kalibrasi_equip', label: 'Config Peralatan Kalibrasi' },
-          { id: 'tip_data_manager', label: 'Data TIP Tersimpan' },
+          { id: 'tip_data_manager', label: 'Config TIP' },
           { id: 'cloudinary', label: 'Storage' }
         ].map(t => (
           <button key={t.id} aria-current={activeSubTab === t.id ? 'true' : undefined} onClick={() => setActiveSubTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${activeSubTab === t.id ? 'bg-blue-600' : 'hover:bg-slate-700 text-slate-300'}`}>
@@ -209,8 +210,13 @@ const LocalDataEditor: React.FC = () => {
           </div>
         </div>
       ) : activeSubTab === 'tip_data_manager' ? (
-        <div className="p-0 border border-slate-200 rounded-xl overflow-hidden m-6">
-          <TipDataManager />
+        <div className="m-6 space-y-6">
+          <div className="p-0 border border-slate-200 rounded-xl overflow-hidden">
+            <TipEquipmentConfig />
+          </div>
+          <div className="p-0 border border-slate-200 rounded-xl overflow-hidden">
+            <TipDataManager />
+          </div>
         </div>
       ) : (activeSubTab === 'cloudinary' || activeSubTab === 'google_drive') ? (
         <CloudinarySettingsPanel />

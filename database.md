@@ -369,6 +369,15 @@ Bucket penyimpanan objek publik yang digunakan sebagai fail-safe secondary tier 
 }
 ```
 
+### 4.3. Payload `master_tip_hidden` (tab Data › Config TIP)
+Larik kunci unit X-Ray yang **disembunyikan** dari tab TIP. Kosong atau belum ada = semua X-Ray tampil; X-Ray baru di
+Checklist Config otomatis tampil. Kunci unit sama dengan kunci centang TIP bulanan (`tip_data_<Bulan>_<Tahun>`):
+`<judul lokasi huruf kecil, spasi jadi _>-<teks dalam kurung pada nama item, atau No1>`. Daftar unit diturunkan dari
+kategori X-RAY di `master_checklist` oleh `src/lib/utils/tipEquipment.ts`.
+```json
+["breakdown-Belt 15", "breakdown-Belt 16"]
+```
+
 ---
 
 ## 5. Penyimpanan Lokal (`localStorage` Key Schema)
