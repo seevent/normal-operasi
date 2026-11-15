@@ -66,3 +66,28 @@ export const applyServiceabilityEdit = <T extends ServiceabilityItem>(
 /** Kunci pembanding isi diagram (hanya angka yang disimpan), untuk menandai "Belum disimpan". */
 export const serviceabilityKey = (items: ServiceabilityItem[]): string =>
   JSON.stringify(items.map((i) => [i.no, i.total, i.rusak, i.operasi]));
+
+export interface SummaryRow<T = ServiceabilityItem> {
+  summary: T[];
+  created_at: string | null;
+}
+
+/**
+ * Baris ringkasan terbaru (menurut created_at) dari beberapa kandidat; kandidat kosong diabaikan.
+ * Dipakai saat tidak ada baris tepat untuk tanggal & shift yang dibuka, sehingga angka terakhir
+ * (dari Checklist atau dari edit manual) menjadi titik awal.
+ */
+export const newestSummaryRow = <T>(rows: Array<SummaryRow<T> | null | undefined>): SummaryRow<T> | null => {
+  let best: SummaryRow<T> | null = null;
+  let bestTime = Number.NEGATIVE_INFINITY;
+  for (const row of rows) {
+    if (!row || !Array.isArray(row.summary) || row.summary.length === 0) continue;
+    const parsed = row.created_at ? Date.parse(row.created_at) : Number.NaN;
+    const time = Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+    if (best === null || time > bestTime) {
+      best = row;
+      bestTime = time;
+    }
+  }
+  return best;
+};

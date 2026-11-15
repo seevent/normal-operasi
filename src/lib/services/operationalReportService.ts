@@ -1,6 +1,7 @@
 // src/lib/services/operationalReportService.ts
 
 import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from '../supabaseClient.ts';
+import { newestSummaryRow, type SummaryRow } from '../utils/serviceabilityEdit.ts';
 import { formatNamaPersonel, toTitleCase } from '../data/masterData.ts';
 import { sayPet } from '../../store/useAppStore.ts';
 import { assignReportShift, shiftDateString } from '../utils/shiftAssignment.ts';
@@ -409,14 +410,17 @@ export const calculateChecklistSummary = (
 /**
  * Menyimpan ringkasan kesiapan peralatan (serviceability) per shift
  */
+/** Tabel ringkasan kesiapan: data Checklist (ditulis tab Checklist) dan hasil edit manual (ditulis tab Report). */
+type SummaryTable = 'laporan_checklist' | 'laporan_checklist_manual';
+
 /**
  * Simpan ringkasan saat halaman ditutup atau dimuat ulang. Memakai fetch `keepalive` agar permintaan tetap
- * terkirim walau halaman sudah hilang (permintaan biasa dibatalkan browser). Tabel ini boleh ditulis anon.
+ * terkirim walau halaman sudah hilang (permintaan biasa dibatalkan browser). Kedua tabel boleh ditulis anon.
  */
-export const saveChecklistSummaryOnExit = (tanggal: string, shift: string, summary: ChecklistSummaryItem[]): void => {
+const upsertSummaryOnExit = (table: SummaryTable, tanggal: string, shift: string, summary: ChecklistSummaryItem[]): void => {
   try {
     const targetShift = shift === 'ALL' ? 'PS' : shift;
-    void fetch(`${SUPABASE_URL}/rest/v1/laporan_checklist?on_conflict=tanggal,shift`, {
+    void fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=tanggal,shift`, {
       method: 'POST',
       keepalive: true,
       headers: {
@@ -435,7 +439,8 @@ export const saveChecklistSummaryOnExit = (tanggal: string, shift: string, summa
 /** Batas tunggu simpan ringkasan; lewat dari ini dianggap gagal agar pengguna melihatnya, bukan menunggu tanpa kabar. */
 export const SAVE_TIMEOUT_MS = 15000;
 
-export const saveChecklistSummary = async (
+const upsertSummary = async (
+  table: SummaryTable,
   tanggal: string,
   shift: string,
   summary: ChecklistSummaryItem[],
@@ -444,7 +449,7 @@ export const saveChecklistSummary = async (
   try {
     const targetShift = shift === 'ALL' ? 'PS' : shift;
     const request = supabase
-      .from('laporan_checklist')
+      .from(table)
       .upsert(
         [{ tanggal, shift: targetShift, summary, created_at: new Date().toISOString() }],
         { onConflict: 'tanggal,shift' }
@@ -455,11 +460,32 @@ export const saveChecklistSummary = async (
     const { error } = await Promise.race([request, timeout]);
     return { success: !error, error, message: error ? error.message : null };
   } catch (err) {
-    console.error('Catch saveChecklistSummary:', err);
+    console.error(`Catch simpan ringkasan (${table}):`, err);
     return { success: false, error: err, message: err instanceof Error ? err.message : String(err) };
   } finally {
     clearTimeout(timer);
   }
+};
+
+/** Ringkasan dari Checklist (dihitung dari daftar checklist saat dibagikan). Dipakai tab Checklist. */
+export const saveChecklistSummary = (tanggal: string, shift: string, summary: ChecklistSummaryItem[]) =>
+  upsertSummary('laporan_checklist', tanggal, shift, summary);
+
+/** Hasil edit manual Diagram Serviceability. Dipakai tab Report; tidak pernah menimpa data Checklist. */
+export const saveManualChecklistSummary = (tanggal: string, shift: string, summary: ChecklistSummaryItem[]) =>
+  upsertSummary('laporan_checklist_manual', tanggal, shift, summary);
+
+export const saveManualChecklistSummaryOnExit = (tanggal: string, shift: string, summary: ChecklistSummaryItem[]): void =>
+  upsertSummaryOnExit('laporan_checklist_manual', tanggal, shift, summary);
+
+/**
+ * Tanggal & shift tempat ringkasan Checklist disimpan, supaya cocok dengan yang dibuka di tab Report:
+ * dinas malam setelah tengah malam (00:00-07:59) dihitung sebagai tanggal kemarin, bukan tanggal kalender.
+ * Tanggal yang dipilih sendiri di formulir (bukan hari ini) dipakai apa adanya.
+ */
+export const getChecklistSummaryTarget = (formDate: string, now: Date = new Date()): { date: string; shift: 'PS' | 'M' } => {
+  const op = getOperationalShiftAndDate(now);
+  return { date: formDate === getLocalDateString(now) ? op.date : formDate, shift: op.shift };
 };
 
 /**
@@ -468,54 +494,46 @@ export const saveChecklistSummary = async (
  * 1. Data pada tanggal & shift spesifik
  * 2. Data terakhir yang pernah tersimpan di database (agar selalu menampilkan data terkini saat tab dibuka)
  */
+/**
+ * Mengambil ringkasan kesiapan peralatan untuk shift report.
+ * Prioritas:
+ * 1. Tanggal & shift yang diminta: hasil edit manual bila ada, kalau tidak data Checklist.
+ * 2. Baris terbaru pada tanggal itu (edit manual atau Checklist, mana yang lebih baru).
+ * 3. Baris terakhir yang pernah tersimpan (agar selalu menampilkan angka terkini saat tab dibuka).
+ */
 export const fetchChecklistSummary = async (tanggal?: string, shift?: string): Promise<ChecklistSummaryItem[] | null> => {
+  const readRow = async (table: SummaryTable, tgl?: string, sft?: string): Promise<SummaryRow<ChecklistSummaryItem> | null> => {
+    let query = supabase.from(table).select('summary, created_at');
+    if (tgl) query = query.eq('tanggal', tgl);
+    if (sft) query = query.eq('shift', sft);
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (error || !data || !Array.isArray(data.summary) || data.summary.length === 0) return null;
+    return { summary: data.summary as ChecklistSummaryItem[], created_at: (data.created_at as string | null) ?? null };
+  };
+  const newestOfBoth = async (tgl?: string): Promise<ChecklistSummaryItem[] | null> => {
+    const [manual, checklist] = await Promise.all([readRow('laporan_checklist_manual', tgl), readRow('laporan_checklist', tgl)]);
+    return newestSummaryRow([manual, checklist])?.summary ?? null;
+  };
+
   try {
     const targetShift = shift === 'ALL' ? 'PS' : shift;
-    
-    // 1. Coba ambil data untuk tanggal & shift yang diminta
-    if (tanggal && targetShift && targetShift !== 'ALL') {
-      const { data, error } = await supabase
-        .from('laporan_checklist')
-        .select('summary')
-        .eq('tanggal', tanggal)
-        .eq('shift', targetShift)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
 
-      if (!error && data && data.summary && Array.isArray(data.summary) && data.summary.length > 0) {
-        return data.summary as ChecklistSummaryItem[];
-      }
+    // 1. Tanggal & shift yang diminta: edit manual menang atas data Checklist.
+    if (tanggal && targetShift) {
+      const manual = await readRow('laporan_checklist_manual', tanggal, targetShift);
+      if (manual) return manual.summary;
+      const checklist = await readRow('laporan_checklist', tanggal, targetShift);
+      if (checklist) return checklist.summary;
     }
 
-    // Jika shift ALL tapi ada tanggal, coba ambil data tanggal tersebut
+    // 2. Belum ada untuk shift itu: ambil yang terbaru pada tanggal tersebut.
     if (tanggal) {
-      const { data, error } = await supabase
-        .from('laporan_checklist')
-        .select('summary')
-        .eq('tanggal', tanggal)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!error && data && data.summary && Array.isArray(data.summary) && data.summary.length > 0) {
-        return data.summary as ChecklistSummaryItem[];
-      }
+      const sameDate = await newestOfBoth(tanggal);
+      if (sameDate) return sameDate;
     }
 
-    // 2. Jika tidak ada untuk shift/tanggal tersebut, ambil data TERAKHIR yang pernah disimpan di database
-    const { data: latest, error: latestErr } = await supabase
-      .from('laporan_checklist')
-      .select('summary')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!latestErr && latest && latest.summary && Array.isArray(latest.summary) && latest.summary.length > 0) {
-      return latest.summary as ChecklistSummaryItem[];
-    }
-
-    return null;
+    // 3. Terakhir: yang terbaru di seluruh database.
+    return await newestOfBoth();
   } catch (err) {
     console.error('Catch fetchChecklistSummary:', err);
     return null;

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   MAX_UNIT_COUNT,
   applyServiceabilityEdit,
+  newestSummaryRow,
   parseUnitCount,
   serviceabilityKey,
 } from '../src/lib/utils/serviceabilityEdit.ts';
@@ -70,13 +71,23 @@ test('Diagram Serviceability: kolom angka aman untuk iPhone dan simpan tidak per
   assert.match(tab, /pagehide/);
 
   assert.match(tab, /addEventListener\('pagehide', flushOnExit\)/);
-  assert.match(tab, /saveChecklistSummaryOnExit\(/);
+  assert.match(tab, /saveManualChecklistSummaryOnExit\(/);
 
   const svc = read('src/lib/services/operationalReportService.ts');
   assert.match(svc, /SAVE_TIMEOUT_MS/);
   // Penyimpanan saat halaman ditutup harus keepalive dan memakai upsert yang sama (tanggal, shift).
-  const exit = svc.match(/export const saveChecklistSummaryOnExit[\s\S]*?\n};/)?.[0] ?? '';
+  const exit = svc.match(/const upsertSummaryOnExit[\s\S]*?\n};/)?.[0] ?? '';
   assert.match(exit, /keepalive: true/);
   assert.match(exit, /on_conflict=tanggal,shift/);
   assert.match(exit, /resolution=merge-duplicates/);
+});
+
+test('newestSummaryRow: yang terbaru menang, kosong/rusak diabaikan, tanpa waktu paling lama', () => {
+  const row = (tag, at, summary = [item(1, 10, 0)]) => ({ tag, summary, created_at: at });
+  assert.equal(newestSummaryRow([row('a', '2026-11-15T01:00:00Z'), row('b', '2026-11-15T02:00:00Z')]).tag, 'b');
+  assert.equal(newestSummaryRow([row('b', '2026-11-15T02:00:00Z'), row('a', '2026-11-15T01:00:00Z')]).tag, 'b');
+  assert.equal(newestSummaryRow([null, undefined, row('x', '2026-11-15T01:00:00Z', [])]), null);
+  assert.equal(newestSummaryRow([row('t', null), row('u', '2026-11-14T00:00:00Z')]).tag, 'u');
+  assert.equal(newestSummaryRow([row('t', null)]).tag, 't');
+  assert.equal(newestSummaryRow([]), null);
 });

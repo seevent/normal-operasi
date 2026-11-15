@@ -276,6 +276,25 @@ Menyimpan rekapitulasi ringkasan kelaikan peralatan (*serviceability summary*) p
 > ```
 > Memungkinkan operasi **atomic upsert** (`INSERT ... ON CONFLICT (tanggal, shift) DO UPDATE SET summary = EXCLUDED.summary`) dari browser.
 
+> **Siapa yang menulis**: hanya tab **Checklist**, saat checklist dibagikan (hitungan dari daftar checklist). Disimpan pada tanggal & shift operasional yang sama dengan yang dibuka di tab Report: dinas malam pukul 00:00–07:59 dihitung sebagai tanggal kemarin (`getChecklistSummaryTarget`). Hasil edit manual di tab Report **tidak** ditulis ke sini, lihat 3.14.
+
+---
+
+### 3.14. Tabel `laporan_checklist_manual`
+Hasil edit manual jumlah **Total** dan **Off** peralatan pada Diagram Serviceability di tab Report, satu baris per tanggal dan shift. Dipisahkan dari `laporan_checklist` supaya membagikan Checklist tidak menimpa angka yang sudah diedit.
+
+| Nama Kolom | Tipe Data | Kunci / Constraint | Keterangan |
+|---|---|---|---|
+| `id` | `UUID` | **PK**, DEFAULT `gen_random_uuid()` | Identifier unik. |
+| `tanggal` | `DATE` | **UNIQUE (`tanggal, shift`)** | Tanggal laporan yang dibuka di tab Report. |
+| `shift` | `VARCHAR` | **UNIQUE (`tanggal, shift`)** | Shift dinas ('PS' / 'M'). |
+| `summary` | `JSONB` | **NOT NULL** | Array ringkasan yang sama bentuknya dengan `laporan_checklist.summary`. |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu penyimpanan terakhir (diperbarui pada setiap simpan). |
+
+RLS: `SELECT`, `INSERT`, `UPDATE` untuk `anon` dan `authenticated` (tab Report dipakai tanpa login); tidak ada kebijakan `DELETE`. Migrasi: `supabase/migrations/20261115150000_laporan_checklist_manual.sql`.
+
+> **Aturan baca di tab Report** (`fetchChecklistSummary`): untuk tanggal & shift yang dibuka, **edit manual menang**; bila belum ada, dipakai data Checklist. Bila tidak ada baris tepat, dipakai baris terbaru pada tanggal itu, lalu baris terbaru di seluruh database (yang lebih baru antara tabel manual dan Checklist). Hasil edit manual berupa potret seluruh tujuh baris pada saat diedit.
+
 ---
 
 ### 3.15. Tabel `prima_assets` (Preventive)

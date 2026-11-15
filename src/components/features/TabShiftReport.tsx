@@ -13,8 +13,8 @@ import {
   fetchShiftOperationalLogs, 
   fetchDailyShiftCounts,
   fetchChecklistSummary, 
-  saveChecklistSummary,
-  saveChecklistSummaryOnExit,
+  saveManualChecklistSummary,
+  saveManualChecklistSummaryOnExit,
   ChecklistSummaryItem,
   saveOperationalLog,
   getReportDefaultDateAndShift
@@ -105,7 +105,7 @@ export const TabShiftReport: React.FC = () => {
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     setSaveStatus('saving');
     setSaveError(null);
-    const res = await saveChecklistSummary(owner.date, owner.shift, items);
+    const res = await saveManualChecklistSummary(owner.date, owner.shift, items);
     if (seq !== saveSeqRef.current) return;
     if (res.success) {
       setSavedKey(serviceabilityKey(items));
@@ -142,7 +142,7 @@ export const TabShiftReport: React.FC = () => {
     // Halaman ditutup / dimuat ulang / aplikasi ke latar belakang: permintaan keepalive.
     const flushOnExit = () => {
       const owner = pending();
-      if (owner) saveChecklistSummaryOnExit(owner.date, owner.shift, summaryRef.current);
+      if (owner) saveManualChecklistSummaryOnExit(owner.date, owner.shift, summaryRef.current);
     };
     const onVisibility = () => { if (document.visibilityState === 'hidden') flushOnExit(); };
     window.addEventListener('pagehide', flushOnExit);
@@ -152,7 +152,7 @@ export const TabShiftReport: React.FC = () => {
       document.removeEventListener('visibilitychange', onVisibility);
       // Pindah tab di dalam aplikasi: halaman tetap hidup, simpan biasa.
       const owner = pending();
-      if (owner) void saveChecklistSummary(owner.date, owner.shift, summaryRef.current);
+      if (owner) void saveManualChecklistSummary(owner.date, owner.shift, summaryRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -263,7 +263,7 @@ export const TabShiftReport: React.FC = () => {
     // Edit diagram yang belum tersimpan milik tanggal/shift sebelumnya dikirim dulu agar tidak hilang.
     if (dirtyRef.current && summaryOwnerRef.current) {
       const owner = summaryOwnerRef.current;
-      await saveChecklistSummary(owner.date, owner.shift, summaryRef.current);
+      await saveManualChecklistSummary(owner.date, owner.shift, summaryRef.current);
     }
     setFetchingLive(true);
     try {

@@ -6,7 +6,7 @@ import { generateWA_Checklist } from '../../lib/utils/waGenerator';
 import { shareToWhatsApp } from '../../lib/services/shareService';
 import { supabase } from '../../lib/supabaseClient';
 import { fetchChecklistShiftData, saveChecklistSupervisorDirect } from '../../lib/services/checklistSyncService';
-import { calculateChecklistSummary, saveChecklistSummary } from '../../lib/services/operationalReportService';
+import { calculateChecklistSummary, getChecklistSummaryTarget, saveChecklistSummary } from '../../lib/services/operationalReportService';
 import { validateChecklist } from '../../lib/utils/formValidation';
 import { reportMissingFields, reportTimeRangeError, warnTimeRange } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
@@ -295,10 +295,10 @@ export const TabChecklist: React.FC = () => {
     // agar User Gesture browser tidak kedaluwarsa sehingga WhatsApp langsung terbuka seketika
     (async () => {
       try {
-        const hour = new Date().getHours();
-        const currentShift = (hour >= 8 && hour < 20) ? 'PS' : 'M';
+        // Disimpan pada tanggal & shift yang sama dengan yang dibuka di tab Report (dinas malam setelah tengah malam = kemarin).
+        const target = getChecklistSummaryTarget(checklistData.tanggal);
         const summaryItems = calculateChecklistSummary(checklistDataMaster, toggles);
-        await saveChecklistSummary(checklistData.tanggal, currentShift, summaryItems);
+        await saveChecklistSummary(target.date, target.shift, summaryItems);
       } catch (err) {
         console.error("Gagal menyimpan ringkasan checklist ke database:", err);
       }
