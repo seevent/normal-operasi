@@ -135,7 +135,7 @@ const LocalDataEditor: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState('upload_jadwal');
   const subTabNavRef = useRef<HTMLDivElement>(null);
 
-  // Ada sepuluh sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
+  // Ada sembilan sub-tab pada bilah yang bisa digeser; tanpa ini tab yang baru dipilih bisa tersembunyi.
   useEffect(() => {
     subTabNavRef.current
       ?.querySelector<HTMLElement>('[aria-current="true"]')

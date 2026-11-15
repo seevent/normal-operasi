@@ -138,6 +138,25 @@ test('hasil share lama yang baru selesai tidak menimpa antrean share baru', asyn
   assert.deepEqual(e.state().queue.map((i) => names(i.files)), [['d.jpg']]);
 });
 
+for (const [kasus, akhiriLama] of [
+  ['ditolak', (selesai) => selesai.reject(domError('NotAllowedError'))],
+  ['dibatalkan', (selesai) => selesai.reject(domError('AbortError'))],
+]) {
+  test(`share lama yang baru ${kasus} belakangan tidak menimpa antrean share baru`, async () => {
+    const e = env({});
+    const selesai = {};
+    e.deps.nav.share = () => new Promise((resolve, reject) => Object.assign(selesai, { resolve, reject }));
+    const lama = startReportShare(e.deps, { message: 'lama', groups: [[img('a.jpg')], [img('b.jpg')]] });
+    e.deps.nav.share = () => Promise.resolve();
+    await startReportShare(e.deps, { message: 'baru', groups: [[img('c.jpg')], [img('d.jpg')]] });
+    akhiriLama(selesai);
+    assert.equal((await lama).result, 'aborted');
+    assert.deepEqual(e.state().queue.map((i) => names(i.files)), [['d.jpg']]);
+    assert.equal(e.state().failure, null);
+    assert.deepEqual(e.calls.shared.map((i) => i.caption), ['baru']);
+  });
+}
+
 test('share pertama dibatalkan pengguna: antrean dikosongkan', async () => {
   const e = env({ share: 'AbortError' });
   const out = await startReportShare(e.deps, { message: 'laporan', groups: [[img('k1.jpg'), vid('v.mov')], [img('k2.jpg')]] });
