@@ -1,6 +1,6 @@
 // src/lib/services/operationalReportService.ts
 
-import { supabase } from '../supabaseClient.ts';
+import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from '../supabaseClient.ts';
 import { formatNamaPersonel, toTitleCase } from '../data/masterData.ts';
 import { sayPet } from '../../store/useAppStore.ts';
 import { assignReportShift, shiftDateString } from '../utils/shiftAssignment.ts';
@@ -409,20 +409,56 @@ export const calculateChecklistSummary = (
 /**
  * Menyimpan ringkasan kesiapan peralatan (serviceability) per shift
  */
-export const saveChecklistSummary = async (tanggal: string, shift: string, summary: ChecklistSummaryItem[]) => {
+/**
+ * Simpan ringkasan saat halaman ditutup atau dimuat ulang. Memakai fetch `keepalive` agar permintaan tetap
+ * terkirim walau halaman sudah hilang (permintaan biasa dibatalkan browser). Tabel ini boleh ditulis anon.
+ */
+export const saveChecklistSummaryOnExit = (tanggal: string, shift: string, summary: ChecklistSummaryItem[]): void => {
   try {
     const targetShift = shift === 'ALL' ? 'PS' : shift;
-    const { error } = await supabase
+    void fetch(`${SUPABASE_URL}/rest/v1/laporan_checklist?on_conflict=tanggal,shift`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify([{ tanggal, shift: targetShift, summary, created_at: new Date().toISOString() }]),
+    }).catch(() => undefined);
+  } catch {
+    // Halaman sedang ditutup; tidak ada yang bisa ditampilkan.
+  }
+};
+
+/** Batas tunggu simpan ringkasan; lewat dari ini dianggap gagal agar pengguna melihatnya, bukan menunggu tanpa kabar. */
+export const SAVE_TIMEOUT_MS = 15000;
+
+export const saveChecklistSummary = async (
+  tanggal: string,
+  shift: string,
+  summary: ChecklistSummaryItem[],
+): Promise<{ success: boolean; error: unknown; message: string | null }> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const targetShift = shift === 'ALL' ? 'PS' : shift;
+    const request = supabase
       .from('laporan_checklist')
       .upsert(
         [{ tanggal, shift: targetShift, summary, created_at: new Date().toISOString() }],
         { onConflict: 'tanggal,shift' }
       );
-
-    return { success: !error, error };
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Server tidak menjawab dalam 15 detik. Periksa koneksi lalu coba lagi.')), SAVE_TIMEOUT_MS);
+    });
+    const { error } = await Promise.race([request, timeout]);
+    return { success: !error, error, message: error ? error.message : null };
   } catch (err) {
     console.error('Catch saveChecklistSummary:', err);
-    return { success: false, error: err };
+    return { success: false, error: err, message: err instanceof Error ? err.message : String(err) };
+  } finally {
+    clearTimeout(timer);
   }
 };
 

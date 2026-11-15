@@ -7,10 +7,25 @@ export interface ChecklistSummaryItem {
 
 interface ServiceabilityDiagramProps {
   checklistSummary: ChecklistSummaryItem[];
-  handleChecklistSummaryChange: (...args: any[]) => void;
+  /** Isian mentah kolom; penguraian angka dilakukan pemanggil (lihat parseUnitCount). */
+  handleChecklistSummaryChange: (no: number, field: 'total' | 'rusak', raw: string) => void;
   handleManualSaveSummary: () => void;
   saveStatus: string;
+  /** Alasan gagal simpan terakhir, ditampilkan agar kegagalan tidak pernah diam-diam. */
+  saveError?: string | null;
+  /** Ada angka yang diubah tetapi belum tersimpan di database. */
+  isDirty?: boolean;
 }
+
+/** Kolom angka: teks dengan keyboard angka (kolom bertipe number berperilaku beda antar-browser), huruf 16px agar iPhone tidak zoom. */
+const unitInputProps = {
+  type: 'text',
+  inputMode: 'numeric',
+  pattern: '[0-9]*',
+  autoComplete: 'off',
+  enterKeyHint: 'done',
+  onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.select(),
+} as const;
 
 /**
  * Rekap kesiapan peralatan: diagram batang serviceability per jenis peralatan,
@@ -22,6 +37,8 @@ export const ServiceabilityDiagram: React.FC<ServiceabilityDiagramProps> = ({
   handleChecklistSummaryChange,
   handleManualSaveSummary,
   saveStatus,
+  saveError,
+  isDirty,
 }) => (
   <>
       {/* REKAP KESIAPAN PERALATAN (DIAGRAM BATANG SERVICEABILITY) */}
@@ -50,8 +67,16 @@ export const ServiceabilityDiagram: React.FC<ServiceabilityDiagramProps> = ({
               </span>
             )}
             {saveStatus === 'error' && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-rose-700 font-semibold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                Gagal Simpan
+              <span
+                role="alert"
+                className="inline-flex items-center gap-1.5 text-xs text-rose-700 font-semibold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200"
+              >
+                Gagal Simpan{saveError ? `: ${saveError}` : ''}
+              </span>
+            )}
+            {isDirty && saveStatus !== 'saving' && saveStatus !== 'error' && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                Belum disimpan
               </span>
             )}
 
@@ -69,9 +94,10 @@ export const ServiceabilityDiagram: React.FC<ServiceabilityDiagramProps> = ({
 
             {/* Tombol Simpan Manual */}
             <button
+              type="button"
               onClick={handleManualSaveSummary}
               disabled={saveStatus === 'saving'}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:bg-slate-300 rounded-lg shadow-2xs transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 min-h-[44px] sm:min-h-0 sm:py-1.5 text-sm sm:text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 rounded-lg shadow-2xs transition-colors cursor-pointer touch-manipulation"
               title="Simpan data kesiapan peralatan ke database"
             >
               <Save className="w-3.5 h-3.5" />
@@ -175,12 +201,12 @@ export const ServiceabilityDiagram: React.FC<ServiceabilityDiagramProps> = ({
                       <span className="text-[10px] font-bold text-slate-600 select-none">
                         Total:
                       </span>
-                      <input 
-                        type="number"
-                        min="0"
-                        value={item.total}
-                        onChange={(e) => handleChecklistSummaryChange(item.no, 'total', parseInt(e.target.value, 10))}
-                        className="w-11 px-1 py-0.5 text-center text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-2xs"
+                      <input
+                        {...unitInputProps}
+                        value={String(item.total)}
+                        onChange={(e) => handleChecklistSummaryChange(item.no, 'total', e.target.value)}
+                        aria-label={`Total unit ${item.nama}`}
+                        className="w-14 px-1 py-0.5 text-center text-[16px] font-bold text-slate-800 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-2xs"
                         title="Edit jumlah unit Total"
                       />
                     </div>
@@ -191,13 +217,12 @@ export const ServiceabilityDiagram: React.FC<ServiceabilityDiagramProps> = ({
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block"></span>
                         Off:
                       </span>
-                      <input 
-                        type="number"
-                        min="0"
-                        max={item.total}
-                        value={item.rusak}
-                        onChange={(e) => handleChecklistSummaryChange(item.no, 'rusak', parseInt(e.target.value, 10))}
-                        className={`w-11 px-1 py-0.5 text-center text-xs font-bold rounded border focus:ring-1 outline-none transition-all shadow-2xs ${
+                      <input
+                        {...unitInputProps}
+                        value={String(item.rusak)}
+                        onChange={(e) => handleChecklistSummaryChange(item.no, 'rusak', e.target.value)}
+                        aria-label={`Unit off ${item.nama}`}
+                        className={`w-14 px-1 py-0.5 text-center text-[16px] font-bold rounded border focus:ring-1 outline-none transition-all shadow-2xs ${
                           item.rusak > 0 
                             ? 'text-rose-700 border-rose-300 bg-rose-50/60 focus:border-rose-500 focus:ring-rose-500' 
                             : 'text-slate-700 border-slate-300 bg-white focus:border-slate-500 focus:ring-slate-500'

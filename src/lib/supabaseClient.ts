@@ -14,3 +14,7 @@ if (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY) {
 
 // Inisialisasi client Supabase
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+/** Alamat dan kunci publik (anon) Supabase, untuk permintaan yang harus tetap terkirim saat halaman ditutup. */
+export const SUPABASE_URL = supabaseUrl;
+export const SUPABASE_ANON_KEY = supabaseAnonKey;

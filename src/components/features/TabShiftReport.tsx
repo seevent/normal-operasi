@@ -14,6 +14,7 @@ import {
   fetchDailyShiftCounts,
   fetchChecklistSummary, 
   saveChecklistSummary,
+  saveChecklistSummaryOnExit,
   ChecklistSummaryItem,
   saveOperationalLog,
   getReportDefaultDateAndShift
@@ -45,6 +46,7 @@ import { ShiftReportPrintDocument } from './shift-report/ShiftReportPrintDocumen
 import { ShiftReportCrudModal } from './shift-report/ShiftReportCrudModal';
 import { ServiceabilityDiagram } from './shift-report/ServiceabilityDiagram';
 import { normalizeLokasi } from '../../lib/utils/lokasiFormat';
+import { applyServiceabilityEdit, parseUnitCount, serviceabilityKey, type ServiceabilityField } from '../../lib/utils/serviceabilityEdit';
 
 
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -77,73 +79,83 @@ export const TabShiftReport: React.FC = () => {
   ]);
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const debounceSaveTimer = useRef<any>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // Isi diagram yang terakhir dimuat dari / disimpan ke database; beda dengan isi sekarang = "Belum disimpan".
+  const [savedKey, setSavedKey] = useState<string>(() => serviceabilityKey(checklistSummary));
+  const isSummaryDirty = serviceabilityKey(checklistSummary) !== savedKey;
+  // Tanggal & shift pemilik edit yang belum tersimpan (bisa berbeda dari pilihan sekarang bila pengguna pindah tanggal).
+  const summaryOwnerRef = useRef<{ date: string; shift: string } | null>(null);
+  const summaryRef = useRef(checklistSummary);
+  summaryRef.current = checklistSummary;
+  const dirtyRef = useRef(false);
+  dirtyRef.current = isSummaryDirty;
+  const saveSeqRef = useRef(0);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleChecklistSummaryChange = (no: number, field: 'total' | 'rusak' | 'operasi', val: number) => {
-    const cleanVal = Math.max(0, isNaN(val) ? 0 : val);
-    setChecklistSummary(prev => {
-      const updated = prev.map(item => {
-        if (item.no !== no) return item;
-        let newTotal = item.total;
-        let newRusak = item.rusak;
-        let newOperasi = item.operasi;
-
-        if (field === 'total') {
-          newTotal = cleanVal;
-          if (newRusak > newTotal) newRusak = newTotal;
-          newOperasi = Math.max(0, newTotal - newRusak);
-        } else if (field === 'rusak') {
-          newRusak = Math.min(cleanVal, newTotal);
-          newOperasi = Math.max(0, newTotal - newRusak);
-        } else if (field === 'operasi') {
-          newOperasi = cleanVal;
-          newTotal = newOperasi + newRusak;
-        }
-
-        return {
-          ...item,
-          total: newTotal,
-          rusak: newRusak,
-          operasi: newOperasi,
-          persenOperasi: newTotal > 0 ? newOperasi / newTotal : 0,
-          persenRusak: newTotal > 0 ? newRusak / newTotal : 0
-        };
-      });
-
-      // Auto-save debounced to Supabase database
-      setSaveStatus('saving');
-      if (debounceSaveTimer.current) {
-        clearTimeout(debounceSaveTimer.current);
-      }
-      debounceSaveTimer.current = setTimeout(async () => {
-        const res = await saveChecklistSummary(date, shift, updated);
-        if (res.success) {
-          setSaveStatus('saved');
-          setTimeout(() => setSaveStatus('idle'), 2500);
-        } else {
-          setSaveStatus('error');
-        }
-      }, 600);
-
-      return updated;
-    });
+  const handleChecklistSummaryChange = (no: number, field: ServiceabilityField, raw: string) => {
+    const value = parseUnitCount(raw) ?? 0;
+    if (!dirtyRef.current) summaryOwnerRef.current = { date, shift };
+    setChecklistSummary(prev => applyServiceabilityEdit(prev, no, field, value));
   };
 
-  const handleManualSaveSummary = async () => {
+  /** Simpan isi diagram; hanya jawaban permintaan terakhir yang mengubah status di layar. */
+  const persistSummary = async (items: ChecklistSummaryItem[], manual: boolean) => {
+    const owner = summaryOwnerRef.current ?? { date, shift };
+    const seq = ++saveSeqRef.current;
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     setSaveStatus('saving');
-    const res = await saveChecklistSummary(date, shift, checklistSummary);
+    setSaveError(null);
+    const res = await saveChecklistSummary(owner.date, owner.shift, items);
+    if (seq !== saveSeqRef.current) return;
     if (res.success) {
+      setSavedKey(serviceabilityKey(items));
+      summaryOwnerRef.current = null;
       setSaveStatus('saved');
-      setStatusMsg({ text: "Data kelaikan peralatan berhasil disimpan ke database.", type: 'success' });
-      setTimeout(() => {
+      if (manual) setStatusMsg({ text: "Data kelaikan peralatan berhasil disimpan ke database.", type: 'success' });
+      savedTimerRef.current = setTimeout(() => {
         setSaveStatus('idle');
-        setStatusMsg(null);
+        if (manual) setStatusMsg(null);
       }, 3000);
     } else {
+      const reason = res.message || 'alasan tidak diketahui';
       setSaveStatus('error');
-      setStatusMsg({ text: "Gagal menyimpan data kelaikan peralatan ke database.", type: 'error' });
+      setSaveError(reason);
+      if (manual) setStatusMsg({ text: `Gagal menyimpan data kelaikan peralatan: ${reason}`, type: 'error' });
     }
   };
+
+  const handleManualSaveSummary = () => {
+    void persistSummary(summaryRef.current, true);
+  };
+
+  // Simpan otomatis 800 ms setelah angka terakhir diubah.
+  useEffect(() => {
+    if (!isSummaryDirty) return;
+    const timer = setTimeout(() => { void persistSummary(checklistSummary, false); }, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checklistSummary, savedKey]);
+
+  // Edit yang belum sempat tersimpan tetap dikirim saat pindah tab atau halaman ditutup/dimuat ulang.
+  useEffect(() => {
+    const pending = () => (dirtyRef.current ? (summaryOwnerRef.current ?? { date, shift }) : null);
+    // Halaman ditutup / dimuat ulang / aplikasi ke latar belakang: permintaan keepalive.
+    const flushOnExit = () => {
+      const owner = pending();
+      if (owner) saveChecklistSummaryOnExit(owner.date, owner.shift, summaryRef.current);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flushOnExit(); };
+    window.addEventListener('pagehide', flushOnExit);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flushOnExit);
+      document.removeEventListener('visibilitychange', onVisibility);
+      // Pindah tab di dalam aplikasi: halaman tetap hidup, simpan biasa.
+      const owner = pending();
+      if (owner) void saveChecklistSummary(owner.date, owner.shift, summaryRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // CRUD State
   const [isCrudModalOpen, setIsCrudModalOpen] = useState(false);
@@ -248,6 +260,11 @@ export const TabShiftReport: React.FC = () => {
 
   // Fetch log operasional dan ringkasan checklist dari database
   const loadShiftReports = async (targetDate: string, targetShift: string) => {
+    // Edit diagram yang belum tersimpan milik tanggal/shift sebelumnya dikirim dulu agar tidak hilang.
+    if (dirtyRef.current && summaryOwnerRef.current) {
+      const owner = summaryOwnerRef.current;
+      await saveChecklistSummary(owner.date, owner.shift, summaryRef.current);
+    }
     setFetchingLive(true);
     try {
       // 1. Fetch data kegiatan dari laporan_operasional Supabase dan hitung rekap per shift
@@ -279,7 +296,11 @@ export const TabShiftReport: React.FC = () => {
       const summary = await fetchChecklistSummary(targetDate, summaryShift);
       if (summary && summary.length > 0) {
         setChecklistSummary(summary);
+        setSavedKey(serviceabilityKey(summary));
+      } else {
+        setSavedKey(serviceabilityKey(summaryRef.current));
       }
+      summaryOwnerRef.current = null;
     } catch (err) {
       console.error("Gagal load shift reports:", err);
     } finally {
@@ -927,6 +948,8 @@ export const TabShiftReport: React.FC = () => {
         handleChecklistSummaryChange={handleChecklistSummaryChange}
         handleManualSaveSummary={handleManualSaveSummary}
         saveStatus={saveStatus}
+        saveError={saveError}
+        isDirty={isSummaryDirty}
       />
 
       {/* DAFTAR LOG KEGIATAN & PERBAIKAN SHIFT AKTIF (TABEL 1) */}
