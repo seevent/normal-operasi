@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   SHARE_HANG_MS,
   retrySeparately,
@@ -236,12 +236,8 @@ test('PendingShareBar: tombol gagal, lewati, tautan video; tanpa layar tunggu ko
   assert.match(bar, /savePendingFiles/);
 });
 
-test('halaman Uji share ada di tab Data dan mencatat jawaban "sampai di WhatsApp"', () => {
-  assert.match(read('src/components/features/TabData.tsx'), /ShareTestPanel/);
-  const panel = read('src/components/features/ShareTestPanel.tsx');
-  assert.match(panel, /Sampai di WhatsApp\?/);
-  assert.match(panel, /logShareAnswer\(/);
-  const mig = read('supabase/migrations/20261110120000_share_log.sql');
-  assert.match(mig, /create table public\.share_log/);
-  assert.match(mig, /enable row level security/);
+test('halaman Uji Share WA sudah dihapus', () => {
+  assert.equal(existsSync(new URL('../src/components/features/ShareTestPanel.tsx', import.meta.url)), false);
+  assert.doesNotMatch(read('src/components/features/TabData.tsx'), /ShareTestPanel|uji_share|Uji Share/);
+  assert.doesNotMatch(read('src/lib/services/shareService.ts'), /shareTestReport|VideoChoice/);
 });

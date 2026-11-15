@@ -4,7 +4,7 @@ import { sayPet, useAppStore } from '../../store/useAppStore';
 import { isAppleMobile, isVideo } from '../utils/shareBatches';
 import type { ShareItem } from '../utils/shareBatches';
 import { retrySeparately, shareNext, skipNext, startReportShare, videoLinkMessage } from '../utils/shareFlow';
-import type { ShareFlowDeps, ShareFlowState, ShareMode, ShareSession, StartShareResult, VideoChoice } from '../utils/shareFlow';
+import type { ShareFlowDeps, ShareFlowState, ShareMode, ShareSession } from '../utils/shareFlow';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
 import { getPreparedVideo, getVideoLink } from './whatsappVideoService';
 import { logShare, logShareNote } from './shareLogService';
@@ -179,15 +179,6 @@ export const shareReportWithMedia = async (
   const { result } = await startReportShare(flowDeps(setIsCopied), { message, groups, cheerTab, mode: defaultShareMode() });
   if (result === 'fallback' && cheerTab) sayPet(getTabCheer(cheerTab), 'cheer');
 };
-
-/** Halaman Uji share (tab Data): satu percobaan dengan mode dan pilihan video tertentu. */
-export const shareTestReport = (options: {
-  test: string;
-  message: string;
-  groups: File[][];
-  mode: ShareMode;
-  video: VideoChoice;
-}): Promise<{ result: StartShareResult; attemptId: string }> => startReportShare(flowDeps(), { ...options, kind: 'uji' });
 
 /** Mengirim kiriman berikutnya di antrean. Harus dipanggil dari ketukan pengguna. */
 export const shareNextPendingBatch = () => shareNext(flowDeps());
