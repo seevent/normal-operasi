@@ -55,3 +55,19 @@ test('Foto yang dilepas saat laporan diedit diantrikan ke Sampah dan tidak bisa 
   const panel = read('src/components/features/storage-manager/StorageManagerPanel.tsx');
   assert.match(panel, /job\.kind !== 'foto_lama' && \(/);
 });
+
+test('Pemeriksaan "foto masih dipakai" mencakup semua tabel penyimpan URL media', () => {
+  const sql = read('supabase/migrations/20261115140000_media_references_all_tables.sql');
+  // Pengosongan Sampah (referenced_media_urls) dan pratinjau rentang memakai daftar rujukan yang sama.
+  const refs = sql.match(/function public\.referenced_media_urls[\s\S]*?\$\$;/)?.[0] ?? '';
+  const preview = sql.match(/function public\.preview_report_range[\s\S]*?\$\$;/)?.[0] ?? '';
+  for (const body of [refs, preview]) {
+    assert.match(body, /from laporan_operasional/);
+    assert.match(body, /from laporan_operasional_sampah/);
+    assert.match(body, /from preventive_photo_log/);
+    assert.match(body, /unnest\(evidence_urls\) from stock_mutations/);
+    assert.match(body, /select foto_url from unit_peralatan/);
+  }
+  assert.match(sql, /revoke all on function public\.referenced_media_urls\(uuid\) from public, anon, authenticated;/);
+  assert.match(sql, /grant execute on function public\.referenced_media_urls\(uuid\) to service_role;/);
+});

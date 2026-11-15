@@ -254,7 +254,7 @@ Menyimpan catatan kegiatan operasional harian teknisi (Perbaikan, Storing, Kegia
 > CHECK (foto_urls IS NULL OR foto_urls::text NOT LIKE '%data:image%');
 > ```
 
-> **Pembersihan foto**: laporan yang dihapus masuk Sampah 7 hari lalu dihapus permanen beserta fotonya (`supabase/migrations/20261029120000_storage_manager.sql`). Foto yang dilepas saat laporan diedit dicatat trigger `laporan_operasional_queue_removed_media` sebagai job `foto_lama` dan dihapus lewat jalur Sampah yang sama (`supabase/migrations/20261115130000_report_edit_photo_cleanup.sql`). Foto yang masih dirujuk laporan lain atau `preventive_photo_log` tidak dihapus.
+> **Pembersihan foto**: laporan yang dihapus masuk Sampah 7 hari lalu dihapus permanen beserta fotonya (`supabase/migrations/20261029120000_storage_manager.sql`). Foto yang dilepas saat laporan diedit dicatat trigger `laporan_operasional_queue_removed_media` sebagai job `foto_lama` dan dihapus lewat jalur Sampah yang sama (`supabase/migrations/20261115130000_report_edit_photo_cleanup.sql`). Foto yang masih dirujuk tabel mana pun yang menyimpan URL media tidak dihapus: `laporan_operasional`, `laporan_operasional_sampah`, `preventive_photo_log`, `stock_mutations.evidence_urls`, dan `unit_peralatan.foto_url` (daftarnya di fungsi `referenced_media_urls()`, `supabase/migrations/20261115140000_media_references_all_tables.sql`). Tabel baru yang menyimpan URL media harus ditambahkan ke fungsi itu dan ke `preview_report_range()`.
 
 ---
 
