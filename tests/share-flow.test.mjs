@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 import {
-  SHARE_HANG_MS,
   retrySeparately,
   shareNext,
   skipNext,
@@ -18,7 +17,7 @@ const domError = (name) => Object.assign(new Error(name), { name });
 
 /** Lingkungan tiruan: navigator.share yang bisa selesai, menggantung, atau menolak. */
 function env({ share = 'ok', canShare = true, prepared = new Map(), hasShare = true } = {}) {
-  const calls = { shares: [], logs: [], fallbacks: [], downloads: [], copied: [], shared: [], timers: [] };
+  const calls = { shares: [], fallbacks: [], downloads: [], copied: [], shared: [] };
   let state = { queue: [], retry: null, failure: null, attempted: false };
   let behaviour = share;
   let id = 0;
@@ -39,10 +38,7 @@ function env({ share = 'ok', canShare = true, prepared = new Map(), hasShare = t
       state = { ...state, ...patch };
     },
     preparedVideo: (f) => prepared.get(f),
-    log: (entry) => calls.logs.push(entry),
-    now: () => 1000,
     newId: () => `id-${++id}`,
-    setTimer: (fn, ms) => calls.timers.push({ fn, ms }),
     onShared: (item) => calls.shared.push(item),
     fallback: async (message, files) => {
       calls.fallbacks.push({ message, files });
@@ -119,15 +115,27 @@ test('6. share lanjutan ditolak peramban: kiriman tetap di antrean, tidak diundu
 
 // ---- Perilaku pendukung ----
 
-test('video paksa asli / wajib konversi (dipakai halaman uji)', async () => {
+test('video memakai salinan MP4 bila sudah siap, selain itu berkas asli', async () => {
   const asli = vid('IMG_3.MOV');
   const mp4 = vid('IMG_3.mp4', 'video/mp4');
-  const a = env({ prepared: new Map([[asli, mp4]]) });
-  await startReportShare(a.deps, { message: 'm', groups: [[asli]], video: 'asli' });
-  assert.deepEqual(names(a.calls.shares[0].files), ['IMG_3.MOV']);
-  const b = env({ prepared: new Map([[asli, mp4]]) });
-  await startReportShare(b.deps, { message: 'm', groups: [[asli]], video: 'siap' });
-  assert.deepEqual(names(b.calls.shares[0].files), ['IMG_3.mp4']);
+  const siap = env({ prepared: new Map([[asli, mp4]]) });
+  await startReportShare(siap.deps, { message: 'm', groups: [[asli]] });
+  assert.deepEqual(names(siap.calls.shares[0].files), ['IMG_3.mp4']);
+  const belum = env({});
+  await startReportShare(belum.deps, { message: 'm', groups: [[asli]] });
+  assert.deepEqual(names(belum.calls.shares[0].files), ['IMG_3.MOV']);
+});
+
+test('hasil share lama yang baru selesai tidak menimpa antrean share baru', async () => {
+  const e = env({});
+  let selesaiLama;
+  e.deps.nav.share = () => new Promise((r) => { selesaiLama = r; });
+  const lama = startReportShare(e.deps, { message: 'lama', groups: [[img('a.jpg')], [img('b.jpg')]] });
+  e.deps.nav.share = () => Promise.resolve();
+  await startReportShare(e.deps, { message: 'baru', groups: [[img('c.jpg')], [img('d.jpg')]] });
+  selesaiLama();
+  assert.equal((await lama).result, 'aborted');
+  assert.deepEqual(e.state().queue.map((i) => names(i.files)), [['d.jpg']]);
 });
 
 test('share pertama dibatalkan pengguna: antrean dikosongkan', async () => {
@@ -189,28 +197,6 @@ test('retrySeparately: laporan + foto dulu, lalu tiap video sendiri', async () =
   assert.equal(e.state().retry, null);
 });
 
-test('log: tiap share dicatat dengan hasil, sumber video, dan tanda menggantung', async () => {
-  const asli = vid('IMG_4.MOV');
-  const mp4 = vid('IMG_4.mp4', 'video/mp4');
-  const e = env({ prepared: new Map([[asli, mp4]]) });
-  const out = await startReportShare(e.deps, { message: 'laporan', groups: [[img('k.jpg'), asli]], cheerTab: 'perbaikan' });
-  assert.equal(e.calls.logs.length, 1);
-  const row = e.calls.logs[0];
-  assert.equal(row.attemptId, out.attemptId);
-  assert.deepEqual(
-    { kind: row.kind, step: row.step, tab: row.tab, mode: row.mode, photos: row.photos, videos: row.videos, videoSource: row.videoSource, outcome: row.outcome },
-    { kind: 'laporan', step: 1, tab: 'perbaikan', mode: 'gabung', photos: 1, videos: 1, videoSource: 'konversi', outcome: 'resolved' },
-  );
-  assert.equal(row.bytes, 1000 + 5_000_000);
-
-  const h = env({ share: 'hang' });
-  void startReportShare(h.deps, { message: 'laporan', groups: [[vid('v.mov')]] });
-  assert.equal(h.calls.timers[0].ms, SHARE_HANG_MS);
-  h.calls.timers[0].fn();
-  assert.equal(h.calls.logs.at(-1).outcome, 'timeout');
-  assert.equal(h.calls.logs.at(-1).videoSource, 'asli');
-});
-
 test('videoLinkMessage: satu tautan per baris', () => {
   assert.equal(videoLinkMessage(['https://a/v1.mp4']), 'Video: https://a/v1.mp4');
   assert.equal(videoLinkMessage(['https://a/v1.mp4', 'https://a/v2.mp4']), 'Video 1: https://a/v1.mp4\nVideo 2: https://a/v2.mp4');
@@ -224,7 +210,7 @@ test('shareService memakai shareFlow dan tidak lagi menunggu konversi video sebe
   const src = read('src/lib/services/shareService.ts');
   assert.match(src, /startReportShare\(/);
   assert.doesNotMatch(src, /queueReportWithConvertedVideos|await prepareVideoForWhatsApp/);
-  assert.match(src, /log: logShare/);
+  assert.doesNotMatch(src, /shareLogService|logShare|noteHead/);
 });
 
 test('PendingShareBar: tombol gagal, lewati, tautan video; tanpa layar tunggu konversi', () => {
@@ -240,4 +226,10 @@ test('halaman Uji Share WA sudah dihapus', () => {
   assert.equal(existsSync(new URL('../src/components/features/ShareTestPanel.tsx', import.meta.url)), false);
   assert.doesNotMatch(read('src/components/features/TabData.tsx'), /ShareTestPanel|uji_share|Uji Share/);
   assert.doesNotMatch(read('src/lib/services/shareService.ts'), /shareTestReport|VideoChoice/);
+});
+
+test('pencatatan share sudah dicabut seluruhnya', () => {
+  assert.equal(existsSync(new URL('../src/lib/services/shareLogService.ts', import.meta.url)), false);
+  const flow = read('src/lib/utils/shareFlow.ts');
+  assert.doesNotMatch(flow, /ShareLogEntry|SHARE_HANG_MS|setTimer|VideoChoice|'uji'|deps\.log/);
 });

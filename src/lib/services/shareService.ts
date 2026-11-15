@@ -7,7 +7,6 @@ import { retrySeparately, shareNext, skipNext, startReportShare, videoLinkMessag
 import type { ShareFlowDeps, ShareFlowState, ShareMode, ShareSession } from '../utils/shareFlow';
 import { getTabCheer, TabCheerKey } from '../data/petMessages';
 import { getPreparedVideo, getVideoLink } from './whatsappVideoService';
-import { logShare, logShareNote } from './shareLogService';
 
 export const triggerFileDownload = (file: File) => {
   const url = URL.createObjectURL(file);
@@ -100,8 +99,8 @@ export const shareToWhatsApp = async (
 
 /**
  * Strategi share video per platform. 'gabung' = laporan + foto + video dalam satu share, seperti kode
- * awal yang berfungsi di iPhone dan Android. Ubah hanya berdasar tabel share_log / halaman Uji share
- * (tab Data), bukan dugaan: lihat docs/superpowers/plans/2026-11-10-video-whatsapp-share.md.
+ * awal yang berfungsi di iPhone dan Android. Ubah hanya berdasar uji nyata di iPhone dan Android,
+ * bukan dugaan: lihat docs/superpowers/plans/2026-11-10-video-whatsapp-share.md.
  */
 export const SHARE_MODE_BY_PLATFORM: { apple: ShareMode; other: ShareMode } = { apple: 'gabung', other: 'gabung' };
 
@@ -110,7 +109,7 @@ const defaultShareMode = (): ShareMode =>
     ? SHARE_MODE_BY_PLATFORM.apple
     : SHARE_MODE_BY_PLATFORM.other;
 
-/** Sesi share yang sedang berjalan (id percobaan, tab, langkah) untuk pencatatan share_log. */
+/** Sesi share yang sedang berjalan, untuk mengabaikan hasil share lama yang sudah digantikan. */
 let currentSession: ShareSession | undefined;
 
 const newAttemptId = (): string =>
@@ -122,7 +121,7 @@ const copyText = (text: string) => {
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(() => {});
 };
 
-/** Menyambungkan alur share (shareFlow.ts) ke peramban, store aplikasi, dan pencatatan. */
+/** Menyambungkan alur share (shareFlow.ts) ke peramban dan store aplikasi. */
 const flowDeps = (setIsCopied: (v: boolean) => void = () => {}): ShareFlowDeps => ({
   nav: {
     share: typeof navigator.share === 'function' ? (data) => navigator.share(data as ShareData) : undefined,
@@ -142,10 +141,7 @@ const flowDeps = (setIsCopied: (v: boolean) => void = () => {}): ShareFlowDeps =
     });
   },
   preparedVideo: getPreparedVideo,
-  log: logShare,
-  now: () => Date.now(),
   newId: newAttemptId,
-  setTimer: (fn, ms) => setTimeout(fn, ms),
   onShared: (item) => {
     if (item.caption) {
       setIsCopied(true);
@@ -186,13 +182,8 @@ export const shareNextPendingBatch = () => shareNext(flowDeps());
 /** Mengirim ulang kiriman berisi video secara terpisah: laporan + foto sekali, lalu tiap video sendiri. */
 export const retryShareSeparately = () => retrySeparately(flowDeps());
 
-const noteHead = (note: 'tautan' | 'disimpan' | 'dilewati') => {
-  if (currentSession) logShareNote(currentSession.attemptId, note, currentSession.test);
-};
-
 /** Melewati kiriman terdepan: sudah terkirim tetapi peramban tidak melapor, atau memang tidak ingin dikirim. */
 export const skipPendingShare = () => {
-  noteHead('dilewati');
   skipNext(flowDeps());
 };
 
@@ -213,7 +204,6 @@ export const sendPendingVideoLinks = () => {
   const links = pendingVideoLinks(head);
   if (!head || links.length === 0) return;
   window.open(`https://wa.me/?text=${encodeURIComponent(videoLinkMessage(links))}`, '_blank');
-  noteHead('tautan');
   const others = head.files.filter((f) => !isVideo(f));
   const remainder: ShareItem[] = others.length > 0 || head.caption ? [{ ...head, files: others }] : [];
   s.setShareState({ pendingShareBatches: [...remainder, ...rest], shareFailure: null, shareAttempted: false });
@@ -225,6 +215,5 @@ export const savePendingFiles = () => {
   if (!head) return;
   if (head.caption) copyText(head.caption);
   head.files.forEach(triggerFileDownload);
-  noteHead('disimpan');
   skipNext(flowDeps());
 };
