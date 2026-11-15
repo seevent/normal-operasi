@@ -39,7 +39,8 @@ export interface RangePreview {
 
 export interface CleanupJob {
   id: string;
-  kind: 'rentang' | 'satuan';
+  /** foto_lama: foto yang dilepas saat laporan diedit (tanpa baris laporan, tidak bisa dipulihkan). */
+  kind: 'rentang' | 'satuan' | 'foto_lama';
   range_from: string | null;
   range_to: string | null;
   jenis: string[] | null;

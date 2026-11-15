@@ -312,7 +312,8 @@ export const StorageManagerPanel: React.FC = () => {
         <p className="text-xs text-slate-600 mb-3 leading-relaxed">
           Laporan disimpan minimal <strong>12 bulan</strong>. Yang boleh dihapus: laporan bertanggal sampai{' '}
           <strong>{tgl(cutoff)}</strong>. Laporan yang dihapus masuk <strong>Sampah 7 hari</strong> (bisa dipulihkan), lalu dihapus
-          permanen beserta foto/videonya di Cloudinary dan Supabase Storage. Foto yang juga dipakai laporan lain tidak ikut dihapus.
+          permanen beserta foto/videonya di Cloudinary dan Supabase Storage. Foto lama yang diganti saat laporan diedit juga ikut
+          dihapus dengan cara yang sama. Foto yang juga dipakai laporan lain tidak ikut dihapus.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="text-xs font-bold text-slate-700">
@@ -430,26 +431,37 @@ export const StorageManagerPanel: React.FC = () => {
               <li key={job.id} className="border border-slate-200 rounded-lg p-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-bold text-slate-800">
-                    {job.row_count} laporan · {tgl(job.range_from)} – {tgl(job.range_to)}
-                    {job.kind === 'satuan' && <span className="font-normal text-slate-500"> (dari menu Report)</span>}
+                    {job.kind === 'foto_lama' ? (
+                      <>
+                        Foto lama laporan {tgl(job.range_from)}
+                        <span className="font-normal text-slate-500"> (diganti saat laporan diedit)</span>
+                      </>
+                    ) : (
+                      <>
+                        {job.row_count} laporan · {tgl(job.range_from)} – {tgl(job.range_to)}
+                        {job.kind === 'satuan' && <span className="font-normal text-slate-500"> (dari menu Report)</span>}
+                      </>
+                    )}
                   </span>
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STATUS_LABEL[job.status].tone}`}>{STATUS_LABEL[job.status].text}</span>
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
-                  Dihapus {tgl(job.created_at)} oleh {job.created_by_email ?? 'petugas tanpa login'}
+                  {job.kind === 'foto_lama' ? 'Diedit' : 'Dihapus'} {tgl(job.created_at)} oleh {job.created_by_email ?? 'petugas tanpa login'}
                   {job.jenis && ` · ${job.jenis.join(', ')}`}
                 </div>
                 {job.status === 'sampah' && (
                   <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
                     <span className="text-xs text-amber-700">Dihapus permanen mulai {tgl(job.purge_after)}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRestore(job)}
-                      disabled={!!busy}
-                      className="flex items-center gap-1 px-3 py-2 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold disabled:opacity-50"
-                    >
-                      <RotateCcw className="w-4 h-4" /> Pulihkan
-                    </button>
+                    {job.kind !== 'foto_lama' && (
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(job)}
+                        disabled={!!busy}
+                        className="flex items-center gap-1 px-3 py-2 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-4 h-4" /> Pulihkan
+                      </button>
+                    )}
                   </div>
                 )}
                 {job.media_total != null && (

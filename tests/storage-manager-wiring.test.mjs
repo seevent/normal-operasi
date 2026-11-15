@@ -45,3 +45,13 @@ test('Sampah & riwayat: job yang sudah dihapus permanen tidak ditampilkan lagi',
   const svc = read('src/lib/services/storageManagerService.ts');
   assert.match(svc, /fetchCleanupJobs[\s\S]*?from\('storage_cleanup_jobs'\)[\s\S]*?\.neq\('status', 'dikosongkan'\)[\s\S]*?\.limit\(30\)/);
 });
+
+test('Foto yang dilepas saat laporan diedit diantrikan ke Sampah dan tidak bisa dipulihkan', () => {
+  const sql = read('supabase/migrations/20261115130000_report_edit_photo_cleanup.sql');
+  assert.match(sql, /check \(kind in \('rentang', 'satuan', 'foto_lama'\)\)/);
+  assert.match(sql, /after update of foto_urls on public\.laporan_operasional[\s\S]*?execute function public\.queue_removed_report_media\(\)/);
+  assert.match(sql, /insert into storage_cleanup_items \(job_id, url\)/);
+  assert.match(sql, /status = 'sampah' and kind <> 'foto_lama' for update/);
+  const panel = read('src/components/features/storage-manager/StorageManagerPanel.tsx');
+  assert.match(panel, /job\.kind !== 'foto_lama' && \(/);
+});

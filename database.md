@@ -254,6 +254,8 @@ Menyimpan catatan kegiatan operasional harian teknisi (Perbaikan, Storing, Kegia
 > CHECK (foto_urls IS NULL OR foto_urls::text NOT LIKE '%data:image%');
 > ```
 
+> **Pembersihan foto**: laporan yang dihapus masuk Sampah 7 hari lalu dihapus permanen beserta fotonya (`supabase/migrations/20261029120000_storage_manager.sql`). Foto yang dilepas saat laporan diedit dicatat trigger `laporan_operasional_queue_removed_media` sebagai job `foto_lama` dan dihapus lewat jalur Sampah yang sama (`supabase/migrations/20261115130000_report_edit_photo_cleanup.sql`). Foto yang masih dirujuk laporan lain atau `preventive_photo_log` tidak dihapus.
+
 ---
 
 ### 3.13. Tabel `laporan_checklist`
