@@ -419,9 +419,11 @@ export const StorageManagerPanel: React.FC = () => {
             {busy === 'purge' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Kosongkan yang sudah 7 hari
           </button>
         </div>
-        <p className="text-[11px] text-slate-500 mb-3">Sampah yang sudah 7 hari dikosongkan otomatis setiap hari pukul 03.17 WIB.</p>
+        <p className="text-[11px] text-slate-500 mb-3">
+          Sampah yang sudah 7 hari dikosongkan otomatis setiap hari pukul 03.17 WIB. Laporan yang sudah dihapus permanen tidak ditampilkan lagi.
+        </p>
         {jobs.length === 0 ? (
-          <p className="text-sm text-slate-500">Belum ada penghapusan.</p>
+          <p className="text-sm text-slate-500">Sampah kosong.</p>
         ) : (
           <ul className="space-y-2">
             {jobs.map((job) => (

@@ -95,11 +95,13 @@ export const trashReportRange = async (from: string, to: string, jenis: string[]
 export const restoreTrashJob = async (jobId: string): Promise<number> =>
   unwrap(await supabase.rpc('restore_trash_job', { p_job: jobId }));
 
+/** Job penghapusan yang masih perlu dilihat; yang sudah dihapus permanen tidak ditampilkan lagi. */
 export const fetchCleanupJobs = async (): Promise<CleanupJob[]> =>
   unwrap(
     await supabase
       .from('storage_cleanup_jobs')
       .select('*')
+      .neq('status', 'dikosongkan')
       .order('created_at', { ascending: false })
       .limit(30),
   );

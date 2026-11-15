@@ -40,3 +40,8 @@ test('Panel Penyimpanan ada di tab Data › Storage; pengosongan terjadwal haria
   assert.match(fn, /purgeDueTrash/);
   assert.match(fn, /schedule: '17 20 \* \* \*'/);
 });
+
+test('Sampah & riwayat: job yang sudah dihapus permanen tidak ditampilkan lagi', () => {
+  const svc = read('src/lib/services/storageManagerService.ts');
+  assert.match(svc, /fetchCleanupJobs[\s\S]*?from\('storage_cleanup_jobs'\)[\s\S]*?\.neq\('status', 'dikosongkan'\)[\s\S]*?\.limit\(30\)/);
+});
