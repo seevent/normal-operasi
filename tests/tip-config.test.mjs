@@ -62,3 +62,18 @@ test('countCheckedVisible & tipProgressPercent', () => {
   assert.equal(tipProgressPercent(19, 38), 50);
   assert.equal(tipProgressPercent(1, 3), 33);
 });
+
+test('Tab TIP memakai daftar yang disaring Config TIP; kode daftar TIP lama dihapus', () => {
+  const tab = read('src/components/features/TabTip.tsx');
+  assert.match(tab, /visibleTipCategories\(buildTipLocations\(checklistDataMaster\), tipHiddenKeys\)/);
+  assert.match(tab, /countCheckedVisible\(/);
+  assert.match(tab, /tipProgressPercent\(/);
+  // Tidak lagi menghitung semua kunci tercentang (termasuk yang tersembunyi).
+  assert.doesNotMatch(tab, /Object\.values\(tipDataState\)\.filter/);
+
+  const store = read('src/store/useMasterDataStore.ts');
+  assert.match(store, /case 'master_tip_hidden':/);
+  assert.match(store, /saveConfigToSupabase\('master_tip_hidden', keys\)/);
+  assert.doesNotMatch(store, /tipLeftCol|tipRightCol|master_tip_left|master_tip_right/);
+  assert.doesNotMatch(read('src/lib/data/masterData.ts'), /DEFAULT_TIP_LEFT_COL|DEFAULT_TIP_RIGHT_COL/);
+});

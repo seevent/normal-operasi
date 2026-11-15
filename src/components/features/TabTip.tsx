@@ -4,6 +4,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { supabase } from '../../lib/supabaseClient';
 import { sayPet } from '../../store/useAppStore';
 import { getTabCheer } from '../../lib/data/petMessages';
+import { buildTipLocations, countCheckedVisible, tipProgressPercent, visibleTipCategories } from '../../lib/utils/tipEquipment';
 
 export const TIP_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -25,41 +26,13 @@ const getDefaultTipPeriod = () => {
 };
 
 export const TabTip: React.FC = () => {
-  const { checklistDataMaster } = useMasterDataStore();
+  const { checklistDataMaster, tipHiddenKeys } = useMasterDataStore();
 
-  const tipCategories = React.useMemo(() => {
-    const cats: any[] = [];
-    (checklistDataMaster || []).forEach(block => {
-      if (block.type === 'location') {
-        const xrayCat = block.categories?.find((c: any) => c.summaryKey && c.summaryKey.toUpperCase().includes('X-RAY'));
-        if (xrayCat && xrayCat.items && xrayCat.items.length > 0) {
-          cats.push({
-            id: block.title.toLowerCase().replace(/\s+/g, '_'),
-            name: block.title,
-            items: xrayCat.items.map((item: string) => {
-              const match = item.match(/\(([^)]+)\)/);
-              return match ? match[1] : 'No1';
-            })
-          });
-        }
-      } else if (block.type === 'group') {
-        (block.locations || []).forEach((loc: any) => {
-          const xrayCat = loc.categories?.find((c: any) => c.summaryKey && c.summaryKey.toUpperCase().includes('X-RAY'));
-          if (xrayCat && xrayCat.items && xrayCat.items.length > 0) {
-            cats.push({
-              id: loc.title.toLowerCase().replace(/\s+/g, '_'),
-              name: loc.title,
-              items: xrayCat.items.map((item: string) => {
-                const match = item.match(/\(([^)]+)\)/);
-                return match ? match[1] : 'No1';
-              })
-            });
-          }
-        });
-      }
-    });
-    return cats;
-  }, [checklistDataMaster]);
+  // Unit X-Ray dari master Checklist, tanpa yang disembunyikan di tab Data › Config TIP.
+  const tipCategories = React.useMemo(
+    () => visibleTipCategories(buildTipLocations(checklistDataMaster), tipHiddenKeys),
+    [checklistDataMaster, tipHiddenKeys]
+  );
 
   const tipLeftCol = tipCategories.slice(0, Math.ceil(tipCategories.length / 2));
   const tipRightCol = tipCategories.slice(Math.ceil(tipCategories.length / 2));
@@ -111,9 +84,8 @@ export const TabTip: React.FC = () => {
     });
   }, []);
 
-  const getTipCheckedCount = () => {
-    return Object.values(tipDataState).filter((d: any) => d.checked).length;
-  };
+  // Hanya unit yang tampil; centang tersimpan milik unit tersembunyi tidak dihitung.
+  const getTipCheckedCount = () => countCheckedVisible(tipDataState, tipCategories);
 
   const handleTipToggle = (catId: string, item: string) => {
     const key = `${catId}-${item}`;
@@ -396,7 +368,7 @@ export const TabTip: React.FC = () => {
           <div className="w-full bg-slate-300 rounded-full h-2.5 overflow-hidden">
             <div 
               className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" 
-              style={{ width: `${Math.round((getTipCheckedCount() / TIP_TOTAL_ITEMS) * 100)}%` }}
+              style={{ width: `${tipProgressPercent(getTipCheckedCount(), TIP_TOTAL_ITEMS)}%` }}
             ></div>
           </div>
         </div>

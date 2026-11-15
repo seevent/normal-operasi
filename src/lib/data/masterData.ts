@@ -209,14 +209,3 @@ export const DEFAULT_CHECKLIST_DATA = [
   }
 ];
 
-export const DEFAULT_TIP_LEFT_COL = [
-  { id: 'hbscp', name: 'HBSCP', items: ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6'] },
-  { id: 'hbscp_umroh', name: 'HBSCP UMROH', items: ['2.7', '2.8'] },
-  { id: 'pscp_d', name: 'PSCP D', items: ['1', '2', '3', '4', '5'] }
-];
-export const DEFAULT_TIP_RIGHT_COL = [
-  { id: 'pscp_e', name: 'PSCP E', items: ['1', '2', '3', '4', '5'] },
-  { id: 'pscp_f', name: 'PSCP F', items: ['1', '2', '3', '4'] },
-  { id: 'pscp_umroh', name: 'PSCP UMROH', items: ['1', '2', '3', '4', '5', '6', '7'] },
-  { id: 'sscp', name: 'SSCP', items: ['MP E', 'MP F'] }
-];

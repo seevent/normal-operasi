@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { 
   DEFAULT_DATA_API_T2, DEFAULT_DATA_OM_IAS_T2, DEFAULT_STORING_EQUIPMENTS, 
   DEFAULT_STORING_LOC_AC, DEFAULT_STORING_LOC_DEFAULT, DEFAULT_CHECKLIST_DATA,
-  DEFAULT_TIP_LEFT_COL, DEFAULT_TIP_RIGHT_COL, toTitleCase, sortPersonelByJabatan
+  toTitleCase, sortPersonelByJabatan
 } from '../lib/data/masterData';
 import { supabase } from '../lib/supabaseClient';
 import { setCloudinaryConfig, getCloudinaryConfig } from '../lib/services/cloudinaryService';
@@ -55,10 +55,10 @@ interface MasterDataState {
   checklistDataMaster: any[];
   /** Menyimpan lokal lebih dulu, lalu ke cloud. Hasilnya `false` bila penyimpanan cloud gagal. */
   setChecklistDataMaster: (data: any[]) => Promise<boolean>;
-  tipLeftCol: any[];
-  setTipLeftCol: (data: any[]) => void;
-  tipRightCol: any[];
-  setTipRightCol: (data: any[]) => void;
+  /** Kunci unit X-Ray yang disembunyikan dari tab TIP (Config TIP). Kosong = semua tampil. */
+  tipHiddenKeys: string[];
+  /** Menyimpan lokal lebih dulu, lalu ke cloud. Hasilnya `false` bila penyimpanan cloud gagal. */
+  setTipHiddenKeys: (keys: string[]) => Promise<boolean>;
   
   penempatanData: any[];
   setPenempatanData: (data: any[]) => void;
@@ -187,15 +187,10 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
     set({ checklistDataMaster: data });
     return saveConfigToSupabase('master_checklist', data);
   },
-  tipLeftCol: DEFAULT_TIP_LEFT_COL,
-  setTipLeftCol: (data) => {
-    saveConfigToSupabase('master_tip_left', data);
-    set({ tipLeftCol: data });
-  },
-  tipRightCol: DEFAULT_TIP_RIGHT_COL,
-  setTipRightCol: (data) => {
-    saveConfigToSupabase('master_tip_right', data);
-    set({ tipRightCol: data });
+  tipHiddenKeys: [],
+  setTipHiddenKeys: async (keys) => {
+    set({ tipHiddenKeys: keys });
+    return saveConfigToSupabase('master_tip_hidden', keys);
   },
 
   penempatanData: [],
@@ -405,8 +400,9 @@ export const useMasterDataStore = create<MasterDataState>((set, get) => ({
             case 'master_storing_equip': set({ storingEquipments: config.value }); break;
             case 'master_storing_loc_ac': set({ storingLocAc: config.value }); break;
             case 'master_storing_loc_default': set({ storingLocDefault: config.value }); break;
-            case 'master_tip_left': set({ tipLeftCol: config.value }); break;
-            case 'master_tip_right': set({ tipRightCol: config.value }); break;
+            case 'master_tip_hidden':
+              set({ tipHiddenKeys: Array.isArray(config.value) ? config.value.filter((k: unknown) => typeof k === 'string') : [] });
+              break;
             case 'briefing_spareparts': set({ briefingSparepartIds: config.value }); break;
             case 'pm_display_settings':
               if (config.value) {
