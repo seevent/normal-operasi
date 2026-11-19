@@ -210,7 +210,9 @@ Menyimpan alokasi jadwal shift harian personel teknisi yang dapat diunggah dari 
 | `tanggal` | `DATE` | **NOT NULL** | Tanggal tugas shift (YYYY-MM-DD). |
 | `id_personel` | `UUID` / `BIGINT` | **FK** | Referensi ke `personel(id)`. |
 | `shift` | `VARCHAR(20)` | **NOT NULL** | Kode shift (PS / Pagi / Siang / M / Malam / Off / Cuti / Special). |
-| `status_kehadiran` | `VARCHAR(20)` | DEFAULT `'Hadir'` | Status presensi personel. |
+| `status_kehadiran` | `TEXT` | DEFAULT `'Hadir'` | Status presensi personel: `Hadir`, `Izin`, `Sakit`, `Dinas Luar`, atau label penugasan roster (mis. `Bantuan Umrah SV`). Izin/Sakit/Off/Cuti/Libur = tidak bertugas (`isTidakHadir`, `src/lib/data/kehadiranStatus.ts`). |
+
+**Roster penugasan bantuan** (Data › Upload Jadwal Excel › *Upload Roster Penugasan*): roster PDF/Excel dari unit lain diunggah apa adanya; hanya baris unit `T2 Safety & Security Electronic Services` yang diambil (`src/lib/utils/rosterPenugasan.ts`). `SP` = shift `M`, `PS` = shift `PS`. Jadwal shift yang sama berstatus Hadir diubah statusnya menjadi label penugasan; tanggal tanpa jadwal hanya ditambahkan bila dicentang; bentrok shift/status tidak diubah. Setiap penerapan dicatat di `master_configs` key `roster_penugasan_history` (`{ items: RiwayatRoster[] }`) agar dapat dibatalkan. Upload ulang jadwal bulanan mereset status ke `Hadir`, jadi roster perlu diterapkan ulang.
 | `created_at` | `TIMESTAMPTZ` | DEFAULT `now()` | Waktu pencatatan. |
 
 ---

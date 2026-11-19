@@ -13,6 +13,11 @@ import { useAutoResizeTextarea } from '../../lib/hooks/useAutoResizeTextarea';
 import { validateKehadiran } from '../../lib/utils/formValidation';
 import { reportMissingFields } from '../../lib/utils/missingFields';
 import { FieldError, FIELD_ERROR_CLASS } from '../shared/FieldError';
+import { statusOptions, isTidakHadir } from '../../lib/data/kehadiranStatus';
+
+/** Merah = tidak bertugas (Izin/Sakit); amber = bertugas di tempat lain (Dinas Luar, penugasan roster). */
+const statusClass = (status: string) =>
+  isTidakHadir(status) ? 'text-rose-600 font-bold' : status !== 'Hadir' ? 'text-amber-700 font-semibold' : '';
 
 /** Jadwal General Annual Check pada tanggal ini; tampil di Rencana Kegiatan untuk semua shift. */
 const fetchJadwalGac = async (tanggal: string) => {
@@ -384,11 +389,8 @@ export const TabKehadiran: React.FC = () => {
                   {availableOptions.map(opt => <option key={opt.name} value={opt.name}>{opt.name}</option>)}
                 </select>
                 <input type="text" value={row.phone} readOnly placeholder="No Telepon" className="w-full sm:w-1/4 px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-sm text-slate-500 outline-none cursor-not-allowed" />
-                <select value={row.status} onChange={(e) => handleRowChange('apiList', index, 'status', e.target.value)} className={`w-full sm:w-1/4 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none ${row.status !== 'Hadir' ? 'text-rose-600 font-bold' : ''}`}>
-                  <option value="Hadir">Hadir</option>
-                  <option value="Izin">Izin</option>
-                  <option value="Sakit">Sakit</option>
-                  <option value="Dinas Luar">Dinas Luar</option>
+                <select value={row.status} onChange={(e) => handleRowChange('apiList', index, 'status', e.target.value)} className={`w-full sm:w-1/4 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none ${statusClass(row.status)}`}>
+                  {statusOptions(row.status).map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <button type="button" onClick={() => removeRow('apiList', index)} disabled={attendanceData.apiList.length <= 1 && !row.name} className={`w-full sm:w-auto p-2 rounded-md flex justify-center items-center transition-colors ${attendanceData.apiList.length <= 1 && !row.name ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}`}>
                   <X className="w-5 h-5" />
@@ -419,11 +421,8 @@ export const TabKehadiran: React.FC = () => {
                   {availableOptions.map(opt => <option key={opt.name} value={opt.name}>{opt.name}</option>)}
                 </select>
                 <input type="text" value={row.phone} readOnly placeholder="No Telepon" className="w-full sm:w-1/4 px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-sm text-slate-500 outline-none cursor-not-allowed" />
-                <select value={row.status} onChange={(e) => handleRowChange('omList', index, 'status', e.target.value)} className={`w-full sm:w-1/4 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500 appearance-none ${row.status !== 'Hadir' ? 'text-rose-600 font-bold' : ''}`}>
-                  <option value="Hadir">Hadir</option>
-                  <option value="Izin">Izin</option>
-                  <option value="Sakit">Sakit</option>
-                  <option value="Dinas Luar">Dinas Luar</option>
+                <select value={row.status} onChange={(e) => handleRowChange('omList', index, 'status', e.target.value)} className={`w-full sm:w-1/4 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500 appearance-none ${statusClass(row.status)}`}>
+                  {statusOptions(row.status).map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <button type="button" onClick={() => removeRow('omList', index)} disabled={attendanceData.omList.length <= 1 && !row.name} className={`w-full sm:w-auto p-2 rounded-md flex justify-center items-center transition-colors ${attendanceData.omList.length <= 1 && !row.name ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}`}>
                   <X className="w-5 h-5" />

@@ -5,6 +5,7 @@ import { useMasterDataStore } from '../../store/useMasterDataStore';
 import { Calendar, FileSpreadsheet, Loader2, CheckCircle, AlertTriangle, Trash2, Clock } from 'lucide-react';
 import { PmScheduleUploader } from './PmScheduleUploader';
 import { GacScheduleUploader } from './GacScheduleUploader';
+import { RosterPenugasanUploader } from './RosterPenugasanUploader';
 import { getErrorMessage } from '../../lib/utils/errorUtils';
 
 export const ScheduleUploader: React.FC = () => {
@@ -291,6 +292,9 @@ export const ScheduleUploader: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Bagian Upload Roster Penugasan (bantuan unit lain, mis. Bagasi Umrah SV) */}
+      <RosterPenugasanUploader />
 
       {/* Bagian Upload Jadwal PM */}
       <PmScheduleUploader />

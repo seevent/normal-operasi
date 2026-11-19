@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Status (19 Nov 2026):** Task 3 (SQL manual) digantikan oleh uploader *Upload Roster Penugasan* di Data › Upload Jadwal Excel (`RosterPenugasanUploader.tsx`), yang membaca PDF/Excel roster apa adanya, menyaring unit T2 SSES, menampilkan pratinjau per penugasan, dan dapat dibatalkan. Task 2 sudah dikerjakan (`statusOptions`, warna amber). Task 4 belum: filter Shift Report/teknisi on-duty memakai daftar negatif sehingga label penugasan sudah dihitung hadir.
+
 **Goal:** Penugasan personel T2 Safety & Security Electronic Services dari "Roster Bantuan Penanganan Bagasi Umrah Saudia (SV) – AFETS CGK" (18–27 Nov 2026) terlihat di tab Kehadiran, di pesan WA Laporan Dinas, dan di Shift Report, tanpa merusak jadwal shift reguler.
 
 **Architecture:** Penugasan disimpan sebagai nilai `status_kehadiran` baru (`Bantuan Umrah SV`) pada baris `jadwal_shift` yang sudah ada. Tidak perlu tabel baru: setiap sel roster jatuh pada shift `M` yang sudah terjadwal (lihat Rekonsiliasi). Daftar status dan aturan "tidak hadir" dipusatkan di satu modul murni yang dipakai tab Kehadiran, Shift Report, dan `fetchOnDutyPersonnel`.
