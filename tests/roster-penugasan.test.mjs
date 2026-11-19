@@ -10,7 +10,8 @@ import {
   filterRosterSsesT2,
   matchPersonel,
   susunRencanaRoster,
-  rencanaKePerubahan,
+  rencanaKePenugasan,
+  penugasanUntukShift,
   STATUS_PENUGASAN_DEFAULT,
 } from '../src/lib/utils/rosterPenugasan.ts';
 
@@ -171,7 +172,11 @@ test('cocokkan nama ke master personel', () => {
   assert.equal(matchPersonel('Nama Asing', personel), null);
 });
 
-test('rencana: tandai, tambah, sudah, bentrok shift/status, tidak dikenal', () => {
+test('label bawaan: Bantuan Umroh SV', () => {
+  assert.equal(STATUS_PENUGASAN_DEFAULT, 'Bantuan Umroh SV');
+});
+
+test('rencana: dicocokkan dengan jadwal shift tanpa mengubah status', () => {
   const personel = [
     { id: 'p1', nama: 'Rifky Aziz' },
     { id: 'p2', nama: 'Harmin Sanjayah' },
@@ -188,35 +193,64 @@ test('rencana: tandai, tambah, sudah, bentrok shift/status, tidak dikenal', () =
   ];
   const jadwal = [
     { id: 'j1', personel_id: 'p1', tanggal: '2026-11-19', shift: 'M', status_kehadiran: 'Hadir' },
-    { id: 'j2', personel_id: 'p1', tanggal: '2026-11-27', shift: 'M', status_kehadiran: STATUS_PENUGASAN_DEFAULT },
+    { id: 'j2', personel_id: 'p1', tanggal: '2026-11-27', shift: 'M', status_kehadiran: 'Hadir' },
     { id: 'j3', personel_id: 'p2', tanggal: '2026-11-24', shift: 'M', status_kehadiran: null },
     { id: 'j4', personel_id: 'p2', tanggal: '2026-11-20', shift: 'PS', status_kehadiran: 'Hadir' },
     { id: 'j5', personel_id: 'p3', tanggal: '2026-11-21', shift: 'Malam', status_kehadiran: 'Sakit' },
   ];
-  const rencana = susunRencanaRoster(rows, personel, jadwal, STATUS_PENUGASAN_DEFAULT);
-  const byKey = Object.fromEntries(rencana.map((r) => [`${r.nama}|${r.tanggal}`, r]));
+  // 27/11 sudah tercatat pada upload sebelumnya dengan label yang sama
+  const riwayat = [{ id: 'r0', judul: '', label: 'bantuan umroh sv', dari: '2026-11-27', sampai: '2026-11-27', diunggah: '', penugasan: [
+    { personelId: 'p1', nama: 'Rifky Aziz', tanggal: '2026-11-27', shift: 'M' },
+  ] }];
+  const rencana = susunRencanaRoster(rows, personel, jadwal, STATUS_PENUGASAN_DEFAULT, riwayat);
+  const aksi = Object.fromEntries(rencana.map((r) => [`${r.nama}|${r.tanggal}`, r.aksi]));
 
-  assert.equal(byKey['RIFKY AZIZ|2026-11-19'].aksi, 'tandai');
-  assert.equal(byKey['RIFKY AZIZ|2026-11-19'].jadwalId, 'j1');
-  assert.equal(byKey['RIFKY AZIZ|2026-11-27'].aksi, 'sudah');
-  assert.equal(byKey['HARMIN SANJAYAH|2026-11-24'].aksi, 'tandai');
-  assert.equal(byKey['HARMIN SANJAYAH|2026-11-20'].aksi, 'bentrok_shift');
-  assert.equal(byKey['HARMIN SANJAYAH|2026-11-20'].shiftLama, 'PS');
-  assert.equal(byKey['ABDUL RIFAN SUKARNO|2026-11-21'].aksi, 'bentrok_status');
-  assert.equal(byKey['NANDIO PRIHARDANA|2026-11-22'].aksi, 'tambah');
-  assert.equal(byKey['ORANG BARU|2026-11-23'].aksi, 'tidak_dikenal');
-  // Urut tanggal
+  assert.deepEqual(aksi, {
+    'RIFKY AZIZ|2026-11-19': 'sesuai',
+    'RIFKY AZIZ|2026-11-27': 'sudah',
+    'HARMIN SANJAYAH|2026-11-24': 'sesuai',
+    'HARMIN SANJAYAH|2026-11-20': 'beda_shift',
+    'ABDUL RIFAN SUKARNO|2026-11-21': 'tidak_hadir',
+    'NANDIO PRIHARDANA|2026-11-22': 'di_luar_jadwal',
+    'ORANG BARU|2026-11-23': 'tidak_dikenal',
+  });
+  assert.equal(rencana.find((r) => r.tanggal === '2026-11-20').shiftLama, 'PS');
   assert.deepEqual(rencana.map((r) => r.tanggal), [...rencana.map((r) => r.tanggal)].sort());
 });
 
-test('perubahan yang disimpan untuk riwayat hanya item terpilih yang dapat diterapkan', () => {
-  const base = { nama: 'X', namaMaster: 'X', kode: 'SP-T2', shift: 'M', terminal: 'T2', shiftLama: 'M', statusLama: 'Hadir' };
+test('penugasan yang disimpan hanya item terpilih yang boleh disimpan', () => {
+  const base = { nama: 'X', kode: 'SP-T2', shift: 'M', terminal: 'T2', shiftLama: 'M', statusLama: 'Hadir' };
   const rencana = [
-    { ...base, key: 'k1', personelId: 'p1', tanggal: '2026-11-19', aksi: 'tandai', jadwalId: 'j1' },
-    { ...base, key: 'k2', personelId: 'p2', tanggal: '2026-11-22', aksi: 'tambah', jadwalId: null, shiftLama: null, statusLama: null },
-    { ...base, key: 'k3', personelId: 'p3', tanggal: '2026-11-20', aksi: 'bentrok_shift', jadwalId: 'j3' },
-    { ...base, key: 'k4', personelId: 'p4', tanggal: '2026-11-21', aksi: 'tandai', jadwalId: 'j4' },
+    { ...base, key: 'k1', namaMaster: 'Rifky Aziz', personelId: 'p1', tanggal: '2026-11-19', aksi: 'sesuai' },
+    { ...base, key: 'k2', namaMaster: 'Nandio Prihardana', personelId: 'p2', tanggal: '2026-11-22', aksi: 'di_luar_jadwal' },
+    { ...base, key: 'k3', namaMaster: 'A', personelId: 'p3', tanggal: '2026-11-20', aksi: 'sudah' },
+    { ...base, key: 'k4', namaMaster: null, personelId: null, tanggal: '2026-11-21', aksi: 'tidak_dikenal' },
+    { ...base, key: 'k5', namaMaster: 'B', personelId: 'p5', tanggal: '2026-11-21', aksi: 'sesuai' },
   ];
-  const perubahan = rencanaKePerubahan(rencana, new Set(['k1', 'k2', 'k3']));
-  assert.deepEqual(perubahan.map((p) => [p.personelId, p.aksi]), [['p1', 'tandai'], ['p2', 'tambah']]);
+  assert.deepEqual(rencanaKePenugasan(rencana, new Set(['k1', 'k2', 'k3', 'k4'])), [
+    { personelId: 'p1', nama: 'Rifky Aziz', tanggal: '2026-11-19', shift: 'M' },
+    { personelId: 'p2', nama: 'Nandio Prihardana', tanggal: '2026-11-22', shift: 'M' },
+  ]);
+});
+
+test('penugasan per shift untuk Tab Kehadiran: dikelompokkan per label, nama unik dan urut', () => {
+  const riwayat = [
+    { id: 'r2', judul: '', label: 'Bantuan Umroh SV', dari: '', sampai: '', diunggah: '', penugasan: [
+      { personelId: 'p2', nama: 'Rifky Aziz', tanggal: '2026-11-19', shift: 'M' },
+      { personelId: 'p9', nama: 'Abdul Rifan Sukarno', tanggal: '2026-11-19', shift: 'M' },
+      { personelId: 'p3', nama: 'Harmin Sanjayah', tanggal: '2026-11-19', shift: 'PS' },
+    ] },
+    { id: 'r1', judul: '', label: 'Bantuan Umroh SV', dari: '', sampai: '', diunggah: '', penugasan: [
+      { personelId: 'p2', nama: 'Rifky Aziz', tanggal: '2026-11-19', shift: 'M' },
+    ] },
+    { id: 'r0', judul: '', label: 'Bantuan Haji', dari: '', sampai: '', diunggah: '', penugasan: [
+      { personelId: 'p4', nama: 'Nandio Prihardana', tanggal: '2026-11-19', shift: 'M' },
+    ] },
+  ];
+  assert.deepEqual(penugasanUntukShift(riwayat, '2026-11-19', 'M'), [
+    { label: 'Bantuan Umroh SV', nama: ['Abdul Rifan Sukarno', 'Rifky Aziz'] },
+    { label: 'Bantuan Haji', nama: ['Nandio Prihardana'] },
+  ]);
+  assert.deepEqual(penugasanUntukShift(riwayat, '2026-11-20', 'M'), []);
+  assert.deepEqual(penugasanUntukShift(null, '2026-11-19', 'M'), []);
 });

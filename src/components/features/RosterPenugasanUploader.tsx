@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plane, FileUp, Loader2, CheckCircle, AlertTriangle, Clock, Undo2, X, Info } from 'lucide-react';
+import { Plane, FileUp, Loader2, CheckCircle, AlertTriangle, Clock, Trash2, X, Info } from 'lucide-react';
 import {
   filterRosterSsesT2,
   isAksiDapatDiterapkan,
@@ -17,11 +17,11 @@ import {
 import { validasiLabelPenugasan } from '../../lib/data/kehadiranStatus';
 import {
   bacaFileRoster,
-  batalkanRoster,
+  hapusRiwayatRoster,
   muatJadwal,
   muatPersonel,
   muatRiwayatRoster,
-  terapkanRoster,
+  simpanPenugasanRoster,
 } from '../../lib/services/rosterPenugasanService';
 import { getErrorMessage } from '../../lib/utils/errorUtils';
 
@@ -35,21 +35,22 @@ const fmtTanggal = (iso: string) => {
 const NAMA_SHIFT: Record<string, string> = { PS: 'Pagi', M: 'Malam' };
 
 const AKSI_TAMPIL: Record<AksiRoster, { label: string; cls: string }> = {
-  tandai: { label: 'Tandai penugasan', cls: 'bg-emerald-100 text-emerald-800' },
-  tambah: { label: 'Di luar jadwal', cls: 'bg-sky-100 text-sky-800' },
+  sesuai: { label: 'Sesuai jadwal', cls: 'bg-emerald-100 text-emerald-800' },
+  di_luar_jadwal: { label: 'Di luar jadwal', cls: 'bg-sky-100 text-sky-800' },
+  beda_shift: { label: 'Beda shift', cls: 'bg-amber-100 text-amber-800' },
+  tidak_hadir: { label: 'Tidak hadir', cls: 'bg-amber-100 text-amber-800' },
   sudah: { label: 'Sudah tercatat', cls: 'bg-slate-200 text-slate-700' },
-  bentrok_shift: { label: 'Bentrok shift', cls: 'bg-amber-100 text-amber-800' },
-  bentrok_status: { label: 'Status lain', cls: 'bg-amber-100 text-amber-800' },
   tidak_dikenal: { label: 'Nama tidak dikenal', cls: 'bg-rose-100 text-rose-800' },
 };
 
 const keteranganAksi = (r: RencanaItem, label: string) => {
+  const bagian = `bagian "${label}" Laporan Dinas ${NAMA_SHIFT[r.shift]}`;
   switch (r.aksi) {
-    case 'tandai': return `Jadwal ${r.shiftLama} · ${r.statusLama || 'Hadir'} → ${label}`;
-    case 'tambah': return `Tidak ada jadwal shift pada tanggal ini. Centang untuk menambah shift ${r.shift} berstatus "${label}".`;
-    case 'sudah': return `Status sudah "${r.statusLama}".`;
-    case 'bentrok_shift': return `Jadwal reguler shift ${r.shiftLama}, roster shift ${r.shift}. Tidak diubah — atur manual di Tab Kehadiran.`;
-    case 'bentrok_status': return `Status saat ini "${r.statusLama}". Tidak diubah.`;
+    case 'sesuai': return `Jadwal ${r.shiftLama} · ${r.statusLama || 'Hadir'}. Tampil di ${bagian}; status tetap.`;
+    case 'di_luar_jadwal': return `Tidak ada jadwal shift pada tanggal ini. Centang bila tetap ingin tampil di ${bagian}.`;
+    case 'beda_shift': return `Jadwal reguler shift ${r.shiftLama}, roster shift ${r.shift}. Centang bila tetap ingin tampil di ${bagian}.`;
+    case 'tidak_hadir': return `Status kehadiran "${r.statusLama}". Centang bila tetap ingin tampil di ${bagian}.`;
+    case 'sudah': return 'Sudah tercatat dari roster sebelumnya.';
     case 'tidak_dikenal': return 'Tidak ditemukan di master personel. Tambahkan di sub-tab Personel bila perlu.';
   }
 };
@@ -57,9 +58,9 @@ const keteranganAksi = (r: RencanaItem, label: string) => {
 interface Parsed { fileName: string; roster: Roster; personel: PersonelRef[]; jadwal: JadwalRef[] }
 
 /**
- * Upload roster penugasan bantuan (mis. Bagasi Umrah SV – AFETS CGK) apa adanya (PDF/Excel).
- * Hanya personel T2 Safety & Security Electronic Services yang diambil; penugasan ditandai
- * sebagai status kehadiran pada jadwal_shift sehingga tampil di Tab Kehadiran & Shift Report.
+ * Upload roster penugasan bantuan (mis. Bagasi Umroh SV – AFETS CGK) apa adanya (PDF/Excel).
+ * Hanya personel T2 Safety & Security Electronic Services yang diambil. Penugasan terpilih
+ * disimpan di master_configs dan tampil sebagai bagian "*<judul> :*" di Laporan Dinas Tab Kehadiran.
  */
 export const RosterPenugasanUploader: React.FC = () => {
   const [label, setLabel] = useState(STATUS_PENUGASAN_DEFAULT);
@@ -93,8 +94,8 @@ export const RosterPenugasanUploader: React.FC = () => {
 
   const barisSses = useMemo(() => (parsed ? filterRosterSsesT2(parsed.roster.rows) : []), [parsed]);
   const rencana = useMemo(
-    () => (parsed ? susunRencanaRoster(barisSses, parsed.personel, parsed.jadwal, labelBersih) : []),
-    [parsed, barisSses, labelBersih],
+    () => (parsed ? susunRencanaRoster(barisSses, parsed.personel, parsed.jadwal, labelBersih, riwayat) : []),
+    [parsed, barisSses, labelBersih, riwayat],
   );
   const jumlahDipilih = rencana.filter(r => dipilih.has(r.key) && isAksiDapatDiterapkan(r.aksi)).length;
 
@@ -111,7 +112,7 @@ export const RosterPenugasanUploader: React.FC = () => {
       const personel = await muatPersonel();
       const ids = [...new Set(susunRencanaRoster(sses, personel, [], labelBersih).map(r => r.personelId).filter((id): id is string => !!id))];
       const jadwal = tanggal.length > 0 ? await muatJadwal(ids, tanggal[0], tanggal[tanggal.length - 1]) : [];
-      const awal = susunRencanaRoster(sses, personel, jadwal, labelBersih);
+      const awal = susunRencanaRoster(sses, personel, jadwal, labelBersih, riwayat);
       setDipilih(new Set(awal.filter(r => isAksiDipilihOtomatis(r.aksi)).map(r => r.key)));
       setParsed({ fileName: file.name, roster, personel, jadwal });
     } catch (err) {
@@ -135,37 +136,26 @@ export const RosterPenugasanUploader: React.FC = () => {
     if (!parsed || labelError || jumlahDipilih === 0) return;
     setIsApplying(true);
     try {
-      const hasil = await terapkanRoster(rencana, dipilih, labelBersih, parsed.roster.judul);
-      const bagian = [
-        hasil.ditandai > 0 ? `${hasil.ditandai} jadwal ditandai "${labelBersih}"` : '',
-        hasil.ditambah > 0 ? `${hasil.ditambah} jadwal penugasan ditambahkan` : '',
-      ].filter(Boolean).join(', ');
-      setStatus({
-        type: hasil.riwayatGagal ? 'error' : 'success',
-        message: (bagian || 'Tidak ada perubahan (status mungkin sudah diubah orang lain).') +
-          (hasil.riwayatGagal ? `. Perubahan tersimpan, tetapi riwayat gagal dicatat sehingga tidak dapat dibatalkan dari sini: ${hasil.riwayatGagal}` : '.'),
-      });
+      const n = await simpanPenugasanRoster(rencana, dipilih, labelBersih, parsed.roster.judul);
+      setStatus({ type: 'success', message: `${n} penugasan tersimpan. Tampil di Tab Kehadiran sebagai "*${labelBersih} :*" pada tanggal & shift masing-masing.` });
       setParsed(null);
       await fetchRiwayat();
     } catch (err) {
-      setStatus({ type: 'error', message: getErrorMessage(err, 'Gagal menerapkan roster.') });
+      setStatus({ type: 'error', message: getErrorMessage(err, 'Gagal menyimpan roster.') });
     } finally {
       setIsApplying(false);
     }
   };
 
-  const handleBatalkan = async (entri: RiwayatRoster) => {
-    if (!window.confirm(`Batalkan ${entri.perubahan.length} penugasan "${entri.label}" (${fmtTanggal(entri.dari)} – ${fmtTanggal(entri.sampai)})?`)) return;
+  const handleHapus = async (entri: RiwayatRoster) => {
+    if (!window.confirm(`Hapus ${entri.penugasan.length} penugasan "${entri.label}" (${fmtTanggal(entri.dari)} – ${fmtTanggal(entri.sampai)}) dari Tab Kehadiran?`)) return;
     setUndoingId(entri.id);
     try {
-      const { dikembalikan, dilewati } = await batalkanRoster(entri);
-      setStatus({
-        type: 'success',
-        message: `${dikembalikan} penugasan dibatalkan.` + (dilewati > 0 ? ` ${dilewati} dilewati karena statusnya sudah diubah manual.` : ''),
-      });
+      await hapusRiwayatRoster(entri.id);
+      setStatus({ type: 'success', message: `${entri.penugasan.length} penugasan "${entri.label}" dihapus.` });
       await fetchRiwayat();
     } catch (err) {
-      setStatus({ type: 'error', message: getErrorMessage(err, 'Gagal membatalkan roster.') });
+      setStatus({ type: 'error', message: getErrorMessage(err, 'Gagal menghapus roster.') });
     } finally {
       setUndoingId(null);
     }
@@ -184,14 +174,14 @@ export const RosterPenugasanUploader: React.FC = () => {
           <h2 className="text-lg font-bold text-slate-800">Upload Roster Penugasan (Bantuan)</h2>
           <p className="text-sm text-slate-500">
             Unggah roster apa adanya (PDF atau Excel), tidak perlu disaring. Hanya personel <b>{UNIT_SSES_T2}</b> yang
-            diambil, dicocokkan dengan jadwal shift, lalu statusnya tampil di Tab Kehadiran.
+            diambil, lalu tampil sebagai bagian tambahan di Laporan Dinas Tab Kehadiran. Status kehadiran tidak diubah.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">Label status penugasan</label>
+          <label className="block text-sm font-bold text-slate-700 mb-2">Judul bagian penugasan</label>
           <input
             type="text"
             value={label}
@@ -201,7 +191,7 @@ export const RosterPenugasanUploader: React.FC = () => {
           />
           {labelError
             ? <p className="text-xs text-rose-600 mt-1">{labelError}</p>
-            : <p className="text-xs text-slate-500 mt-1">Tampil di Tab Kehadiran & WA: "- Nama - {labelBersih}"</p>}
+            : <p className="text-xs text-slate-500 mt-1">Di WA: "*{labelBersih} :*" lalu "- Nama Personel"</p>}
         </div>
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -308,7 +298,7 @@ export const RosterPenugasanUploader: React.FC = () => {
               className="flex-1 min-h-11 px-4 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isApplying ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-              Terapkan {jumlahDipilih} penugasan
+              Simpan {jumlahDipilih} penugasan
             </button>
             <button
               type="button"
@@ -328,24 +318,24 @@ export const RosterPenugasanUploader: React.FC = () => {
           {isFetchingRiwayat && <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />}
         </h3>
         {riwayat.length === 0 && !isFetchingRiwayat ? (
-          <p className="text-sm text-slate-500 italic">Belum ada roster penugasan yang diterapkan.</p>
+          <p className="text-sm text-slate-500 italic">Belum ada roster penugasan yang disimpan.</p>
         ) : (
           <div className="space-y-3">
             {riwayat.map(e => (
               <div key={e.id} className="flex items-center justify-between gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
                 <div className="min-w-0">
                   <p className="font-bold text-slate-800 text-sm break-words">{e.label}</p>
-                  <p className="text-xs text-slate-600">{fmtTanggal(e.dari)} – {fmtTanggal(e.sampai)} · {e.perubahan.length} penugasan</p>
+                  <p className="text-xs text-slate-600">{fmtTanggal(e.dari)} – {fmtTanggal(e.sampai)} · {e.penugasan.length} penugasan</p>
                   <p className="text-xs text-slate-400 break-words">{e.judul}</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleBatalkan(e)}
+                  onClick={() => handleHapus(e)}
                   disabled={undoingId === e.id}
                   className="min-w-11 min-h-11 p-2 text-rose-600 hover:bg-rose-100 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
-                  title="Batalkan penugasan dari roster ini"
+                  title="Hapus roster ini dari Tab Kehadiran"
                 >
-                  {undoingId === e.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Undo2 className="w-5 h-5" />}
+                  {undoingId === e.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                 </button>
               </div>
             ))}

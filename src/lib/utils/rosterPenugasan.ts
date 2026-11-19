@@ -3,8 +3,11 @@
 // Modul murni (tanpa store/jaringan) supaya bisa diuji langsung:
 //   1. membaca tabel roster dari teks PDF berkoordinat atau dari grid Excel,
 //   2. menyaring personel unit "T2 Safety & Security Electronic Services",
-//   3. menyusun rencana perubahan jadwal_shift (status kehadiran = label penugasan).
+//   3. mencocokkan penugasan dengan jadwal_shift (hanya untuk ditampilkan; status tidak diubah),
+//   4. menyiapkan daftar penugasan per shift untuk bagian "*Bantuan Umroh SV :*" di Tab Kehadiran.
 // Roster boleh diunggah apa adanya; penyaringan unit dilakukan di sini.
+
+import { isTidakHadir } from '../data/kehadiranStatus.ts';
 
 export type ShiftKode = 'PS' | 'M';
 
@@ -15,7 +18,7 @@ export interface RosterRow { no: number | null; nama: string; unit: string; cell
 export interface Roster { judul: string; tanggal: string[]; rows: RosterRow[]; peringatan: string[] }
 
 export const UNIT_SSES_T2 = 'T2 Safety & Security Electronic Services';
-export const STATUS_PENUGASAN_DEFAULT = 'Bantuan Umrah SV';
+export const STATUS_PENUGASAN_DEFAULT = 'Bantuan Umroh SV';
 export const RIWAYAT_ROSTER_KEY = 'roster_penugasan_history';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -358,20 +361,21 @@ export const matchPersonel = <T extends PersonelRef>(nama: string, personel: T[]
 };
 
 // ---------------------------------------------------------------------------
-// Rencana perubahan jadwal_shift
+// Rencana: penugasan roster dicocokkan dengan jadwal shift
 // ---------------------------------------------------------------------------
 
 export interface JadwalRef { id: string; personel_id: string; tanggal: string; shift: string | null; status_kehadiran: string | null }
 
 /**
- * tandai          — jadwal shift sama, status Hadir → status diganti label penugasan
- * tambah          — tidak ada jadwal pada tanggal itu → baris baru dengan label penugasan (tidak dipilih otomatis)
- * sudah           — status sudah berlabel penugasan
- * bentrok_shift   — jadwal reguler di shift lain; tidak diubah
- * bentrok_status  — status lain (Sakit/Izin/…); tidak diubah
+ * sesuai          — personel memang dinas pada shift itu (dipilih otomatis)
+ * di_luar_jadwal  — tidak ada jadwal shift pada tanggal itu
+ * beda_shift      — jadwal reguler di shift lain
+ * tidak_hadir     — status Sakit/Izin/Cuti/Off/Libur
+ * sudah           — sudah tercatat dari upload roster sebelumnya (label sama)
  * tidak_dikenal   — nama tidak ditemukan di master personel
+ * Jadwal shift dan status kehadiran tidak pernah diubah oleh roster.
  */
-export type AksiRoster = 'tandai' | 'tambah' | 'sudah' | 'bentrok_shift' | 'bentrok_status' | 'tidak_dikenal';
+export type AksiRoster = 'sesuai' | 'di_luar_jadwal' | 'beda_shift' | 'tidak_hadir' | 'sudah' | 'tidak_dikenal';
 
 export interface RencanaItem {
   key: string;
@@ -383,73 +387,14 @@ export interface RencanaItem {
   shift: ShiftKode;
   terminal: string;
   aksi: AksiRoster;
-  jadwalId: string | null;
   shiftLama: string | null;
   statusLama: string | null;
 }
 
-export const isAksiDapatDiterapkan = (aksi: AksiRoster) => aksi === 'tandai' || aksi === 'tambah';
-export const isAksiDipilihOtomatis = (aksi: AksiRoster) => aksi === 'tandai';
+export const isAksiDapatDiterapkan = (aksi: AksiRoster) => aksi !== 'sudah' && aksi !== 'tidak_dikenal';
+export const isAksiDipilihOtomatis = (aksi: AksiRoster) => aksi === 'sesuai';
 
-const isStatusHadir = (s: string | null) => !s || s.trim().toLowerCase() === 'hadir';
-
-export const susunRencanaRoster = (
-  rows: RosterRow[],
-  personel: PersonelRef[],
-  jadwal: JadwalRef[],
-  label: string,
-): RencanaItem[] => {
-  const jadwalByKey = new Map(jadwal.map(j => [`${j.personel_id}|${j.tanggal}`, j]));
-  const labelKey = label.trim().toLowerCase();
-  const out: RencanaItem[] = [];
-
-  for (const row of rows) {
-    const p = matchPersonel(row.nama, personel);
-    for (const cell of row.cells) {
-      const base = {
-        key: `${p?.id ?? normalizeNama(row.nama)}|${cell.tanggal}|${cell.shift}`,
-        nama: row.nama,
-        namaMaster: p?.nama ?? null,
-        personelId: p?.id ?? null,
-        tanggal: cell.tanggal,
-        kode: cell.kode,
-        shift: cell.shift,
-        terminal: cell.terminal,
-      };
-      if (!p) {
-        out.push({ ...base, aksi: 'tidak_dikenal', jadwalId: null, shiftLama: null, statusLama: null });
-        continue;
-      }
-      const j = jadwalByKey.get(`${p.id}|${cell.tanggal}`);
-      if (!j) {
-        out.push({ ...base, aksi: 'tambah', jadwalId: null, shiftLama: null, statusLama: null });
-        continue;
-      }
-      const shiftLama = normalizeShiftKode(j.shift);
-      let aksi: AksiRoster;
-      if (shiftLama !== cell.shift) aksi = 'bentrok_shift';
-      else if ((j.status_kehadiran || '').trim().toLowerCase() === labelKey) aksi = 'sudah';
-      else if (isStatusHadir(j.status_kehadiran)) aksi = 'tandai';
-      else aksi = 'bentrok_status';
-      out.push({ ...base, aksi, jadwalId: j.id, shiftLama: j.shift, statusLama: j.status_kehadiran });
-    }
-  }
-
-  return out.sort((a, b) => a.tanggal.localeCompare(b.tanggal) || a.nama.localeCompare(b.nama));
-};
-
-// ---------------------------------------------------------------------------
-// Riwayat (untuk membatalkan upload)
-// ---------------------------------------------------------------------------
-
-export interface PerubahanRoster {
-  personelId: string;
-  nama: string;
-  tanggal: string;
-  shift: ShiftKode;
-  aksi: 'tandai' | 'tambah';
-  statusLama: string | null;
-}
+export interface PenugasanRoster { personelId: string; nama: string; tanggal: string; shift: ShiftKode }
 
 export interface RiwayatRoster {
   id: string;
@@ -458,17 +403,80 @@ export interface RiwayatRoster {
   dari: string;
   sampai: string;
   diunggah: string;
-  perubahan: PerubahanRoster[];
+  penugasan: PenugasanRoster[];
 }
 
-export const rencanaKePerubahan = (rencana: RencanaItem[], dipilih: Set<string>): PerubahanRoster[] =>
+const penugasanKey = (label: string, personelId: string, tanggal: string, shift: string) =>
+  `${label.trim().toLowerCase()}|${personelId}|${tanggal}|${shift}`;
+
+export const susunRencanaRoster = (
+  rows: RosterRow[],
+  personel: PersonelRef[],
+  jadwal: JadwalRef[],
+  label: string,
+  riwayat: RiwayatRoster[] = [],
+): RencanaItem[] => {
+  const jadwalByKey = new Map(jadwal.map(j => [`${j.personel_id}|${j.tanggal}`, j]));
+  const tercatat = new Set(
+    riwayat.flatMap(e => (e.penugasan || []).map(p => penugasanKey(e.label, p.personelId, p.tanggal, p.shift))),
+  );
+  const out: RencanaItem[] = [];
+
+  for (const row of rows) {
+    const p = matchPersonel(row.nama, personel);
+    for (const cell of row.cells) {
+      const j = p ? jadwalByKey.get(`${p.id}|${cell.tanggal}`) : undefined;
+      let aksi: AksiRoster;
+      if (!p) aksi = 'tidak_dikenal';
+      else if (tercatat.has(penugasanKey(label, p.id, cell.tanggal, cell.shift))) aksi = 'sudah';
+      else if (!j) aksi = 'di_luar_jadwal';
+      else if (normalizeShiftKode(j.shift) !== cell.shift) aksi = 'beda_shift';
+      else if (isTidakHadir(j.status_kehadiran)) aksi = 'tidak_hadir';
+      else aksi = 'sesuai';
+      out.push({
+        key: `${p?.id ?? normalizeNama(row.nama)}|${cell.tanggal}|${cell.shift}`,
+        nama: row.nama,
+        namaMaster: p?.nama ?? null,
+        personelId: p?.id ?? null,
+        tanggal: cell.tanggal,
+        kode: cell.kode,
+        shift: cell.shift,
+        terminal: cell.terminal,
+        aksi,
+        shiftLama: j?.shift ?? null,
+        statusLama: j?.status_kehadiran ?? null,
+      });
+    }
+  }
+
+  return out.sort((a, b) => a.tanggal.localeCompare(b.tanggal) || a.nama.localeCompare(b.nama));
+};
+
+export const rencanaKePenugasan = (rencana: RencanaItem[], dipilih: Set<string>): PenugasanRoster[] =>
   rencana
     .filter(r => dipilih.has(r.key) && isAksiDapatDiterapkan(r.aksi) && r.personelId)
-    .map(r => ({
-      personelId: r.personelId!,
-      nama: r.namaMaster || r.nama,
-      tanggal: r.tanggal,
-      shift: r.shift,
-      aksi: r.aksi as 'tandai' | 'tambah',
-      statusLama: r.statusLama,
-    }));
+    .map(r => ({ personelId: r.personelId!, nama: r.namaMaster || r.nama, tanggal: r.tanggal, shift: r.shift }));
+
+/**
+ * Penugasan pada satu tanggal & shift, dikelompokkan per label (mis. "Bantuan Umroh SV"),
+ * untuk bagian tambahan di pesan Laporan Dinas. Nama unik per label, urut abjad.
+ */
+export const penugasanUntukShift = (
+  riwayat: RiwayatRoster[] | null | undefined,
+  tanggal: string,
+  shift: ShiftKode,
+): { label: string; nama: string[] }[] => {
+  const groups = new Map<string, { label: string; nama: Map<string, string> }>();
+  for (const e of riwayat || []) {
+    for (const p of e.penugasan || []) {
+      if (p.tanggal !== tanggal || p.shift !== shift) continue;
+      const lk = e.label.trim().toLowerCase();
+      if (!groups.has(lk)) groups.set(lk, { label: e.label.trim(), nama: new Map() });
+      groups.get(lk)!.nama.set(p.personelId, p.nama);
+    }
+  }
+  return [...groups.values()].map(g => ({
+    label: g.label,
+    nama: [...g.nama.values()].sort((a, b) => a.localeCompare(b)),
+  }));
+};
