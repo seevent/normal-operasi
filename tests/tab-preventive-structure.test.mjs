@@ -57,3 +57,13 @@ test('foto bisa dari kamera belakang ATAU berkas (galeri/PC), dan target sentuh 
   const tab = read('src/components/features/TabPreventive.tsx');
   assert.match(tab, /fontSize: '16px'/);
 });
+
+test('baris yang sudah berfoto menampilkan thumbnail kecil dan membuka pratinjau besar saat diklik', () => {
+  const row = read('src/components/features/preventive/PreventiveAssetRow.tsx');
+  assert.match(row, /cloudinaryThumbUrl\(photo\.secureUrl/, 'thumbnail memakai versi kecil dari Cloudinary');
+  assert.match(row, /loading="lazy"/);
+  assert.match(row, /<PhotoLightbox/);
+  const box = read('src/components/shared/PhotoLightbox.tsx');
+  assert.match(box, /createPortal\(/);
+  assert.match(box, /'Escape'/);
+});

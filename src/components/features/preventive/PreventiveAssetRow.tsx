@@ -1,7 +1,19 @@
-import React, { useRef } from 'react';
-import { AlertCircle, AlertTriangle, Camera, Check, CheckCircle2, Circle, ExternalLink, FolderOpen, Loader2, Pencil, QrCode, RotateCcw } from 'lucide-react';
+import React, { useCallback, useRef, useState } from 'react';
+import { AlertCircle, AlertTriangle, Camera, Check, CheckCircle2, Circle, FolderOpen, Loader2, Pencil, QrCode, RotateCcw } from 'lucide-react';
 import type { PreventiveAsset, RowStatus } from '../../../lib/utils/preventiveGrouping';
 import type { SavedEntry } from '../../../lib/utils/preventiveStatus';
+import { cloudinaryThumbUrl } from '../../../lib/utils/cloudinaryThumb';
+import { PhotoLightbox } from '../../shared/PhotoLightbox';
+
+/** Sisi thumbnail di layar (px); Cloudinary diminta 2x agar tajam di layar retina. */
+const THUMB_PX = 56;
+
+const uploadedLabel = (iso: string): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const text = d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return `Diunggah ${text} WIB`;
+};
 
 interface Props {
   asset: PreventiveAsset;
@@ -33,8 +45,11 @@ const BADGE: Record<RowStatus, { label: string; className: string; icon: React.R
 const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, qrUrl, warning, disabled, onPick, onRetry, selectable, selected, onToggleSelect }) => {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const closePreview = useCallback(() => setPreviewOpen(false), []);
   const badge = BADGE[status];
   const busy = status === 'uploading';
+  const photo = saved && !busy ? saved : undefined;
   const openCamera = () => cameraRef.current?.click();
   const openFile = () => fileRef.current?.click();
 
@@ -71,6 +86,31 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
           </span>
         </button>
       )}
+      {photo && (
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          aria-label={`Lihat foto ${asset.name} lebih besar`}
+          title="Klik untuk melihat foto lebih besar"
+          className="shrink-0 rounded-lg overflow-hidden border border-slate-300 bg-slate-200 transition-transform hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          style={{ width: THUMB_PX, height: THUMB_PX }}
+        >
+          <img
+            src={cloudinaryThumbUrl(photo.secureUrl, THUMB_PX * 2)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            width={THUMB_PX}
+            height={THUMB_PX}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Bila transformasi Cloudinary ditolak, tampilkan foto aslinya.
+              const img = e.currentTarget;
+              if (img.src !== photo.secureUrl) img.src = photo.secureUrl;
+            }}
+          />
+        </button>
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold text-slate-900 leading-snug break-words">{asset.name}</p>
         <p className="mt-0.5 font-mono text-[11px] text-slate-500 tracking-tight">{asset.equipmentNumber}</p>
@@ -79,17 +119,6 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
             {badge.icon}
             {badge.label}
           </span>
-          {saved && status !== 'uploading' && (
-            <a
-              href={saved.secureUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 underline-offset-2 hover:underline"
-            >
-              Lihat foto
-              <ExternalLink className="w-3 h-3" aria-hidden="true" />
-            </a>
-          )}
           {qrUrl && (
             <a
               href={qrUrl}
@@ -165,6 +194,14 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
           Pilih file
         </button>
       </div>
+      {previewOpen && photo && (
+        <PhotoLightbox
+          url={photo.secureUrl}
+          title={`${asset.name} (${asset.equipmentNumber})`}
+          caption={uploadedLabel(photo.uploadedAt)}
+          onClose={closePreview}
+        />
+      )}
     </li>
   );
 };
