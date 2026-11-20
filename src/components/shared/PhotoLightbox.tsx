@@ -5,6 +5,8 @@ import { ExternalLink, X } from 'lucide-react';
 interface Props {
   url: string;
   title: string;
+  /** Baris kedua di bawah judul, tidak terpotong (mis. nomor equipment). */
+  subtitle?: string;
   /** Teks kecil di kiri bawah, mis. waktu unggah. */
   caption?: string;
   onClose: () => void;
@@ -15,7 +17,7 @@ interface Props {
  * Dirender lewat portal ke <body> agar tidak terpotong oleh kartu/kontainer ber-transform di atasnya.
  * Tutup: tombol X, ketuk latar gelap, atau tombol Escape.
  */
-export const PhotoLightbox: React.FC<Props> = ({ url, title, caption, onClose }) => {
+export const PhotoLightbox: React.FC<Props> = ({ url, title, subtitle, caption, onClose }) => {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -42,7 +44,10 @@ export const PhotoLightbox: React.FC<Props> = ({ url, title, caption, onClose })
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-bold text-sm text-slate-800 truncate">📸 {title}</h3>
+          <div className="min-w-0">
+            <h3 className="font-bold text-sm text-slate-800 truncate">📸 {title}</h3>
+            {subtitle && <p className="mt-0.5 font-mono text-xs text-slate-500 break-all">{subtitle}</p>}
+          </div>
           <button
             ref={closeRef}
             type="button"

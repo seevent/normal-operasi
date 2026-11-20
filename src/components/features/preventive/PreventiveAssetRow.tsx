@@ -197,7 +197,8 @@ const PreventiveAssetRowBase: React.FC<Props> = ({ asset, status, error, saved, 
       {previewOpen && photo && (
         <PhotoLightbox
           url={photo.secureUrl}
-          title={`${asset.name} (${asset.equipmentNumber})`}
+          title={asset.name}
+          subtitle={asset.equipmentNumber}
           caption={uploadedLabel(photo.uploadedAt)}
           onClose={closePreview}
         />
